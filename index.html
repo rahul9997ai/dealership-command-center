@@ -252,6 +252,65 @@ tbody tr:hover{background:var(--surface-2)}
 .doc.cust .inner{padding:24px 30px}
 .doc.cust .ccov{border:1px solid #e3e8ef;border-left:4px solid #1d61d8;border-radius:8px;padding:11px 14px;margin-bottom:9px}
 .mailbox{width:100%;min-height:420px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.55}
+
+/* ---------------- AXIOM login / landing ---------------- */
+:root{ --axiom-purple:#a78bfa; --axiom-cyan:#5fd4f4; }
+.axiom-page{min-height:100vh;width:100%;background:linear-gradient(135deg,#060b22 0%,#0f2160 50%,#1b3a8c 100%);display:flex;align-items:center;justify-content:center;padding:56px 32px;position:relative;overflow:hidden}
+.axiom-wave{position:absolute;left:0;right:0;bottom:-10px;width:100%;height:220px;pointer-events:none}
+.axiom-grid{display:grid;grid-template-columns:1.15fr 440px;gap:70px;max-width:1360px;width:100%;align-items:center;position:relative;z-index:2}
+.axiom-left{position:relative;color:#fff;min-height:480px;display:flex;align-items:center}
+.axiom-globe-wrap{position:absolute;right:-30px;top:50%;transform:translateY(-50%);width:480px;height:480px;z-index:1;opacity:.92}
+.axiom-globe-wrap svg{width:100%;height:100%}
+.axiom-left-inner{position:relative;z-index:2;max-width:500px}
+.axiom-brandrow{margin-bottom:22px}
+.axiom-brandrow svg{display:block}
+.axiom-word{font-size:58px;font-weight:800;letter-spacing:.01em;margin:0 0 12px;line-height:1;color:#fff}
+.axiom-tagline{font-size:17px;font-weight:600;margin:0 0 8px;color:#e4eafc}
+.axiom-sig{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:21px;color:#c3cdf0;margin:0 0 38px}
+.axiom-slogan{font-size:32px;font-weight:800;margin:0 0 16px;letter-spacing:.01em}
+.axiom-slogan .s1{color:#fff}
+.axiom-slogan .s2{color:var(--axiom-purple)}
+.axiom-slogan .s3{color:var(--axiom-cyan)}
+.axiom-sub{display:flex;align-items:center;gap:10px;font-size:15.5px;font-weight:600;color:#dbe4fb;margin:0}
+.axiom-sub svg{flex:0 0 auto}
+.axiom-right{position:relative;z-index:2}
+.axiom-card{background:#fff;border-radius:20px;padding:38px 34px;box-shadow:0 30px 80px rgba(2,8,30,.5);color:#0d1b2e}
+.axiom-card-brand{display:flex;align-items:center;gap:12px;margin-bottom:24px}
+.axiom-card-brand .nm{font-size:19px;font-weight:800;color:#0d1b2e;line-height:1.15}
+.axiom-card-brand .tg{font-size:10px;color:#64748b;line-height:1.35;max-width:200px;font-weight:600}
+.axiom-card-brand .sig{font-family:Georgia,"Times New Roman",serif;font-style:italic;font-size:12px;color:#8b93a8}
+.axiom-card h2{font-size:22px;margin:2px 0 4px}
+.axiom-card .sub{color:#64748b;font-size:13.5px;margin:0 0 22px}
+.axiom-err{background:#fdecea;color:#b42318;border-radius:9px;padding:10px 13px;font-size:12.5px;margin-bottom:16px;font-weight:600}
+.axiom-field{margin-bottom:16px}
+.axiom-field label{display:block;font-size:12.5px;font-weight:700;color:#33455f;margin-bottom:6px}
+.axiom-field input{width:100%;padding:11px 13px;border:1px solid #d7deec;border-radius:9px;font-size:14px;box-sizing:border-box;background:#fff;color:#0d1b2e}
+.axiom-field input::placeholder{color:#94a3b8}
+.axiom-field input:focus-visible{outline:2px solid #3f7bf0;outline-offset:1px}
+.axiom-row{display:flex;align-items:center;justify-content:space-between;margin:2px 0 20px;font-size:13px;color:#33455f}
+.axiom-row a{color:#3b6be0;text-decoration:none;font-weight:700;cursor:pointer}
+.axiom-signin{width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#2f5fdc,#3f7bf0);color:#fff;font-weight:700;font-size:15px;border:0;cursor:pointer}
+.axiom-signin:hover{filter:brightness(1.08)}
+@keyframes axiomSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+@keyframes axiomSpinRev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
+@keyframes axiomPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
+@keyframes axiomDrift{from{transform:translateX(0)}to{transform:translateX(-60px)}}
+.axiom-ring1{animation:axiomSpin 50s linear infinite;transform-origin:200px 200px}
+.axiom-ring2{animation:axiomSpinRev 65s linear infinite;transform-origin:200px 200px}
+.axiom-ring3{animation:axiomSpin 85s linear infinite;transform-origin:200px 200px}
+.axiom-dot{animation:axiomPulse 3.6s ease-in-out infinite}
+.axiom-wave path{animation:axiomDrift 30s linear infinite alternate}
+@media (prefers-reduced-motion:reduce){ .axiom-ring1,.axiom-ring2,.axiom-ring3,.axiom-dot,.axiom-wave path{animation:none} }
+@media (max-width:980px){
+  .axiom-grid{grid-template-columns:1fr;justify-items:center;text-align:center}
+  .axiom-left{min-height:auto;justify-content:center}
+  .axiom-globe-wrap{display:none}
+  .axiom-brandrow{display:flex;justify-content:center}
+  .axiom-sub{justify-content:center}
+  .axiom-card{max-width:440px}
+}
+@media (max-width:520px){ .axiom-word{font-size:42px} .axiom-slogan{font-size:24px} .axiom-page{padding:32px 18px} }
+
 @media print{
   body *{visibility:hidden}
   .modal-bg,.modal,.modal-b,.doc,.doc *{visibility:visible}
@@ -315,7 +374,7 @@ var PACKAGES = [
 var DEALERSHIPS = [];
 
 var USERS = [
-  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
+  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"admin@axiom.local", password:"axiom123", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
 ];
 
 /* Product master. desc is used only in the emailed presentation, never on the
@@ -675,20 +734,50 @@ var state = {
   customers: C.clone(D.CUSTOMERS),
   vehicles: C.clone(D.VEHICLES),
   currentUserId:"u0",
+  loggedIn:false,
   tx:null, completed:[], history:[], version:0,
-  ui:{ split:true, present:false, railOpen:false, modal:null, theme:"dark",
+  ui:{ split:true, present:false, railOpen:false, modal:null, theme:"dark", loginError:null,
        productEdit:null, userForm:false, dealerForm:null, toast:null,
        email:{ pkg:"all", term:"all" },
        reports:{ period:"monthly", from:"", to:"", fsm:"all", product:"all", type:"all", dealership:"active" } }
 };
-state.activeDealershipId = state.dealerships.length ? state.dealerships[0].id : null;
-state.config = state.activeDealershipId ? state.dealerships[0] : null;
-state.tx = state.activeDealershipId ? C.newTransaction(firstFsmFor(state.activeDealershipId) || "u0", state.activeDealershipId) : null;
-state.history = (D.DEMO_NAMES && D.DEMO_NAMES.length) ? C.buildHistory(state) : [];
+
+/* Restore everything a real user has built, from this browser's own storage.
+   There is still no backend — this is per browser/device, not shared between
+   people on different computers — but a refresh no longer wipes the data. */
+(function restorePersisted(){
+  var raw = null;
+  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  if (!raw) return;
+  var saved;
+  try { saved = JSON.parse(raw); } catch (e) { return; }
+  if (!saved || typeof saved !== "object") return;
+  ["dealerships","products","users","customers","vehicles","completed","history",
+   "activeDealershipId","currentUserId","loggedIn","tx"].forEach(function(k){
+    if (saved[k] !== undefined) state[k] = saved[k];
+  });
+  if (saved.theme) state.ui.theme = saved.theme;
+})();
+
+if (state.activeDealershipId && !state.dealerships.some(function(d){ return d.id === state.activeDealershipId; })){
+  state.activeDealershipId = state.dealerships.length ? state.dealerships[0].id : null;
+}
+state.config = state.activeDealershipId ? state.dealerships.filter(function(d){ return d.id === state.activeDealershipId; })[0] : null;
+if (!state.tx && state.activeDealershipId){
+  state.tx = C.newTransaction(firstFsmFor(state.activeDealershipId) || "u0", state.activeDealershipId);
+}
+if (!state.history.length && D.DEMO_NAMES && D.DEMO_NAMES.length){
+  state.history = C.buildHistory(state);
+}
 
 var channel = null;
 try { if (window.BroadcastChannel) channel = new BroadcastChannel("dcc_preview_v2"); } catch (e) { channel = null; }
-function shareableState(){ return { config:state.config, products:state.products, tx:state.tx, theme:state.ui.theme, version:state.version }; }
+function shareableState(){
+  return { dealerships:state.dealerships, activeDealershipId:state.activeDealershipId, products:state.products,
+    users:state.users, customers:state.customers, vehicles:state.vehicles, completed:state.completed,
+    history:state.history, currentUserId:state.currentUserId, loggedIn:state.loggedIn,
+    tx:state.tx, theme:state.ui.theme, version:state.version };
+}
 function persist(){
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify(shareableState())); } catch (e) {}
   try { if (channel) channel.postMessage(shareableState()); } catch (e) {}
@@ -824,11 +913,12 @@ function renderShell(inner){
             </select></label>` : ""}
           <button class="btn sm" data-act="toggle-theme">${state.ui.theme === "dark" ? "Normal" : "Dark"} mode</button>
           ${isDemoBuild ? `<span class="tag demo">DEMO DATA</span>` : ""}
-          <label class="switch"><span class="muted small">Signed in as</span>
+          ${isMaster() ? `<label class="switch"><span class="muted small">Viewing as</span>
             <select data-act="switch-user" style="width:auto;min-width:180px">
               ${state.users.filter(function(x){ return x.active; }).map(function(x){
                 return `<option value="${x.id}" ${x.id===state.currentUserId?"selected":""}>${esc(x.name)} — ${esc(x.role)}</option>`; }).join("")}
-            </select></label>
+            </select></label>` : `<span class="tag">${esc(u.name)} · ${esc(u.role)}</span>`}
+          <button class="btn sm" data-act="logout">Log out</button>
         </div>
       </header>
       <div class="view">${inner}</div>
@@ -1472,6 +1562,7 @@ function viewUsers(){
       <td>${u.demo?esc(u.accessDays+" days"):"Unlimited"}</td>
       <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
+        <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Set password</button>
         <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;
   }).join("");
@@ -1502,7 +1593,10 @@ function userModal(){
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
         <label class="f"><span>Demo access length (days)</span><input type="number" data-uf="days" value="14"></label>
       </div>
-      <label class="f"><span>Access restrictions</span><input type="text" data-uf="restrictions" placeholder="Reports: own deals"></label>
+      <div class="inline">
+        <label class="f"><span>Login password</span><input type="text" data-uf="password" placeholder="Set a password for this account"></label>
+        <label class="f"><span>Access restrictions</span><input type="text" data-uf="restrictions" placeholder="Reports: own deals"></label>
+      </div>
     </div></div></div>`;
 }
 function saveUser(){
@@ -1512,9 +1606,11 @@ function saveUser(){
   var name = f("name").value.trim();
   if (!name){ toast("Enter the user's name.","err"); return; }
   var role = f("role").value;
+  var pw = f("password").value.trim();
+  if (!pw){ toast("Set a login password for this user.","err"); return; }
   state.users.push({ id:C.uid("u"), name:name,
     initials:name.split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase(),
-    role:role, email:f("email").value.trim()||"user@demo.ca",
+    role:role, email:f("email").value.trim()||"user@demo.ca", password:pw,
     dealershipId: role === "Master Administrator" ? null : f("dealership").value,
     active:true, demo: role === "Demo", accessDays: role === "Demo" ? (Number(f("days").value)||14) : null,
     restrictions: f("restrictions").value ? [f("restrictions").value.trim()] : [] });
@@ -1942,6 +2038,79 @@ function renderOnboarding(){
   </div></div></div>`;
 }
 
+/* ---------------- AXIOM LOGIN ---------------- */
+function axiomMarkSvg(size){
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <defs><linearGradient id="axiomMarkGrad" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#2f5fdc"/><stop offset="55%" stop-color="#8b6bf0"/><stop offset="100%" stop-color="#5fd4f4"/>
+    </linearGradient></defs>
+    <path d="M40 10 L58 10 L88 82 L69 82 L61 60 L37 60 Z" fill="url(#axiomMarkGrad)"/>
+    <path d="M47 30 L20 82 L39 82 L56 48 Z" fill="url(#axiomMarkGrad)" opacity=".82"/>
+  </svg>`;
+}
+function axiomTargetSvg(){
+  return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="12" cy="12" r="9" stroke="#5fd4f4" stroke-width="1.6"/>
+    <circle cx="12" cy="12" r="4.5" stroke="#a78bfa" stroke-width="1.6"/>
+    <circle cx="12" cy="12" r="1.4" fill="#fff"/>
+  </svg>`;
+}
+function axiomGlobeSvg(){
+  var dots = [
+    {x:200,y:50,r:4,c:"#5fd4f4",d:".2s"}, {x:350,y:200,r:4,c:"#a78bfa",d:".9s"},
+    {x:200,y:350,r:4,c:"#fff",d:"1.6s"}, {x:50,y:200,r:4,c:"#5fd4f4",d:"2.3s"},
+    {x:122,y:16,r:3,c:"#a78bfa",d:".5s"}, {x:384,y:130,r:3,c:"#5fd4f4",d:"1.1s"},
+    {x:34,y:372,r:3,c:"#fff",d:"1.9s"}, {x:330,y:340,r:3,c:"#a78bfa",d:"2.7s"}
+  ].map(function(p){ return `<circle class="axiom-dot" cx="${p.x}" cy="${p.y}" r="${p.r}" fill="${p.c}" style="animation-delay:${p.d}"/>`; }).join("");
+  return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="200" cy="200" r="150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
+    <g class="axiom-ring1"><ellipse cx="200" cy="200" rx="150" ry="55" fill="none" stroke="rgba(167,139,250,.55)" stroke-width="1.2"/></g>
+    <g class="axiom-ring2"><ellipse cx="200" cy="200" rx="150" ry="90" fill="none" stroke="rgba(95,212,244,.5)" stroke-width="1.2"/></g>
+    <g class="axiom-ring3"><ellipse cx="200" cy="200" rx="150" ry="125" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1"/></g>
+    <line x1="200" y1="50" x2="122" y2="16" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+    <line x1="350" y1="200" x2="384" y2="130" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+    <line x1="200" y1="350" x2="330" y2="340" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+    <line x1="50" y1="200" x2="34" y2="372" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
+    ${dots}
+  </svg>`;
+}
+function renderLogin(){
+  var err = state.ui.loginError;
+  return `<div class="axiom-page">
+    <svg class="axiom-wave" viewBox="0 0 1440 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M0 200 C 240 260, 480 140, 720 190 S 1200 260, 1440 190" stroke="rgba(95,212,244,.35)" stroke-width="2" fill="none"/>
+      <path d="M0 240 C 260 180, 500 260, 760 220 S 1200 160, 1440 230" stroke="rgba(167,139,250,.28)" stroke-width="2" fill="none"/>
+    </svg>
+    <div class="axiom-grid">
+      <div class="axiom-left">
+        <div class="axiom-globe-wrap">${axiomGlobeSvg()}</div>
+        <div class="axiom-left-inner">
+          <div class="axiom-brandrow">${axiomMarkSvg(56)}</div>
+          <h1 class="axiom-word">AXIOM</h1>
+          <p class="axiom-tagline">AI eXecutive Intelligence &amp; Operations Management</p>
+          <p class="axiom-sig">by Rahul Champaneri</p>
+          <p class="axiom-slogan"><span class="s1">See.</span> <span class="s2">Understand.</span> <span class="s3">Act.</span></p>
+          <p class="axiom-sub">${axiomTargetSvg()}<span>From the FSM's Mind to the FSM's Desk.</span></p>
+        </div>
+      </div>
+      <div class="axiom-right">
+        <div class="axiom-card">
+          <div class="axiom-card-brand">${axiomMarkSvg(42)}
+            <div><div class="nm">AXIOM</div><div class="tg">AI eXecutive Intelligence &amp; Operations Management</div><div class="sig">by Rahul Champaneri</div></div>
+          </div>
+          <h2>Sign in to AXIOM</h2>
+          <p class="sub">Access your intelligent operating platform.</p>
+          ${err ? `<div class="axiom-err">${esc(err)}</div>` : ""}
+          <div class="axiom-field"><label>Email</label><input type="text" id="loginEmail" placeholder="you@yourcompany.com" autocomplete="username"></div>
+          <div class="axiom-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password"></div>
+          <div class="axiom-row"><label class="switch"><input type="checkbox" checked> Remember me</label><a data-act="forgot-password">Forgot password?</a></div>
+          <button type="button" class="axiom-signin" data-act="do-login">Sign In</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
 /* ---------------- ROUTER + RENDER ---------------- */
 function routeView(){
   if (!state.config) return renderOnboarding();
@@ -1981,8 +2150,8 @@ function render(){
   if (fp && active && typeof active.selectionStart === "number"){
     try { selStart = active.selectionStart; selEnd = active.selectionEnd; } catch (e) {}
   }
-  root.innerHTML = V.renderShell(routeView());
-  ov.innerHTML = renderOverlay();
+  root.innerHTML = state.loggedIn ? V.renderShell(routeView()) : renderLogin();
+  ov.innerHTML = state.loggedIn ? renderOverlay() : "";
   window.scrollTo(0, y);
   if (fp){
     var next = null;
@@ -2091,6 +2260,38 @@ function resetDemo(){
   newDeal();
   toast("Preview reset to demo defaults.","ok");
 }
+/* ---------------- AXIOM LOGIN / LOGOUT ----------------
+   No backend yet, so this is a client-side email+password match against
+   state.users — good enough to gate who sees what on one shared device,
+   but not real security (anyone with devtools can read it). A real backend
+   with hashed passwords is the follow-up once this needs to be trustworthy
+   for more than one FSM on one browser. */
+function doLogin(){
+  var emailEl = document.getElementById("loginEmail"), pwEl = document.getElementById("loginPassword");
+  var email = emailEl ? emailEl.value.trim().toLowerCase() : "";
+  var pw = pwEl ? pwEl.value : "";
+  if (!email || !pw){ state.ui.loginError = "Enter your email and password."; commit(); return; }
+  var match = state.users.filter(function(u){
+    return u.active && u.email && u.email.toLowerCase() === email;
+  })[0];
+  if (!match || !match.password || match.password !== pw){
+    state.ui.loginError = "That email and password don't match an active account.";
+    commit(); return;
+  }
+  state.ui.loginError = null;
+  state.currentUserId = match.id;
+  state.loggedIn = true;
+  if (match.dealershipId) V.setDealership(match.dealershipId);
+  else if (state.dealerships.length) V.setDealership(state.dealerships[0].id);
+  state.route = (match.role === "Master Administrator" || match.role === "General Manager" || match.role === "FSM Manager") ? "dashboard" : "finance";
+  toast("Welcome back, " + match.name.split(" ")[0] + ".","ok");
+  commit();
+}
+function doLogout(){
+  state.loggedIn = false;
+  state.ui.loginError = null;
+  commit();
+}
 function copyEmailText(){
   var box = document.getElementById("emailBody");
   var text = box ? box.value : buildEmail(state.tx).body;
@@ -2129,6 +2330,11 @@ function sendEmail(){
 }
 
 /* ---------------- EVENTS ---------------- */
+document.addEventListener("keydown", function(ev){
+  if (ev.key === "Enter" && ev.target && (ev.target.id === "loginEmail" || ev.target.id === "loginPassword")){
+    ev.preventDefault(); doLogin();
+  }
+});
 document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
   if (!el) return;
@@ -2197,6 +2403,15 @@ document.addEventListener("click", function(ev){
     case "user-new": state.ui.userForm = true; commit(); break;
     case "user-cancel": state.ui.userForm = false; commit(); break;
     case "user-save": saveUser(); break;
+    case "user-setpw": {
+      var upw = userById(el.getAttribute("data-user"));
+      var next = window.prompt("Set a new login password for " + upw.name + ":", "");
+      if (next === null) break;
+      next = next.trim();
+      if (!next){ toast("Password not changed — it can't be blank.","err"); break; }
+      upw.password = next;
+      toast("Password updated for " + upw.name + ".","ok");
+      commit(); break; }
     case "user-toggle": {
       var uu = userById(el.getAttribute("data-user"));
       if (uu.role === "Master Administrator") { toast("A master administrator can't be deactivated.","err"); break; }
@@ -2219,6 +2434,9 @@ document.addEventListener("click", function(ev){
     case "dealer-delete": deleteDealer(el.getAttribute("data-dealership")); break;
     case "switch-to-dealership": V.setDealership(el.getAttribute("data-dealership")); state.route = "finance"; commit(); break;
     case "reset-demo": resetDemo(); break;
+    case "do-login": doLogin(); break;
+    case "logout": doLogout(); break;
+    case "forgot-password": toast("There's no self-service reset yet — ask your master administrator or general manager to set a new password for you under Users and access.","info"); break;
   }
 });
 
