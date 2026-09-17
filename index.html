@@ -1,0 +1,2388 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dealership Command Center — FSM Preview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* ---- light (normal) mode: white + blue ---- */
+:root{
+  --blue:#1d61d8;
+  --blue-2:#3d82f2;
+  --blue-deep:#0d2f6b;
+  --blue-ink:#ffffff;
+  --bg:#f3f6fb;
+  --surface:#ffffff;
+  --surface-2:#f6f9fd;
+  --surface-3:#eaf0f9;
+  --text:#0d1b2e;
+  --text-2:#33455f;
+  --muted:#64748b;
+  --border:#dbe3ef;
+  --border-strong:#bfcbdd;
+  --rail:#0c1d33;
+  --rail-2:#16304f;
+  --rail-text:#a9bcd4;
+  --ok:#0a7546; --ok-bg:#e7f6ef;
+  --warn:#8a5106; --warn-bg:#fdf2e3;
+  --danger:#b42318; --danger-bg:#fdecea;
+  --info:#1d61d8; --info-bg:#e9f0fd;
+  --shadow:0 1px 2px rgba(13,27,46,.05),0 10px 26px rgba(13,27,46,.07);
+  --radius:11px;
+}
+/* ---- dark mode: black + blue ---- */
+:root[data-theme="dark"]{
+  --blue:#4c8dff; --blue-2:#79aaff; --blue-deep:#0a1b33; --blue-ink:#061020;
+  --bg:#070c14; --surface:#0f1723; --surface-2:#131d2b; --surface-3:#1a2637;
+  --text:#e9eff8; --text-2:#c2cee0; --muted:#8798ae; --border:#23324a; --border-strong:#35496a;
+  --rail:#050a12; --rail-2:#111d30; --rail-text:#97a9c2;
+  --ok:#4ec08d; --ok-bg:#0f271d; --warn:#e2a862; --warn-bg:#2a2013; --danger:#f0897f; --danger-bg:#2b1614;
+  --info:#79aaff; --info-bg:#122238;
+  --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 26px rgba(0,0,0,.42);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-weight:600;letter-spacing:-.01em}
+h1{font-size:22px} h2{font-size:17px} h3{font-size:15px} h4{font-size:13px}
+p{margin:0 0 8px}
+a{color:var(--blue)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:12px} .tiny{font-size:11px}
+.right{text-align:right} .center{text-align:center} .nowrap{white-space:nowrap} .hidden{display:none !important}
+
+.app{display:flex;min-height:100vh}
+.rail{width:242px;flex:0 0 242px;background:var(--rail);color:var(--rail-text);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+.rail-brand{padding:18px 18px 14px;border-bottom:1px solid rgba(255,255,255,.08);display:flex;gap:11px;align-items:center}
+.badge-logo{width:38px;height:38px;border-radius:9px;background:linear-gradient(140deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px;flex:0 0 38px}
+.rail-brand .nm{color:#fff;font-weight:600;font-size:14px;line-height:1.25}
+.rail-brand .sb{font-size:11px;color:var(--rail-text)}
+.rail nav{padding:10px;flex:1}
+.nav-group{font-size:10.5px;letter-spacing:.09em;color:#6d84a3;text-transform:uppercase;padding:14px 10px 6px}
+.nav-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;color:var(--rail-text);padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px}
+.nav-item:hover{background:var(--rail-2);color:#fff}
+.nav-item.active{background:var(--rail-2);color:#fff;box-shadow:inset 3px 0 0 var(--blue)}
+.nav-item .ic{width:18px;text-align:center;opacity:.9}
+.nav-item .tagx{margin-left:auto;font-size:9.5px;border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:1px 5px;color:#8fa3bf}
+.rail-foot{padding:12px;border-top:1px solid rgba(255,255,255,.08)}
+.userchip{display:flex;gap:10px;align-items:center;padding:8px;border-radius:8px;background:var(--rail-2)}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--blue);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.userchip .nm{color:#fff;font-size:12.5px;font-weight:500}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 22px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+.topbar .demo{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.view{padding:20px 22px 48px;max-width:1620px;width:100%}
+.menu-btn{display:none}
+
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow)}
+.card-h{padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.card-h .sp{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.card-b{padding:16px}
+.grid{display:grid;gap:14px}
+.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.g3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}
+.kpi{padding:14px 16px}
+.kpi .lb{font-size:12px;color:var(--muted)}
+.kpi .vl{font-size:26px;font-weight:600;margin-top:4px;letter-spacing:-.02em}
+.kpi .dt{font-size:11.5px;color:var(--muted);margin-top:3px}
+.btn{border:1px solid var(--border-strong);background:var(--surface);color:var(--text);padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--surface-3)}
+.btn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.dark{background:var(--rail);border-color:var(--rail);color:#fff}
+.btn.ghost{border-color:transparent;background:transparent}
+.btn.ghost:hover{background:var(--surface-3)}
+.btn.sm{padding:4px 9px;font-size:12px}
+.btn.danger{color:var(--danger)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.tag{display:inline-flex;align-items:center;gap:5px;font-size:11.5px;padding:2px 8px;border-radius:999px;background:var(--surface-3);color:var(--text-2);border:1px solid var(--border)}
+.tag.ok{background:var(--ok-bg);color:var(--ok);border-color:transparent}
+.tag.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
+.tag.danger{background:var(--danger-bg);color:var(--danger);border-color:transparent}
+.tag.info{background:var(--info-bg);color:var(--info);border-color:transparent}
+.tag.demo{background:var(--warn-bg);color:var(--warn);border-color:transparent;font-weight:600;letter-spacing:.04em}
+label.f{display:block;margin-bottom:12px}
+label.f > span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=number],input[type=date],input[type=email],select,textarea{width:100%;padding:8px 10px;border:1px solid var(--border-strong);border-radius:8px;background:var(--surface)}
+textarea{font-family:inherit}
+input:disabled,select:disabled{background:var(--surface-3);color:var(--muted)}
+.inline{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end}
+.inline > *{flex:1;min-width:130px}
+.tablewrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:11.5px;padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover{background:var(--surface-2)}
+.bar{height:7px;border-radius:4px;background:var(--surface-3);overflow:hidden;min-width:60px}
+.bar > i{display:block;height:100%;background:var(--blue)}
+.empty{padding:34px 18px;text-align:center;color:var(--muted)}
+.notice{padding:11px 13px;border-radius:9px;font-size:13px;display:flex;gap:9px;align-items:flex-start}
+.notice.warn{background:var(--warn-bg);color:var(--warn)}
+.notice.err{background:var(--danger-bg);color:var(--danger)}
+.notice.info{background:var(--info-bg);color:var(--info)}
+.notice.ok{background:var(--ok-bg);color:var(--ok)}
+.divider{height:1px;background:var(--border);margin:14px 0}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:13px}
+.kv .k{color:var(--muted)}
+.kv.total{border-top:1px solid var(--border-strong);margin-top:6px;padding-top:9px;font-weight:600;font-size:15px}
+.switch{display:inline-flex;align-items:center;gap:7px;font-size:12.5px;cursor:pointer;user-select:none}
+.switch input{accent-color:var(--blue);width:15px;height:15px}
+.chiprow{display:flex;gap:7px;flex-wrap:wrap}
+.termchip{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--border-strong);border-radius:999px;padding:6px 12px;cursor:pointer;font-size:13px;background:var(--surface)}
+.termchip.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.termchip input{display:none}
+
+.uc{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;text-align:center;gap:10px}
+.uc .bigtag{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--warn);background:var(--warn-bg);padding:8px 16px;border-radius:6px}
+
+.fin-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+.fin-toolbar .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.fin-split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
+.fin-split.solo{grid-template-columns:minmax(0,1fr)}
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.step{display:flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid var(--border);border-radius:999px;background:var(--surface);font-size:12.5px;cursor:pointer}
+.step .n{width:19px;height:19px;border-radius:50%;background:var(--surface-3);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
+.step.done .n{background:var(--ok);color:#fff}
+.step.done{border-color:var(--ok)}
+.stack{display:flex;flex-direction:column;gap:14px}
+.prodrow{border:1px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--surface-2)}
+.prodrow + .prodrow{margin-top:10px}
+.prodrow .ph{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.prodrow .ph .nm{font-weight:600}
+.prodrow .ph .sp{margin-left:auto;display:flex;gap:8px;align-items:center}
+.prodrow .phrow{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.prodrow .phrow .left{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.prodrow .phrow .right{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.prodrow .phrow .nm{font-weight:600}
+.pkgpick{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)}
+.pkgpick .lb{font-size:11.5px;color:var(--muted);align-self:center;margin-right:2px}
+.pkgbox{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;background:var(--surface)}
+.pkgbox.on{border-color:var(--blue);background:var(--info-bg);color:var(--info);font-weight:600}
+.pkgbox input{accent-color:var(--blue)}
+.pkgbox.decline{border-color:var(--border)}
+.pkgbox.decline.on{border-color:var(--danger);background:var(--danger-bg);color:var(--danger)}
+.pkgselect-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.pkgselect{display:flex;flex-direction:column;align-items:center;gap:4px;border:1.5px solid var(--border-strong);border-radius:11px;padding:16px 12px;background:var(--surface);cursor:pointer;text-align:center}
+.pkgselect:hover{background:var(--surface-3)}
+.pkgselect.on{border-color:var(--blue);background:var(--info-bg);box-shadow:inset 0 0 0 1px var(--blue)}
+.pkgselect .pks-name{font-weight:700;font-size:13px;letter-spacing:.04em}
+.pkgselect .pks-count{font-size:11.5px;color:var(--muted)}
+.pkgselect .pks-total{font-size:20px;font-weight:700;margin-top:2px}
+.pkgselect.on .pks-total{color:var(--blue)}
+.cd-decline{padding:0 20px 16px}
+.decline-card{border:1px solid var(--warn);background:var(--warn-bg);border-radius:11px;padding:14px 16px;margin-top:10px}
+.decline-card .dc-q{font-weight:600;font-size:14px}
+.decline-card .dc-amt{font-size:24px;font-weight:700;margin-top:4px}
+.decline-card .dc-amt span{font-size:12px;font-weight:500;color:var(--muted)}
+.decline-card .dc-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.cfgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:9px;margin-top:10px}
+.cfgrid label.f{margin-bottom:0}
+.catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:10px}
+.catcard{border:1px solid var(--border);border-radius:10px;padding:11px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
+.catcard.sel{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.catcard .nm{font-weight:600;font-size:13.5px}
+.catcard .ds{font-size:11.5px;color:var(--muted);line-height:1.4}
+.catcard .ft{margin-top:auto;display:flex;align-items:center;gap:8px;padding-top:6px}
+
+.monitor{position:sticky;top:78px;border:1px solid var(--border);border-radius:12px;overflow:hidden;background:var(--surface);box-shadow:var(--shadow)}
+.monitor-bar{background:var(--rail);color:#b7c7dd;font-size:11px;padding:7px 12px;display:flex;align-items:center;gap:8px;letter-spacing:.06em}
+.monitor-bar .live{width:7px;height:7px;border-radius:50%;background:#37d39b}
+.monitor-bar .sp{margin-left:auto;display:flex;gap:6px}
+.cd{background:var(--surface);min-height:430px;display:flex;flex-direction:column}
+.cd-head{background:linear-gradient(120deg,var(--blue-deep),var(--blue));color:#fff;padding:16px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px}
+.cd-head .fs{font-size:16px;font-weight:700;letter-spacing:.1em}
+.cd-head .sb{font-size:11.5px;opacity:.82}
+.cd-tagline{font-size:11.5px;opacity:.85;margin-top:2px;font-style:italic}
+.cd-sub1{font-size:16px;font-weight:600;color:var(--blue);margin-top:2px}
+.cd-note{background:var(--surface-3);border-top:1px solid var(--border);padding:12px 20px;text-align:center}
+.cd-note .nt1{font-weight:700;font-size:13.5px}
+.cd-note .nt2{font-size:11px;color:var(--muted);margin-top:3px}
+.cd-mid-veh{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:2px}
+.cd-body{padding:20px;flex:1}
+.cd-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:56px 24px;flex:1}
+.cd-welcome .hw{font-size:30px;font-weight:600;letter-spacing:-.02em}
+.cd-veh{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:14px}
+.cd-veh .v1{font-size:19px;font-weight:600}
+.pkgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
+.pkgcard{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2);display:flex;flex-direction:column}
+.pkgcard .ph{background:var(--rail);color:#fff;padding:11px 14px;font-weight:700;font-size:13px;letter-spacing:.07em;text-align:center}
+.pkgcard .pb{padding:12px 14px;flex:1}
+.pkgcard .pi{padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pkgcard .pi:last-child{border-bottom:0}
+.pkgcard .pi .n2{font-weight:600}
+.pkgcard .pi .c2{color:var(--muted);font-size:11.5px}
+.paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
+.payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
+.pt-term{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
+.pt-amt{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
+.pt-freq{font-size:10px;margin-top:1px}
+.cd-foot{padding:10px 20px;border-top:1px solid var(--border);color:var(--muted);font-size:11.5px;display:flex;gap:10px;flex-wrap:wrap}
+.present-mode{position:fixed;inset:0;background:var(--bg);z-index:60;overflow:auto}
+.present-mode .cd{min-height:100vh}
+.present-exit{position:fixed;right:14px;bottom:14px;z-index:61}
+
+.modal-bg{position:fixed;inset:0;background:rgba(4,10,20,.6);z-index:80;display:flex;align-items:flex-start;justify-content:center;padding:26px 14px;overflow:auto}
+.modal{background:var(--surface);border-radius:12px;width:min(900px,100%);box-shadow:0 22px 64px rgba(0,0,0,.45)}
+.modal.wide{width:min(1060px,100%)}
+.modal-h{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.modal-h .sp{margin-left:auto;display:flex;gap:8px}
+.modal-b{padding:18px;max-height:calc(100vh - 160px);overflow:auto}
+.doc{background:#fff;color:#111;padding:26px 30px;border:1px solid #dfe5ee;border-radius:9px;font-size:12.5px}
+.doc h1{font-size:19px;color:#111}
+.doc h3{font-size:13px;color:#111;margin-bottom:6px}
+.doc table{font-size:12px}
+.doc th,.doc td{border-bottom:1px solid #e3e8ef;color:#111}
+.doc .kv .k{color:#667085}
+.doc .dh{display:flex;gap:14px;align-items:center;border-bottom:2px solid #0d2f6b;padding-bottom:12px;margin-bottom:14px}
+.doc .dlogo{width:46px;height:46px;border-radius:9px;background:linear-gradient(140deg,#0d2f6b,#1d61d8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
+.doc .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:16px}
+.doc .lbl{font-size:10px;color:#667085;letter-spacing:.05em}
+.doc .watermark{margin-top:16px;text-align:center;color:#98a2b3;font-size:10.5px;letter-spacing:.14em}
+.doc.cust{padding:0;overflow:hidden}
+.doc.cust .hero{background:linear-gradient(120deg,#0d2f6b,#1d61d8);color:#fff;padding:26px 30px}
+.doc.cust .hero h1{color:#fff;font-size:24px}
+.doc.cust .inner{padding:24px 30px}
+.doc.cust .ccov{border:1px solid #e3e8ef;border-left:4px solid #1d61d8;border-radius:8px;padding:11px 14px;margin-bottom:9px}
+.mailbox{width:100%;min-height:420px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.55}
+@media print{
+  body *{visibility:hidden}
+  .modal-bg,.modal,.modal-b,.doc,.doc *{visibility:visible}
+  .modal-bg{position:absolute;inset:0;background:#fff;padding:0;display:block}
+  .modal{box-shadow:none;width:100%}
+  .modal-h,.no-print{display:none !important}
+  .modal-b{max-height:none;overflow:visible;padding:0}
+  .doc{border:0;border-radius:0}
+}
+@media (max-width:1180px){ .g4{grid-template-columns:repeat(2,minmax(0,1fr))} .fin-split{grid-template-columns:minmax(0,1fr)} .monitor{position:static} }
+@media (max-width:900px){
+  .app{flex-direction:column}
+  .rail{position:static;width:100%;flex:none;height:auto}
+  .rail nav{display:none;padding-bottom:12px}
+  .rail.open nav{display:block}
+  .rail-foot{display:none}
+  .menu-btn{display:inline-flex;margin-left:auto}
+  .rail-brand{border-bottom:0}
+  .g3,.g2{grid-template-columns:minmax(0,1fr)}
+  .view{padding:14px}
+  .topbar{padding:10px 14px}
+}
+@media (max-width:620px){ .g4{grid-template-columns:minmax(0,1fr)} }
+@media (prefers-reduced-motion:reduce){*{transition:none !important;animation:none !important}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div id="overlay"></div>
+<script>
+/* =====================================================================
+   DEALERSHIP COMMAND CENTER — HTML PREVIEW (DEMO / MOCK DATA ONLY)
+   Layer 1: DATA — brands, dealership group, users, products, demo deals
+   ===================================================================== */
+(function () {
+"use strict";
+
+/* Brand registry. finLabel is the customer-facing financial services name. */
+var BRANDS = {
+  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", finLabel:"NISSAN FINANCIAL SERVICES" },
+  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", finLabel:"INFINITI FINANCIAL SERVICES" },
+  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", finLabel:"TOYOTA FINANCIAL SERVICES" },
+  honda:    { key:"honda",    label:"Honda",     mark:"HON", finLabel:"HONDA FINANCIAL SERVICES" },
+  ford:     { key:"ford",     label:"Ford",      mark:"FRD", finLabel:"FORD CREDIT FINANCIAL SERVICES" },
+  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", finLabel:"HYUNDAI MOTOR FINANCE" },
+  kia:      { key:"kia",      label:"Kia",       mark:"KIA", finLabel:"KIA FINANCE" },
+  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", finLabel:"GM FINANCIAL" },
+  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", finLabel:"MAZDA FINANCIAL SERVICES" },
+  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", finLabel:"BMW FINANCIAL SERVICES" }
+};
+
+/* The three presentation packages. The brand name is prefixed at runtime,
+   so a Nissan store sees NISSAN PREFERRED and a Ford store sees FORD PREFERRED. */
+var PACKAGES = [
+  { key:"preferred", suffix:"PREFERRED", blurb:"Everything we recommend" },
+  { key:"essential", suffix:"ESSENTIAL", blurb:"The coverage most owners keep" },
+  { key:"basic",     suffix:"BASIC",     blurb:"Core protection only" }
+];
+
+/* Dealership group — a master administrator can create more of these. */
+var DEALERSHIPS = [];
+
+var USERS = [
+  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
+];
+
+/* Product master. desc is used only in the emailed presentation, never on the
+   customer display. benefit is the persuasive line used in that email. */
+var PRODUCTS = [
+  {
+    id:"asp", code:"ASP", name:"ASP/CPO Platinum Program", category:"Mechanical", active:true, taxRule:"standard",
+    uses:{ term:true, km:true, deductible:true, interval:false },
+    terms:[36,48,60,72,84,96,120], kms:[60000,80000,100000,120000,160000,200000], deductibles:[0,100,200],
+    costFactor:0.42,
+    desc:"Platinum level mechanical coverage on the components that cost the most to repair, including parts, labour and diagnostic time, honoured at any authorized dealer in Canada.",
+    benefit:"One covered repair usually costs more than the whole program. This keeps a four figure repair bill from landing on you three years from now, and it transfers to the next owner, which protects your resale value.",
+    pricing:{ base:1195, term:{36:0,48:220,60:430,72:690,84:960,96:1240,120:1640}, km:{60000:0,80000:130,100000:260,120000:390,160000:640,200000:900}, deductible:{0:260,100:110,200:0} }
+  },
+  {
+    id:"ppm", code:"PPM", name:"Prepaid Maintenance", category:"Maintenance", active:true, taxRule:"standard",
+    uses:{ term:false, km:true, deductible:false, interval:true },
+    kms:[24000,40000,60000,80000,100000,120000], intervals:[8000,12000,16000],
+    costFactor:0.55,
+    desc:"Prepays your scheduled maintenance visits at today's prices, including oil and filter changes, multi point inspections and tire rotations.",
+    benefit:"Service prices go up every year. You are locking in today's price, the work is done by factory trained technicians, and your maintenance record stays complete, which is exactly what a buyer or an appraiser wants to see.",
+    pricing:{ base:395, km:{24000:0,40000:240,60000:470,80000:690,100000:900,120000:1120}, interval:{8000:290,12000:150,16000:0} }
+  },
+  {
+    id:"trp", code:"TRP", name:"Tire & Rim Protection", category:"Road Hazard", active:true, taxRule:"standard",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84],
+    costFactor:0.38,
+    desc:"Repairs or replaces tires and rims damaged by potholes, nails, glass and other road hazards, with no limit on the number of claims.",
+    benefit:"A single wheel and tire on this vehicle runs several hundred dollars, and our roads are hard on both. There is no claim limit, so one bad pothole in year two has already paid for the coverage.",
+    pricing:{ base:595, term:{36:0,48:120,60:240,72:360,84:480} }
+  },
+  {
+    id:"app", code:"APP", name:"Appearance Protection", category:"Appearance", active:true, taxRule:"standard",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84],
+    costFactor:0.34,
+    desc:"Paint and interior protection against acid rain, bird droppings, tree sap, road salt, rips, burns and permanent staining.",
+    benefit:"Winter salt and summer sap are what make a three year old car look five. This keeps the finish and the interior looking the way it does today, and that shows up directly in what the vehicle is worth at trade in.",
+    pricing:{ base:749, term:{36:0,48:100,60:200,72:300,84:400} }
+  },
+  {
+    id:"atr", code:"ATR", name:"Anti-Theft & Recovery", category:"Security", active:true, taxRule:"standard",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84,96],
+    costFactor:0.30,
+    desc:"Etched vehicle identification and a recovery service that works with police to locate your vehicle, plus a benefit toward a replacement if it is not recovered.",
+    benefit:"Vehicles in this segment are among the most targeted in the province. Etching makes yours far less attractive to a thief, and if it does go missing you get help recovering it plus a benefit toward the replacement.",
+    pricing:{ base:499, term:{36:0,48:80,60:160,72:240,84:320,96:400} }
+  },
+  {
+    id:"vrc", code:"VRC", name:"Vehicle Replacement Coverage", category:"Insurance", active:true, taxRule:"vrc",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84],
+    costFactor:0.45,
+    desc:"If your vehicle is written off as a total loss, this coverage puts you into a comparable new vehicle rather than settling for depreciated value.",
+    benefit:"Your insurer pays what the vehicle is worth on the day of the loss, not what it costs to replace it. This covers that gap with a new vehicle instead of a cheque that leaves you shopping with less than you started with.",
+    pricing:{ base:895, term:{36:0,48:150,60:300,72:450,84:600} }
+  },
+  {
+    id:"gap", code:"GAP", name:"Guaranteed Asset Protection", category:"Loan", active:true, taxRule:"standard",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[48,60,72,84,96],
+    costFactor:0.40,
+    desc:"Covers the gap between your insurance settlement and the balance remaining on your finance contract if the vehicle is stolen or written off.",
+    benefit:"On a longer term the balance owing stays above the vehicle's value for the first few years. Without this you can lose the vehicle and still owe thousands on it. This closes that gap so a total loss does not follow you.",
+    pricing:{ base:695, term:{48:0,60:120,72:240,84:360,96:480} }
+  },
+  {
+    id:"key", code:"KEY", name:"Key Replacement", category:"Convenience", active:true, taxRule:"standard",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72],
+    costFactor:0.32,
+    desc:"Replaces lost, stolen or damaged keys and remotes, including cutting, programming and roadside lockout assistance.",
+    benefit:"A single smart key for this vehicle is a few hundred dollars once it is cut and programmed. This replaces them and gets you back on the road the same day instead of waiting on a tow.",
+    pricing:{ base:349, term:{36:0,48:60,60:120,72:180} }
+  },
+  {
+    id:"cpp", code:"CPP", name:"Ceramic Paint Protection", category:"Appearance", active:true, taxRule:"standard",
+    uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,60,84],
+    costFactor:0.40,
+    desc:"A professionally applied ceramic coating that protects the factory finish and makes the vehicle easier to keep clean.",
+    benefit:"The coating does the work a weekly wash cannot. Dirt and road film release far more easily, and the factory finish stays sharp instead of dulling out over the first few winters.",
+    pricing:null   /* deliberately not configured — the FSM must enter a price */
+  }
+];
+
+var CUSTOMERS = [];
+var VEHICLES = [];
+
+
+window.__DCC_DATA__ = { BRANDS:BRANDS, PACKAGES:PACKAGES, DEALERSHIPS:DEALERSHIPS, USERS:USERS,
+  PRODUCTS:PRODUCTS, CUSTOMERS:CUSTOMERS, VEHICLES:VEHICLES };
+})();
+/* =====================================================================
+   Layer 2: STATE HELPERS + THE SHARED CALCULATION ENGINE
+   One transaction, one engine. FSM display, customer display, prints,
+   the emailed presentation and reporting all read these functions.
+   ===================================================================== */
+(function () {
+"use strict";
+var D = window.__DCC_DATA__;
+
+function clone(o){ return JSON.parse(JSON.stringify(o)); }
+function uid(p){ return p + "-" + Math.random().toString(36).slice(2,8); }
+function money(n){ if (n === null || n === undefined || isNaN(n)) return "—";
+  return "$" + Number(n).toLocaleString("en-CA",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function money0(n){ if (n === null || n === undefined || isNaN(n)) return "—";
+  return "$" + Math.round(Number(n)).toLocaleString("en-CA"); }
+function km(n){ return Number(n).toLocaleString("en-CA") + " km"; }
+function esc(s){ return String(s === null || s === undefined ? "" : s)
+  .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ if(!iso) return "—";
+  var d = new Date(iso + (iso.length === 10 ? "T12:00:00" : ""));
+  return d.toLocaleDateString("en-CA",{year:"numeric",month:"short",day:"2-digit"}); }
+function freqLabel(f){ return f === "biweekly" ? "bi-weekly" : "monthly"; }
+
+function newTransaction(fsmUserId, dealershipId){
+  return {
+    id: uid("DEMO"), createdAt: todayISO(), type:"Finance", status:"Open",
+    fsmUserId: fsmUserId || null, dealershipId: dealershipId || null,
+    customer:{ id:null, name:"", phone:"", email:"", address:"" },
+    vehicle:{ id:null, year:"", make:"", model:"", stock:"", vin:"", odometer:"", condition:"New", price:null },
+    finance:{ tradeAllowance:0, tradePayout:0, downPayment:0, fees:[], feeAmount:0, rates:{}, terms:[], frequency:null },
+    lines:[],   /* { lineId, productId, term, km, interval, deductible, price, priceOverridden, packages{} } */
+    display:{ mode:"welcome", showPayment:true, selection:null }
+  };
+}
+function primaryTerm(tx){
+  var ts = (tx.finance.terms || []).slice().sort(function(a,b){ return a-b; });
+  return ts.length ? ts[0] : null;
+}
+function sortedTerms(tx){ return (tx.finance.terms || []).slice().sort(function(a,b){ return a-b; }); }
+
+function productById(state, id){
+  for (var i=0;i<state.products.length;i++) if (state.products[i].id === id) return state.products[i];
+  return null;
+}
+function priceFor(product, line){
+  if (!product || !product.pricing) return null;
+  var p = product.pricing, total = Number(p.base || 0), part;
+  function need(flag, key, val){
+    if (!flag) return true;
+    if (val === null || val === undefined || val === "") return false;
+    part = p[key] ? p[key][val] : undefined;
+    if (part === undefined) return false;
+    total += part; return true;
+  }
+  if (!need(product.uses.term, "term", line.term)) return null;
+  if (!need(product.uses.km, "km", line.km)) return null;
+  if (!need(product.uses.interval, "interval", line.interval)) return null;
+  if (!need(product.uses.deductible, "deductible", line.deductible)) return null;
+  return Math.round(total);
+}
+function taxRateFor(product, taxCfg){
+  if (!product || product.taxRule === "exempt") return 0;
+  if (product.taxRule === "vrc") return Number(taxCfg.vrc)/100;
+  return Number(taxCfg.standard)/100;
+}
+function periodsPerYear(freq){ return freq === "biweekly" ? 26 : 12; }
+function payment(principal, aprPct, months, freq){
+  if (!principal || principal <= 0 || !months) return 0;
+  var ppy = periodsPerYear(freq), n = Math.round(months/12*ppy), r = (Number(aprPct)||0)/100/ppy;
+  if (n <= 0) return 0;
+  if (r === 0) return principal / n;
+  return principal * r / (1 - Math.pow(1+r,-n));
+}
+function brandOf(state){
+  var d = state.config || {};
+  return D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+}
+function packageLabel(state, suffix){
+  return (brandOf(state).label + " " + suffix).toUpperCase();
+}
+
+/* -------- the single totals engine -------- */
+function totals(state, tx){
+  var taxCfg = state.config.tax, fin = state.config.finance;
+  var lines = [], sub = 0, taxStd = 0, taxVrc = 0, cost = 0, unpriced = 0, i;
+
+  for (i=0;i<tx.lines.length;i++){
+    var l = tx.lines[i], prod = productById(state, l.productId);
+    if (!prod) continue;
+    if (!l.packages) l.packages = { preferred:true, essential:false, basic:false };
+    if (l.declined === undefined) l.declined = false;
+    var configured = priceFor(prod, l);
+    var price = (l.price === null || l.price === undefined || l.price === "") ? configured : Number(l.price);
+    var rate = taxRateFor(prod, taxCfg);
+    var priced = !(price === null || price === undefined || isNaN(price));
+    if (!priced && !l.declined) unpriced++;
+    var amount = priced ? price : 0;
+    var tax = Math.round(amount*rate*100)/100;
+    if (!l.declined){
+      if (prod.taxRule === "vrc") taxVrc += tax; else taxStd += tax;
+      sub += amount; cost += Math.round(amount*(prod.costFactor||0));
+    }
+    var termForDay = (prod.uses.term && l.term) ? Number(l.term) : (primaryTerm(tx) || 60);
+    var days = termForDay * 30.44;
+    var perDay = (priced && days > 0) ? Math.round((amount/days)*100)/100 : null;
+    lines.push({ lineId:l.lineId, product:prod, cfg:l, price: priced ? amount : null, configuredPrice:configured,
+      overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax,
+      total:Math.round((amount+tax)*100)/100, cost:Math.round(amount*(prod.costFactor||0)), perDay:perDay });
+  }
+
+  var productsSub = Math.round(sub*100)/100;
+  var productsTax = Math.round((taxStd+taxVrc)*100)/100;
+  var productsTotal = Math.round((productsSub+productsTax)*100)/100;
+
+  var vPrice = Number(tx.vehicle.price)||0, adminFee = Number(fin.adminFee)||0, lic = Number(fin.licensing)||0;
+  var tradeAll = Number(tx.finance.tradeAllowance)||0, tradePay = Number(tx.finance.tradePayout)||0, down = Number(tx.finance.downPayment)||0;
+  var fees = tx.finance.fees || [];
+  var feeAmount = Number(tx.finance.feeAmount) || 0;
+  var feesTotal = Math.round((fees.reduce(function(sum, f){ return sum + (Number(f.amount)||0); }, 0) + feeAmount) * 100) / 100;
+  var taxableVehicle = Math.max(0, vPrice + adminFee - tradeAll);
+  var vehicleTax = Math.round(taxableVehicle*(Number(taxCfg.standard)/100)*100)/100;
+  var baseAmount = Math.max(0, vPrice + adminFee + vehicleTax + lic - tradeAll + tradePay - down + feesTotal);
+  var financed = Math.round((baseAmount + productsTotal)*100)/100;
+
+  var terms = sortedTerms(tx), rates = tx.finance.rates || {};
+  var freq = tx.finance.frequency || null;
+
+  function quotesFor(extraTotal){
+    if (!freq || !terms.length) return [];
+    return terms.map(function(tm){
+      var rateRaw = rates[tm];
+      var hasRate = !(rateRaw === undefined || rateRaw === null || rateRaw === "");
+      var rate = hasRate ? Number(rateRaw) : null;
+      var paymentsCount = Math.round(tm/12*periodsPerYear(freq));
+      if (!hasRate){
+        return { term:tm, frequency:freq, rate:null, basePayment:null, payment:null, difference:null, paymentsCount:paymentsCount };
+      }
+      var base = payment(baseAmount, rate, tm, freq);
+      var full = payment(baseAmount + extraTotal, rate, tm, freq);
+      return { term:tm, frequency:freq, rate:rate, basePayment:Math.round(base*100)/100,
+        payment:Math.round(full*100)/100, difference:Math.round((full-base)*100)/100,
+        paymentsCount:paymentsCount };
+    });
+  }
+
+  /* -------- the three presentation packages -------- */
+  var anyPackaged = lines.some(function(L){
+    var p = L.cfg.packages || {}; return p.preferred || p.essential || p.basic;
+  });
+  var packages = D.PACKAGES.map(function(def){
+    var pl = lines.filter(function(L){ return (L.cfg.packages||{})[def.key]; });
+    var s = 0, tx1 = 0, c = 0, missing = false;
+    pl.forEach(function(L){
+      if (L.price === null) { missing = true; return; }
+      s += L.price; tx1 += L.tax; c += L.cost;
+    });
+    var tot = Math.round((s+tx1)*100)/100;
+    return { key:def.key, suffix:def.suffix, blurb:def.blurb, label:packageLabel(state, def.suffix),
+      lines:pl, count:pl.length, hasUnpriced:missing,
+      sub:Math.round(s*100)/100, tax:Math.round(tx1*100)/100, total:tot,
+      cost:c, gross:Math.round((s-c)*100)/100, quotes:quotesFor(tot) };
+  });
+
+  return {
+    lines:lines, unpricedCount:unpriced, packages:packages, packagesUsed:anyPackaged,
+    productsSub:productsSub, taxStandard:Math.round(taxStd*100)/100, taxVrc:Math.round(taxVrc*100)/100,
+    productsTax:productsTax, productsTotal:productsTotal, productCost:cost,
+    productGross:Math.round((productsSub-cost)*100)/100,
+    vehiclePrice:vPrice, adminFee:adminFee, licensing:lic, vehicleTax:vehicleTax,
+    tradeAllowance:tradeAll, tradePayout:tradePay, downPayment:down,
+    baseAmount:Math.round(baseAmount*100)/100, amountFinanced:financed,
+    fees:fees, feeAmount:feeAmount, feesTotal:feesTotal, terms:terms, term:primaryTerm(tx), rates:rates, frequency:freq,
+    quotes:quotesFor(productsTotal), baseQuotes:quotesFor(0)
+  };
+}
+
+function validate(state, tx){
+  var t = totals(state, tx), errs = [], warns = [];
+  if (!tx.fsmUserId) errs.push("Assign an FSM to this deal before completing it.");
+  if (!tx.customer.name) errs.push("Add a customer before completing the transaction.");
+  if (!tx.vehicle.model || !tx.vehicle.stock) errs.push("Enter the vehicle model and stock number.");
+  if (!tx.vehicle.price) errs.push("Enter the vehicle selling price.");
+  if (!t.terms.length) errs.push("Select at least one finance term to present.");
+  if (!tx.finance.frequency) errs.push("Select a payment frequency.");
+  t.terms.forEach(function(tm){
+    var r = (tx.finance.rates || {})[tm];
+    if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
+  });
+  if (!tx.lines.length) warns.push("No products are selected. The customer display will show the welcome screen only.");
+  else if (!t.packagesUsed) warns.push("No product has been assigned to a package yet, so the customer display is showing every selected product as one package.");
+  for (var i=0;i<t.lines.length;i++){
+    var L = t.lines[i], p = L.product, c = L.cfg;
+    if (c.declined) continue;
+    if (p.uses.term && !c.term) errs.push(p.name + ": select a term.");
+    if (p.uses.km && !c.km) errs.push(p.name + ": select kilometres.");
+    if (p.uses.interval && !c.interval) errs.push(p.name + ": select a maintenance interval.");
+    if (p.uses.deductible && (c.deductible === null || c.deductible === undefined || c.deductible === "")) errs.push(p.name + ": select a deductible.");
+    if (L.price === null) errs.push(p.name + ": price is not configured — enter a price to continue.");
+  }
+  return { ok: errs.length === 0, errors:errs, warnings:warns, totals:t };
+}
+
+/* -------- demo reporting history -------- */
+function buildHistory(state){
+  var rnd = D.lcg(20260916), out = [], i, j;
+  var roster = { d1:["u2","u3","u4","u5"], d2:["u7"] };
+  var today = new Date();
+  for (i=0;i<200;i++){
+    var dealershipId = rnd() < 0.82 ? "d1" : "d2";
+    var fsms = roster[dealershipId];
+    var d = new Date(today.getTime() - Math.floor(rnd()*400)*86400000);
+    var iso = d.toISOString().slice(0,10);
+    var r = rnd(), type = r < 0.68 ? "Finance" : (r < 0.9 ? "Lease" : "Cash");
+    var tx = newTransaction(fsms[Math.floor(rnd()*fsms.length)], dealershipId);
+    tx.id = "DEMO-" + (10000+i); tx.createdAt = iso; tx.type = type; tx.status = "Completed";
+    tx.customer = { id:null, name:D.DEMO_NAMES[Math.floor(rnd()*D.DEMO_NAMES.length)], phone:"", email:"", address:"" };
+    tx.vehicle = { id:null, year:2024+Math.floor(rnd()*3), make: dealershipId === "d2" ? "INFINITI" : "Nissan",
+      model: D.DEMO_MODELS[Math.floor(rnd()*D.DEMO_MODELS.length)], stock:"N-"+(1000+Math.floor(rnd()*8999)),
+      vin:"DEMOVIN"+(100000+Math.floor(rnd()*899999)), odometer:Math.floor(rnd()*30000), condition:"New",
+      price:28000+Math.floor(rnd()*36000) };
+    var tm = type === "Cash" ? null : [48,60,72,84,96][Math.floor(rnd()*5)];
+    var histRate = type === "Cash" ? 0 : Math.round((4+rnd()*6)*100)/100;
+    tx.finance = { tradeAllowance: rnd() < .4 ? Math.floor(rnd()*18000) : 0, tradePayout:0,
+      downPayment: Math.floor(rnd()*6)*1000, rates: tm ? (function(){ var o={}; o[tm]=histRate; return o; })() : {},
+      terms: tm ? [tm] : [], frequency: type === "Cash" ? null : (rnd() < .6 ? "biweekly" : "monthly") };
+    var count = Math.floor(rnd()*4.4);
+    var pool = state.products.filter(function(p){ return p.active && p.pricing; });
+    var used = {};
+    for (j=0;j<count;j++){
+      var prod = pool[Math.floor(rnd()*pool.length)];
+      if (!prod || used[prod.id]) continue;
+      used[prod.id] = 1;
+      var line = { lineId:uid("L"), productId:prod.id, term:null, km:null, interval:null, deductible:null,
+        price:null, priceOverridden:false, packages:{ preferred:true, essential:rnd()<.5, basic:rnd()<.25 } };
+      if (prod.uses.term) line.term = prod.terms[Math.floor(rnd()*prod.terms.length)];
+      if (prod.uses.km) line.km = prod.kms[Math.floor(rnd()*prod.kms.length)];
+      if (prod.uses.interval) line.interval = prod.intervals[Math.floor(rnd()*prod.intervals.length)];
+      if (prod.uses.deductible) line.deductible = prod.deductibles[Math.floor(rnd()*prod.deductibles.length)];
+      line.price = priceFor(prod, line);
+      tx.lines.push(line);
+    }
+    out.push(tx);
+  }
+  return out;
+}
+
+window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO,
+  fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
+  productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
+  totals:totals, validate:validate, buildHistory:buildHistory, brandOf:brandOf, packageLabel:packageLabel };
+})();
+/* =====================================================================
+   Layer 3: STORE, SHELL, DASHBOARD, CUSTOMER DISPLAY, FSM DISPLAY
+   ===================================================================== */
+(function () {
+"use strict";
+var D = window.__DCC_DATA__, C = window.__DCC_CORE__;
+var esc = C.esc, money = C.money, money0 = C.money0, km = C.km;
+
+var STORAGE_KEY = "dcc_preview_v2";
+var state = {
+  route:"dashboard",
+  dealerships: C.clone(D.DEALERSHIPS),
+  activeDealershipId:"d1",
+  config:null,
+  products: C.clone(D.PRODUCTS),
+  users: C.clone(D.USERS),
+  customers: C.clone(D.CUSTOMERS),
+  vehicles: C.clone(D.VEHICLES),
+  currentUserId:"u0",
+  tx:null, completed:[], history:[], version:0,
+  ui:{ split:true, present:false, railOpen:false, modal:null, theme:"dark",
+       productEdit:null, userForm:false, dealerForm:null, toast:null,
+       email:{ pkg:"all", term:"all" },
+       reports:{ period:"monthly", from:"", to:"", fsm:"all", product:"all", type:"all", dealership:"active" } }
+};
+state.activeDealershipId = state.dealerships.length ? state.dealerships[0].id : null;
+state.config = state.activeDealershipId ? state.dealerships[0] : null;
+state.tx = state.activeDealershipId ? C.newTransaction(firstFsmFor(state.activeDealershipId) || "u0", state.activeDealershipId) : null;
+state.history = (D.DEMO_NAMES && D.DEMO_NAMES.length) ? C.buildHistory(state) : [];
+
+var channel = null;
+try { if (window.BroadcastChannel) channel = new BroadcastChannel("dcc_preview_v2"); } catch (e) { channel = null; }
+function shareableState(){ return { config:state.config, products:state.products, tx:state.tx, theme:state.ui.theme, version:state.version }; }
+function persist(){
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(shareableState())); } catch (e) {}
+  try { if (channel) channel.postMessage(shareableState()); } catch (e) {}
+}
+function commit(){
+  state.version++;
+  persist();
+  /* Deferred one tick: commit() usually runs inside a "change" handler fired
+     by a field losing focus (e.g. Tab to the next field). This browser only
+     finishes moving focus to that next field AFTER the change event returns —
+     read document.activeElement synchronously here and it still reports
+     <body>. Waiting one tick lets focus land first, so the re-render (which
+     replaces the whole DOM) can correctly find and refocus it. */
+  setTimeout(function(){
+    if (window.__DCC_RENDER__) window.__DCC_RENDER__();
+    if (window.__DCC_PUSH_CUSTOMER__) window.__DCC_PUSH_CUSTOMER__();
+  }, 0);
+}
+window.__DCC_STATE__ = state;
+
+function brand(){ return C.brandOf(state); }
+function dealershipById(id){
+  for (var i=0;i<state.dealerships.length;i++) if (state.dealerships[i].id === id) return state.dealerships[i];
+  return state.dealerships[0];
+}
+function setDealership(id){
+  state.activeDealershipId = id;
+  state.config = dealershipById(id);
+  state.tx = C.newTransaction(firstFsmFor(id), id);
+  applyFinanceDefaults(state.tx);
+}
+function firstFsmFor(id){
+  var u = state.users.filter(function(x){ return x.active && x.dealershipId === id && x.role.indexOf("FSM") !== -1; })[0];
+  return u ? u.id : null;
+}
+function applyFinanceDefaults(tx){
+  var defTerm = state.config.finance.defaultTerm;
+  tx.finance.terms = [defTerm];
+  tx.finance.rates = {};
+  tx.finance.rates[defTerm] = state.config.finance.defaultApr;
+  tx.finance.frequency = state.config.finance.defaultFrequency;
+}
+function userById(id){
+  for (var i=0;i<state.users.length;i++) if (state.users[i].id === id) return state.users[i];
+  return { name:"Unassigned", initials:"--", role:"—", dealershipId:null };
+}
+function currentUser(){ return userById(state.currentUserId); }
+function isMaster(){ return currentUser().role === "Master Administrator"; }
+function isAdmin(){ return isMaster() || currentUser().role === "General Manager"; }
+function storeUsers(){
+  return state.users.filter(function(u){ return isMaster() ? true : u.dealershipId === state.activeDealershipId; });
+}
+function fsmUsers(){
+  return state.users.filter(function(u){ return u.active && u.dealershipId === state.activeDealershipId && u.role !== "Demo" && u.role !== "Master Administrator"; });
+}
+function setPath(obj, path, value){
+  var parts = path.split("."), o = obj;
+  for (var i=0;i<parts.length-1;i++) o = o[parts[i]];
+  o[parts[parts.length-1]] = value;
+}
+function toast(msg, kind){
+  state.ui.toast = { msg:msg, kind:kind||"info" };
+  setTimeout(function(){ if (state.ui.toast && state.ui.toast.msg === msg){ state.ui.toast = null; if (window.__DCC_RENDER__) window.__DCC_RENDER__(); } }, 3800);
+}
+function allDeals(){ return state.history.concat(state.completed); }
+function dealsForStore(){
+  return allDeals().filter(function(d){ return d.dealershipId === state.activeDealershipId; });
+}
+
+/* ---------------- SHELL ----------------
+   Access is role gated. A Master Administrator sees every screen, including
+   Dealerships. A General Manager sees everything except Dealerships (they
+   run one store, they don't create new ones). An FSM Manager additionally
+   oversees Users & access for their own store. A plain FSM — and a time
+   limited Demo account — only sees the deal-facing screens: Finance, Lease,
+   Cash, Products and Reports. */
+function allowedRouteKeys(){
+  var role = currentUser().role;
+  if (role === "Master Administrator") return null;
+  if (role === "General Manager") return ["dashboard","finance","lease","cash","products","reports","users","settings"];
+  if (role === "FSM Manager") return ["dashboard","finance","lease","cash","products","reports","users"];
+  return ["finance","lease","cash","products","reports"];
+}
+function navItems(){
+  var items = [
+    { key:"dashboard", label:"Dashboard", ic:"▤" },
+    { key:"finance", label:"Finance", ic:"◧" },
+    { key:"lease", label:"Lease", ic:"◫", tag:"Soon" },
+    { key:"cash", label:"Cash", ic:"◨", tag:"Soon" },
+    { key:"products", label:"Products", ic:"▦" },
+    { key:"reports", label:"Reports", ic:"▥" },
+    { key:"users", label:"Users & access", ic:"◍" },
+    { key:"settings", label:"Dealership settings", ic:"⚙" }
+  ];
+  if (isMaster()) items.splice(6, 0, { key:"dealerships", label:"Dealerships", ic:"◈" });
+  var allowed = allowedRouteKeys();
+  if (allowed) items = items.filter(function(n){ return allowed.indexOf(n.key) !== -1; });
+  return items;
+}
+function routeTitle(){
+  var n = navItems().filter(function(x){ return x.key === state.route; })[0];
+  return n ? n.label : "Dealership Command Center";
+}
+function renderShell(inner){
+  var b = brand(), u = currentUser();
+  var nav = navItems().map(function(n){
+    return `<button class="nav-item ${state.route===n.key?"active":""}" data-act="route" data-route="${n.key}">
+      <span class="ic">${n.ic}</span><span>${esc(n.label)}</span>${n.tag?`<span class="tagx">${n.tag}</span>`:""}</button>`;
+  }).join("");
+  var isDemoBuild = !!(D.DEMO_NAMES && D.DEMO_NAMES.length);
+  var brandName = state.config ? esc(state.config.name) : "Dealership Command Center";
+  var brandMark = state.config ? esc(state.config.logoMark||b.mark) : "DCC";
+  var brandSub = state.config ? esc(b.label) + " · Command Center" : "No dealership yet";
+  return `<div class="app">
+    <aside class="rail ${state.ui.railOpen?"open":""}">
+      <div class="rail-brand">
+        <div class="badge-logo">${brandMark}</div>
+        <div><div class="nm">${brandName}</div><div class="sb">${brandSub}</div></div>
+        <button class="btn sm ghost menu-btn" data-act="toggle-rail" style="color:#cbd5e1">Menu</button>
+      </div>
+      <nav><div class="nav-group">Operations</div>${nav}</nav>
+      <div class="rail-foot"><div class="userchip"><div class="avatar">${esc(u.initials)}</div>
+        <div><div class="nm">${esc(u.name)}</div><div class="tiny">${esc(u.role)}</div></div></div></div>
+    </aside>
+    <div class="main">
+      <header class="topbar">
+        <h1>${esc(routeTitle())}</h1>
+        <div class="demo">
+          ${(isMaster() && state.dealerships.length) ? `<label class="switch"><span class="muted small">Dealership</span>
+            <select data-act="switch-dealership" style="width:auto;min-width:210px">
+              ${state.dealerships.filter(function(d){ return d.active; }).map(function(d){
+                return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}
+            </select></label>` : ""}
+          <button class="btn sm" data-act="toggle-theme">${state.ui.theme === "dark" ? "Normal" : "Dark"} mode</button>
+          ${isDemoBuild ? `<span class="tag demo">DEMO DATA</span>` : ""}
+          <label class="switch"><span class="muted small">Signed in as</span>
+            <select data-act="switch-user" style="width:auto;min-width:180px">
+              ${state.users.filter(function(x){ return x.active; }).map(function(x){
+                return `<option value="${x.id}" ${x.id===state.currentUserId?"selected":""}>${esc(x.name)} — ${esc(x.role)}</option>`; }).join("")}
+            </select></label>
+        </div>
+      </header>
+      <div class="view">${inner}</div>
+    </div>
+  </div>
+  ${state.ui.toast ? `<div style="position:fixed;left:50%;transform:translateX(-50%);bottom:20px;z-index:90"
+    class="notice ${state.ui.toast.kind==="err"?"err":state.ui.toast.kind==="ok"?"ok":"info"}" role="status">${esc(state.ui.toast.msg)}</div>`:""}`;
+}
+
+/* ---------------- DASHBOARD ---------------- */
+function kpiCard(label, value, detail){
+  return `<div class="card kpi"><div class="lb">${esc(label)}</div><div class="vl num">${value}</div><div class="dt">${detail||""}</div></div>`;
+}
+function viewDashboard(){
+  var deals = dealsForStore(), today = C.todayISO(), month = today.slice(0,7), i;
+  var todays = deals.filter(function(d){ return d.createdAt === today; });
+  var mtd = deals.filter(function(d){ return d.createdAt.slice(0,7) === month; });
+  var gross = 0, prodCount = 0;
+  for (i=0;i<mtd.length;i++){ var t = C.totals(state, mtd[i]); gross += t.productGross; prodCount += t.lines.length; }
+  var withProduct = mtd.filter(function(d){ return d.lines.length > 0; }).length;
+  var pen = mtd.length ? Math.round(withProduct/mtd.length*100) : 0;
+
+  var byFsm = {};
+  for (i=0;i<mtd.length;i++){
+    var d = mtd[i], t2 = C.totals(state, d);
+    if (!byFsm[d.fsmUserId]) byFsm[d.fsmUserId] = { deals:0, gross:0, products:0 };
+    byFsm[d.fsmUserId].deals++; byFsm[d.fsmUserId].gross += t2.productGross; byFsm[d.fsmUserId].products += t2.lines.length;
+  }
+  var fsmRows = Object.keys(byFsm).map(function(k){ return { id:k, v:byFsm[k] }; }).sort(function(a,b){ return b.v.gross-a.v.gross; });
+  var maxG = fsmRows.length ? Math.max(1, fsmRows[0].v.gross) : 1;
+
+  var prodSales = {};
+  for (i=0;i<mtd.length;i++) for (var j=0;j<mtd[i].lines.length;j++){
+    var p = C.productById(state, mtd[i].lines[j].productId); if (!p) continue;
+    prodSales[p.id] = (prodSales[p.id]||0)+1;
+  }
+  var psRows = Object.keys(prodSales).map(function(k){ return { p:C.productById(state,k), n:prodSales[k] }; })
+    .sort(function(a,b){ return b.n-a.n; }).slice(0,6);
+  var maxP = psRows.length ? psRows[0].n : 1;
+  var recent = deals.slice().sort(function(a,b){ return a.createdAt<b.createdAt?1:-1; }).slice(0,8);
+
+  return `<div class="grid g4" style="margin-bottom:16px">
+    ${kpiCard("Deals today", todays.length, todays.length ? "Completed in the FSM office" : "No deals logged yet today")}
+    ${kpiCard("Deals this month", mtd.length, withProduct + " with at least one product")}
+    ${kpiCard("Product gross, month to date", money0(gross), "Retail less product cost")}
+    ${kpiCard("Gross per deal", money0(mtd.length ? gross/mtd.length : 0), pen + "% of deals took a product")}
+  </div>
+  <div class="grid g2">
+    <div class="card"><div class="card-h"><h2>FSM activity this month</h2>
+      <div class="sp"><button class="btn sm" data-act="route" data-route="reports">Open reports</button></div></div>
+      <div class="card-b">${fsmRows.length ? `<div class="tablewrap"><table>
+        <thead><tr><th>FSM</th><th class="right">Deals</th><th class="right">Products</th><th class="right">Gross</th><th style="width:130px">Share</th></tr></thead>
+        <tbody>${fsmRows.map(function(r){ var u = userById(r.id); return `<tr>
+          <td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(u.role)}</div></td>
+          <td class="right num">${r.v.deals}</td><td class="right num">${r.v.products}</td>
+          <td class="right num">${money0(r.v.gross)}</td>
+          <td><div class="bar"><i style="width:${Math.max(4,Math.round(r.v.gross/maxG*100))}%"></i></div></td></tr>`; }).join("")}
+        </tbody></table></div>` : `<div class="empty">No deals recorded this month yet.</div>`}</div></div>
+    <div class="card"><div class="card-h"><h2>Product sales this month</h2></div>
+      <div class="card-b">${psRows.length ? `<div class="tablewrap"><table>
+        <thead><tr><th>Product</th><th class="right">Sold</th><th style="width:150px">Volume</th></tr></thead>
+        <tbody>${psRows.map(function(r){ return `<tr><td>${esc(r.p.name)}<div class="tiny muted">${esc(r.p.category)}</div></td>
+          <td class="right num">${r.n}</td><td><div class="bar"><i style="width:${Math.max(4,Math.round(r.n/maxP*100))}%"></i></div></td></tr>`; }).join("")}
+        </tbody></table></div>` : `<div class="empty">No products sold this month yet.</div>`}</div></div>
+  </div>
+  <div class="card" style="margin-top:16px"><div class="card-h"><h2>Recent transactions</h2>
+    <div class="sp"><button class="btn sm primary" data-act="new-deal">Start a new deal</button></div></div>
+    <div class="card-b"><div class="tablewrap"><table>
+      <thead><tr><th>Date</th><th>Deal</th><th>Customer</th><th>Vehicle</th><th>Type</th><th>FSM</th><th class="right">Products</th><th class="right">Gross</th></tr></thead>
+      <tbody>${recent.map(function(d){ var t = C.totals(state,d); return `<tr>
+        <td class="nowrap">${C.fmtDate(d.createdAt)}</td><td class="nowrap">${esc(d.id)}</td>
+        <td>${esc(d.customer.name||"—")}</td><td>${esc(d.vehicle.year+" "+d.vehicle.model)}</td>
+        <td><span class="tag">${esc(d.type)}</span></td><td>${esc(userById(d.fsmUserId).name)}</td>
+        <td class="right num">${t.lines.length}</td><td class="right num">${money0(t.productGross)}</td></tr>`; }).join("")}
+      </tbody></table></div></div></div>`;
+}
+function viewUnderConstruction(name){
+  return `<div class="card"><div class="card-b"><div class="uc">
+    <div class="bigtag">UNDER CONSTRUCTION</div>
+    <h2>${esc(name)} is not built yet</h2>
+    <p class="muted" style="max-width:52ch">${esc(name)} will be built after the Finance module is validated and approved. Nothing here is connected to Finance, so it cannot affect a live finance transaction.</p>
+    <button class="btn primary" data-act="route" data-route="finance">Go to Finance</button></div></div></div>`;
+}
+
+/* ---------------- CUSTOMER DISPLAY ----------------
+   Product name plus the term and kilometres chosen. No explanations,
+   no internal pricing, no packages or terms the FSM did not select.    */
+function lineConfigText(L){
+  var bits = [];
+  if (L.product.uses.term && L.cfg.term) bits.push(L.cfg.term + " months");
+  if (L.product.uses.km && L.cfg.km) bits.push(km(L.cfg.km));
+  if (L.product.uses.interval && L.cfg.interval) bits.push("every " + km(L.cfg.interval));
+  if (L.product.uses.deductible && L.cfg.deductible !== null && L.cfg.deductible !== undefined && L.cfg.deductible !== "")
+    bits.push(Number(L.cfg.deductible) === 0 ? "no deductible" : "$" + L.cfg.deductible + " deductible");
+  return bits.join(" · ");
+}
+/* If the FSM has recorded which package and term the customer chose,
+   every customer-facing surface (this screen, the customer print, the
+   emailed follow-up) narrows to that one package and that one term.
+   Until then they show everything that has been assigned to a package. */
+function packagesToShow(t, tx){
+  var list, nonDeclined = t.lines.filter(function(L){ return !L.cfg.declined; });
+  if (t.packagesUsed) list = t.packages.filter(function(p){ return p.count > 0; });
+  else if (nonDeclined.length) list = [{ key:"selected", label:"SELECTED PACKAGE", blurb:"", lines:nonDeclined,
+    count:nonDeclined.length, quotes:t.quotes }];
+  else list = [];
+  var sel = tx && tx.display && tx.display.selection;
+  if (sel && sel.package){
+    list = list.filter(function(p){ return p.key === sel.package; });
+    list = list.map(function(p){
+      var q = sel.term ? p.quotes.filter(function(x){ return x.term === sel.term; }) : p.quotes;
+      return { key:p.key, label:p.label, lines:p.lines, count:p.count, quotes:q };
+    });
+  }
+  return list;
+}
+function renderCustomerDisplay(tx){
+  var b = brand(), cfg = state.config, t = C.totals(state, tx);
+  var head = `<div class="cd-head"><div class="fs">${esc(b.finLabel)}</div>
+    <div class="cd-tagline">Stronger Coverage, Smarter Ownership, That's the Difference.</div></div>`;
+  var freqWord = tx.finance.frequency ? C.freqLabel(tx.finance.frequency) : "bi-weekly or monthly";
+  var noteBar = `<div class="cd-note"><div class="nt1">Premium protection for your ${esc(b.label)} investment</div>
+    <div class="nt2">All payments shown are ${freqWord}, interest and ${esc(state.config.tax.standard)}% HST included.</div></div>`;
+  var foot = `<div class="cd-foot"><span>${esc(cfg.name)} — ${esc(cfg.address)}, ${esc(cfg.city)}</span><span>${esc(cfg.phone)}</span>
+    <span style="margin-left:auto">Preview — demonstration only</span></div>`;
+
+  if (tx.display.mode === "welcome" || tx.display.mode === "thankyou" || !tx.lines.length){
+    var done = tx.display.mode === "thankyou";
+    var body;
+    if (done){
+      body = `<div class="hw">Congratulations${tx.customer.name ? ", " + esc(tx.customer.name.split(" ")[0]) : ""}</div>
+        <p class="muted" style="max-width:46ch">Your vehicle is protected and your paperwork is complete.</p>`;
+    } else {
+      body = `<div class="hw">Welcome${tx.customer.name ? " " + esc(tx.customer.name) : ""}</div>
+        <div class="cd-sub1">Designing What Fits You Drive</div>
+        <p class="muted" style="max-width:44ch">Your finance manager will help you choose the right coverage.</p>`;
+    }
+    return `<div class="cd">${head}<div class="cd-welcome">${body}</div>${noteBar}${foot}</div>`;
+  }
+
+  var shown = packagesToShow(t, tx);
+  var cards = shown.map(function(p){
+    var items = p.lines.map(function(L){
+      var cfgTxt = lineConfigText(L);
+      return `<div class="pi"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div>`;
+    }).join("");
+    var payBox = (tx.display.showPayment && p.quotes && p.quotes.length)
+      ? `<div class="paybox">${p.quotes.map(function(q){
+          return `<div class="payterm"><div class="pt-term">${q.term} mo</div>
+            <div class="pt-amt">${q.payment===null?"—":money(q.payment)}</div>
+            <div class="pt-freq muted">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div></div>`;
+        }).join("")}</div>` : "";
+    return `<div class="pkgcard"><div class="ph">${esc(p.label)}</div>${payBox}<div class="pb">${items}</div></div>`;
+  }).join("");
+
+  var declinedLines = t.lines.filter(function(L){ return L.cfg.declined; });
+  var declineHtml = declinedLines.length ? `<div class="cd-decline">${declinedLines.map(function(L){
+    return `<div class="decline-card">
+      <div class="dc-q">Still thinking about <strong>${esc(L.product.name)}</strong>?</div>
+      <div class="dc-amt">${L.perDay===null?"—":money(L.perDay)}<span> per day</span></div>
+      <div class="dc-sub">Are you sure you want to decline this protection?</div>
+    </div>`;
+  }).join("")}</div>` : "";
+
+  return `<div class="cd">${head}<div class="cd-body">
+    <div class="cd-veh"><div class="v1">${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}</div>
+      <div class="muted small">${tx.customer.name ? "Prepared for " + esc(tx.customer.name) : ""}</div></div>
+    <div class="pkgrid">${cards}</div>
+  </div>${declineHtml}${noteBar}${foot}</div>`;
+}
+
+/* ---------------- FSM DISPLAY ---------------- */
+function stepState(tx){
+  var t = C.totals(state, tx);
+  return [
+    { n:1, label:"Customer", done: !!tx.customer.name },
+    { n:2, label:"Vehicle", done: !!(tx.vehicle.model && tx.vehicle.stock && tx.vehicle.price) },
+    { n:3, label:"Finance setup", done: !!(t.terms.length && tx.finance.frequency && t.terms.every(function(tm){
+        var r = (tx.finance.rates||{})[tm]; return r !== undefined && r !== null && r !== ""; })) },
+    { n:4, label:"Products & packages", done: tx.lines.length > 0 && t.unpricedCount === 0 },
+    { n:5, label:"Presentation", done: tx.lines.length > 0 && t.unpricedCount === 0 && tx.display.mode === "package" }
+  ];
+}
+function selectOptions(list, current, fmt){
+  return list.map(function(v){ return `<option value="${v}" ${String(current)===String(v)?"selected":""}>${esc(fmt?fmt(v):v)}</option>`; }).join("");
+}
+function viewFinance(){
+  var tx = state.tx, t = C.totals(state, tx), v = C.validate(state, tx);
+  var steps = stepState(tx);
+
+  var toolbar = `<div class="fin-toolbar">
+    <span class="tag info">Deal ${esc(tx.id)}</span>
+    <span class="tag ${tx.status==="Completed"?"ok":""}">${esc(tx.status)}</span>
+    <label class="switch"><span class="muted small">FSM</span>
+      <select data-bind="tx.fsmUserId" style="width:auto;min-width:150px">
+        <option value="">Unassigned</option>
+        ${fsmUsers().map(function(u){ return `<option value="${u.id}" ${u.id===tx.fsmUserId?"selected":""}>${esc(u.name)}</option>`; }).join("")}
+      </select></label>
+    <div class="sp">
+      <button class="btn sm ${state.ui.split?"on":""}" data-act="toggle-split">Split view</button>
+      <button class="btn sm" data-act="open-customer-window">Customer display ↗</button>
+      <button class="btn sm" data-act="present">Full screen</button>
+      <button class="btn sm" data-act="email">Email the package</button>
+      <button class="btn sm" data-act="print-internal">Internal print</button>
+      <button class="btn sm" data-act="print-customer">Customer copy</button>
+      <button class="btn sm" data-act="new-deal">New deal</button>
+      <button class="btn sm primary" data-act="complete">Complete transaction</button>
+    </div></div>`;
+
+  var stepBar = `<div class="steps">${steps.map(function(s){
+    return `<div class="step ${s.done?"done":""}" data-act="scroll-step" data-step="${s.n}">
+      <span class="n">${s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
+
+  var customerCard = `<div class="card" id="step-1"><div class="card-h"><h2>1 · Customer</h2>
+      <div class="sp"><select data-act="pick-customer" style="width:auto;min-width:210px">
+        <option value="">Load a demo customer…</option>
+        ${state.customers.filter(function(c){ return c.dealershipId === state.activeDealershipId; }).map(function(c){
+          return `<option value="${c.id}" ${tx.customer.id===c.id?"selected":""}>${esc(c.name)}</option>`; }).join("")}
+      </select></div></div>
+    <div class="card-b"><div class="inline">
+      <label class="f"><span>Full name</span><input type="text" value="${esc(tx.customer.name)}" data-bind="tx.customer.name"></label>
+      <label class="f"><span>Phone</span><input type="text" value="${esc(tx.customer.phone)}" data-bind="tx.customer.phone"></label>
+      <label class="f"><span>Email</span><input type="text" value="${esc(tx.customer.email)}" data-bind="tx.customer.email"></label>
+    </div>
+    <label class="f"><span>Address</span><input type="text" value="${esc(tx.customer.address)}" data-bind="tx.customer.address"></label></div></div>`;
+
+  var vehicleCard = `<div class="card" id="step-2"><div class="card-h"><h2>2 · Vehicle</h2>
+      <div class="sp"><select data-act="pick-vehicle" style="width:auto;min-width:230px">
+        <option value="">Load a demo vehicle…</option>
+        ${state.vehicles.filter(function(x){ return x.dealershipId === state.activeDealershipId; }).map(function(x){
+          return `<option value="${x.id}" ${tx.vehicle.id===x.id?"selected":""}>${esc(x.year+" "+x.model+" — "+x.stock)}</option>`; }).join("")}
+      </select></div></div>
+    <div class="card-b"><div class="inline">
+      <label class="f"><span>Year</span><input type="number" value="${esc(tx.vehicle.year)}" data-bind="tx.vehicle.year" data-type="num"></label>
+      <label class="f"><span>Make</span><input type="text" value="${esc(tx.vehicle.make)}" data-bind="tx.vehicle.make"></label>
+      <label class="f"><span>Model</span><input type="text" value="${esc(tx.vehicle.model)}" data-bind="tx.vehicle.model"></label>
+      <label class="f"><span>Stock number</span><input type="text" value="${esc(tx.vehicle.stock)}" data-bind="tx.vehicle.stock"></label>
+    </div><div class="inline">
+      <label class="f"><span>VIN</span><input type="text" value="${esc(tx.vehicle.vin)}" data-bind="tx.vehicle.vin"></label>
+      <label class="f"><span>Odometer (km)</span><input type="number" value="${esc(tx.vehicle.odometer)}" data-bind="tx.vehicle.odometer" data-type="num"></label>
+      <label class="f"><span>Condition</span><select data-bind="tx.vehicle.condition">${selectOptions(["New","Certified Pre-Owned","Used"], tx.vehicle.condition)}</select></label>
+      <label class="f"><span>Selling price</span><input type="number" value="${tx.vehicle.price===null?"":esc(tx.vehicle.price)}" data-bind="tx.vehicle.price" data-type="num"></label>
+    </div></div></div>`;
+
+  var termChoices = [24,36,48,60,72,84,96];
+  var termChips = termChoices.map(function(tm){
+    var on = t.terms.indexOf(tm) !== -1;
+    return `<label class="termchip ${on?"on":""}"><input type="checkbox" data-act="toggle-term" data-term="${tm}" ${on?"checked":""}>${tm} Months</label>`;
+  }).join("");
+  var rateInputs = t.terms.length ? `<div class="cfgrid" style="margin-top:10px">${t.terms.map(function(tm){
+    var r = tx.finance.rates && tx.finance.rates[tm] !== undefined && tx.finance.rates[tm] !== null ? tx.finance.rates[tm] : "";
+    return `<label class="f"><span>${tm} months — rate (APR %)</span><input type="number" step="0.01" value="${esc(r)}" data-act="term-rate" data-term="${tm}"></label>`;
+  }).join("")}</div>` : "";
+
+  var financeCard = `<div class="card" id="step-3"><div class="card-h"><h2>3 · Finance setup</h2>
+    <div class="sp"><span class="tag">${t.terms.length ? t.terms.length + " term" + (t.terms.length>1?"s":"") + " presented" : "No term selected"}</span></div></div>
+    <div class="card-b">
+      <div class="inline">
+        <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.finance.tradeAllowance)}" data-bind="tx.finance.tradeAllowance" data-type="num"></label>
+        <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.finance.tradePayout)}" data-bind="tx.finance.tradePayout" data-type="num"></label>
+        <label class="f"><span>Cash down</span><input type="number" value="${esc(tx.finance.downPayment)}" data-bind="tx.finance.downPayment" data-type="num"></label>
+        <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.finance.feeAmount)}" data-bind="tx.finance.feeAmount" data-type="num" placeholder="0.00"></label>
+      </div>
+      <label class="f" style="max-width:280px"><span>Payment frequency shown to the customer</span>
+        <div class="chiprow">
+          <button type="button" class="btn sm ${tx.finance.frequency==="monthly"?"on":""}" data-act="set-frequency" data-freq="monthly">Monthly</button>
+          <button type="button" class="btn sm ${tx.finance.frequency==="biweekly"?"on":""}" data-act="set-frequency" data-freq="biweekly">Bi-weekly</button>
+        </div>
+      </label>
+      <div style="margin-top:4px">
+        <div class="small muted" style="margin-bottom:6px">Finance terms to present — tick every term you want the customer to see, then set that term's own rate</div>
+        <div class="chiprow">${termChips}</div>
+        ${rateInputs}
+      </div>
+      <div class="divider"></div>
+      ${t.baseQuotes.length ? `<div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th class="right">Rate</th><th class="right">Base payment, no products</th><th class="right">Payments</th></tr></thead>
+        <tbody>${t.baseQuotes.map(function(q){ return `<tr><td>${q.term} Months</td>
+          <td class="right num">${q.rate===null?`<span class="tag warn">Enter rate</span>`:q.rate+"%"}</td>
+          <td class="right num">${q.basePayment===null?"—":money(q.basePayment)+" "+C.freqLabel(q.frequency)}</td>
+          <td class="right num">${q.paymentsCount}</td></tr>`; }).join("")}</tbody></table></div>`
+        : `<div class="notice warn">Pick at least one term and a payment frequency to see payments.</div>`}
+    </div></div>`;
+
+  var productRows = state.products.filter(function(p){ return p.active; }).map(function(p){
+    var line = tx.lines.filter(function(l){ return l.productId === p.id; })[0];
+    var L = line ? t.lines.filter(function(x){ return x.cfg.lineId === line.lineId; })[0] : null;
+    var pkgs = line ? (line.packages || {}) : {};
+    var boxes = D.PACKAGES.map(function(def){
+      var on = !!pkgs[def.key];
+      return `<label class="pkgbox ${on?"on":""}"><input type="checkbox" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${esc(C.packageLabel(state, def.suffix))}</label>`;
+    }).join("") + `<label class="pkgbox decline ${line&&line.declined?"on":""}"><input type="checkbox" data-act="toggle-decline" data-product="${p.id}" ${line&&line.declined?"checked":""}>Decline${L&&L.perDay!==null?" ("+money(L.perDay)+"/day)":""}</label>`;
+    var priceNote = !line ? (p.pricing ? "" : `<span class="tag warn">No price set</span>`)
+      : (line.declined ? `<span class="tag danger">Declined</span>`
+      : L.price === null ? `<span class="tag danger">Price not configured — enter a retail price</span>`
+      : (L.overridden ? `<span class="tag warn">Price overridden</span>` : `<span class="tag ok">Configured price</span>`));
+    var fields = "";
+    if (line){
+      var c = line, f2 = [];
+      if (p.uses.term) f2.push(`<label class="f"><span>Term</span><select data-bind="line:${c.lineId}:term" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.terms, c.term, function(x){ return x + " Months"; })}</select></label>`);
+      if (p.uses.km) f2.push(`<label class="f"><span>Kilometres</span><select data-bind="line:${c.lineId}:km" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.kms, c.km, function(x){ return km(x); })}</select></label>`);
+      if (p.uses.interval) f2.push(`<label class="f"><span>Service interval</span><select data-bind="line:${c.lineId}:interval" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.intervals, c.interval, function(x){ return "Every " + km(x); })}</select></label>`);
+      if (p.uses.deductible) f2.push(`<label class="f"><span>Deductible</span><select data-bind="line:${c.lineId}:deductible" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.deductibles, c.deductible, function(x){ return Number(x)===0?"No deductible":"$"+x; })}</select></label>`);
+      f2.push(`<label class="f"><span>Retail price</span><input type="number" value="${L.price===null?"":L.price}" data-bind="line:${c.lineId}:price" data-type="num"
+        placeholder="${L.configuredPrice===null?"Enter price":L.configuredPrice}"></label>`);
+      fields = `<div class="cfgrid">${f2.join("")}</div>`;
+    }
+    return `<div class="prodrow">
+      <div class="phrow">
+        <div class="left"><span class="nm">${esc(p.name)}</span><span class="tag">${esc(p.category)}</span>${priceNote}</div>
+        <div class="right">${boxes}</div>
+      </div>
+      <div class="phrow" style="margin-top:8px">
+        <div class="left"><span class="tag ${p.taxRule==="vrc"?"info":""}">Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</span></div>
+        <div class="right">${line ? `<button class="btn sm" data-act="reset-price" data-line="${line.lineId}" ${line.priceOverridden===false && L && L.configuredPrice===null?"disabled":""}>Reset price</button>
+          <button class="btn sm danger" data-act="remove-line" data-line="${line.lineId}">Remove</button>` : ""}</div>
+      </div>
+      ${fields}
+    </div>`;
+  }).join("");
+
+  var pkgBoxes = D.PACKAGES.map(function(def){
+    var p = t.packages.filter(function(x){ return x.key === def.key; })[0];
+    var isSel = tx.display.selection && tx.display.selection.package === def.key;
+    return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}">
+      <div class="pks-name">${esc(C.packageLabel(state, def.suffix))}</div>
+      <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
+      <div class="pks-total">${p.count ? money(p.total) : "—"}</div>
+    </button>`;
+  }).join("");
+
+  var selNote = tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
+      Presenting only <strong>${esc((t.packages.filter(function(p){ return p.key===tx.display.selection.package; })[0]||{}).label||"")}</strong> on the customer display.
+      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
+
+  var productsCard = `<div class="card" id="step-4"><div class="card-h"><h2>4 · Products &amp; packages</h2>
+    <div class="sp"><span class="muted small">${tx.lines.length} selected</span>
+      <button class="btn sm" data-act="route" data-route="products">Manage product master</button></div></div>
+    <div class="card-b">
+      <p class="muted small" style="max-width:76ch">Click the package the customer chose to narrow the customer display to it. Click it again to show every package.</p>
+      <div class="pkgselect-row">${pkgBoxes}</div>
+      ${selNote}
+      <div class="divider"></div>
+      <p class="muted small" style="max-width:76ch">Tick a product into any of the three columns to add it to that package — a product can sit in one, two, or all three.</p>
+      ${productRows}
+    </div></div>`;
+
+  var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Presentation</h2>
+    <div class="sp"><label class="switch"><input type="checkbox" data-act="toggle-payment" ${tx.display.showPayment?"checked":""}> Show payments to customer</label></div></div>
+    <div class="card-b">
+      <div class="kv"><span class="k">All products total, with tax</span><span class="num">${money(t.productsTotal)}</span></div>
+      <div class="kv total"><span>Financed with every product</span><span class="num">${money(t.amountFinanced)}</span></div>
+      ${t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months, all products</span><span class="num">${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("")}
+      ${v.errors.length ? `<div class="notice err" style="margin-top:12px"><div><strong>Finish these before completing the deal</strong>
+        <ul style="margin:6px 0 0 16px;padding:0">${v.errors.map(function(e){ return "<li>"+esc(e)+"</li>"; }).join("")}</ul></div></div>`
+        : (v.warnings.length ? `<div class="notice warn" style="margin-top:12px">${esc(v.warnings[0])}</div>`
+        : `<div class="notice ok" style="margin-top:12px">Everything checks out. This deal is ready to complete.</div>`)}
+    </div></div>`;
+
+  var monitor = `<div class="monitor"><div class="monitor-bar"><span class="live"></span><span>CUSTOMER DISPLAY · live</span>
+    <span class="sp">
+      <button class="btn sm ${tx.display.mode==="welcome"?"on":""}" data-act="cd-mode" data-mode="welcome">Welcome</button>
+      <button class="btn sm ${tx.display.mode==="package"?"on":""}" data-act="cd-mode" data-mode="package">Present</button>
+      <button class="btn sm ${tx.display.mode==="thankyou"?"on":""}" data-act="cd-mode" data-mode="thankyou">Thank you</button>
+    </span></div>${renderCustomerDisplay(tx)}</div>`;
+
+  return toolbar + stepBar + `<div class="fin-split ${state.ui.split?"":"solo"}">
+    <div><div class="stack">${customerCard}${vehicleCard}${financeCard}${productsCard}${packageCard}</div></div>
+    ${state.ui.split ? `<div>${monitor}</div>` : ""}</div>`;
+}
+
+window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
+  isMaster:isMaster, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
+  firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
+  renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
+  channel:channel, selectOptions:selectOptions, kpiCard:kpiCard, lineConfigText:lineConfigText,
+  packagesToShow:packagesToShow, STORAGE_KEY:STORAGE_KEY, allowedRouteKeys:allowedRouteKeys, navItems:navItems };
+})();
+/* =====================================================================
+   Layer 4: PRODUCTS, REPORTS, USERS, DEALERSHIPS, SETTINGS,
+            PRINTS, EMAIL, ROUTER, EVENTS, BOOT
+   ===================================================================== */
+(function () {
+"use strict";
+var D = window.__DCC_DATA__, C = window.__DCC_CORE__, V = window.__DCC_VIEW1__;
+var state = V.state, esc = C.esc, money = C.money, money0 = C.money0, km = C.km;
+var userById = V.userById, commit = V.commit, toast = V.toast;
+
+/* ---------------- PRODUCT MASTER ---------------- */
+function priceRange(p){
+  if (!p.pricing) return null;
+  var lo = Number(p.pricing.base||0), hi = lo;
+  ["term","km","interval","deductible"].forEach(function(k){
+    var map = p.pricing[k]; if (!map) return;
+    var vals = Object.keys(map).map(function(x){ return Number(map[x]); });
+    if (!vals.length) return;
+    lo += Math.min.apply(null, vals); hi += Math.max.apply(null, vals);
+  });
+  return { min:lo, max:hi };
+}
+function viewProducts(){
+  var canEdit = V.isAdmin();
+  var rows = state.products.map(function(p){
+    var r = priceRange(p), bits = [];
+    if (p.uses.term) bits.push("Terms " + p.terms[0] + "–" + p.terms[p.terms.length-1]);
+    if (p.uses.km) bits.push("Up to " + km(p.kms[p.kms.length-1]));
+    if (p.uses.interval) bits.push("Intervals " + p.intervals.map(function(x){ return (x/1000)+"k"; }).join("/"));
+    if (p.uses.deductible) bits.push("Deductibles " + p.deductibles.map(function(x){ return "$"+x; }).join("/"));
+    return `<tr><td><strong>${esc(p.name)}</strong><div class="tiny muted">${esc(p.code)} · ${esc(p.category)}</div></td>
+      <td class="small">${esc(bits.join(" · ")||"Flat price")}</td>
+      <td><span class="tag ${p.taxRule==="vrc"?"info":""}">${p.taxRule==="vrc"?"VRC "+state.config.tax.vrc+"%":p.taxRule==="exempt"?"Exempt":state.config.tax.standard+"%"}</span></td>
+      <td class="right num">${r ? (r.min===r.max?money0(r.min):money0(r.min)+" – "+money0(r.max)) : `<span class="tag warn">Not configured</span>`}</td>
+      <td><span class="tag ${p.active?"ok":""}">${p.active?"Active":"Inactive"}</span></td>
+      <td class="right nowrap">
+        <button class="btn sm" data-act="product-edit" data-product="${p.id}" ${canEdit?"":"disabled"}>Edit</button>
+        <button class="btn sm" data-act="product-toggle" data-product="${p.id}" ${canEdit?"":"disabled"}>${p.active?"Deactivate":"Activate"}</button>
+        <button class="btn sm danger" data-act="product-delete" data-product="${p.id}" ${canEdit?"":"disabled"}>Delete</button></td></tr>`;
+  }).join("");
+  return `<div class="card"><div class="card-h"><h2>Product master</h2>
+    <div class="sp">${canEdit?"":`<span class="tag warn">Your role cannot change products</span>`}
+      <button class="btn primary" data-act="product-new" ${canEdit?"":"disabled"}>Add a product</button></div></div>
+    <div class="card-b">
+      <p class="muted small" style="max-width:74ch">Products, terms, kilometres, deductibles, intervals, pricing and the tax rule are configuration, not code. The description and benefit wording set here is what appears in the emailed presentation; it never appears on the customer display.</p>
+      <div class="tablewrap"><table><thead><tr><th>Product</th><th>Configuration rules</th><th>Tax</th><th class="right">Retail range</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div></div>`;
+}
+function numListInput(label, key, arr){
+  return `<label class="f"><span>${esc(label)}</span><input type="text" data-pf="${key}" value="${arr?arr.join(", "):""}" placeholder="comma separated"></label>`;
+}
+function adderGrid(label, key, options, map){
+  if (!options || !options.length) return "";
+  return `<div style="margin-bottom:12px"><div class="small muted" style="margin-bottom:5px">${esc(label)}</div>
+    <div class="cfgrid">${options.map(function(o){
+      var v = map && map[o] !== undefined ? map[o] : 0;
+      return `<label class="f"><span>${esc(String(o))}</span><input type="number" data-pa="${key}:${o}" value="${v}"></label>`; }).join("")}</div></div>`;
+}
+function productModal(){
+  var p = state.ui.productEdit;
+  if (!p) return "";
+  var isNew = !p.id;
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal wide">
+    <div class="modal-h"><h2>${isNew?"Add a product":"Edit "+esc(p.name)}</h2>
+      <div class="sp"><button class="btn" data-act="product-cancel">Cancel</button>
+      <button class="btn primary" data-act="product-save">${isNew?"Add product":"Save changes"}</button></div></div>
+    <div class="modal-b">
+      <div class="inline">
+        <label class="f"><span>Product name</span><input type="text" data-pf="name" value="${esc(p.name||"")}"></label>
+        <label class="f"><span>Code</span><input type="text" data-pf="code" value="${esc(p.code||"")}"></label>
+        <label class="f"><span>Category</span><input type="text" data-pf="category" value="${esc(p.category||"")}"></label>
+        <label class="f"><span>Tax rule</span><select data-pf="taxRule">
+          <option value="standard" ${p.taxRule==="standard"?"selected":""}>Standard ${state.config.tax.standard}%</option>
+          <option value="vrc" ${p.taxRule==="vrc"?"selected":""}>VRC coverage ${state.config.tax.vrc}%</option>
+          <option value="exempt" ${p.taxRule==="exempt"?"selected":""}>Exempt</option></select></label>
+      </div>
+      <label class="f"><span>What it covers (used in the email only)</span><textarea data-pf="desc" rows="2">${esc(p.desc||"")}</textarea></label>
+      <label class="f"><span>Why it is worth it (persuasive wording used in the email)</span><textarea data-pf="benefit" rows="3">${esc(p.benefit||"")}</textarea></label>
+      <div class="inline">
+        <label class="switch"><input type="checkbox" data-pf="use-term" ${p.uses.term?"checked":""}> Uses a term</label>
+        <label class="switch"><input type="checkbox" data-pf="use-km" ${p.uses.km?"checked":""}> Uses kilometres</label>
+        <label class="switch"><input type="checkbox" data-pf="use-interval" ${p.uses.interval?"checked":""}> Uses a service interval</label>
+        <label class="switch"><input type="checkbox" data-pf="use-deductible" ${p.uses.deductible?"checked":""}> Uses a deductible</label>
+        <label class="switch"><input type="checkbox" data-pf="active" ${p.active?"checked":""}> Active</label>
+      </div>
+      <div class="divider"></div>
+      <div class="inline">
+        ${numListInput("Term options (months, max 120)","terms",p.terms)}
+        ${numListInput("Kilometre options","kms",p.kms)}
+        ${numListInput("Service intervals (km)","intervals",p.intervals)}
+        ${numListInput("Deductible options ($)","deductibles",p.deductibles)}
+      </div>
+      <div class="inline">
+        <label class="f"><span>Base retail price (blank = not configured)</span><input type="number" data-pf="base" value="${p.pricing?p.pricing.base:""}"></label>
+        <label class="f"><span>Cost factor (0–1, internal)</span><input type="number" step="0.01" data-pf="costFactor" value="${p.costFactor===undefined?0.4:p.costFactor}"></label>
+      </div>
+      <p class="small muted">Adders are added to the base price for each option the FSM picks. Change an option list above and save to regenerate this grid.</p>
+      ${adderGrid("Term adders (months)","term",p.uses.term?p.terms:null,p.pricing&&p.pricing.term)}
+      ${adderGrid("Kilometre adders","km",p.uses.km?p.kms:null,p.pricing&&p.pricing.km)}
+      ${adderGrid("Interval adders","interval",p.uses.interval?p.intervals:null,p.pricing&&p.pricing.interval)}
+      ${adderGrid("Deductible adders","deductible",p.uses.deductible?p.deductibles:null,p.pricing&&p.pricing.deductible)}
+    </div></div></div>`;
+}
+function parseList(s){
+  if (!s) return [];
+  return String(s).split(",").map(function(x){ return Number(String(x).replace(/[^0-9.\-]/g,"")); }).filter(function(x){ return !isNaN(x); });
+}
+function saveProduct(){
+  var p = state.ui.productEdit, root = document.querySelector(".modal");
+  if (!p || !root) return;
+  function f(k){ return root.querySelector('[data-pf="'+k+'"]'); }
+  var name = f("name").value.trim();
+  if (!name){ toast("Give the product a name before saving.","err"); return; }
+  p.name = name;
+  p.code = f("code").value.trim() || name.slice(0,3).toUpperCase();
+  p.category = f("category").value.trim() || "General";
+  p.taxRule = f("taxRule").value;
+  p.desc = f("desc").value.trim();
+  p.benefit = f("benefit").value.trim();
+  p.active = f("active").checked;
+  p.costFactor = Number(f("costFactor").value) || 0;
+  p.uses = { term:f("use-term").checked, km:f("use-km").checked, interval:f("use-interval").checked, deductible:f("use-deductible").checked };
+  p.terms = parseList(f("terms").value).filter(function(x){ return x>0 && x<=120; });
+  p.kms = parseList(f("kms").value);
+  p.intervals = parseList(f("intervals").value);
+  p.deductibles = parseList(f("deductibles").value);
+  var baseRaw = f("base").value;
+  if (baseRaw === "") p.pricing = null;
+  else {
+    var pricing = { base:Number(baseRaw)||0, term:{}, km:{}, interval:{}, deductible:{} };
+    var adders = root.querySelectorAll("[data-pa]");
+    for (var i=0;i<adders.length;i++){
+      var parts = adders[i].getAttribute("data-pa").split(":");
+      pricing[parts[0]][parts[1]] = Number(adders[i].value)||0;
+    }
+    ["term","km","interval","deductible"].forEach(function(k){
+      var list = k==="term"?p.terms:k==="km"?p.kms:k==="interval"?p.intervals:p.deductibles;
+      if (!p.uses[k]){ delete pricing[k]; return; }
+      list.forEach(function(o){ if (pricing[k][o] === undefined) pricing[k][o] = 0; });
+    });
+    p.pricing = pricing;
+  }
+  if (!p.id){ p.id = C.uid("p"); state.products.push(p); }
+  else for (var j=0;j<state.products.length;j++) if (state.products[j].id === p.id) state.products[j] = p;
+  state.ui.productEdit = null;
+  toast("Product saved.","ok");
+  commit();
+}
+
+/* ---------------- REPORTS ---------------- */
+function presetRange(period){
+  var now = new Date(), to = C.todayISO(), from;
+  if (period === "daily") from = to;
+  else if (period === "weekly") from = new Date(now.getTime()-6*86400000).toISOString().slice(0,10);
+  else if (period === "monthly") from = to.slice(0,7) + "-01";
+  else from = to.slice(0,4) + "-01-01";
+  return { from:from, to:to };
+}
+function filteredDeals(){
+  var f = state.ui.reports;
+  if (!f.from || !f.to){ var r = presetRange(f.period); f.from = f.from||r.from; f.to = f.to||r.to; }
+  var pool = (V.isMaster() && f.dealership === "all") ? V.allDeals() : V.dealsForStore();
+  return pool.filter(function(d){
+    if (d.createdAt < f.from || d.createdAt > f.to) return false;
+    if (f.fsm !== "all" && d.fsmUserId !== f.fsm) return false;
+    if (f.type !== "all" && d.type !== f.type) return false;
+    if (f.product !== "all" && !d.lines.some(function(l){ return l.productId === f.product; })) return false;
+    return true;
+  });
+}
+function viewReports(){
+  var f = state.ui.reports, deals = filteredDeals(), i, j;
+  var gross = 0, retail = 0, productCount = 0, withProduct = 0, byFsm = {}, byProduct = {};
+  for (i=0;i<deals.length;i++){
+    var d = deals[i], t = C.totals(state, d);
+    gross += t.productGross; retail += t.productsSub; productCount += t.lines.length;
+    if (t.lines.length) withProduct++;
+    if (!byFsm[d.fsmUserId]) byFsm[d.fsmUserId] = { deals:0, gross:0, retail:0, products:0 };
+    byFsm[d.fsmUserId].deals++; byFsm[d.fsmUserId].gross += t.productGross;
+    byFsm[d.fsmUserId].retail += t.productsSub; byFsm[d.fsmUserId].products += t.lines.length;
+    for (j=0;j<t.lines.length;j++){
+      var L = t.lines[j];
+      if (!byProduct[L.product.id]) byProduct[L.product.id] = { n:0, retail:0, gross:0 };
+      byProduct[L.product.id].n++; byProduct[L.product.id].retail += (L.price||0); byProduct[L.product.id].gross += (L.price||0)-L.cost;
+    }
+  }
+  var fsmRows = Object.keys(byFsm).map(function(k){ return { u:userById(k), v:byFsm[k] }; }).sort(function(a,b){ return b.v.gross-a.v.gross; });
+  var prodRows = Object.keys(byProduct).map(function(k){ return { p:C.productById(state,k), v:byProduct[k] }; }).sort(function(a,b){ return b.v.n-a.v.n; });
+  var maxG = fsmRows.length ? Math.max(1, fsmRows[0].v.gross) : 1;
+
+  var filters = `<div class="card" style="margin-bottom:16px"><div class="card-b"><div class="inline">
+    <label class="f"><span>Period</span><select data-act="report-preset">
+      ${["daily","weekly","monthly","yearly"].map(function(p){ return `<option value="${p}" ${f.period===p?"selected":""}>${p.charAt(0).toUpperCase()+p.slice(1)}</option>`; }).join("")}</select></label>
+    <label class="f"><span>From</span><input type="date" value="${esc(f.from)}" data-bind="ui.reports.from"></label>
+    <label class="f"><span>To</span><input type="date" value="${esc(f.to)}" data-bind="ui.reports.to"></label>
+    ${V.isMaster() ? `<label class="f"><span>Dealership</span><select data-bind="ui.reports.dealership">
+      <option value="active" ${f.dealership==="active"?"selected":""}>${esc(state.config.name)}</option>
+      <option value="all" ${f.dealership==="all"?"selected":""}>All dealerships</option></select></label>` : ""}
+    <label class="f"><span>FSM</span><select data-bind="ui.reports.fsm">
+      <option value="all">All FSM users</option>
+      ${state.users.filter(function(u){ return u.role !== "Demo" && u.role !== "Master Administrator"; }).map(function(u){
+        return `<option value="${u.id}" ${f.fsm===u.id?"selected":""}>${esc(u.name)}</option>`; }).join("")}</select></label>
+    <label class="f"><span>Product</span><select data-bind="ui.reports.product">
+      <option value="all">All products</option>
+      ${state.products.map(function(p){ return `<option value="${p.id}" ${f.product===p.id?"selected":""}>${esc(p.name)}</option>`; }).join("")}</select></label>
+    <label class="f"><span>Transaction type</span><select data-bind="ui.reports.type">
+      ${["all","Finance","Lease","Cash"].map(function(x){ return `<option value="${x}" ${f.type===x?"selected":""}>${x==="all"?"All types":x}</option>`; }).join("")}</select></label>
+  </div></div></div>`;
+
+  var kpis = `<div class="grid g4" style="margin-bottom:16px">
+    ${V.kpiCard("Transactions", deals.length, C.fmtDate(f.from)+" to "+C.fmtDate(f.to))}
+    ${V.kpiCard("Product gross", money0(gross), money0(retail)+" retail")}
+    ${V.kpiCard("Products sold", productCount, deals.length ? Math.round(productCount/deals.length*100)/100+" per deal" : "—")}
+    ${V.kpiCard("Penetration", (deals.length?Math.round(withProduct/deals.length*100):0)+"%", withProduct+" deals with a product")}</div>`;
+
+  var body = deals.length ? `<div class="grid g2">
+    <div class="card"><div class="card-h"><h2>FSM performance</h2></div><div class="card-b"><div class="tablewrap"><table>
+      <thead><tr><th>FSM</th><th class="right">Deals</th><th class="right">Products</th><th class="right">Retail</th><th class="right">Gross</th><th class="right">Per deal</th><th style="width:110px"></th></tr></thead>
+      <tbody>${fsmRows.map(function(r){ return `<tr><td>${esc(r.u.name)}<div class="tiny muted">${esc(r.u.role)}</div></td>
+        <td class="right num">${r.v.deals}</td><td class="right num">${r.v.products}</td><td class="right num">${money0(r.v.retail)}</td>
+        <td class="right num">${money0(r.v.gross)}</td><td class="right num">${money0(r.v.gross/r.v.deals)}</td>
+        <td><div class="bar"><i style="width:${Math.max(4,Math.round(r.v.gross/maxG*100))}%"></i></div></td></tr>`; }).join("")}
+      </tbody></table></div></div></div>
+    <div class="card"><div class="card-h"><h2>Product sales</h2></div><div class="card-b"><div class="tablewrap"><table>
+      <thead><tr><th>Product</th><th class="right">Sold</th><th class="right">Retail</th><th class="right">Gross</th><th class="right">Penetration</th></tr></thead>
+      <tbody>${prodRows.map(function(r){ return `<tr><td>${esc(r.p?r.p.name:"—")}</td><td class="right num">${r.v.n}</td>
+        <td class="right num">${money0(r.v.retail)}</td><td class="right num">${money0(r.v.gross)}</td>
+        <td class="right num">${Math.round(r.v.n/deals.length*100)}%</td></tr>`; }).join("")}
+      </tbody></table></div></div></div></div>
+    <div class="card" style="margin-top:16px"><div class="card-h"><h2>Transactions</h2>
+      <div class="sp"><span class="muted small">${deals.length} in range</span></div></div>
+      <div class="card-b"><div class="tablewrap"><table>
+      <thead><tr><th>Date</th><th>Deal</th><th>Customer</th><th>Vehicle</th><th>Type</th><th>FSM</th><th class="right">Products</th><th class="right">Retail</th><th class="right">Gross</th></tr></thead>
+      <tbody>${deals.slice().sort(function(a,b){ return a.createdAt<b.createdAt?1:-1; }).slice(0,60).map(function(d){
+        var t = C.totals(state,d);
+        return `<tr><td class="nowrap">${C.fmtDate(d.createdAt)}</td><td class="nowrap">${esc(d.id)}</td>
+          <td>${esc(d.customer.name||"—")}</td><td>${esc(d.vehicle.year+" "+d.vehicle.model)}</td>
+          <td><span class="tag">${esc(d.type)}</span></td><td>${esc(userById(d.fsmUserId).name)}</td>
+          <td class="right num">${t.lines.length}</td><td class="right num">${money0(t.productsSub)}</td>
+          <td class="right num">${money0(t.productGross)}</td></tr>`; }).join("")}
+      </tbody></table></div>
+      ${deals.length>60?`<p class="small muted" style="margin-top:10px">Showing the 60 most recent of ${deals.length}.</p>`:""}</div></div>`
+    : `<div class="card"><div class="empty">No transactions match these filters. Widen the date range or clear a filter.</div></div>`;
+  return filters + kpis + body;
+}
+
+/* ---------------- USERS ---------------- */
+function viewUsers(){
+  var canEdit = V.isAdmin();
+  var rows = V.storeUsers().map(function(u){
+    var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
+    return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(u.email)}</div></td>
+      <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}</td>
+      <td>${V.isMaster() && u.role !== "Master Administrator" ? `<select data-act="assign-dealership" data-user="${u.id}" style="min-width:190px">
+          ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
+        </select>` : esc(dealer)}</td>
+      <td class="small">${esc((u.restrictions||[]).join(" · ")||"—")}</td>
+      <td>${u.demo?esc(u.accessDays+" days"):"Unlimited"}</td>
+      <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
+      <td class="right nowrap">
+        <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
+        <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;
+  }).join("");
+  return `<div class="card"><div class="card-h"><h2>Users and access</h2>
+    <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
+      <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
+    <div class="card-b">
+      <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. An administrator, FSM manager and FSM work inside one dealership. A demo account is time limited and cannot change pricing or access.</p>
+      <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div></div>`;
+}
+function userModal(){
+  if (!state.ui.userForm) return "";
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal">
+    <div class="modal-h"><h2>Add a user</h2><div class="sp">
+      <button class="btn" data-act="user-cancel">Cancel</button>
+      <button class="btn primary" data-act="user-save">Add user</button></div></div>
+    <div class="modal-b">
+      <div class="inline">
+        <label class="f"><span>Full name</span><input type="text" data-uf="name" placeholder="e.g. Alexis Nadeau"></label>
+        <label class="f"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca"></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Role</span><select data-uf="role">
+          <option>FSM</option><option>FSM Manager</option><option>General Manager</option><option>Demo</option>
+          ${V.isMaster()?"<option>Master Administrator</option>":""}</select></label>
+        <label class="f"><span>Dealership</span><select data-uf="dealership">
+          ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
+        <label class="f"><span>Demo access length (days)</span><input type="number" data-uf="days" value="14"></label>
+      </div>
+      <label class="f"><span>Access restrictions</span><input type="text" data-uf="restrictions" placeholder="Reports: own deals"></label>
+    </div></div></div>`;
+}
+function saveUser(){
+  var root = document.querySelector(".modal");
+  if (!root) return;
+  function f(k){ return root.querySelector('[data-uf="'+k+'"]'); }
+  var name = f("name").value.trim();
+  if (!name){ toast("Enter the user's name.","err"); return; }
+  var role = f("role").value;
+  state.users.push({ id:C.uid("u"), name:name,
+    initials:name.split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase(),
+    role:role, email:f("email").value.trim()||"user@demo.ca",
+    dealershipId: role === "Master Administrator" ? null : f("dealership").value,
+    active:true, demo: role === "Demo", accessDays: role === "Demo" ? (Number(f("days").value)||14) : null,
+    restrictions: f("restrictions").value ? [f("restrictions").value.trim()] : [] });
+  state.ui.userForm = false;
+  toast("User added.","ok");
+  commit();
+}
+
+/* ---------------- DEALERSHIPS (master administrator) ---------------- */
+function viewDealerships(){
+  var rows = state.dealerships.map(function(d){
+    var b = D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+    var count = state.users.filter(function(u){ return u.dealershipId === d.id; }).length;
+    return `<tr><td><strong>${esc(d.name)}</strong><div class="tiny muted">${esc(d.dealerCode)} · ${esc(d.city)}</div></td>
+      <td>${esc(b.label)}</td><td class="small">${esc(b.finLabel)}</td>
+      <td class="right num">${count}</td>
+      <td><span class="tag ${d.active?"ok":"danger"}">${d.active?"Active":"Inactive"}</span></td>
+      <td class="right nowrap">
+        <button class="btn sm ${d.id===state.activeDealershipId?"on":""}" data-act="switch-to-dealership" data-dealership="${d.id}">${d.id===state.activeDealershipId?"Current":"Open"}</button>
+        <button class="btn sm" data-act="dealer-edit" data-dealership="${d.id}">Edit</button>
+        <button class="btn sm danger" data-act="dealer-delete" data-dealership="${d.id}" ${state.dealerships.length<=1?"disabled":""}>Delete</button>
+      </td></tr>`;
+  }).join("");
+  return `<div class="card"><div class="card-h"><h2>Dealership group</h2>
+    <div class="sp"><button class="btn primary" data-act="dealer-new">Create a dealership</button></div></div>
+    <div class="card-b">
+      <p class="muted small" style="max-width:76ch">Each dealership carries its own brand, taxes, finance defaults and users. The brand decides what the customer display shows in its header, so an INFINITI store presents INFINITI FINANCIAL SERVICES and a Ford store presents FORD CREDIT FINANCIAL SERVICES, with no change to the application itself.</p>
+      <div class="tablewrap"><table><thead><tr><th>Dealership</th><th>Brand</th><th>Customer-facing header</th><th class="right">Users</th><th>Status</th><th></th></tr></thead>
+      <tbody>${rows}</tbody></table></div></div></div>`;
+}
+function dealerModal(){
+  var d = state.ui.dealerForm;
+  if (!d) return "";
+  var isNew = !d.id;
+  var b = D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal">
+    <div class="modal-h"><h2>${isNew?"Create a dealership":"Edit "+esc(d.name)}</h2>
+      <div class="sp"><button class="btn" data-act="dealer-cancel">Cancel</button>
+      <button class="btn primary" data-act="dealer-save">${isNew?"Create dealership":"Save changes"}</button></div></div>
+    <div class="modal-b">
+      <div class="inline">
+        <label class="f"><span>Dealership name</span><input type="text" data-df="name" value="${esc(d.name||"")}" placeholder="e.g. Lakeshore Ford"></label>
+        <label class="f"><span>Brand</span><select data-act="dealer-brand" data-df="brandKey">
+          ${Object.keys(D.BRANDS).map(function(k){ return `<option value="${k}" ${d.brandKey===k?"selected":""}>${esc(D.BRANDS[k].label)}</option>`; }).join("")}</select></label>
+        <label class="f"><span>Logo mark</span><input type="text" maxlength="3" data-df="logoMark" value="${esc(d.logoMark||"")}"></label>
+        <label class="f"><span>Dealer code</span><input type="text" data-df="dealerCode" value="${esc(d.dealerCode||"")}"></label>
+      </div>
+      <div class="notice info">Customer display header: <strong style="margin-left:6px">${esc(b.finLabel)}</strong></div>
+      <div class="inline" style="margin-top:12px">
+        <label class="f"><span>Address</span><input type="text" data-df="address" value="${esc(d.address||"")}"></label>
+        <label class="f"><span>City, province, postal</span><input type="text" data-df="city" value="${esc(d.city||"")}"></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Phone</span><input type="text" data-df="phone" value="${esc(d.phone||"")}"></label>
+        <label class="f"><span>Email</span><input type="text" data-df="email" value="${esc(d.email||"")}"></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Standard tax (%)</span><input type="number" step="0.01" data-df="taxStandard" value="${d.tax.standard}"></label>
+        <label class="f"><span>VRC tax (%)</span><input type="number" step="0.01" data-df="taxVrc" value="${d.tax.vrc}"></label>
+        <label class="f"><span>Default rate (APR %)</span><input type="number" step="0.01" data-df="apr" value="${d.finance.defaultApr}"></label>
+        <label class="f"><span>Default term</span><input type="number" data-df="term" value="${d.finance.defaultTerm}"></label>
+      </div>
+    </div></div></div>`;
+}
+function saveDealer(){
+  var d = state.ui.dealerForm, root = document.querySelector(".modal");
+  if (!d || !root) return;
+  function f(k){ return root.querySelector('[data-df="'+k+'"]'); }
+  var name = f("name").value.trim();
+  if (!name){ toast("Give the dealership a name.","err"); return; }
+  d.name = name;
+  d.brandKey = f("brandKey").value;
+  d.logoMark = (f("logoMark").value.trim() || (D.BRANDS[d.brandKey]||D.BRANDS.nissan).mark).toUpperCase();
+  d.dealerCode = f("dealerCode").value.trim() || "DLR-" + Math.floor(1000+Math.random()*8999);
+  d.address = f("address").value.trim();
+  d.city = f("city").value.trim();
+  d.phone = f("phone").value.trim();
+  d.email = f("email").value.trim();
+  d.tax = { standard:Number(f("taxStandard").value)||13, vrc:Number(f("taxVrc").value)||8 };
+  d.finance.defaultApr = Number(f("apr").value)||0;
+  d.finance.defaultTerm = Number(f("term").value)||72;
+  var wasNew = !d.id;
+  if (wasNew){
+    d.id = C.uid("d"); d.active = true;
+    state.dealerships.push(d);
+    toast("Dealership created. You're now signed into it — add a general manager or salesperson from Users and access.","ok");
+  } else {
+    for (var i=0;i<state.dealerships.length;i++) if (state.dealerships[i].id === d.id) state.dealerships[i] = d;
+    if (d.id === state.activeDealershipId) state.config = d;
+    toast("Dealership saved.","ok");
+  }
+  state.ui.dealerForm = null;
+  if (wasNew) V.setDealership(d.id);
+  commit();
+}
+function deleteDealer(id){
+  if (state.dealerships.length <= 1){ toast("Keep at least one dealership.","err"); return; }
+  state.dealerships = state.dealerships.filter(function(d){ return d.id !== id; });
+  state.users.forEach(function(u){ if (u.dealershipId === id) u.active = false; });
+  if (state.activeDealershipId === id){
+    if (state.dealerships.length) V.setDealership(state.dealerships[0].id);
+    else { state.activeDealershipId = null; state.config = null; state.tx = null; }
+  }
+  toast("Dealership removed. Its users were deactivated.","ok");
+  commit();
+}
+
+/* ---------------- SETTINGS ---------------- */
+function viewSettings(){
+  var canEdit = V.isAdmin(), dis = canEdit ? "" : "disabled", b = V.brand();
+  return `<div class="grid g2">
+    <div class="card"><div class="card-h"><h2>This dealership</h2><div class="sp"><span class="tag">${esc(state.config.dealerCode)}</span></div></div><div class="card-b">
+      <div class="inline">
+        <label class="f"><span>Dealership name</span><input type="text" value="${esc(state.config.name)}" data-bind="config.name" ${dis}></label>
+        <label class="f"><span>Brand</span><select data-bind="config.brandKey" ${dis}>
+          ${Object.keys(D.BRANDS).map(function(k){ return `<option value="${k}" ${state.config.brandKey===k?"selected":""}>${esc(D.BRANDS[k].label)}</option>`; }).join("")}</select></label>
+        <label class="f"><span>Logo mark</span><input type="text" maxlength="3" value="${esc(state.config.logoMark)}" data-bind="config.logoMark" ${dis}></label>
+      </div>
+      <div class="notice info">Customer display header: <strong style="margin-left:6px">${esc(b.finLabel)}</strong> · packages present as ${esc(C.packageLabel(state,"PREFERRED"))}, ${esc(C.packageLabel(state,"ESSENTIAL"))} and ${esc(C.packageLabel(state,"BASIC"))}</div>
+      <div class="inline" style="margin-top:12px">
+        <label class="f"><span>Address</span><input type="text" value="${esc(state.config.address)}" data-bind="config.address" ${dis}></label>
+        <label class="f"><span>City, province, postal</span><input type="text" value="${esc(state.config.city)}" data-bind="config.city" ${dis}></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Phone</span><input type="text" value="${esc(state.config.phone)}" data-bind="config.phone" ${dis}></label>
+        <label class="f"><span>Email</span><input type="text" value="${esc(state.config.email)}" data-bind="config.email" ${dis}></label>
+      </div>
+    </div></div>
+    <div class="card"><div class="card-h"><h2>Tax and finance defaults</h2></div><div class="card-b">
+      <div class="inline">
+        <label class="f"><span>Standard tax rate (%)</span><input type="number" step="0.01" value="${esc(state.config.tax.standard)}" data-bind="config.tax.standard" data-type="num" ${dis}></label>
+        <label class="f"><span>VRC coverage tax rate (%)</span><input type="number" step="0.01" value="${esc(state.config.tax.vrc)}" data-bind="config.tax.vrc" data-type="num" ${dis}></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Default rate (APR %)</span><input type="number" step="0.01" value="${esc(state.config.finance.defaultApr)}" data-bind="config.finance.defaultApr" data-type="num" ${dis}></label>
+        <label class="f"><span>Default term</span><select data-bind="config.finance.defaultTerm" data-type="num" ${dis}>
+          ${V.selectOptions([48,60,72,84,96], state.config.finance.defaultTerm, function(x){ return x+" Months"; })}</select></label>
+        <label class="f"><span>Default frequency</span><select data-bind="config.finance.defaultFrequency" ${dis}>
+          <option value="monthly" ${state.config.finance.defaultFrequency==="monthly"?"selected":""}>Monthly</option>
+          <option value="biweekly" ${state.config.finance.defaultFrequency==="biweekly"?"selected":""}>Bi-weekly</option></select></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Administration fee</span><input type="number" value="${esc(state.config.finance.adminFee)}" data-bind="config.finance.adminFee" data-type="num" ${dis}></label>
+        <label class="f"><span>Licensing</span><input type="number" value="${esc(state.config.finance.licensing)}" data-bind="config.finance.licensing" data-type="num" ${dis}></label>
+      </div>
+      <div class="notice info">Tax changes apply immediately to the open deal, both prints, the emailed presentation and every report, because all of them call the same calculation engine.</div>
+      <div class="divider"></div>
+      <button class="btn danger" data-act="reset-demo">Reset the preview to demo defaults</button>
+    </div></div></div>`;
+}
+
+/* ---------------- PRINTS ---------------- */
+function docHeader(title, sub){
+  var b = V.brand(), c = state.config;
+  return `<div class="dh"><div class="dlogo">${esc(c.logoMark||b.mark)}</div>
+    <div style="flex:1"><h1>${esc(c.name)}</h1>
+      <div style="font-size:11px;color:#667085">${esc(b.finLabel)} · ${esc(c.address)} · ${esc(c.city)} · ${esc(c.phone)} · Dealer ${esc(c.dealerCode)}</div></div>
+    <div style="text-align:right"><div style="font-weight:700">${esc(title)}</div>
+      <div style="font-size:11px;color:#667085">${esc(sub)}</div></div></div>`;
+}
+function packagesOfLine(L){
+  if (L.cfg.declined) return "DECLINED";
+  var p = L.cfg.packages || {};
+  return D.PACKAGES.filter(function(def){ return p[def.key]; }).map(function(def){ return def.suffix; }).join(", ") || "—";
+}
+function internalPrint(tx){
+  var t = C.totals(state, tx), u = userById(tx.fsmUserId);
+  return `<div class="doc">
+    ${docHeader("FSM transaction record — internal", "Deal "+tx.id+" · "+C.fmtDate(tx.createdAt))}
+    <div class="cols">
+      <div><div class="lbl">CUSTOMER</div><div><strong>${esc(tx.customer.name||"—")}</strong></div>
+        <div>${esc(tx.customer.phone||"")}</div><div>${esc(tx.customer.email||"")}</div><div>${esc(tx.customer.address||"")}</div></div>
+      <div><div class="lbl">VEHICLE</div><div><strong>${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}</strong></div>
+        <div>Stock ${esc(tx.vehicle.stock||"—")} · ${esc(tx.vehicle.condition)}</div><div>VIN ${esc(tx.vehicle.vin||"—")}</div>
+        <div>Odometer ${esc(tx.vehicle.odometer||0)} km</div></div>
+      <div><div class="lbl">TRANSACTION</div><div>Type ${esc(tx.type)}</div>
+        <div>Terms presented ${t.terms.length?t.terms.join(", ")+" months":"—"}</div>
+        <div>Rates ${t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—"} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>
+        <div>FSM ${esc(u.name)} (${esc(u.role)})</div></div>
+    </div>
+    <h3>Products</h3>
+    <table><thead><tr><th>Product</th><th>Term</th><th>Kilometres</th><th>Interval</th><th>Deductible</th><th>Packages</th>
+      <th style="text-align:right">Retail</th><th style="text-align:right">Tax rate</th><th style="text-align:right">Tax</th><th style="text-align:right">Total</th></tr></thead>
+      <tbody>${t.lines.length ? t.lines.map(function(L){ return `<tr>
+        <td>${esc(L.product.name)}</td><td>${L.cfg.term?L.cfg.term+" mo":"—"}</td><td>${L.cfg.km?km(L.cfg.km):"—"}</td>
+        <td>${L.cfg.interval?km(L.cfg.interval):"—"}</td>
+        <td>${L.product.uses.deductible && L.cfg.deductible!==null && L.cfg.deductible!=="" ? "$"+L.cfg.deductible : "—"}</td>
+        <td>${esc(packagesOfLine(L))}</td>
+        <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td>
+        <td style="text-align:right">${L.ratePct}%</td><td style="text-align:right">${money(L.tax)}</td>
+        <td style="text-align:right">${money(L.total)}</td></tr>`; }).join("") : `<tr><td colspan="10">No products on this transaction.</td></tr>`}
+      </tbody></table>
+    <h3 style="margin-top:16px">Packages presented</h3>
+    <table><thead><tr><th>Package</th><th style="text-align:right">Products</th><th style="text-align:right">Total with tax</th><th style="text-align:right">Gross</th>
+      ${t.terms.map(function(tm){ return `<th style="text-align:right">${tm} mo</th>`; }).join("")}</tr></thead>
+      <tbody>${t.packages.map(function(p){ return `<tr><td>${esc(p.label)}</td><td style="text-align:right">${p.count}</td>
+        <td style="text-align:right">${money(p.total)}</td><td style="text-align:right">${money(p.gross)}</td>
+        ${t.terms.map(function(tm){
+          var q = p.quotes.filter(function(x){ return x.term === tm; })[0];
+          return `<td style="text-align:right">${q?money(q.payment):"—"}</td>`; }).join("")}</tr>`; }).join("")}
+      </tbody></table>
+    <div class="cols" style="margin-top:16px">
+      <div><div class="lbl">PRODUCT TOTALS</div>
+        <div class="kv"><span class="k">Subtotal</span><span>${money(t.productsSub)}</span></div>
+        <div class="kv"><span class="k">Standard tax ${state.config.tax.standard}%</span><span>${money(t.taxStandard)}</span></div>
+        <div class="kv"><span class="k">VRC tax ${state.config.tax.vrc}%</span><span>${money(t.taxVrc)}</span></div>
+        <div class="kv total"><span>Products total</span><span>${money(t.productsTotal)}</span></div>
+        <div class="kv"><span class="k">Product cost</span><span>${money(t.productCost)}</span></div>
+        <div class="kv"><span class="k">Product gross</span><span>${money(t.productGross)}</span></div></div>
+      <div><div class="lbl">DEAL STRUCTURE</div>
+        <div class="kv"><span class="k">Selling price</span><span>${money(t.vehiclePrice)}</span></div>
+        <div class="kv"><span class="k">Administration fee</span><span>${money(t.adminFee)}</span></div>
+        <div class="kv"><span class="k">Trade allowance</span><span>${money(t.tradeAllowance)}</span></div>
+        <div class="kv"><span class="k">Trade payout</span><span>${money(t.tradePayout)}</span></div>
+        <div class="kv"><span class="k">Vehicle tax ${state.config.tax.standard}%</span><span>${money(t.vehicleTax)}</span></div>
+        <div class="kv"><span class="k">Licensing</span><span>${money(t.licensing)}</span></div>
+        <div class="kv"><span class="k">Cash down</span><span>${money(t.downPayment)}</span></div>
+        ${t.fees.map(function(f){ return `<div class="kv"><span class="k">${esc(f.name)} (non-taxable)</span><span>${money(Number(f.amount)||0)}</span></div>`; }).join("")}
+        ${t.feeAmount ? `<div class="kv"><span class="k">Fees (non-taxable)</span><span>${money(t.feeAmount)}</span></div>` : ""}
+        <div class="kv total"><span>Financed with all products</span><span>${money(t.amountFinanced)}</span></div></div>
+      <div><div class="lbl">PAYMENTS, ALL PRODUCTS</div>
+        ${t.quotes.length ? t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months</span><span>${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="kv"><span class="k">No term selected</span><span>—</span></div>`}
+        <div style="margin-top:18px;border-top:1px solid #111;padding-top:4px;font-size:10px;color:#667085">FSM signature</div></div>
+    </div>
+    <div class="watermark">INTERNAL COPY · DEMONSTRATION DATA · NOT A CONTRACT</div></div>`;
+}
+function customerPrint(tx){
+  var t = C.totals(state, tx), b = V.brand(), c = state.config;
+  var shown = V.packagesToShow(t, tx);
+  return `<div class="doc cust">
+    <div class="hero"><div style="font-size:11px;letter-spacing:.12em;opacity:.9">${esc(b.finLabel)} · ${esc(c.name)}</div>
+      <h1>Congratulations${tx.customer.name?", "+esc(tx.customer.name.split(" ")[0]):""}</h1>
+      <div style="opacity:.92">Here is the protection we reviewed for your ${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}.</div></div>
+    <div class="inner">
+      <div class="cols" style="margin-bottom:18px">
+        <div><div class="lbl">PREPARED FOR</div><div><strong>${esc(tx.customer.name||"—")}</strong></div><div>${esc(tx.customer.phone||"")}</div></div>
+        <div><div class="lbl">YOUR VEHICLE</div><div><strong>${esc(tx.vehicle.year+" "+tx.vehicle.model)}</strong></div><div>Stock ${esc(tx.vehicle.stock||"—")}</div></div>
+        <div><div class="lbl">TERMS SHOWN</div><div><strong>${t.terms.length?t.terms.join(" · ")+" months":"—"}</strong></div>
+          <div>${t.frequency?C.freqLabel(t.frequency).charAt(0).toUpperCase()+C.freqLabel(t.frequency).slice(1)+" payments":""}</div></div>
+      </div>
+      ${shown.length ? shown.map(function(p){ return `<div class="ccov">
+        <div style="font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</div>
+        <div style="margin-top:6px">${p.lines.map(function(L){
+          var cfg = V.lineConfigText(L);
+          return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
+        ${(tx.display.showPayment && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
+          ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
+      </div>`; }).join("") : `<p>No protection products were presented on this agreement.</p>`}
+      <p style="margin-top:16px;color:#475467;font-size:11.5px">Keep this summary with your vehicle documents. Full terms, conditions and claim instructions are in the coverage agreements signed today. Questions at any point, call us at ${esc(c.phone)}.</p>
+      <div class="watermark">CUSTOMER COPY · DEMONSTRATION DATA · NOT A CONTRACT</div>
+    </div></div>`;
+}
+
+/* ---------------- EMAILED PRESENTATION ----------------
+   The email is where the persuasive product wording lives. It carries the
+   package the customer is interested in, the term or terms selected, the
+   payment, and a plain explanation of each product in that package.      */
+function buildEmail(tx){
+  var t = C.totals(state, tx), b = V.brand(), c = state.config, u = userById(tx.fsmUserId);
+  var sel = state.ui.email;
+  var shown = V.packagesToShow(t).filter(function(p){ return sel.pkg === "all" || sel.pkg === p.key; });
+  var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "there";
+  var vehicle = (tx.vehicle.year + " " + tx.vehicle.make + " " + tx.vehicle.model).trim();
+  var L = [];
+  L.push("Hi " + first + ",");
+  L.push("");
+  L.push("Thanks for your time today at " + c.name + ". Here is the protection we looked at for your " + vehicle + ", with the payments exactly as they appeared on screen. Nothing here is a commitment; it is so you can read it at your own pace.");
+  L.push("");
+  shown.forEach(function(p){
+    L.push(p.label);
+    L.push(new Array(p.label.length + 1).join("-"));
+    var quotes = p.quotes.filter(function(q){ return sel.term === "all" || Number(sel.term) === q.term; });
+    if (quotes.length){
+      L.push("Payment with this package:");
+      quotes.forEach(function(q){
+        if (q.payment === null){ L.push("  - " + q.term + " months: rate still to be entered"); return; }
+        L.push("  - " + money(q.payment) + " " + C.freqLabel(q.frequency) + " over " + q.term + " months at " + q.rate + "%"
+          + " (" + money(q.difference) + " more than the vehicle on its own)");
+      });
+      L.push("");
+    }
+    L.push("What is included:");
+    p.lines.forEach(function(line){
+      var cfg = V.lineConfigText(line);
+      L.push("");
+      L.push("  " + line.product.name + (cfg ? " (" + cfg + ")" : ""));
+      if (line.product.desc) L.push("    " + line.product.desc);
+      if (line.product.benefit) L.push("    Why it matters: " + line.product.benefit);
+    });
+    L.push("");
+  });
+  L.push("Every payment above is exactly what we reviewed together, taxes included.");
+  L.push("If you want any of this added, or want to swap between the packages, reply to this email or call me at " + c.phone + " and I will have it ready before you come in.");
+  L.push("");
+  L.push(u.name);
+  L.push(u.role + ", " + c.name);
+  L.push(b.finLabel);
+  L.push(c.phone + " · " + c.email);
+  L.push("");
+  L.push("[ DEMONSTRATION PREVIEW — sample wording, not a contract or a binding quote ]");
+  var subjectPkg = shown.length === 1 ? shown[0].label : "protection options";
+  return {
+    to: tx.customer.email || "",
+    subject: "Your " + subjectPkg + " for the " + vehicle + " — " + c.name,
+    body: L.join("\n")
+  };
+}
+function buildEmailHtml(tx){
+  var t = C.totals(state, tx), b = V.brand(), c = state.config, u = userById(tx.fsmUserId);
+  var sel = state.ui.email;
+  var shown = V.packagesToShow(t).filter(function(p){ return sel.pkg === "all" || sel.pkg === p.key; }).map(function(p){
+    var q = sel.term === "all" ? p.quotes : p.quotes.filter(function(x){ return String(x.term) === String(sel.term); });
+    return { key:p.key, label:p.label, lines:p.lines, quotes:q };
+  });
+  var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "there";
+  var vehicle = (tx.vehicle.year + " " + tx.vehicle.make + " " + tx.vehicle.model).trim();
+  var brandColor = "#0d2f6b";
+
+  var pkgCardsHtml = shown.map(function(p){
+    var rowsHtml = p.lines.map(function(L){
+      var cfgTxt = V.lineConfigText(L);
+      return `<tr><td style="padding:10px 0;border-bottom:1px solid #e3e8ef">
+        <div style="font-weight:700;font-size:14px;color:#0d1b2e">${esc(L.product.name)}${cfgTxt?` <span style="font-weight:400;color:#667085;font-size:12px">(${esc(cfgTxt)})</span>`:""}</div>
+        ${L.product.benefit ? `<div style="color:#475467;font-size:12.5px;margin-top:4px;line-height:1.5">${esc(L.product.benefit)}</div>` : ""}
+      </td></tr>`;
+    }).join("");
+    var payHtml = p.quotes.length ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+      ${p.quotes.map(function(q){
+        return `<div style="flex:1;min-width:110px;text-align:center;background:#eef2f7;border-radius:8px;padding:10px 8px">
+          <div style="font-size:10px;color:#667085;letter-spacing:.04em">${q.term} MONTHS</div>
+          <div style="font-size:18px;font-weight:700;color:#0d1b2e;margin-top:2px">${q.payment===null?"—":money(q.payment)}</div>
+          <div style="font-size:10px;color:#667085">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div>
+        </div>`;
+      }).join("")}</div>` : "";
+    return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;border:1px solid #dde3ec;border-radius:10px;overflow:hidden">
+      <tr><td style="background:${brandColor};color:#ffffff;padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</td></tr>
+      <tr><td style="padding:14px 16px;background:#ffffff">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>${payHtml}
+      </td></tr></table>`;
+  }).join("");
+
+  var html = `<div style="font-family:Arial,Helvetica,sans-serif;max-width:600px;margin:0 auto;background:#ffffff;color:#0d1b2e">
+    <div style="background:${brandColor};padding:18px 20px">
+      <div style="color:#ffffff;font-size:18px;font-weight:700">${esc(vehicle)}</div>
+    </div>
+    <div style="padding:22px 20px 8px">
+      <div style="font-size:11px;letter-spacing:.1em;color:#667085;text-transform:uppercase">${esc(b.finLabel)}</div>
+      <p style="font-size:14px;line-height:1.6;margin-top:14px">Hi ${esc(first)},</p>
+      <p style="font-size:14px;line-height:1.6">Thanks for your time today at ${esc(c.name)}. Here is the protection we looked at for your ${esc(vehicle)}, with the payments exactly as they appeared on screen. Nothing here is a commitment — it's so you can read it at your own pace.</p>
+    </div>
+    <div style="padding:0 20px">${pkgCardsHtml}</div>
+    <div style="padding:4px 20px 20px">
+      <p style="font-size:12.5px;color:#475467;line-height:1.6">Every payment above is exactly what we reviewed together, taxes included. If you'd like any of this added, or want to swap between packages, reply to this email or call me at ${esc(c.phone)} and I'll have it ready before you come in.</p>
+      <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px">
+        <tr><td style="font-weight:700;font-size:13px">${esc(u.name)}</td></tr>
+        <tr><td style="font-size:12px;color:#475467">${esc(u.role)}, ${esc(c.name)}</td></tr>
+        <tr><td style="font-size:12px;color:#475467">${esc(b.finLabel)}</td></tr>
+        <tr><td style="font-size:12px;color:#475467">${esc(c.phone)} · ${esc(c.email)}</td></tr>
+      </table>
+      <p style="font-size:10.5px;color:#98a2b3;letter-spacing:.08em;margin-top:18px;text-align:center">DEMONSTRATION PREVIEW — SAMPLE WORDING, NOT A CONTRACT OR BINDING QUOTE</p>
+    </div>
+  </div>`;
+  var subjectPkg = shown.length === 1 ? shown[0].label : "protection options";
+  return { to: tx.customer.email || "", subject: "Your " + subjectPkg + " for the " + vehicle + " — " + c.name, html: html };
+}
+function emailModal(){
+  if (!state.ui.modal || state.ui.modal.kind !== "email") return "";
+  var tx = state.tx, t = C.totals(state, tx);
+  var opts = V.packagesToShow(t);
+  var mailHtml = buildEmailHtml(tx);
+  var mailText = buildEmail(tx);
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal wide">
+    <div class="modal-h"><h2>Email the package to the customer</h2><div class="sp">
+      <button class="btn" data-act="close-modal">Close</button>
+      <button class="btn" data-act="copy-email-html">Copy formatted email</button>
+      <button class="btn" data-act="copy-email-text">Copy plain text</button>
+      <button class="btn primary" data-act="send-email">Open in email app</button></div></div>
+    <div class="modal-b">
+      <div class="inline">
+        <label class="f"><span>To</span><input type="text" value="${esc(mailText.to)}" data-bind="tx.customer.email" placeholder="customer@example.ca"></label>
+        <label class="f"><span>Package the customer is interested in</span><select data-bind="ui.email.pkg">
+          <option value="all" ${state.ui.email.pkg==="all"?"selected":""}>Every package presented</option>
+          ${opts.map(function(p){ return `<option value="${p.key}" ${state.ui.email.pkg===p.key?"selected":""}>${esc(p.label)}</option>`; }).join("")}</select></label>
+        <label class="f"><span>Term</span><select data-bind="ui.email.term">
+          <option value="all" ${state.ui.email.term==="all"?"selected":""}>Every term presented</option>
+          ${t.terms.map(function(tm){ return `<option value="${tm}" ${String(state.ui.email.term)===String(tm)?"selected":""}>${tm} months</option>`; }).join("")}</select></label>
+      </div>
+      <label class="f"><span>Subject</span><input type="text" id="emailSubject" value="${esc(mailHtml.subject)}"></label>
+      <div class="small muted" style="margin-bottom:6px">Preview — a generic vehicle graphic and the persuasive product wording, formatted for pasting straight into an email. This never appears on the customer display.</div>
+      <div style="background:#ffffff;border-radius:10px;overflow:hidden;border:1px solid var(--border)">${mailHtml.html}</div>
+      <details style="margin-top:12px"><summary class="small muted" style="cursor:pointer">HTML source</summary>
+        <textarea class="mailbox" id="emailHtmlSource" style="margin-top:8px" readonly>${esc(mailHtml.html)}</textarea></details>
+      <details style="margin-top:8px"><summary class="small muted" style="cursor:pointer">Plain text version</summary>
+        <textarea class="mailbox" id="emailBody" style="margin-top:8px" readonly>${esc(mailText.body)}</textarea></details>
+      <p class="small muted" style="margin-top:10px">Most email programs don't accept rich formatting through a plain "mailto" link, so "Open in email app" sends the plain-text version below. Use "Copy formatted email" and paste (Ctrl/Cmd+V) directly into a Gmail or Outlook message to keep the graphic and layout.</p>
+    </div></div></div>`;
+}
+function printModal(){
+  var m = state.ui.modal;
+  if (!m || (m.kind !== "internal" && m.kind !== "customer")) return "";
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal wide">
+    <div class="modal-h"><h2>${m.kind==="internal"?"Internal transaction print":"Customer copy"}</h2>
+      <div class="sp"><button class="btn" data-act="close-modal">Close</button>
+      <button class="btn primary" data-act="do-print">Print</button></div></div>
+    <div class="modal-b">${m.kind==="internal"?internalPrint(state.tx):customerPrint(state.tx)}</div></div></div>`;
+}
+function renderOverlay(){
+  if (state.ui.present){
+    return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
+      <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
+  }
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal();
+}
+
+/* ---------------- ONBOARDING (no dealership yet) ---------------- */
+function renderOnboarding(){
+  var canCreate = V.isMaster();
+  return `<div class="card"><div class="card-b"><div class="uc">
+    <div class="bigtag">GET STARTED</div>
+    <h2>No dealership has been set up yet</h2>
+    <p class="muted" style="max-width:54ch">The Command Center is ready, but no dealership exists yet. ${canCreate
+      ? "Create your first dealership to pick its brand, taxes and finance defaults — the Finance module and customer display unlock as soon as it exists."
+      : "Ask a master administrator to create a dealership and assign you to it."}</p>
+    ${canCreate ? `<button class="btn primary" data-act="dealer-new">Create a dealership</button>` : ""}
+  </div></div></div>`;
+}
+
+/* ---------------- ROUTER + RENDER ---------------- */
+function routeView(){
+  if (!state.config) return renderOnboarding();
+  var allowed = V.allowedRouteKeys();
+  if (allowed && allowed.indexOf(state.route) === -1) state.route = allowed[0] || "finance";
+  switch (state.route){
+    case "dashboard": return V.viewDashboard();
+    case "finance": return V.viewFinance();
+    case "lease": return V.viewUnderConstruction("Lease");
+    case "cash": return V.viewUnderConstruction("Cash");
+    case "products": return viewProducts();
+    case "reports": return viewReports();
+    case "users": return viewUsers();
+    case "dealerships": return V.isMaster() ? viewDealerships() : V.viewDashboard();
+    case "settings": return viewSettings();
+    default: return V.viewDashboard();
+  }
+}
+/* A full re-render replaces every DOM node, including whatever the browser
+   just moved focus to (e.g. the next field after Tab), which silently drops
+   focus back to <body>. We fingerprint the focused field before the rewrite
+   and refocus its replacement afterwards, restoring the caret too. */
+var FOCUS_ATTRS = ["data-bind","data-act","data-term","data-line","data-fee","data-product","data-package","data-df","data-uf","id"];
+function focusFingerprint(el){
+  if (!el || !el.getAttribute || !el.tagName) return null;
+  var parts = [el.tagName.toLowerCase()];
+  FOCUS_ATTRS.forEach(function(a){ var v = el.getAttribute(a); if (v) parts.push('['+a+'="'+v.replace(/"/g,'\\"')+'"]'); });
+  return parts.length > 1 ? parts.join("") : null;
+}
+function render(){
+  try { document.documentElement.setAttribute("data-theme", state.ui.theme); } catch (e) {}
+  var root = document.getElementById("root"), ov = document.getElementById("overlay");
+  var y = window.scrollY;
+  var active = document.activeElement;
+  var fp = (active && active !== document.body) ? focusFingerprint(active) : null;
+  var selStart = null, selEnd = null;
+  if (fp && active && typeof active.selectionStart === "number"){
+    try { selStart = active.selectionStart; selEnd = active.selectionEnd; } catch (e) {}
+  }
+  root.innerHTML = V.renderShell(routeView());
+  ov.innerHTML = renderOverlay();
+  window.scrollTo(0, y);
+  if (fp){
+    var next = null;
+    try { next = document.querySelector(fp); } catch (e) { next = null; }
+    if (next){
+      next.focus();
+      if (selStart !== null && typeof next.setSelectionRange === "function"){
+        try { next.setSelectionRange(selStart, selEnd); } catch (e) {}
+      }
+    }
+  }
+}
+window.__DCC_RENDER__ = render;
+
+/* ---------------- SECOND CUSTOMER WINDOW ----------------
+   The preview runs inside a sandboxed frame, so a second window cannot load
+   the app by URL. We open a blank window, write the customer display into it,
+   and rewrite it on every change to the transaction.                      */
+var custWin = null;
+function customerWindowDoc(){
+  var css = "";
+  try { var st = document.querySelector("style"); if (st) css = st.textContent || ""; } catch (e) {}
+  return '<!DOCTYPE html><html data-theme="' + state.ui.theme + '"><head><meta charset="utf-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1">' +
+    '<title>Customer Display — ' + esc(state.config.name) + '</title><style>' + css +
+    /* On this standalone page .monitor is the whole screen, not a sidebar
+       card, so it needs to actually stretch to fill the viewport height —
+       .cd's min-height:430px alone left the rest of a tall window blank. */
+    ' html,body{height:100%} body{margin:0;background:var(--bg)}' +
+    ' .monitor{min-height:100vh;display:flex;flex-direction:column}' +
+    ' .cd{flex:1;min-height:0}</style></head><body>' +
+    '<div class="monitor" style="border:0;border-radius:0;position:static">' +
+    '<div class="monitor-bar"><span class="live"></span><span>CUSTOMER DISPLAY</span></div>' +
+    V.renderCustomerDisplay(state.tx) + '</div></body></html>';
+}
+function pushCustomerWindow(){
+  if (!custWin || custWin.closed) return;
+  try { custWin.document.open(); custWin.document.write(customerWindowDoc()); custWin.document.close(); }
+  catch (e) { custWin = null; }
+}
+window.__DCC_PUSH_CUSTOMER__ = pushCustomerWindow;
+function openCustomerWindow(){
+  var w = null;
+  /* No size/position features here on purpose — passing a features string
+     (e.g. width=...,height=...) is what makes browsers treat window.open as
+     a popup window. Omitting it opens a normal tab instead, which is what a
+     two-screen FSM desk wants: drag that tab to the customer's monitor. */
+  try { w = window.open("", "dccCustomerDisplay"); } catch (e) { w = null; }
+  if (!w){
+    state.ui.present = true;
+    toast("This browser blocked the new tab, so the customer display opened full screen instead.","err");
+    commit(); return;
+  }
+  custWin = w; pushCustomerWindow();
+  toast("Customer display opened in a new tab. It updates as you build the deal.","ok");
+  commit();
+}
+
+/* ---------------- ACTIONS ---------------- */
+function findLine(id){
+  for (var i=0;i<state.tx.lines.length;i++) if (state.tx.lines[i].lineId === id) return state.tx.lines[i];
+  return null;
+}
+function makeLine(p){
+  var line = { lineId:C.uid("L"), productId:p.id, term:null, km:null, interval:null, deductible:null,
+    price:null, priceOverridden:false, declined:false, packages:{ preferred:false, essential:false, basic:false } };
+  if (p.uses.term){
+    var want = C.primaryTerm(state.tx);
+    if (want){ var best = p.terms[0];
+      p.terms.forEach(function(x){ if (Math.abs(x-want) < Math.abs(best-want)) best = x; });
+      line.term = best;
+    } else line.term = p.terms[Math.min(2, p.terms.length-1)];
+  }
+  if (p.uses.km) line.km = p.kms[Math.min(2, p.kms.length-1)];
+  if (p.uses.interval) line.interval = p.intervals[1] !== undefined ? p.intervals[1] : p.intervals[0];
+  if (p.uses.deductible) line.deductible = p.deductibles[p.deductibles.length-1];
+  return line;
+}
+function completeDeal(){
+  var v = C.validate(state, state.tx);
+  if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
+  var done = C.clone(state.tx);
+  done.status = "Completed"; done.createdAt = C.todayISO();
+  state.completed.push(done);
+  state.tx.status = "Completed";
+  state.tx.display.mode = "thankyou";
+  toast("Deal " + done.id + " completed and sent to reporting.","ok");
+  commit();
+}
+function newDeal(){
+  state.tx = C.newTransaction(state.tx ? state.tx.fsmUserId : V.firstFsmFor(state.activeDealershipId), state.activeDealershipId);
+  V.applyFinanceDefaults(state.tx);
+  state.route = "finance";
+  commit();
+}
+function resetDemo(){
+  state.dealerships = C.clone(D.DEALERSHIPS);
+  state.activeDealershipId = "d1";
+  state.config = state.dealerships[0];
+  state.products = C.clone(D.PRODUCTS);
+  state.users = C.clone(D.USERS);
+  state.customers = C.clone(D.CUSTOMERS);
+  state.vehicles = C.clone(D.VEHICLES);
+  state.completed = [];
+  state.history = C.buildHistory(state);
+  newDeal();
+  toast("Preview reset to demo defaults.","ok");
+}
+function copyEmailText(){
+  var box = document.getElementById("emailBody");
+  var text = box ? box.value : buildEmail(state.tx).body;
+  var done = false;
+  try { if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text); done = true; } } catch (e) {}
+  if (!done && box){
+    try { box.focus(); box.select(); done = document.execCommand("copy"); } catch (e) { done = false; }
+  }
+  toast(done ? "Plain text copied to the clipboard." : "Copy was blocked — select the text and copy it manually.", done ? "ok" : "err");
+}
+function copyEmailHtml(){
+  var mail = buildEmailHtml(state.tx), text = buildEmail(state.tx).body, done = false;
+  try {
+    if (navigator.clipboard && navigator.clipboard.write && window.ClipboardItem){
+      var htmlBlob = new Blob([mail.html], { type:"text/html" });
+      var textBlob = new Blob([text], { type:"text/plain" });
+      navigator.clipboard.write([ new ClipboardItem({ "text/html":htmlBlob, "text/plain":textBlob }) ]);
+      done = true;
+    }
+  } catch (e) { done = false; }
+  if (!done){
+    try { if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(text); done = true; } } catch (e) {}
+  }
+  toast(done ? "Formatted email copied — paste it (Ctrl/Cmd+V) into your email draft." : "Rich copy isn't supported in this browser — use the HTML source box instead.", done ? "ok" : "err");
+}
+function sendEmail(){
+  var subject = document.getElementById("emailSubject");
+  var text = buildEmail(state.tx).body;
+  var to = state.tx.customer.email || "";
+  var href = "mailto:" + encodeURIComponent(to) + "?subject=" + encodeURIComponent(subject ? subject.value : "") +
+    "&body=" + encodeURIComponent(text);
+  var opened = null;
+  try { opened = window.open(href, "_blank"); } catch (e) { opened = null; }
+  if (!opened) toast("The browser blocked the mail app from this preview. Use Copy formatted email instead.","err");
+  else toast("Opening your email app with the plain-text version.","ok");
+}
+
+/* ---------------- EVENTS ---------------- */
+document.addEventListener("click", function(ev){
+  var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
+  if (!el) return;
+  var act = el.getAttribute("data-act");
+  if (act === "close-modal-bg" && ev.target !== el) return;
+  switch (act){
+    case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
+    case "toggle-rail": state.ui.railOpen = !state.ui.railOpen; commit(); break;
+    case "toggle-theme": state.ui.theme = state.ui.theme === "dark" ? "light" : "dark"; commit(); break;
+    case "toggle-split": state.ui.split = !state.ui.split; commit(); break;
+    case "present": state.ui.present = true; commit(); break;
+    case "exit-present": state.ui.present = false; commit(); break;
+    case "open-customer-window": openCustomerWindow(); break;
+    case "new-deal": newDeal(); break;
+    case "complete": completeDeal(); break;
+    case "email":
+      state.ui.modal = { kind:"email" };
+      if (state.tx.display.selection){
+        state.ui.email.pkg = state.tx.display.selection.package;
+        state.ui.email.term = state.tx.display.selection.term ? String(state.tx.display.selection.term) : "all";
+      }
+      commit(); break;
+    case "copy-email-html": copyEmailHtml(); break;
+    case "copy-email-text": copyEmailText(); break;
+    case "send-email": sendEmail(); break;
+    case "select-final-package": {
+      var fpk = el.getAttribute("data-package");
+      state.tx.display.selection = (state.tx.display.selection && state.tx.display.selection.package === fpk)
+        ? null : { package: fpk };
+      commit(); break; }
+    case "clear-selection": state.tx.display.selection = null; commit(); break;
+    case "remove-line": {
+      var lid = el.getAttribute("data-line");
+      state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== lid; });
+      if (!state.tx.lines.length && state.tx.display.mode === "package") state.tx.display.mode = "welcome";
+      commit(); break; }
+    case "reset-price": {
+      var ln = findLine(el.getAttribute("data-line"));
+      if (ln){ ln.price = null; ln.priceOverridden = false; } commit(); break; }
+    case "set-frequency": state.tx.finance.frequency = el.getAttribute("data-freq"); commit(); break;
+    case "cd-mode": state.tx.display.mode = el.getAttribute("data-mode"); commit(); break;
+    case "scroll-step": {
+      var target = document.getElementById("step-" + el.getAttribute("data-step"));
+      if (target && target.scrollIntoView) target.scrollIntoView({ behavior:"smooth", block:"start" }); break; }
+    case "print-internal": state.ui.modal = { kind:"internal" }; commit(); break;
+    case "print-customer": state.ui.modal = { kind:"customer" }; commit(); break;
+    case "close-modal": case "close-modal-bg":
+      state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; commit(); break;
+    case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing in this preview window.","err"); } break;
+    case "product-new": state.ui.productEdit = { id:null, name:"", code:"", category:"", active:true, taxRule:"standard",
+      uses:{term:true,km:false,interval:false,deductible:false}, terms:[36,48,60,72], kms:[], intervals:[], deductibles:[],
+      costFactor:0.4, desc:"", benefit:"", pricing:{ base:0, term:{} } }; commit(); break;
+    case "product-edit": state.ui.productEdit = C.clone(C.productById(state, el.getAttribute("data-product"))); commit(); break;
+    case "product-cancel": state.ui.productEdit = null; commit(); break;
+    case "product-save": saveProduct(); break;
+    case "product-toggle": {
+      var pr = C.productById(state, el.getAttribute("data-product"));
+      if (pr){ pr.active = !pr.active;
+        if (!pr.active) state.tx.lines = state.tx.lines.filter(function(l){ return l.productId !== pr.id; }); }
+      commit(); break; }
+    case "product-delete": {
+      var did = el.getAttribute("data-product");
+      state.products = state.products.filter(function(p){ return p.id !== did; });
+      state.tx.lines = state.tx.lines.filter(function(l){ return l.productId !== did; });
+      toast("Product removed from the master list.","ok"); commit(); break; }
+    case "user-new": state.ui.userForm = true; commit(); break;
+    case "user-cancel": state.ui.userForm = false; commit(); break;
+    case "user-save": saveUser(); break;
+    case "user-toggle": {
+      var uu = userById(el.getAttribute("data-user"));
+      if (uu.role === "Master Administrator") { toast("A master administrator can't be deactivated.","err"); break; }
+      uu.active = !uu.active;
+      if (!uu.active && uu.id === state.currentUserId) state.currentUserId = "u0";
+      commit(); break; }
+    case "user-delete": {
+      var uid2 = el.getAttribute("data-user");
+      var ud = userById(uid2);
+      if (ud.role === "Master Administrator") { toast("A master administrator can't be removed.","err"); break; }
+      if (uid2 === state.currentUserId) { toast("You can't remove your own account.","err"); break; }
+      state.users = state.users.filter(function(u){ return u.id !== uid2; }); commit(); break; }
+    case "dealer-new": state.ui.dealerForm = { id:null, name:"", brandKey:"ford", logoMark:"", active:true,
+      address:"", city:"", phone:"", email:"", dealerCode:"",
+      finance:{ defaultApr:7.49, defaultTerm:72, defaultFrequency:"biweekly", adminFee:699, licensing:120 },
+      tax:{ standard:13, vrc:8 } }; commit(); break;
+    case "dealer-edit": state.ui.dealerForm = C.clone(V.dealershipById(el.getAttribute("data-dealership"))); commit(); break;
+    case "dealer-cancel": state.ui.dealerForm = null; commit(); break;
+    case "dealer-save": saveDealer(); break;
+    case "dealer-delete": deleteDealer(el.getAttribute("data-dealership")); break;
+    case "switch-to-dealership": V.setDealership(el.getAttribute("data-dealership")); state.route = "finance"; commit(); break;
+    case "reset-demo": resetDemo(); break;
+  }
+});
+
+document.addEventListener("change", function(ev){
+  var el = ev.target, act = el.getAttribute("data-act");
+  if (act === "switch-user"){
+    state.currentUserId = el.value;
+    var u = userById(el.value);
+    if (u.dealershipId && u.dealershipId !== state.activeDealershipId) V.setDealership(u.dealershipId);
+    if (!V.isMaster() && state.route === "dealerships") state.route = "dashboard";
+    commit(); return;
+  }
+  if (act === "switch-dealership"){ V.setDealership(el.value); commit(); return; }
+  if (act === "assign-dealership"){
+    var target = userById(el.getAttribute("data-user"));
+    target.dealershipId = el.value; commit(); return;
+  }
+  if (act === "dealer-brand"){
+    if (state.ui.dealerForm){
+      state.ui.dealerForm.brandKey = el.value;
+      state.ui.dealerForm.logoMark = (D.BRANDS[el.value]||D.BRANDS.nissan).mark;
+    }
+    commit(); return;
+  }
+  if (act === "pick-customer"){
+    var c = state.customers.filter(function(x){ return x.id === el.value; })[0];
+    if (c) state.tx.customer = { id:c.id, name:c.name, phone:c.phone, email:c.email, address:c.address };
+    commit(); return;
+  }
+  if (act === "pick-vehicle"){
+    var v = state.vehicles.filter(function(x){ return x.id === el.value; })[0];
+    if (v){
+      state.tx.vehicle = { id:v.id, year:v.year, make:v.make, model:v.model, stock:v.stock, vin:v.vin,
+        odometer:v.odometer, condition:v.condition, price:v.price };
+      if (!state.tx.customer.name){
+        var owner = state.customers.filter(function(x){ return x.id === v.customerId; })[0];
+        if (owner) state.tx.customer = { id:owner.id, name:owner.name, phone:owner.phone, email:owner.email, address:owner.address };
+      }
+      if (!state.tx.finance.terms.length){
+        var dt = state.config.finance.defaultTerm;
+        state.tx.finance.terms = [dt];
+        if (!state.tx.finance.rates) state.tx.finance.rates = {};
+        if (state.tx.finance.rates[dt] === undefined) state.tx.finance.rates[dt] = state.config.finance.defaultApr;
+      }
+      if (!state.tx.finance.frequency) state.tx.finance.frequency = state.config.finance.defaultFrequency;
+    }
+    commit(); return;
+  }
+  if (act === "toggle-term"){
+    var tm = Number(el.getAttribute("data-term")), list = state.tx.finance.terms.slice();
+    if (!state.tx.finance.rates) state.tx.finance.rates = {};
+    if (el.checked){
+      if (list.indexOf(tm) === -1) list.push(tm);
+      if (state.tx.finance.rates[tm] === undefined) state.tx.finance.rates[tm] = state.config.finance.defaultApr;
+    } else {
+      list = list.filter(function(x){ return x !== tm; });
+      delete state.tx.finance.rates[tm];
+      if (state.tx.display.selection && state.tx.display.selection.term === tm) state.tx.display.selection = null;
+    }
+    state.tx.finance.terms = list.sort(function(a,b){ return a-b; });
+    commit(); return;
+  }
+  if (act === "term-rate"){
+    var trm = Number(el.getAttribute("data-term"));
+    if (!state.tx.finance.rates) state.tx.finance.rates = {};
+    state.tx.finance.rates[trm] = el.value === "" ? null : Number(el.value);
+    commit(); return;
+  }
+  if (act === "toggle-package-list"){
+    var pid2 = el.getAttribute("data-product"), pkgKey = el.getAttribute("data-package");
+    var line2 = state.tx.lines.filter(function(l){ return l.productId === pid2; })[0];
+    if (!line2){
+      if (!el.checked) return;
+      var prod2 = C.productById(state, pid2);
+      if (!prod2) return;
+      line2 = makeLine(prod2);
+      state.tx.lines.push(line2);
+    }
+    if (!line2.packages) line2.packages = { preferred:false, essential:false, basic:false };
+    line2.packages[pkgKey] = el.checked;
+    if (el.checked) line2.declined = false;
+    var anyPkg = line2.packages.preferred || line2.packages.essential || line2.packages.basic;
+    if (!anyPkg && !line2.declined) state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line2.lineId; });
+    if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
+    if (!state.tx.lines.length && state.tx.display.mode === "package") state.tx.display.mode = "welcome";
+    commit(); return;
+  }
+  if (act === "toggle-decline"){
+    var pid3 = el.getAttribute("data-product");
+    var line3 = state.tx.lines.filter(function(l){ return l.productId === pid3; })[0];
+    if (el.checked){
+      if (!line3){
+        var prod3 = C.productById(state, pid3);
+        if (!prod3) return;
+        line3 = makeLine(prod3);
+        state.tx.lines.push(line3);
+      }
+      line3.packages = { preferred:false, essential:false, basic:false };
+      line3.declined = true;
+    } else if (line3){
+      line3.declined = false;
+      var anyPkg3 = line3.packages && (line3.packages.preferred || line3.packages.essential || line3.packages.basic);
+      if (!anyPkg3) state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line3.lineId; });
+    }
+    if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
+    commit(); return;
+  }
+  if (act === "toggle-payment"){ state.tx.display.showPayment = el.checked; commit(); return; }
+  if (act === "report-preset"){
+    state.ui.reports.period = el.value;
+    var r = presetRange(el.value);
+    state.ui.reports.from = r.from; state.ui.reports.to = r.to;
+    commit(); return;
+  }
+  var bind = el.getAttribute("data-bind");
+  if (!bind) return;
+  var raw = el.type === "checkbox" ? el.checked : el.value;
+  var num = el.getAttribute("data-type") === "num";
+  if (bind.indexOf("line:") === 0){
+    var parts = bind.split(":"), ln2 = findLine(parts[1]), field = parts[2];
+    if (!ln2) return;
+    if (raw === "") ln2[field] = null; else ln2[field] = num ? Number(raw) : raw;
+    if (field === "price"){
+      var prod = C.productById(state, ln2.productId), conf = C.priceFor(prod, ln2);
+      ln2.priceOverridden = !(ln2.price === null || conf === null || Number(ln2.price) === Number(conf));
+    } else if (!ln2.priceOverridden) ln2.price = null;
+    commit(); return;
+  }
+  var value = raw === "" ? (num ? null : "") : (num ? Number(raw) : raw);
+  V.setPath(state, bind, value);
+  if (bind === "config.brandKey"){
+    var bd = D.BRANDS[value];
+    if (bd) state.config.logoMark = bd.mark;
+  }
+  commit();
+});
+
+/* ---------------- BOOT ---------------- */
+function boot(){
+  if (state.tx) V.applyFinanceDefaults(state.tx);
+  var r = presetRange("monthly");
+  state.ui.reports.from = r.from; state.ui.reports.to = r.to;
+  commit();
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
+else boot();
+
+function addToPackage(pid, pkgKey){
+  var line = state.tx.lines.filter(function(l){ return l.productId === pid; })[0];
+  if (!line){
+    var prod = C.productById(state, pid);
+    if (!prod) return;
+    line = makeLine(prod);
+    state.tx.lines.push(line);
+  }
+  if (!line.packages) line.packages = { preferred:false, essential:false, basic:false };
+  line.packages[pkgKey || "preferred"] = true;
+}
+window.__DCC_TEST__ = { state:state, render:render, addToPackage:addToPackage, completeDeal:completeDeal, newDeal:newDeal,
+  filteredDeals:filteredDeals, internalPrint:internalPrint, customerPrint:customerPrint, buildEmail:buildEmail, buildEmailHtml:buildEmailHtml,
+  viewProducts:viewProducts, viewReports:viewReports, viewUsers:viewUsers, viewSettings:viewSettings,
+  viewDealerships:viewDealerships, routeView:routeView, presetRange:presetRange, priceRange:priceRange,
+  saveDealer:saveDealer, deleteDealer:deleteDealer, customerWindowDoc:customerWindowDoc, renderOnboarding:renderOnboarding };
+})();
+</script>
+</body>
+</html>
