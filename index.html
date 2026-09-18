@@ -1898,27 +1898,12 @@ function userModal(){
           <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
           <button type="button" class="btn sm" data-act="uf-access" data-val="demo">Demo (time limited)</button>
         </div><input type="hidden" data-uf="access" value="full"></div>
-      <div id="ufDemoBox" class="f" style="display:none"><span>Demo lasts</span>
-        <div class="chiprow">
-          ${[[1,"1 hour"],[4,"4 hours"],[24,"1 day"],[72,"3 days"],[168,"7 days"],[336,"14 days"],[720,"30 days"]].map(function(d){
-            return `<button type="button" class="btn sm ${d[0]===168?"on":""}" data-act="uf-dur" data-hours="${d[0]}">${d[1]}</button>`; }).join("")}
-          <button type="button" class="btn sm" data-act="uf-dur" data-hours="custom">Custom</button>
-        </div><input type="hidden" data-uf="hours" value="168">
-        <div id="ufCustom" style="display:none;margin-top:8px;max-width:180px"><input type="number" min="1" data-uf="customdays" placeholder="Number of days"></div>
-        <div class="small muted" style="margin-top:8px">Expires <strong id="ufPreview"></strong></div>
+      <div id="ufDemoBox" class="f" style="display:none"><span>Demo ends</span>
+        ${wheelPicker(state.ui.inviteSel || (state.ui.inviteSel = defaultWheelSel(Date.now() + 7*86400000)), "invite")}
       </div>
       <p class="small muted">No email verification is needed. Share the temporary password with the user — they'll be asked to set their own the first time they sign in. Demo users get the full functionality of the role you pick until the expiry.</p>
     </div></div></div>`;
 }
-function updateDemoPreview(){
-  var mr = document.querySelector(".modal"); if (!mr) return;
-  var pv = mr.querySelector("#ufPreview"); if (!pv) return;
-  var h = mr.querySelector('[data-uf="hours"]').value;
-  if (h === "custom") h = Number(mr.querySelector('[data-uf="customdays"]').value) * 24;
-  h = Number(h);
-  pv.textContent = h > 0 ? fmtExpiry(new Date(Date.now() + h*3600000).toISOString()) : "— enter a number of days";
-}
-document.addEventListener("input", function(ev){ if (ev.target.getAttribute && ev.target.getAttribute("data-uf") === "customdays") updateDemoPreview(); });
 function saveUser(){
   var root = document.querySelector(".modal");
   if (!root) return;
@@ -1927,11 +1912,10 @@ function saveUser(){
   if (!name){ toast("Enter the user's name.","err"); return; }
   if (!/^\S+@\S+\.\S+$/.test(email)){ toast("Enter a valid email address.","err"); return; }
   if (pw.length < 8){ toast("The temporary password needs at least 8 characters.","err"); return; }
-  var access = f("access").value, hrs = f("hours").value;
-  if (hrs === "custom") hrs = Number(f("customdays").value) * 24;
-  hrs = Number(hrs);
-  if (access === "demo" && !(hrs > 0)){ toast("Choose how long the demo lasts.","err"); return; }
-  var exp = new Date(Date.now() + hrs*3600000).toISOString();
+  var access = f("access").value;
+  var expDate = wheelDate(state.ui.inviteSel || defaultWheelSel(Date.now() + 7*86400000));
+  if (access === "demo" && !(expDate.getTime() > Date.now())){ toast("Pick a demo end date and time in the future.","err"); return; }
+  var exp = expDate.toISOString();
   var role = f("role").value;
   toast("Creating user…","info");
   adminCall({ action:"create", email:email, password:pw, name:name, role:role,
@@ -2594,7 +2578,7 @@ function render(){
     }
   }
   if (state.ui.tour) positionTour();
-  if (state.ui.extendForm) initWheels();
+  if (state.ui.extendForm || state.ui.userForm) initWheels();
 }
 window.__DCC_RENDER__ = render;
 
@@ -2886,16 +2870,13 @@ function wheelDate(sel){
   var h = ((sel.hr+1) % 12) + (sel.ap ? 12 : 0);
   return new Date(y, m, d, h, sel.mi*5, 0, 0);
 }
-function extendModal(){
-  var f = state.ui.extendForm;
-  if (!f) return "";
-  var u = userById(f.id), yrs = wheelYears();
-  if (!f.sel){
-    var base = new Date(Math.max(Date.now(), u.expiresAt ? new Date(u.expiresAt).getTime() : 0) + 7*86400000);
-    var h24 = base.getHours();
-    f.sel = { mo:base.getMonth(), day:base.getDate()-1, yr:Math.max(0, yrs.indexOf(base.getFullYear())),
-      hr:((h24 % 12) || 12) - 1, mi:Math.round(base.getMinutes()/5) % 12, ap:h24 >= 12 ? 1 : 0 };
-  }
+function defaultWheelSel(baseMs){
+  var yrs = wheelYears(), base = new Date(baseMs), h24 = base.getHours();
+  return { mo:base.getMonth(), day:base.getDate()-1, yr:Math.max(0, yrs.indexOf(base.getFullYear())),
+    hr:((h24 % 12) || 12) - 1, mi:Math.round(base.getMinutes()/5) % 12, ap:h24 >= 12 ? 1 : 0 };
+}
+function wheelPicker(sel, setName){
+  var yrs = wheelYears();
   function wheel(key, items, idx){
     return `<div class="wheel" data-wheel="${key}" data-idx="${idx}"><div class="wheel-pad"></div>${items.map(function(t, k){
       return `<div class="wi ${k===idx?"on":""}">${t}</div>`; }).join("")}<div class="wheel-pad"></div></div>`;
@@ -2903,24 +2884,32 @@ function extendModal(){
   var days = []; for (var d=1; d<=31; d++) days.push(d);
   var hrs = []; for (var h=1; h<=12; h++) hrs.push(h);
   var mins = []; for (var m=0; m<60; m+=5) mins.push((m<10?"0":"")+m);
+  return `<div data-wheelset="${setName}">
+    <div class="wheel-summary"><div class="lbl">Expires</div><div class="big" id="wheelSummary">${esc(fmtExpiry(wheelDate(sel).toISOString()))}</div></div>
+    <div class="wheel-heads"><span style="flex:1.6">Month</span><span>Day</span><span style="flex:1.3">Year</span><span class="gap"></span><span>Hour</span><span>Min</span><span></span></div>
+    <div class="wheels">
+      <div class="wheel-band"></div>
+      ${wheel("mo", MONTHS, sel.mo).replace('class="wheel"','class="wheel" style="flex:1.6"')}
+      ${wheel("day", days, sel.day)}
+      ${wheel("yr", yrs, sel.yr).replace('class="wheel"','class="wheel" style="flex:1.3"')}
+      <span class="wheel-gap"></span>
+      ${wheel("hr", hrs, sel.hr)}
+      ${wheel("mi", mins, sel.mi)}
+      ${wheel("ap", ["AM","PM"], sel.ap)}
+    </div></div>`;
+}
+function extendModal(){
+  var f = state.ui.extendForm;
+  if (!f) return "";
+  var u = userById(f.id), yrs = wheelYears();
+  if (!f.sel) f.sel = defaultWheelSel(Math.max(Date.now(), u.expiresAt ? new Date(u.expiresAt).getTime() : 0) + 7*86400000);
   return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal" style="max-width:460px">
     <div class="modal-h"><h2>Extend demo</h2><div class="sp">
       <button class="btn" data-act="extend-cancel">Cancel</button>
       <button class="btn primary" data-act="extend-save">Save new expiry</button></div></div>
     <div class="modal-b">
       <p style="margin-bottom:4px"><strong>${esc(u.name)}</strong>${u.expiresAt ? ` currently expires <strong>${esc(fmtExpiry(u.expiresAt))}</strong>` : ""}</p>
-      <div class="wheel-summary"><div class="lbl">New expiry</div><div class="big" id="wheelSummary">${esc(fmtExpiry(wheelDate(f.sel).toISOString()))}</div></div>
-      <div class="wheel-heads"><span style="flex:1.6">Month</span><span>Day</span><span style="flex:1.3">Year</span><span class="gap"></span><span>Hour</span><span>Min</span><span></span></div>
-      <div class="wheels">
-        <div class="wheel-band"></div>
-        ${wheel("mo", MONTHS, f.sel.mo).replace('class="wheel"','class="wheel" style="flex:1.6"')}
-        ${wheel("day", days, f.sel.day)}
-        ${wheel("yr", yrs, f.sel.yr).replace('class="wheel"','class="wheel" style="flex:1.3"')}
-        <span class="wheel-gap"></span>
-        ${wheel("hr", hrs, f.sel.hr)}
-        ${wheel("mi", mins, f.sel.mi)}
-        ${wheel("ap", ["AM","PM"], f.sel.ap)}
-      </div>
+      ${wheelPicker(f.sel, "extend")}
       <p class="tiny muted" style="margin-top:10px">Scroll each column to choose. The demo ends at exactly this date and time.</p>
     </div></div></div>`;
 }
@@ -2931,13 +2920,16 @@ function initWheels(){
 }
 document.addEventListener("scroll", function(ev){
   var w = ev.target;
-  if (!w || !w.classList || !w.classList.contains("wheel") || !state.ui.extendForm || !state.ui.extendForm.sel) return;
+  if (!w || !w.classList || !w.classList.contains("wheel")) return;
+  var set = w.closest ? w.closest("[data-wheelset]") : null;
+  var sel = !set ? null : (set.getAttribute("data-wheelset") === "invite" ? state.ui.inviteSel : (state.ui.extendForm && state.ui.extendForm.sel));
+  if (!sel) return;
   var idx = Math.max(0, Math.min(w.querySelectorAll(".wi").length - 1, Math.round(w.scrollTop / WHEEL_H)));
-  state.ui.extendForm.sel[w.getAttribute("data-wheel")] = idx;
+  sel[w.getAttribute("data-wheel")] = idx;
   w.setAttribute("data-idx", idx);
   Array.prototype.forEach.call(w.querySelectorAll(".wi"), function(it, k){ it.classList.toggle("on", k === idx); });
   var sm = document.getElementById("wheelSummary");
-  if (sm) sm.textContent = fmtExpiry(wheelDate(state.ui.extendForm.sel).toISOString());
+  if (sm) sm.textContent = fmtExpiry(wheelDate(sel).toISOString());
 }, true);
 
 /* ---------------- FIRST-LOGIN WALKTHROUGH ---------------- */
@@ -3136,7 +3128,7 @@ document.addEventListener("click", function(ev){
       state.products = state.products.filter(function(p){ return p.id !== did; });
       state.tx.lines = state.tx.lines.filter(function(l){ return l.productId !== did; });
       toast("Product removed from the master list.","ok"); commit(); break; }
-    case "user-new": state.ui.userForm = true; commit(); break;
+    case "user-new": state.ui.userForm = true; state.ui.inviteSel = null; commit(); break;
     case "user-cancel": state.ui.userForm = false; commit(); break;
     case "user-save": saveUser(); break;
     case "user-setpw": {
@@ -3176,14 +3168,7 @@ document.addEventListener("click", function(ev){
       mr.querySelector('[data-uf="access"]').value = av;
       Array.prototype.forEach.call(el.parentNode.children, function(b){ b.classList.toggle("on", b === el); });
       mr.querySelector("#ufDemoBox").style.display = av === "demo" ? "" : "none";
-      updateDemoPreview(); break; }
-    case "uf-dur": {
-      var mr2 = document.querySelector(".modal"); if (!mr2) break;
-      var hv = el.getAttribute("data-hours");
-      mr2.querySelector('[data-uf="hours"]').value = hv;
-      Array.prototype.forEach.call(el.parentNode.children, function(b){ b.classList.toggle("on", b === el); });
-      mr2.querySelector("#ufCustom").style.display = hv === "custom" ? "" : "none";
-      updateDemoPreview(); break; }
+      initWheels(); break; }
     case "demo-extend": state.ui.extendForm = { id:el.getAttribute("data-user") }; commit(); break;
     case "extend-save": {
       var ef = state.ui.extendForm;
