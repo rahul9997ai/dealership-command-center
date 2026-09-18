@@ -550,6 +550,7 @@ function newTransaction(fsmUserId, dealershipId){
     customer:{ id:null, name:"", phone:"", email:"", address:"" },
     vehicle:{ id:null, year:"", make:"", model:"", stock:"", vin:"", odometer:"", condition:"New", price:null },
     finance:{ tradeAllowance:0, tradePayout:0, downPayment:0, fees:[], feeAmount:0, rates:{}, terms:[], frequency:null },
+    cash:{ tradeAllowance:0, tradePayout:0, downPayment:0, feeAmount:0 },
     lines:[],   /* { lineId, productId, term, km, interval, deductible, price, priceOverridden, packages{} } */
     display:{ mode:"welcome", showPayment:true, selection:null }
   };
@@ -647,20 +648,23 @@ function totals(state, tx){
   var productsTotal = Math.round((productsSub+productsTax)*100)/100;
 
   var vPrice = Number(tx.vehicle.price)||0, adminFee = Number(fin.adminFee)||0, lic = Number(fin.licensing)||0;
-  var tradeAll = Number(tx.finance.tradeAllowance)||0, tradePay = Number(tx.finance.tradePayout)||0, down = Number(tx.finance.downPayment)||0;
-  var fees = tx.finance.fees || [];
-  var feeAmount = Number(tx.finance.feeAmount) || 0;
+  var isCash = tx.type === "Cash";
+  var src = isCash ? (tx.cash||{}) : tx.finance;
+  var tradeAll = Number(src.tradeAllowance)||0, tradePay = Number(src.tradePayout)||0, down = Number(src.downPayment)||0;
+  var fees = isCash ? [] : (tx.finance.fees || []);
+  var feeAmount = Number(src.feeAmount) || 0;
   var feesTotal = Math.round((fees.reduce(function(sum, f){ return sum + (Number(f.amount)||0); }, 0) + feeAmount) * 100) / 100;
   var taxableVehicle = Math.max(0, vPrice + adminFee - tradeAll);
   var vehicleTax = Math.round(taxableVehicle*(Number(taxCfg.standard)/100)*100)/100;
   var baseAmount = Math.max(0, vPrice + adminFee + vehicleTax + lic - tradeAll + tradePay - down + feesTotal);
-  var financed = Math.round((baseAmount + productsTotal)*100)/100;
+  var financed = isCash ? null : Math.round((baseAmount + productsTotal)*100)/100;
+  var cashDueTotal = isCash ? Math.round((baseAmount + productsTotal)*100)/100 : null;
 
-  var terms = presentedTerms, rates = tx.finance.rates || {};
-  var freq = tx.finance.frequency || null;
+  var terms = isCash ? [] : presentedTerms, rates = isCash ? {} : (tx.finance.rates || {});
+  var freq = isCash ? null : (tx.finance.frequency || null);
 
   function quotesFor(extraTotal){
-    if (!freq || !terms.length) return [];
+    if (isCash || !freq || !terms.length) return [];
     return terms.map(function(tm){
       var rateRaw = rates[tm];
       var hasRate = !(rateRaw === undefined || rateRaw === null || rateRaw === "");
@@ -692,7 +696,8 @@ function totals(state, tx){
     return { key:def.key, suffix:def.suffix, blurb:def.blurb, label:packageLabel(state, def.suffix),
       lines:pl, count:pl.length, hasUnpriced:missing,
       sub:Math.round(s*100)/100, tax:Math.round(tx1*100)/100, total:tot,
-      cost:c, gross:Math.round((s-c)*100)/100, quotes:quotesFor(tot) };
+      cost:c, gross:Math.round((s-c)*100)/100, quotes:quotesFor(tot),
+      dueTotal: isCash ? Math.round((baseAmount+tot)*100)/100 : null };
   });
 
   return {
@@ -702,7 +707,7 @@ function totals(state, tx){
     productGross:Math.round((productsSub-cost)*100)/100,
     vehiclePrice:vPrice, adminFee:adminFee, licensing:lic, vehicleTax:vehicleTax,
     tradeAllowance:tradeAll, tradePayout:tradePay, downPayment:down,
-    baseAmount:Math.round(baseAmount*100)/100, amountFinanced:financed,
+    baseAmount:Math.round(baseAmount*100)/100, amountFinanced:financed, isCash:isCash, cashDueTotal:cashDueTotal,
     fees:fees, feeAmount:feeAmount, feesTotal:feesTotal, terms:terms, term:primaryTerm(tx), rates:rates, frequency:freq,
     quotes:quotesFor(productsTotal), baseQuotes:quotesFor(0)
   };
@@ -714,12 +719,14 @@ function validate(state, tx){
   if (!tx.customer.name) errs.push("Add a customer before completing the transaction.");
   if (!tx.vehicle.model || !tx.vehicle.stock) errs.push("Enter the vehicle model and stock number.");
   if (!tx.vehicle.price) errs.push("Enter the vehicle selling price.");
-  if (!t.terms.length) errs.push("Select at least one finance term to present.");
-  if (!tx.finance.frequency) errs.push("Select a payment frequency.");
-  t.terms.forEach(function(tm){
-    var r = (tx.finance.rates || {})[tm];
-    if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
-  });
+  if (tx.type !== "Cash"){
+    if (!t.terms.length) errs.push("Select at least one finance term to present.");
+    if (!tx.finance.frequency) errs.push("Select a payment frequency.");
+    t.terms.forEach(function(tm){
+      var r = (tx.finance.rates || {})[tm];
+      if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
+    });
+  }
   if (!tx.lines.length) warns.push("No products are selected. The customer display will show the welcome screen only.");
   else if (!t.packagesUsed) warns.push("No product has been assigned to a package yet, so the customer display is showing every selected product as one package.");
   for (var i=0;i<t.lines.length;i++){
@@ -745,7 +752,7 @@ function buildHistory(state){
     var fsms = roster[dealershipId];
     var d = new Date(today.getTime() - Math.floor(rnd()*400)*86400000);
     var iso = d.toISOString().slice(0,10);
-    var r = rnd(), type = r < 0.68 ? "Finance" : (r < 0.9 ? "Lease" : "Cash");
+    var r = rnd(), type = r < 0.78 ? "Finance" : "Cash";
     var tx = newTransaction(fsms[Math.floor(rnd()*fsms.length)], dealershipId);
     tx.id = "DEMO-" + (10000+i); tx.createdAt = iso; tx.type = type; tx.status = "Completed";
     tx.customer = { id:null, name:D.DEMO_NAMES[Math.floor(rnd()*D.DEMO_NAMES.length)], phone:"", email:"", address:"" };
@@ -755,9 +762,14 @@ function buildHistory(state){
       price:28000+Math.floor(rnd()*36000) };
     var tm = type === "Cash" ? null : [48,60,72,84,96][Math.floor(rnd()*5)];
     var histRate = type === "Cash" ? 0 : Math.round((4+rnd()*6)*100)/100;
-    tx.finance = { tradeAllowance: rnd() < .4 ? Math.floor(rnd()*18000) : 0, tradePayout:0,
-      downPayment: Math.floor(rnd()*6)*1000, rates: tm ? (function(){ var o={}; o[tm]=histRate; return o; })() : {},
-      terms: tm ? [tm] : [], frequency: type === "Cash" ? null : (rnd() < .6 ? "biweekly" : "monthly") };
+    var histTradeAll = rnd() < .4 ? Math.floor(rnd()*18000) : 0, histDown = Math.floor(rnd()*6)*1000;
+    if (type === "Cash"){
+      tx.cash = { tradeAllowance:histTradeAll, tradePayout:0, downPayment:histDown, feeAmount:0 };
+    } else {
+      tx.finance = { tradeAllowance:histTradeAll, tradePayout:0,
+        downPayment:histDown, rates: tm ? (function(){ var o={}; o[tm]=histRate; return o; })() : {},
+        terms: tm ? [tm] : [], frequency: rnd() < .6 ? "biweekly" : "monthly" };
+    }
     var count = Math.floor(rnd()*4.4);
     var pool = state.products.filter(function(p){ return p.active && p.pricing; });
     var used = {};
@@ -933,21 +945,20 @@ function dealsForStore(){
    Dealerships. A General Manager sees everything except Dealerships (they
    run one store, they don't create new ones). An FSM Manager additionally
    oversees Users & access for their own store. A plain FSM — and a time
-   limited Demo account — only sees the deal-facing screens: Finance, Lease,
-   Cash, Products and Reports. */
+   limited Demo account — only sees the deal-facing screens: Finance (which
+   covers both finance and cash deals via the deal-type toggle), Products
+   and Reports. */
 function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
-  if (role === "General Manager") return ["dashboard","finance","lease","cash","products","reports","users","settings"];
-  if (role === "FSM Manager") return ["dashboard","finance","lease","cash","products","reports","users"];
-  return ["finance","lease","cash","products","reports"];
+  if (role === "General Manager") return ["dashboard","finance","products","reports","users","settings"];
+  if (role === "FSM Manager") return ["dashboard","finance","products","reports","users"];
+  return ["finance","products","reports"];
 }
 function navItems(){
   var items = [
     { key:"dashboard", label:"Dashboard", ic:"▤" },
     { key:"finance", label:"Finance", ic:"◧" },
-    { key:"lease", label:"Lease", ic:"◫", tag:"Soon" },
-    { key:"cash", label:"Cash", ic:"◨", tag:"Soon" },
     { key:"products", label:"Products", ic:"▦" },
     { key:"reports", label:"Reports", ic:"▥" },
     { key:"users", label:"Users & access", ic:"◍" },
@@ -1105,14 +1116,14 @@ function packagesToShow(t, tx){
     L.cfg.packages && (L.cfg.packages.preferred || L.cfg.packages.essential || L.cfg.packages.basic); });
   if (t.packagesUsed) list = t.packages.filter(function(p){ return p.count > 0; });
   else if (nonDeclined.length) list = [{ key:"selected", label:"SELECTED PACKAGE", blurb:"", lines:nonDeclined,
-    count:nonDeclined.length, quotes:t.quotes }];
+    count:nonDeclined.length, quotes:t.quotes, dueTotal:t.isCash?t.cashDueTotal:null }];
   else list = [];
   var sel = tx && tx.display && tx.display.selection;
   if (sel && sel.package){
     list = list.filter(function(p){ return p.key === sel.package; });
     list = list.map(function(p){
       var q = sel.term ? p.quotes.filter(function(x){ return x.term === sel.term; }) : p.quotes;
-      return { key:p.key, label:p.label, lines:p.lines, count:p.count, quotes:q };
+      return { key:p.key, label:p.label, lines:p.lines, count:p.count, quotes:q, dueTotal:p.dueTotal };
     });
   }
   return list;
@@ -1125,7 +1136,9 @@ function renderCustomerDisplay(tx){
     <div class="cd-tagline">Stronger Coverage, Smarter Ownership, That's the Difference.</div></div>`;
   var freqWord = tx.finance.frequency ? C.freqLabel(tx.finance.frequency) : "bi-weekly or monthly";
   var noteBar = `<div class="cd-note"><div class="nt1">Premium protection for your ${esc(b.label)} investment</div>
-    <div class="nt2">All payments shown are ${freqWord}, interest and ${esc(state.config.tax.standard)}% HST included.</div></div>`;
+    <div class="nt2">${tx.type==="Cash"
+      ? "All totals shown are due in full at signing, "+esc(state.config.tax.standard)+"% HST included."
+      : "All payments shown are "+freqWord+", interest and "+esc(state.config.tax.standard)+"% HST included."}</div></div>`;
   var foot = `<div class="cd-foot"><span>${esc(cfg.name)} — ${esc(cfg.address)}, ${esc(cfg.city)}</span><span>${esc(cfg.phone)}</span>
     <span style="margin-left:auto">Preview — demonstration only</span></div>`;
 
@@ -1150,7 +1163,10 @@ function renderCustomerDisplay(tx){
       var icon = PRODUCT_ICONS[L.product.id] || "🛡";
       return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div></div>`;
     }).join("");
-    var payBox = (tx.display.showPayment && p.quotes && p.quotes.length)
+    var payBox = tx.type==="Cash"
+      ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
+          <div class="pt-amt">${money(p.dueTotal)}</div></div></div>` : "")
+      : (tx.display.showPayment && p.quotes && p.quotes.length)
       ? `<div class="paybox">${p.quotes.map(function(q){
           return `<div class="payterm"><div class="pt-term">${q.term} mo</div>
             <div class="pt-amt">${q.payment===null?"—":money(q.payment)}</div>
@@ -1185,7 +1201,8 @@ function stepState(tx){
   return [
     { n:1, label:"Customer", done: !!tx.customer.name },
     { n:2, label:"Vehicle", done: !!(tx.vehicle.model && tx.vehicle.stock && tx.vehicle.price) },
-    { n:3, label:"Finance setup", done: !!(t.terms.length && tx.finance.frequency && t.terms.every(function(tm){
+    { n:3, label:tx.type==="Cash"?"Cash setup":"Finance setup", done: tx.type==="Cash" ? true
+        : !!(t.terms.length && tx.finance.frequency && t.terms.every(function(tm){
         var r = (tx.finance.rates||{})[tm]; return r !== undefined && r !== null && r !== ""; })) },
     { n:4, label:"Products & packages", done: tx.lines.length > 0 && t.unpricedCount === 0 },
     { n:5, label:"Presentation", done: tx.lines.length > 0 && t.unpricedCount === 0 && tx.display.mode === "package" }
@@ -1252,9 +1269,12 @@ function viewFinance(){
     return `<label class="f"><span>${tm} months — rate (APR %)</span><input type="number" step="0.01" value="${esc(r)}" data-act="term-rate" data-term="${tm}"></label>`;
   }).join("")}</div>` : "";
 
-  var financeCard = `<div class="card" id="step-3"><div class="card-h"><h2>3 · Finance setup</h2>
-    <div class="sp"><span class="tag">${t.terms.length ? t.terms.length + " term" + (t.terms.length>1?"s":"") + " presented" : "No term selected"}</span></div></div>
-    <div class="card-b">
+  var dealTypeToggle = `<div class="chiprow" style="margin-bottom:12px">
+    <button type="button" class="btn sm ${tx.type==="Finance"?"on":""}" data-act="set-deal-type" data-deal-type="Finance">Finance</button>
+    <button type="button" class="btn sm ${tx.type==="Cash"?"on":""}" data-act="set-deal-type" data-deal-type="Cash">Cash</button>
+  </div>`;
+
+  var financeBody = `
       <div class="inline">
         <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.finance.tradeAllowance)}" data-bind="tx.finance.tradeAllowance" data-type="num"></label>
         <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.finance.tradePayout)}" data-bind="tx.finance.tradePayout" data-type="num"></label>
@@ -1279,7 +1299,28 @@ function viewFinance(){
           <td class="right num">${q.rate===null?`<span class="tag warn">Enter rate</span>`:q.rate+"%"}</td>
           <td class="right num">${q.basePayment===null?"—":money(q.basePayment)+" "+C.freqLabel(q.frequency)}</td>
           <td class="right num">${q.paymentsCount}</td></tr>`; }).join("")}</tbody></table></div>`
-        : `<div class="notice warn">Pick at least one term and a payment frequency to see payments.</div>`}
+        : `<div class="notice warn">Pick at least one term and a payment frequency to see payments.</div>`}`;
+
+  var cashBody = `
+      <div class="inline">
+        <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.cash.tradeAllowance)}" data-bind="tx.cash.tradeAllowance" data-type="num"></label>
+        <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.cash.tradePayout)}" data-bind="tx.cash.tradePayout" data-type="num"></label>
+        <label class="f"><span>Deposit</span><input type="number" value="${esc(tx.cash.downPayment)}" data-bind="tx.cash.downPayment" data-type="num"></label>
+        <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.cash.feeAmount)}" data-bind="tx.cash.feeAmount" data-type="num" placeholder="0.00"></label>
+      </div>
+      <div class="divider"></div>
+      <div class="tablewrap"><table>
+        <thead><tr><th>Vehicle + fees + tax</th><th class="right">Products (selected package)</th><th class="right">Total due at signing</th></tr></thead>
+        <tbody><tr><td>${money(t.baseAmount)}</td>
+          <td class="right num">${money(t.productsTotal)}</td>
+          <td class="right num"><strong>${money(t.baseAmount+t.productsTotal)}</strong></td></tr></tbody></table></div>
+      <div class="small muted" style="margin-top:6px">No financing, no payment schedule — the customer pays this in full. The per-package total below updates as products are added.</div>`;
+
+  var financeCard = `<div class="card" id="step-3"><div class="card-h"><h2>3 · ${tx.type==="Cash"?"Cash":"Finance"} setup</h2>
+    <div class="sp"><span class="tag">${tx.type==="Cash" ? "Paid in full" : (t.terms.length ? t.terms.length + " term" + (t.terms.length>1?"s":"") + " presented" : "No term selected")}</span></div></div>
+    <div class="card-b">
+      ${dealTypeToggle}
+      ${tx.type==="Cash" ? cashBody : financeBody}
     </div></div>`;
 
   var PKG_SHORT = { preferred:"Pref", essential:"Esse", basic:"Basi" };
@@ -1645,7 +1686,7 @@ function viewReports(){
       <option value="all">All products</option>
       ${state.products.map(function(p){ return `<option value="${p.id}" ${f.product===p.id?"selected":""}>${esc(p.name)}</option>`; }).join("")}</select></label>
     <label class="f"><span>Transaction type</span><select data-bind="ui.reports.type">
-      ${["all","Finance","Lease","Cash"].map(function(x){ return `<option value="${x}" ${f.type===x?"selected":""}>${x==="all"?"All types":x}</option>`; }).join("")}</select></label>
+      ${["all","Finance","Cash"].map(function(x){ return `<option value="${x}" ${f.type===x?"selected":""}>${x==="all"?"All types":x}</option>`; }).join("")}</select></label>
   </div></div></div>`;
 
   var kpis = `<div class="grid g4" style="margin-bottom:16px">
@@ -1924,7 +1965,7 @@ function internalPrintSelected(tx, t, u, pkg){
       <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td>
       <td style="text-align:right">${L.gross===null?"—":money(L.gross)}</td></tr>`;
   }).join("");
-  var termCols = t.terms.map(function(tm){
+  var termCols = tx.type==="Cash" ? "" : t.terms.map(function(tm){
     var r = (tx.finance.rates||{})[tm];
     var bq = t.baseQuotes.filter(function(x){ return x.term === tm; })[0];
     return `<div><div class="lbl">${tm} MONTHS</div><div>@ ${r!==undefined&&r!==null&&r!==""?r+"%":"—"} · ${bq&&bq.basePayment!==null?money(bq.basePayment)+" "+C.freqLabel(bq.frequency):"—"}</div></div>`;
@@ -1949,15 +1990,18 @@ function internalPrintSelected(tx, t, u, pkg){
       ${termCols}
     </div>
     <div class="selectbox">
-      <div><div class="lbl">TERM${t.terms.length>1?"S":""} PRESENTED</div><div class="big">${t.terms.length?t.terms.map(function(tm){ return tm+" Months"; }).join(", "):"—"}</div></div>
-      <div><div class="lbl">PAYMENT WITH SELECTED PACKAGE</div>
-        ${pkgQuotes.length ? pkgQuotes.map(function(q){ return `<div class="big">${money(q.payment)} <span class="unit">${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="big">—</div>`}
-      </div>
+      ${tx.type==="Cash"
+        ? `<div><div class="lbl">DEAL TYPE</div><div class="big">Paid in full</div></div>
+           <div><div class="lbl">TOTAL DUE WITH SELECTED PACKAGE</div><div class="big">${money(pkg.dueTotal)}</div></div>`
+        : `<div><div class="lbl">TERM${t.terms.length>1?"S":""} PRESENTED</div><div class="big">${t.terms.length?t.terms.map(function(tm){ return tm+" Months"; }).join(", "):"—"}</div></div>
+           <div><div class="lbl">PAYMENT WITH SELECTED PACKAGE</div>
+             ${pkgQuotes.length ? pkgQuotes.map(function(q){ return `<div class="big">${money(q.payment)} <span class="unit">${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="big">—</div>`}
+           </div>`}
     </div>
     <h3>Final Package</h3>
     <div class="cols">
       <div><div class="lbl">CUSTOMER SELECTED PACKAGE</div><div><strong>${esc(pkg.label)}</strong></div></div>
-      <div><div class="lbl">PACKAGE PAYMENT</div><div>${pkgQuotes.length ? money(pkgQuotes[0].payment)+" "+C.freqLabel(pkgQuotes[0].frequency) : "—"}</div></div>
+      <div><div class="lbl">${tx.type==="Cash"?"TOTAL DUE":"PACKAGE PAYMENT"}</div><div>${tx.type==="Cash" ? money(pkg.dueTotal) : (pkgQuotes.length ? money(pkgQuotes[0].payment)+" "+C.freqLabel(pkgQuotes[0].frequency) : "—")}</div></div>
     </div>
     <h3>Products &amp; Dispositions</h3>
     <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th><th style="text-align:right">Gross</th></tr></thead>
@@ -1982,8 +2026,8 @@ function internalPrint(tx){
         <div>Stock ${esc(tx.vehicle.stock||"—")} · ${esc(tx.vehicle.condition)}</div><div>VIN ${esc(tx.vehicle.vin||"—")}</div>
         <div>Odometer ${esc(tx.vehicle.odometer||0)} km</div></div>
       <div><div class="lbl">TRANSACTION</div><div>Type ${esc(tx.type)}</div>
-        <div>Terms presented ${t.terms.length?t.terms.join(", ")+" months":"—"}</div>
-        <div>Rates ${t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—"} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>
+        <div>${tx.type==="Cash" ? "Paid in full — no financing" : "Terms presented "+(t.terms.length?t.terms.join(", ")+" months":"—")}</div>
+        ${tx.type==="Cash" ? "" : `<div>Rates ${t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—"} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>`}
         <div>FSM ${esc(u.name)} (${esc(u.role)})</div></div>
     </div>
     <h3>Products</h3>
@@ -2000,10 +2044,10 @@ function internalPrint(tx){
       </tbody></table>
     <h3 style="margin-top:16px">Packages presented</h3>
     <table><thead><tr><th>Package</th><th style="text-align:right">Products</th><th style="text-align:right">Total with tax</th><th style="text-align:right">Gross</th>
-      ${t.terms.map(function(tm){ return `<th style="text-align:right">${tm} Months</th>`; }).join("")}</tr></thead>
+      ${tx.type==="Cash" ? `<th style="text-align:right">Total due</th>` : t.terms.map(function(tm){ return `<th style="text-align:right">${tm} Months</th>`; }).join("")}</tr></thead>
       <tbody>${t.packages.map(function(p){ return `<tr><td>${esc(p.label)}</td><td style="text-align:right">${p.count}</td>
         <td style="text-align:right">${money(p.total)}</td><td style="text-align:right">${money(p.gross)}</td>
-        ${t.terms.map(function(tm){
+        ${tx.type==="Cash" ? `<td style="text-align:right"><strong>${money(p.dueTotal)}</strong></td>` : t.terms.map(function(tm){
           var q = p.quotes.filter(function(x){ return x.term === tm; })[0];
           return `<td style="text-align:right">${q?money(q.payment):"—"}</td>`; }).join("")}</tr>`; }).join("")}
       </tbody></table>
@@ -2022,12 +2066,14 @@ function internalPrint(tx){
         <div class="kv"><span class="k">Trade payout</span><span>${money(t.tradePayout)}</span></div>
         <div class="kv"><span class="k">Vehicle tax ${state.config.tax.standard}%</span><span>${money(t.vehicleTax)}</span></div>
         <div class="kv"><span class="k">Licensing</span><span>${money(t.licensing)}</span></div>
-        <div class="kv"><span class="k">Cash down</span><span>${money(t.downPayment)}</span></div>
+        <div class="kv"><span class="k">${tx.type==="Cash"?"Deposit":"Cash down"}</span><span>${money(t.downPayment)}</span></div>
         ${t.fees.map(function(f){ return `<div class="kv"><span class="k">${esc(f.name)} (non-taxable)</span><span>${money(Number(f.amount)||0)}</span></div>`; }).join("")}
         ${t.feeAmount ? `<div class="kv"><span class="k">Fees (non-taxable)</span><span>${money(t.feeAmount)}</span></div>` : ""}
-        <div class="kv total"><span>Financed with all products</span><span>${money(t.amountFinanced)}</span></div></div>
-      <div><div class="lbl">PAYMENTS, ALL PRODUCTS</div>
-        ${t.quotes.length ? t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months</span><span>${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="kv"><span class="k">No term selected</span><span>—</span></div>`}
+        <div class="kv total"><span>${tx.type==="Cash"?"Due at signing with all products":"Financed with all products"}</span><span>${money(tx.type==="Cash"?t.cashDueTotal:t.amountFinanced)}</span></div></div>
+      <div><div class="lbl">${tx.type==="Cash"?"AMOUNT DUE":"PAYMENTS, ALL PRODUCTS"}</div>
+        ${tx.type==="Cash"
+          ? `<div class="kv"><span class="k">Paid in full at signing</span><span>${money(t.cashDueTotal)}</span></div>`
+          : (t.quotes.length ? t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months</span><span>${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="kv"><span class="k">No term selected</span><span>—</span></div>`)}
         <div style="margin-top:18px;border-top:1px solid #111;padding-top:4px;font-size:10px;color:#667085">FSM signature</div></div>
     </div>
     <div class="watermark">INTERNAL COPY · DEMONSTRATION DATA · NOT A CONTRACT</div></div>`;
@@ -2043,15 +2089,16 @@ function customerPrint(tx){
       <div class="cols" style="margin-bottom:18px">
         <div><div class="lbl">PREPARED FOR</div><div><strong>${esc(tx.customer.name||"—")}</strong></div><div>${esc(tx.customer.phone||"")}</div></div>
         <div><div class="lbl">YOUR VEHICLE</div><div><strong>${esc(tx.vehicle.year+" "+tx.vehicle.model)}</strong></div><div>Stock ${esc(tx.vehicle.stock||"—")}</div></div>
-        <div><div class="lbl">TERMS SHOWN</div><div><strong>${t.terms.length?t.terms.join(" · ")+" months":"—"}</strong></div>
-          <div>${t.frequency?C.freqLabel(t.frequency).charAt(0).toUpperCase()+C.freqLabel(t.frequency).slice(1)+" payments":""}</div></div>
+        <div><div class="lbl">TERMS SHOWN</div><div><strong>${tx.type==="Cash" ? "Paid in full" : (t.terms.length?t.terms.join(" · ")+" months":"—")}</strong></div>
+          <div>${tx.type!=="Cash" && t.frequency?C.freqLabel(t.frequency).charAt(0).toUpperCase()+C.freqLabel(t.frequency).slice(1)+" payments":""}</div></div>
       </div>
       ${shown.length ? shown.map(function(p){ return `<div class="ccov">
         <div style="font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</div>
         <div style="margin-top:6px">${p.lines.map(function(L){
           var cfg = V.lineConfigText(L);
           return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
-        ${(tx.display.showPayment && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
+        ${tx.display.showPayment && tx.type==="Cash" ? `<div style="margin-top:8px;font-size:12px"><div><strong>${money(p.dueTotal)}</strong> due in full</div></div>` : ""}
+        ${(tx.display.showPayment && tx.type!=="Cash" && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
           ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
       </div>`; }).join("") : `<p>No protection products were presented on this agreement.</p>`}
       <p style="margin-top:16px;color:#475467;font-size:11.5px">Keep this summary with your vehicle documents. Full terms, conditions and claim instructions are in the coverage agreements signed today. Questions at any point, call us at ${esc(c.phone)}.</p>
@@ -2077,15 +2124,20 @@ function buildEmail(tx){
   shown.forEach(function(p){
     L.push(p.label);
     L.push(new Array(p.label.length + 1).join("-"));
-    var quotes = p.quotes.filter(function(q){ return sel.term === "all" || Number(sel.term) === q.term; });
-    if (quotes.length){
-      L.push("Payment with this package:");
-      quotes.forEach(function(q){
-        if (q.payment === null){ L.push("  - " + q.term + " months: rate still to be entered"); return; }
-        L.push("  - " + money(q.payment) + " " + C.freqLabel(q.frequency) + " over " + q.term + " months at " + q.rate + "%"
-          + " (" + money(q.difference) + " more than the vehicle on its own)");
-      });
+    if (tx.type === "Cash"){
+      L.push("Total due in full with this package: " + money(p.dueTotal));
       L.push("");
+    } else {
+      var quotes = p.quotes.filter(function(q){ return sel.term === "all" || Number(sel.term) === q.term; });
+      if (quotes.length){
+        L.push("Payment with this package:");
+        quotes.forEach(function(q){
+          if (q.payment === null){ L.push("  - " + q.term + " months: rate still to be entered"); return; }
+          L.push("  - " + money(q.payment) + " " + C.freqLabel(q.frequency) + " over " + q.term + " months at " + q.rate + "%"
+            + " (" + money(q.difference) + " more than the vehicle on its own)");
+        });
+        L.push("");
+      }
     }
     L.push("What is included:");
     p.lines.forEach(function(line){
@@ -2118,7 +2170,7 @@ function buildEmailHtml(tx){
   var sel = state.ui.email;
   var shown = V.packagesToShow(t).filter(function(p){ return sel.pkg === "all" || sel.pkg === p.key; }).map(function(p){
     var q = sel.term === "all" ? p.quotes : p.quotes.filter(function(x){ return String(x.term) === String(sel.term); });
-    return { key:p.key, label:p.label, lines:p.lines, quotes:q };
+    return { key:p.key, label:p.label, lines:p.lines, quotes:q, dueTotal:p.dueTotal };
   });
   var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "there";
   var vehicle = (tx.vehicle.year + " " + tx.vehicle.make + " " + tx.vehicle.model).trim();
@@ -2132,14 +2184,19 @@ function buildEmailHtml(tx){
         ${L.product.benefit ? `<div style="color:#475467;font-size:12.5px;margin-top:4px;line-height:1.5">${esc(L.product.benefit)}</div>` : ""}
       </td></tr>`;
     }).join("");
-    var payHtml = p.quotes.length ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+    var payHtml = tx.type === "Cash"
+      ? `<div style="margin-top:10px"><div style="text-align:center;background:#eef2f7;border-radius:8px;padding:10px 8px">
+          <div style="font-size:10px;color:#667085;letter-spacing:.04em">TOTAL DUE IN FULL</div>
+          <div style="font-size:18px;font-weight:700;color:#0d1b2e;margin-top:2px">${money(p.dueTotal)}</div>
+        </div></div>`
+      : (p.quotes.length ? `<div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
       ${p.quotes.map(function(q){
         return `<div style="flex:1;min-width:110px;text-align:center;background:#eef2f7;border-radius:8px;padding:10px 8px">
           <div style="font-size:10px;color:#667085;letter-spacing:.04em">${q.term} MONTHS</div>
           <div style="font-size:18px;font-weight:700;color:#0d1b2e;margin-top:2px">${q.payment===null?"—":money(q.payment)}</div>
           <div style="font-size:10px;color:#667085">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div>
         </div>`;
-      }).join("")}</div>` : "";
+      }).join("")}</div>` : "");
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;border:1px solid #dde3ec;border-radius:10px;overflow:hidden">
       <tr><td style="background:${brandColor};color:#ffffff;padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</td></tr>
       <tr><td style="padding:14px 16px;background:#ffffff">
@@ -2352,8 +2409,6 @@ function routeView(){
   switch (state.route){
     case "dashboard": return V.viewDashboard();
     case "finance": return V.viewFinance();
-    case "lease": return V.viewUnderConstruction("Lease");
-    case "cash": return V.viewUnderConstruction("Cash");
     case "products": return viewProducts();
     case "reports": return viewReports();
     case "users": return viewUsers();
@@ -2637,6 +2692,7 @@ document.addEventListener("click", function(ev){
       var ln = findLine(el.getAttribute("data-line"));
       if (ln){ ln.price = null; ln.priceOverridden = false; } commit(); break; }
     case "set-frequency": state.tx.finance.frequency = el.getAttribute("data-freq"); commit(); break;
+    case "set-deal-type": state.tx.type = el.getAttribute("data-deal-type"); commit(); break;
     case "cd-mode": state.tx.display.mode = el.getAttribute("data-mode"); commit(); break;
     case "scroll-step": {
       var target = document.getElementById("step-" + el.getAttribute("data-step"));
