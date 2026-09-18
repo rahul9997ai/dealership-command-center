@@ -2915,6 +2915,7 @@ document.addEventListener("click", function(ev){
     case "user-toggle": {
       var uu = userById(el.getAttribute("data-user"));
       if (uu.role === "Master Administrator") { toast("A master administrator can't be deactivated.","err"); break; }
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uu.id)){ uu.active = !uu.active; commit(); break; }
       adminCall({ action:"update", id:uu.id, active:!uu.active })
         .then(function(){ refreshUsers(); }).catch(function(e){ toast(e.message,"err"); });
       break; }
@@ -2924,6 +2925,10 @@ document.addEventListener("click", function(ev){
       if (ud.role === "Master Administrator") { toast("A master administrator can't be removed.","err"); break; }
       if (uid2 === state.currentUserId) { toast("You can't remove your own account.","err"); break; }
       if (!window.confirm("Remove " + ud.name + "? They will no longer be able to sign in.")) break;
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uid2)){
+        /* A leftover from before real accounts existed — it only lives in this browser, so there's nothing on the server to delete. */
+        state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); break;
+      }
       adminCall({ action:"delete", id:uid2 }).then(function(){
         state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit();
       }).catch(function(e){ toast(e.message,"err"); });
