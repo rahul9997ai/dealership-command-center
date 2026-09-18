@@ -389,7 +389,7 @@ var PACKAGES = [
 var DEALERSHIPS = [];
 
 var USERS = [
-  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"admin@axiom.local", password:"axiom123", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
+  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"admin", password:"admin", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
 ];
 
 /* Product master. desc is used only in the emailed presentation, never on the
@@ -772,6 +772,18 @@ var state = {
     if (saved[k] !== undefined) state[k] = saved[k];
   });
   if (saved.theme) state.ui.theme = saved.theme;
+})();
+
+/* The seeded Master Administrator's login must always match what's in the
+   code, even on a browser that cached an older snapshot from before a
+   password field existed (or before it last changed) — otherwise fixing
+   this account's credentials in code can never reach anyone who already
+   has a persisted copy. Every other user/dealership stays exactly as saved. */
+(function reconcileMasterAdmin(){
+  var seed = D.USERS[0];
+  var u0 = state.users.filter(function(u){ return u.id === seed.id; })[0];
+  if (u0){ u0.email = seed.email; u0.password = seed.password; }
+  else state.users.unshift(C.clone(seed));
 })();
 
 if (state.activeDealershipId && !state.dealerships.some(function(d){ return d.id === state.activeDealershipId; })){
