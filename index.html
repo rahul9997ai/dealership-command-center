@@ -2682,9 +2682,19 @@ document.addEventListener("change", function(ev){
       state.tx.lines.push(line2);
     }
     if (!line2.packages) line2.packages = { preferred:false, essential:false, basic:false };
+    var wasInAnyPkg = line2.packages.preferred || line2.packages.essential || line2.packages.basic;
     line2.packages[pkgKey] = el.checked;
     if (el.checked) line2.declined = false;
     var anyPkg = line2.packages.preferred || line2.packages.essential || line2.packages.basic;
+    /* The customer display lists products in the order they were selected
+       into a package. A price typed in before any package is picked (or a
+       product declined and later brought back) shouldn't count as "selected"
+       yet — only the moment it first joins a package sets its display order,
+       so move it to the end of the line-up right then. */
+    if (el.checked && !wasInAnyPkg){
+      state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line2.lineId; });
+      state.tx.lines.push(line2);
+    }
     if (!anyPkg && !line2.declined) state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line2.lineId; });
     if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
     if (!state.tx.lines.length && state.tx.display.mode === "package") state.tx.display.mode = "welcome";
