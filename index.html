@@ -248,6 +248,13 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
+.demo-chip{white-space:nowrap;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
+  padding:6px 14px;border-radius:999px;background:var(--rail);color:#fff;font-size:12px;box-shadow:var(--shadow);border:1px solid var(--warn)}
+.demo-chip .dc-dot{width:8px;height:8px;border-radius:50%;background:var(--warn);animation:bundlePulse 2s ease-in-out infinite}
+.demo-chip .dc-lbl{letter-spacing:.06em;text-transform:uppercase;font-weight:700;font-size:10.5px;opacity:.85}
+.demo-chip .dc-time{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px}
+.demo-expiry{margin:12px 0;padding:12px 14px;border-radius:10px;background:var(--warn-bg);border:1px solid var(--warn)}
+.demo-expiry .big{font-size:17px;font-weight:800;margin:2px 0}
 .bundle-badge{margin:2px 16px 12px;padding:11px 13px;border-radius:10px;
   background:linear-gradient(135deg,var(--ok-bg),var(--surface));border:1px solid var(--ok);
   animation:bundlePop .5s ease-out, bundlePulse 2.6s ease-in-out .5s infinite}
@@ -409,6 +416,7 @@ tbody tr:hover{background:var(--surface-2)}
 <body>
 <div id="root"></div>
 <div id="overlay"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* =====================================================================
    DEALERSHIP COMMAND CENTER — HTML PREVIEW (DEMO / MOCK DATA ONLY)
@@ -1782,18 +1790,18 @@ function viewReports(){
 /* ---------------- USERS ---------------- */
 function viewUsers(){
   var canEdit = V.isAdmin();
-  var rows = V.storeUsers().map(function(u){
+  var rows = V.storeUsers().filter(function(u){ return u.id !== "u0"; }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
     return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(u.email)}</div></td>
-      <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}</td>
+      <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
       <td>${V.isMaster() && u.role !== "Master Administrator" ? `<select data-act="assign-dealership" data-user="${u.id}" style="min-width:190px">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
         </select>` : esc(dealer)}</td>
       <td class="small">${esc((u.restrictions||[]).join(" · ")||"—")}</td>
-      <td>${u.demo?esc(u.accessDays+" days"):"Unlimited"}</td>
+      <td class="small">${u.demo ? "Demo until<br>"+esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—") : "Full access"}</td>
       <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
-        <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Set password</button>
+        <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
         <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;
   }).join("");
@@ -1801,53 +1809,54 @@ function viewUsers(){
     <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
       <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. An administrator, FSM manager and FSM work inside one dealership. A demo account is time limited and cannot change pricing or access.</p>
+      <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. An administrator, FSM manager and FSM work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
+  var soon = new Date(Date.now() + 14*86400000); soon.setMinutes(soon.getMinutes() - soon.getTimezoneOffset());
   return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal">
-    <div class="modal-h"><h2>Add a user</h2><div class="sp">
+    <div class="modal-h"><h2>Invite a user</h2><div class="sp">
       <button class="btn" data-act="user-cancel">Cancel</button>
-      <button class="btn primary" data-act="user-save">Add user</button></div></div>
+      <button class="btn primary" data-act="user-save">Create user</button></div></div>
     <div class="modal-b">
       <div class="inline">
         <label class="f"><span>Full name</span><input type="text" data-uf="name" placeholder="e.g. Alexis Nadeau"></label>
         <label class="f"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca"></label>
       </div>
       <div class="inline">
+        <label class="f"><span>Temporary password</span><input type="text" data-uf="password" placeholder="At least 8 characters"></label>
         <label class="f"><span>Role</span><select data-uf="role">
-          <option>FSM</option><option>FSM Manager</option><option>General Manager</option><option>Demo</option>
+          <option>FSM</option><option>FSM Manager</option><option>General Manager</option>
           ${V.isMaster()?"<option>Master Administrator</option>":""}</select></label>
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
-        <label class="f"><span>Demo access length (days)</span><input type="number" data-uf="days" value="14"></label>
       </div>
       <div class="inline">
-        <label class="f"><span>Login password</span><input type="text" data-uf="password" placeholder="Set a password for this account"></label>
-        <label class="f"><span>Access restrictions</span><input type="text" data-uf="restrictions" placeholder="Reports: own deals"></label>
+        <label class="f"><span>Access type</span><select data-uf="access"><option value="full">Full access</option><option value="demo">Demo access (expires)</option></select></label>
+        <label class="f"><span>Demo expires (date &amp; time)</span><input type="datetime-local" data-uf="expires" value="${soon.toISOString().slice(0,16)}"></label>
       </div>
+      <p class="small muted">No email verification is needed. Share the temporary password with the user — they'll be asked to set their own the first time they sign in. Demo users get the full functionality of the role you pick until the expiry.</p>
     </div></div></div>`;
 }
 function saveUser(){
   var root = document.querySelector(".modal");
   if (!root) return;
   function f(k){ return root.querySelector('[data-uf="'+k+'"]'); }
-  var name = f("name").value.trim();
+  var name = f("name").value.trim(), email = f("email").value.trim().toLowerCase(), pw = f("password").value.trim();
   if (!name){ toast("Enter the user's name.","err"); return; }
+  if (!/^\S+@\S+\.\S+$/.test(email)){ toast("Enter a valid email address.","err"); return; }
+  if (pw.length < 8){ toast("The temporary password needs at least 8 characters.","err"); return; }
+  var access = f("access").value, exp = f("expires").value;
+  if (access === "demo" && (!exp || new Date(exp) <= new Date())){ toast("Pick a demo expiry in the future.","err"); return; }
   var role = f("role").value;
-  var pw = f("password").value.trim();
-  if (!pw){ toast("Set a login password for this user.","err"); return; }
-  state.users.push({ id:C.uid("u"), name:name,
-    initials:name.split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase(),
-    role:role, email:f("email").value.trim()||"user@demo.ca", password:pw,
-    dealershipId: role === "Master Administrator" ? null : f("dealership").value,
-    active:true, demo: role === "Demo", accessDays: role === "Demo" ? (Number(f("days").value)||14) : null,
-    restrictions: f("restrictions").value ? [f("restrictions").value.trim()] : [] });
-  state.ui.userForm = false;
-  toast("User added.","ok");
-  commit();
+  toast("Creating user…","info");
+  adminCall({ action:"create", email:email, password:pw, name:name, role:role,
+    dealership_id: role === "Master Administrator" ? null : (f("dealership").value || null),
+    access_type:access, expires_at: access === "demo" ? new Date(exp).toISOString() : null })
+  .then(function(){ state.ui.userForm = false; toast("User created — share the temporary password with " + name.split(" ")[0] + ".","ok"); refreshUsers(); commit(); })
+  .catch(function(e){ toast(e.message, "err"); });
 }
 
 /* ---------------- DEALERSHIPS (master administrator) ---------------- */
@@ -2324,7 +2333,7 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + demoChip() + demoNoticeModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -2416,6 +2425,7 @@ function axiomGlobeSvg(){
 }
 function renderLogin(){
   var err = state.ui.loginError;
+  if (state.ui.authChecking) return `<div class="axiom-page"><div style="margin:auto;color:#cbd5e1;font-size:14px;letter-spacing:.08em">Checking your session…</div></div>`;
   return `<div class="axiom-page">
     <svg class="axiom-wave" viewBox="0 0 1440 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
       <path d="M0 200 C 240 260, 480 140, 720 190 S 1200 260, 1440 190" stroke="rgba(95,212,244,.35)" stroke-width="2" fill="none"/>
@@ -2443,7 +2453,7 @@ function renderLogin(){
           ${err ? `<div class="axiom-err">${esc(err)}</div>` : ""}
           <div class="axiom-field"><label>Email</label><input type="text" id="loginEmail" placeholder="you@yourcompany.com" autocomplete="username"></div>
           <div class="axiom-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password"></div>
-          <div class="axiom-row"><label class="switch"><input type="checkbox" checked> Remember me</label><a data-act="forgot-password">Forgot password?</a></div>
+          <div class="axiom-row"><a data-act="forgot-password">Forgot password?</a></div>
           <button type="button" class="axiom-signin" data-act="do-login">Sign In</button>
         </div>
       </div>
@@ -2488,8 +2498,8 @@ function render(){
   if (fp && active && typeof active.selectionStart === "number"){
     try { selStart = active.selectionStart; selEnd = active.selectionEnd; } catch (e) {}
   }
-  root.innerHTML = state.loggedIn ? V.renderShell(routeView()) : renderLogin();
-  ov.innerHTML = state.loggedIn ? renderOverlay() : "";
+  root.innerHTML = state.loggedIn ? ((state.auth && state.auth.mustChange) ? renderChangePassword() : V.renderShell(routeView())) : renderLogin();
+  ov.innerHTML = (state.loggedIn && !(state.auth && state.auth.mustChange)) ? renderOverlay() : "";
   window.scrollTo(0, y);
   if (fp){
     var next = null;
@@ -2622,31 +2632,152 @@ function resetDemo(){
    but not real security (anyone with devtools can read it). A real backend
    with hashed passwords is the follow-up once this needs to be trustworthy
    for more than one FSM on one browser. */
+var SB_URL = "https://tbptlrewwxhggxxfdiks.supabase.co";
+var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRicHRscmV3d3hoZ2d4eGZkaWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2OTYzMTksImV4cCI6MjEwNTI3MjMxOX0.lYDOQbBWj4ZEHD2VkBfKtl1mTnSXlIGmkPb2dt6B4lU";
+var sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SB_URL, SB_KEY) : null;
+state.auth = null;
+
+function upsertProfileUser(p){
+  var rec = { id:p.id, name:p.name, role:p.role, email:p.email, dealershipId:p.dealership_id || null,
+    active:p.active !== false, demo:p.access_type === "demo", expiresAt:p.expires_at || null,
+    mustChange:!!p.must_change_password, accessDays:null, restrictions:[],
+    initials:String(p.name||"?").split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase() };
+  var ex = state.users.filter(function(u){ return u.id === p.id; })[0];
+  if (ex){ for (var k in rec) ex[k] = rec[k]; } else state.users.push(rec);
+}
+function adminCall(body){
+  return sb.auth.getSession().then(function(r){
+    var sess = r.data && r.data.session;
+    if (!sess) throw new Error("You're signed out — sign in again.");
+    return fetch(SB_URL + "/functions/v1/admin-users", { method:"POST",
+      headers:{ "Content-Type":"application/json", "apikey":SB_KEY, "Authorization":"Bearer " + sess.access_token },
+      body:JSON.stringify(body) });
+  }).then(function(res){
+    return res.json().then(function(j){ if (!res.ok || j.error) throw new Error(j.error || ("Error " + res.status)); return j; });
+  });
+}
+function refreshUsers(){
+  if (!sb || !V.isAdmin()) return;
+  adminCall({ action:"list" }).then(function(r){ (r.users || []).forEach(upsertProfileUser); commit(); }).catch(function(){});
+}
+function failLogin(msg){
+  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.demoNotice = false; state.ui.authChecking = false; state.ui.loginError = msg || null; commit(); };
+  return sb ? sb.auth.signOut().then(done, done) : (done(), Promise.resolve());
+}
+function finishEnter(u){
+  if (state.dealerships.length){
+    if (u.dealershipId && state.dealerships.some(function(d){ return d.id === u.dealershipId; })) V.setDealership(u.dealershipId);
+    else V.setDealership(state.dealerships[0].id);
+  }
+  state.route = (u.role === "Master Administrator" || u.role === "General Manager" || u.role === "FSM Manager") ? "dashboard" : "finance";
+  state.ui.demoNotice = !!(state.auth && state.auth.accessType === "demo");
+  toast("Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
+  refreshUsers();
+  commit();
+}
+function loadProfileAndEnter(){
+  return sb.auth.getUser().then(function(r){
+    var user = r.data && r.data.user;
+    if (!user) return failLogin(null);
+    return sb.from("profiles").select("*").eq("id", user.id).single().then(function(pr){
+      var p = pr.data;
+      if (!p || !p.active) return failLogin("This account isn't active. Contact your administrator.");
+      if (p.access_type === "demo" && p.expires_at && new Date(p.expires_at) <= new Date())
+        return failLogin("Your demo access has expired. Contact your administrator.");
+      state.auth = { mustChange:!!p.must_change_password, accessType:p.access_type, expiresAt:p.expires_at };
+      upsertProfileUser(p);
+      state.currentUserId = p.id; state.loggedIn = true; state.ui.loginError = null; state.ui.authChecking = false;
+      if (!p.must_change_password) finishEnter(userById(p.id)); else commit();
+    });
+  });
+}
 function doLogin(){
   var emailEl = document.getElementById("loginEmail"), pwEl = document.getElementById("loginPassword");
   var email = emailEl ? emailEl.value.trim().toLowerCase() : "";
   var pw = pwEl ? pwEl.value : "";
   if (!email || !pw){ state.ui.loginError = "Enter your email and password."; commit(); return; }
-  var match = state.users.filter(function(u){
-    return u.active && u.email && u.email.toLowerCase() === email;
-  })[0];
-  if (!match || !match.password || match.password !== pw){
-    state.ui.loginError = "That email and password don't match an active account.";
-    commit(); return;
-  }
-  state.ui.loginError = null;
-  state.currentUserId = match.id;
-  state.loggedIn = true;
-  if (match.dealershipId) V.setDealership(match.dealershipId);
-  else if (state.dealerships.length) V.setDealership(state.dealerships[0].id);
-  state.route = (match.role === "Master Administrator" || match.role === "General Manager" || match.role === "FSM Manager") ? "dashboard" : "finance";
-  toast("Welcome back, " + match.name.split(" ")[0] + ".","ok");
-  commit();
+  if (!sb){ state.ui.loginError = "The sign-in service couldn't load. Check your connection and refresh."; commit(); return; }
+  sb.auth.signInWithPassword({ email:email, password:pw }).then(function(r){
+    if (r.error){
+      state.ui.loginError = /invalid login|banned|not found/i.test(r.error.message) ? "That email and password don't match an active account." : r.error.message;
+      commit(); return;
+    }
+    return loadProfileAndEnter();
+  });
 }
 function doLogout(){
+  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.demoNotice = false; state.ui.loginError = null; commit(); };
+  if (sb) sb.auth.signOut().then(done, done); else done();
+}
+function doChangePassword(){
+  var a = document.getElementById("newPw"), b = document.getElementById("newPw2");
+  var pw = a ? a.value : "", pw2 = b ? b.value : "";
+  if (pw.length < 8){ state.ui.pwError = "Use at least 8 characters."; commit(); return; }
+  if (pw !== pw2){ state.ui.pwError = "The two passwords don't match."; commit(); return; }
+  sb.auth.updateUser({ password:pw }).then(function(r){
+    if (r.error){ state.ui.pwError = r.error.message; commit(); return; }
+    return sb.rpc("clear_must_change_password").then(function(){
+      state.auth.mustChange = false; state.ui.pwError = null;
+      finishEnter(userById(state.currentUserId));
+    });
+  });
+}
+function authInit(){
   state.loggedIn = false;
-  state.ui.loginError = null;
-  commit();
+  if (!sb) return;
+  state.ui.authChecking = true;
+  sb.auth.getSession().then(function(r){
+    if (r.data && r.data.session) return loadProfileAndEnter();
+    state.ui.authChecking = false; commit();
+  }, function(){ state.ui.authChecking = false; commit(); });
+}
+function fmtRemaining(ms){
+  var t = Math.max(0, Math.floor(ms/1000)), d = Math.floor(t/86400), h = Math.floor(t%86400/3600), m = Math.floor(t%3600/60), sec = t%60;
+  function z(n){ return (n<10?"0":"") + n; }
+  return (d ? d + "d " : "") + z(h) + ":" + z(m) + ":" + z(sec);
+}
+function fmtExpiry(iso){
+  try { return new Date(iso).toLocaleString("en-CA", { dateStyle:"full", timeStyle:"short" }); } catch (e) { return String(iso); }
+}
+setInterval(function(){
+  var a = state.auth;
+  if (!state.loggedIn || !a || a.accessType !== "demo" || !a.expiresAt) return;
+  var ms = new Date(a.expiresAt).getTime() - Date.now();
+  if (ms <= 0){ failLogin("Your demo access has expired."); return; }
+  var el = document.getElementById("demoTimer"); if (el) el.textContent = fmtRemaining(ms);
+}, 1000);
+function renderChangePassword(){
+  var err = state.ui.pwError;
+  return `<div class="axiom-page"><div class="axiom-grid" style="grid-template-columns:1fr"><div class="axiom-right" style="margin:auto">
+    <div class="axiom-card">
+      <div class="axiom-card-brand">${axiomMarkSvg(42)}<div><div class="nm">AXIOM</div><div class="tg">Set your password</div></div></div>
+      <h2>Create your own password</h2>
+      <p class="sub">You signed in with a temporary password. Choose a new one to continue.</p>
+      ${err ? `<div class="axiom-err">${esc(err)}</div>` : ""}
+      <div class="axiom-field"><label>New password</label><input type="password" id="newPw" placeholder="At least 8 characters" autocomplete="new-password"></div>
+      <div class="axiom-field"><label>Confirm password</label><input type="password" id="newPw2" placeholder="Repeat the password" autocomplete="new-password"></div>
+      <button type="button" class="axiom-signin" data-act="do-change-password">Save and continue</button>
+      <div style="text-align:center;margin-top:12px"><a data-act="logout" style="cursor:pointer">Sign out</a></div>
+    </div></div></div></div>`;
+}
+function demoChip(){
+  var a = state.auth;
+  if (!state.loggedIn || !a || a.accessType !== "demo" || a.mustChange || !a.expiresAt) return "";
+  return `<div class="demo-chip" title="Demo access ends ${esc(fmtExpiry(a.expiresAt))}"><span class="dc-dot"></span>
+    <span class="dc-lbl">Demo access</span><span class="dc-time" id="demoTimer">${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</span></div>`;
+}
+function demoNoticeModal(){
+  var a = state.auth;
+  if (!state.ui.demoNotice || !a || a.accessType !== "demo") return "";
+  return `<div class="modal-bg"><div class="modal" style="max-width:520px">
+    <div class="modal-h"><h2>You're using a demo account</h2></div>
+    <div class="modal-b">
+      <p>Welcome to AXIOM. This is a time-limited demo of the platform — you have access to the full functionality of your role while it lasts.</p>
+      <div class="demo-expiry"><div class="lbl">Your access expires</div><div class="big">${esc(fmtExpiry(a.expiresAt))}</div>
+        <div class="muted small">Time remaining: <strong>${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</strong></div></div>
+      <p class="small muted">A countdown stays at the top of your screen. When it reaches zero you'll be signed out automatically. Talk to your administrator if you need more time.</p>
+      <div style="text-align:right;margin-top:14px"><button class="btn primary" data-act="demo-ack">Continue to AXIOM</button></div>
+    </div></div></div>`;
 }
 function copyEmailText(){
   var box = document.getElementById("emailBody");
@@ -2773,25 +2904,32 @@ document.addEventListener("click", function(ev){
     case "user-save": saveUser(); break;
     case "user-setpw": {
       var upw = userById(el.getAttribute("data-user"));
-      var next = window.prompt("Set a new login password for " + upw.name + ":", "");
+      var next = window.prompt("Set a temporary password for " + upw.name + " (min 8 characters). They'll choose their own at next sign-in:", "");
       if (next === null) break;
       next = next.trim();
-      if (!next){ toast("Password not changed — it can't be blank.","err"); break; }
-      upw.password = next;
-      toast("Password updated for " + upw.name + ".","ok");
-      commit(); break; }
+      if (next.length < 8){ toast("Password not changed — use at least 8 characters.","err"); break; }
+      adminCall({ action:"reset_password", id:upw.id, password:next })
+        .then(function(){ toast("Temporary password set for " + upw.name + ".","ok"); refreshUsers(); })
+        .catch(function(e){ toast(e.message,"err"); });
+      break; }
     case "user-toggle": {
       var uu = userById(el.getAttribute("data-user"));
       if (uu.role === "Master Administrator") { toast("A master administrator can't be deactivated.","err"); break; }
-      uu.active = !uu.active;
-      if (!uu.active && uu.id === state.currentUserId) state.currentUserId = "u0";
-      commit(); break; }
+      adminCall({ action:"update", id:uu.id, active:!uu.active })
+        .then(function(){ refreshUsers(); }).catch(function(e){ toast(e.message,"err"); });
+      break; }
     case "user-delete": {
       var uid2 = el.getAttribute("data-user");
       var ud = userById(uid2);
       if (ud.role === "Master Administrator") { toast("A master administrator can't be removed.","err"); break; }
       if (uid2 === state.currentUserId) { toast("You can't remove your own account.","err"); break; }
-      state.users = state.users.filter(function(u){ return u.id !== uid2; }); commit(); break; }
+      if (!window.confirm("Remove " + ud.name + "? They will no longer be able to sign in.")) break;
+      adminCall({ action:"delete", id:uid2 }).then(function(){
+        state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit();
+      }).catch(function(e){ toast(e.message,"err"); });
+      break; }
+    case "do-change-password": doChangePassword(); break;
+    case "demo-ack": state.ui.demoNotice = false; commit(); break;
     case "dealer-new": state.ui.dealerForm = { id:null, name:"", brandKey:"ford", logoMark:"", active:true,
       address:"", city:"", phone:"", email:"", dealerCode:"",
       finance:{ defaultApr:7.49, defaultTerm:72, defaultFrequency:"biweekly", adminFee:699, licensing:120 },
@@ -2804,7 +2942,7 @@ document.addEventListener("click", function(ev){
     case "reset-demo": resetDemo(); break;
     case "do-login": doLogin(); break;
     case "logout": doLogout(); break;
-    case "forgot-password": toast("There's no self-service reset yet — ask your master administrator or general manager to set a new password for you under Users and access.","info"); break;
+    case "forgot-password": toast("Ask your administrator to reset your password — they can set a new temporary one for you under Users and access.","info"); break;
   }
 });
 
@@ -2833,7 +2971,9 @@ document.addEventListener("change", function(ev){
   if (act === "switch-dealership"){ V.setDealership(el.value); commit(); return; }
   if (act === "assign-dealership"){
     var target = userById(el.getAttribute("data-user"));
-    target.dealershipId = el.value; commit(); return;
+    target.dealershipId = el.value;
+    adminCall({ action:"update", id:target.id, dealership_id:el.value }).catch(function(e){ toast(e.message,"err"); });
+    commit(); return;
   }
   if (act === "dealer-brand"){
     if (state.ui.dealerForm){
@@ -2965,6 +3105,7 @@ function boot(){
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
+  authInit();
   commit();
 }
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
