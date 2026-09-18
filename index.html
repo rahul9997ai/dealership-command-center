@@ -274,11 +274,36 @@ tbody tr:hover{background:var(--surface-2)}
 .wc-btn{width:100%;margin-top:6px;padding:11px 14px;font-size:14px}
 @keyframes wcFade{from{opacity:0}to{opacity:1}}
 @keyframes wcPop{0%{opacity:0;transform:translateY(14px) scale(.94)}100%{opacity:1;transform:none}}
+.wc-badge-ok{color:var(--blue-2);background:var(--info-bg);border-color:var(--blue-2)}
+.wc-theme{position:relative;margin:0 0 16px}
+.wc-themes{display:flex;gap:12px;margin:8px 0 6px}
+.wc-tile{flex:1;display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 10px;border-radius:14px;cursor:pointer;
+  background:var(--surface-3);border:2px solid var(--border);color:var(--text);font-weight:700;font-size:13px}
+.wc-tile.on{border-color:var(--blue-2);box-shadow:0 0 0 3px rgba(76,141,255,.25)}
+.wc-tile .sw{width:100%;height:54px;border-radius:9px;display:flex;gap:5px;padding:7px;border:1px solid var(--border-strong)}
+.wc-tile .sw i{flex:1;border-radius:5px}
+.sw-dark{background:#070c14}.sw-dark i:first-child{background:#1a2637}.sw-dark i:last-child{background:#4c8dff}
+.sw-light{background:#f3f6fb}.sw-light i:first-child{background:#dbe3ef}.sw-light i:last-child{background:#1d61d8}
+.wheel-summary{margin:8px 0 12px;padding:10px 14px;border-radius:12px;background:var(--surface-3);border:1px solid var(--border)}
+.wheel-summary .big{font-size:16px;font-weight:800;margin-top:2px}
+.wheel-heads{display:flex;gap:6px;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;text-align:center;margin-bottom:4px}
+.wheel-heads span{flex:1}.wheel-heads .gap{flex:0 0 12px}
+.wheels{position:relative;display:flex;gap:6px;height:220px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);overflow:hidden;padding:0 6px}
+.wheels::before,.wheels::after{content:"";position:absolute;left:0;right:0;height:84px;z-index:2;pointer-events:none}
+.wheels::before{top:0;background:linear-gradient(var(--surface-2),rgba(0,0,0,0))}
+.wheels::after{bottom:0;background:linear-gradient(rgba(0,0,0,0),var(--surface-2))}
+.wheel-band{position:absolute;left:6px;right:6px;top:88px;height:44px;border-radius:10px;background:var(--info-bg);border:1px solid var(--blue-2);z-index:0}
+.wheel{position:relative;z-index:1;flex:1;height:100%;overflow-y:scroll;scroll-snap-type:y mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.wheel::-webkit-scrollbar{display:none}
+.wheel-pad{height:88px}
+.wheel .wi{height:44px;display:flex;align-items:center;justify-content:center;scroll-snap-align:center;font-size:16px;color:var(--muted);font-variant-numeric:tabular-nums}
+.wheel .wi.on{color:var(--text);font-weight:800;font-size:19px}
+.wheel-gap{flex:0 0 12px}
 .tour-block{position:fixed;inset:0;z-index:75}
 .tour-dim{position:fixed;inset:0;z-index:76;background:rgba(3,10,25,.66);pointer-events:none}
 .tour-spot{position:fixed;z-index:77;border-radius:14px;pointer-events:none;transition:all .25s ease;
   box-shadow:0 0 0 9999px rgba(3,10,25,.66),0 0 0 2px var(--blue-2),0 0 26px rgba(76,141,255,.55)}
-.tour-bar{position:fixed;z-index:80;left:50%;bottom:18px;transform:translateX(-50%);width:min(580px,calc(100vw - 24px));
+.tour-bar{position:fixed;z-index:80;left:50%;top:50%;transform:translateX(-50%);width:min(580px,calc(100vw - 24px));
   padding:16px 18px 14px;border-radius:16px;background:var(--surface);color:var(--text);border:1px solid var(--blue-2);
   box-shadow:0 18px 50px rgba(0,0,0,.5);animation:tourPop .35s ease-out}
 @keyframes tourPop{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%)}}
@@ -602,7 +627,7 @@ function freqLabel(f){ return f === "biweekly" ? "bi-weekly" : "monthly"; }
 
 function newTransaction(fsmUserId, dealershipId){
   return {
-    id: uid("DEMO"), createdAt: todayISO(), type:"Finance", status:"Open",
+    id: uid("AX"), createdAt: todayISO(), type:"Finance", status:"Open",
     fsmUserId: fsmUserId || null, dealershipId: dealershipId || null,
     customer:{ id:null, name:"", phone:"", email:"", address:"" },
     vehicle:{ id:null, year:"", make:"", model:"", stock:"", vin:"", odometer:"", condition:"New", price:null },
@@ -1013,7 +1038,7 @@ function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
   if (role === "General Manager") return ["dashboard","finance","products","reports","users","settings"];
-  if (role === "FSM Manager") return ["dashboard","finance","products","reports","users"];
+  if (role === "FSM Manager") return ["finance","products","reports"];
   return ["finance","products","reports"];
 }
 function navItems(){
@@ -1305,13 +1330,11 @@ function viewFinance(){
   var steps = stepState(tx);
 
   var toolbar = `<div class="fin-toolbar">
-    <span class="tag info">Deal ${esc(tx.id)}</span>
-    <span class="tag ${tx.status==="Completed"?"ok":""}">${esc(tx.status)}</span>
-    <label class="switch"><span class="muted small">FSM</span>
+    ${isAdmin() ? `<label class="switch"><span class="muted small">FSM</span>
       <select data-bind="tx.fsmUserId" style="width:auto;min-width:150px">
         <option value="">Unassigned</option>
         ${fsmUsers().map(function(u){ return `<option value="${u.id}" ${u.id===tx.fsmUserId?"selected":""}>${esc(u.name)}</option>`; }).join("")}
-      </select></label>
+      </select></label>` : ""}
     <div class="sp">
       <button class="btn sm ${state.ui.split?"on":""}" data-act="toggle-split">Split view</button>
       <button class="btn sm" data-act="open-customer-window">Customer display ↗</button>
@@ -1726,7 +1749,7 @@ function presetRange(period){
   return { from:from, to:to };
 }
 function canSeeAllReports(){
-  return V.isAdmin() || V.currentUser().role === "FSM Manager";
+  return V.isAdmin();
 }
 function filteredDeals(){
   var f = state.ui.reports;
@@ -2571,6 +2594,7 @@ function render(){
     }
   }
   if (state.ui.tour) positionTour();
+  if (state.ui.extendForm) initWheels();
 }
 window.__DCC_RENDER__ = render;
 
@@ -2639,6 +2663,7 @@ function makeLine(p){
   return line;
 }
 function completeDeal(){
+  if (!V.isAdmin()) state.tx.fsmUserId = state.currentUserId;
   var v = C.validate(state, state.tx);
   if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
   var done = C.clone(state.tx);
@@ -2650,7 +2675,7 @@ function completeDeal(){
   commit();
 }
 function newDeal(){
-  state.tx = C.newTransaction(state.tx ? state.tx.fsmUserId : V.firstFsmFor(state.activeDealershipId), state.activeDealershipId);
+  state.tx = C.newTransaction(V.isAdmin() ? (state.tx ? state.tx.fsmUserId : V.firstFsmFor(state.activeDealershipId)) : state.currentUserId, state.activeDealershipId);
   V.applyFinanceDefaults(state.tx);
   state.route = "finance";
   commit();
@@ -2721,7 +2746,7 @@ function refreshUsers(){
   adminCall({ action:"list" }).then(function(r){ (r.users || []).forEach(upsertProfileUser); commit(); }).catch(function(){});
 }
 function failLogin(msg){
-  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.demoNotice = false; state.ui.authChecking = false; state.ui.loginError = msg || null; commit(); };
+  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.authChecking = false; state.ui.loginError = msg || null; commit(); };
   return sb ? sb.auth.signOut().then(done, done) : (done(), Promise.resolve());
 }
 function finishEnter(u){
@@ -2730,10 +2755,12 @@ function finishEnter(u){
     else V.setDealership(state.dealerships[0].id);
   }
   state.route = (u.role === "Master Administrator" || u.role === "General Manager" || u.role === "FSM Manager") ? "dashboard" : "finance";
-  state.ui.demoNotice = !!(state.auth && state.auth.accessType === "demo");
+  if (state.tx && !V.isAdmin()) state.tx.fsmUserId = u.id;
+  var isDemo = !!(state.auth && state.auth.accessType === "demo"), isFirst = !!(state.auth && !state.auth.onboarded);
+  state.ui.welcome = (isDemo || isFirst) ? { demo:isDemo, first:isFirst } : null;
   toast("Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
   refreshUsers();
-  if (!state.ui.demoNotice) maybeStartTour();
+  if (!state.ui.welcome) maybeStartTour();
   commit();
 }
 function loadProfileAndEnter(){
@@ -2767,7 +2794,7 @@ function doLogin(){
   });
 }
 function doLogout(){
-  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.demoNotice = false; state.ui.loginError = null; commit(); };
+  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.loginError = null; commit(); };
   if (sb) sb.auth.signOut().then(done, done); else done();
 }
 function doChangePassword(){
@@ -2829,36 +2856,89 @@ function demoChip(){
     <span class="dc-lbl">Demo access</span><span class="dc-time" id="demoTimer">${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</span></div>`;
 }
 function demoNoticeModal(){
-  var a = state.auth;
-  if (!state.ui.demoNotice || !a || a.accessType !== "demo") return "";
+  var w = state.ui.welcome, a = state.auth;
+  if (!w || !a) return "";
   var first = String((userById(state.currentUserId).name) || "").split(" ")[0] || "there";
-  return `<div class="welcome-bg"><div class="welcome-card">
-    <div class="wc-glow"></div>
-    <div class="wc-badge"><span class="dc-dot"></span>Demo access</div>
-    <h2>Welcome, ${esc(first)}</h2>
-    <p class="wc-lead">You're exploring AXIOM with the full functionality of your role. Everything you build here is yours to try.</p>
-    <div class="wc-expiry"><div class="lbl">Your access expires</div>
+  var demoBlock = w.demo ? `<div class="wc-expiry"><div class="lbl">Your demo access expires</div>
       <div class="big">${esc(fmtExpiry(a.expiresAt))}</div>
       <div class="wc-count"><span class="muted small">Time remaining</span><span class="wc-timer" id="welcomeTimer">${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</span></div></div>
-    <p class="small muted">A countdown stays at the top of your screen and you'll be signed out automatically when it reaches zero. Need more time? Ask your administrator.</p>
-    <button class="btn primary wc-btn" data-act="demo-ack">Continue to AXIOM</button>
+    <p class="small muted">A countdown stays at the top of your screen and you'll be signed out automatically when it reaches zero. Need more time? Ask your administrator.</p>` : "";
+  var themeBlock = w.first ? `<div class="wc-theme"><div class="lbl">Choose how AXIOM looks</div>
+      <div class="wc-themes">
+        <button type="button" class="wc-tile ${state.ui.theme==="dark"?"on":""}" data-act="set-theme" data-theme="dark"><span class="sw sw-dark"><i></i><i></i></span>Dark</button>
+        <button type="button" class="wc-tile ${state.ui.theme!=="dark"?"on":""}" data-act="set-theme" data-theme="light"><span class="sw sw-light"><i></i><i></i></span>Normal</button>
+      </div><div class="tiny muted">You can change this any time from the top bar.</div></div>` : "";
+  return `<div class="welcome-bg"><div class="welcome-card">
+    <div class="wc-glow"></div>
+    ${w.demo ? `<div class="wc-badge"><span class="dc-dot"></span>Demo access</div>` : `<div class="wc-badge wc-badge-ok">AXIOM</div>`}
+    <h2>Welcome, ${esc(first)}</h2>
+    <p class="wc-lead">${w.demo ? "You're exploring AXIOM with the full functionality of your role. Everything you build here is yours to try." : "Your account is ready. Let's get you set up in a few seconds."}</p>
+    ${themeBlock}${demoBlock}
+    <button class="btn primary wc-btn" data-act="demo-ack">${w.first ? "Continue" : "Continue to AXIOM"}</button>
   </div></div>`;
+}
+var WHEEL_H = 44;
+var MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+function wheelYears(){ var y = new Date().getFullYear(), o = []; for (var i=0;i<5;i++) o.push(y+i); return o; }
+function wheelDate(sel){
+  var yrs = wheelYears(), y = yrs[sel.yr] || yrs[0], m = sel.mo;
+  var dim = new Date(y, m+1, 0).getDate(), d = Math.min(sel.day+1, dim);
+  var h = ((sel.hr+1) % 12) + (sel.ap ? 12 : 0);
+  return new Date(y, m, d, h, sel.mi*5, 0, 0);
 }
 function extendModal(){
   var f = state.ui.extendForm;
   if (!f) return "";
-  var u = userById(f.id);
-  var base = Math.max(Date.now(), u.expiresAt ? new Date(u.expiresAt).getTime() : 0) + 7*86400000;
-  var d = new Date(base); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  var u = userById(f.id), yrs = wheelYears();
+  if (!f.sel){
+    var base = new Date(Math.max(Date.now(), u.expiresAt ? new Date(u.expiresAt).getTime() : 0) + 7*86400000);
+    var h24 = base.getHours();
+    f.sel = { mo:base.getMonth(), day:base.getDate()-1, yr:Math.max(0, yrs.indexOf(base.getFullYear())),
+      hr:((h24 % 12) || 12) - 1, mi:Math.round(base.getMinutes()/5) % 12, ap:h24 >= 12 ? 1 : 0 };
+  }
+  function wheel(key, items, idx){
+    return `<div class="wheel" data-wheel="${key}" data-idx="${idx}"><div class="wheel-pad"></div>${items.map(function(t, k){
+      return `<div class="wi ${k===idx?"on":""}">${t}</div>`; }).join("")}<div class="wheel-pad"></div></div>`;
+  }
+  var days = []; for (var d=1; d<=31; d++) days.push(d);
+  var hrs = []; for (var h=1; h<=12; h++) hrs.push(h);
+  var mins = []; for (var m=0; m<60; m+=5) mins.push((m<10?"0":"")+m);
   return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal" style="max-width:460px">
     <div class="modal-h"><h2>Extend demo</h2><div class="sp">
       <button class="btn" data-act="extend-cancel">Cancel</button>
       <button class="btn primary" data-act="extend-save">Save new expiry</button></div></div>
     <div class="modal-b">
-      <p><strong>${esc(u.name)}</strong>${u.expiresAt ? ` currently expires <strong>${esc(fmtExpiry(u.expiresAt))}</strong>.` : "."}</p>
-      <label class="f"><span>New expiry (date &amp; time)</span><input type="datetime-local" data-uf="extend" value="${d.toISOString().slice(0,16)}"></label>
+      <p style="margin-bottom:4px"><strong>${esc(u.name)}</strong>${u.expiresAt ? ` currently expires <strong>${esc(fmtExpiry(u.expiresAt))}</strong>` : ""}</p>
+      <div class="wheel-summary"><div class="lbl">New expiry</div><div class="big" id="wheelSummary">${esc(fmtExpiry(wheelDate(f.sel).toISOString()))}</div></div>
+      <div class="wheel-heads"><span style="flex:1.6">Month</span><span>Day</span><span style="flex:1.3">Year</span><span class="gap"></span><span>Hour</span><span>Min</span><span></span></div>
+      <div class="wheels">
+        <div class="wheel-band"></div>
+        ${wheel("mo", MONTHS, f.sel.mo).replace('class="wheel"','class="wheel" style="flex:1.6"')}
+        ${wheel("day", days, f.sel.day)}
+        ${wheel("yr", yrs, f.sel.yr).replace('class="wheel"','class="wheel" style="flex:1.3"')}
+        <span class="wheel-gap"></span>
+        ${wheel("hr", hrs, f.sel.hr)}
+        ${wheel("mi", mins, f.sel.mi)}
+        ${wheel("ap", ["AM","PM"], f.sel.ap)}
+      </div>
+      <p class="tiny muted" style="margin-top:10px">Scroll each column to choose. The demo ends at exactly this date and time.</p>
     </div></div></div>`;
 }
+function initWheels(){
+  Array.prototype.forEach.call(document.querySelectorAll(".wheel"), function(w){
+    w.scrollTop = Number(w.getAttribute("data-idx")) * WHEEL_H;
+  });
+}
+document.addEventListener("scroll", function(ev){
+  var w = ev.target;
+  if (!w || !w.classList || !w.classList.contains("wheel") || !state.ui.extendForm || !state.ui.extendForm.sel) return;
+  var idx = Math.max(0, Math.min(w.querySelectorAll(".wi").length - 1, Math.round(w.scrollTop / WHEEL_H)));
+  state.ui.extendForm.sel[w.getAttribute("data-wheel")] = idx;
+  w.setAttribute("data-idx", idx);
+  Array.prototype.forEach.call(w.querySelectorAll(".wi"), function(it, k){ it.classList.toggle("on", k === idx); });
+  var sm = document.getElementById("wheelSummary");
+  if (sm) sm.textContent = fmtExpiry(wheelDate(state.ui.extendForm.sel).toISOString());
+}, true);
 
 /* ---------------- FIRST-LOGIN WALKTHROUGH ---------------- */
 var TOUR_STEPS = [
@@ -2880,7 +2960,7 @@ function tourEnd(){
   state.ui.tour = null;
   if (state.auth) state.auth.onboarded = true;
   var me = userById(state.currentUserId); if (me) me.onboarded = true;
-  if (sb) sb.rpc("mark_onboarded");
+  if (sb) sb.rpc("mark_onboarded").then(function(){}, function(){});
   commit();
 }
 function tourStep(delta){
@@ -2896,7 +2976,7 @@ function tourHtml(){
   var st = TOUR_STEPS[t.i], last = t.i === TOUR_STEPS.length - 1;
   var dots = TOUR_STEPS.map(function(x, k){ return `<span class="td ${k===t.i?"on":(k<t.i?"done":"")}"></span>`; }).join("");
   return `<div class="tour-block"></div>${st.sel ? `<div class="tour-spot" id="tourSpot"></div>` : `<div class="tour-dim"></div>`}
-    <div class="tour-bar"><div class="tour-top"><span class="tour-count">Step ${t.i+1} of ${TOUR_STEPS.length}</span><div class="tour-dots">${dots}</div></div>
+    <div class="tour-bar" id="tourBar"><div class="tour-top"><span class="tour-count">Step ${t.i+1} of ${TOUR_STEPS.length}</span><div class="tour-dots">${dots}</div></div>
       <h3>${esc(st.title)}</h3><p>${esc(st.text)}</p>
       <div class="tour-btns"><button class="btn sm" data-act="tour-skip">${last?"Close":"Skip tour"}</button><span style="flex:1"></span>
         ${t.i>0?`<button class="btn sm" data-act="tour-back">Back</button>`:""}
@@ -2904,20 +2984,27 @@ function tourHtml(){
 }
 function positionTour(){
   var t = state.ui.tour; if (!t) return;
-  var st = TOUR_STEPS[t.i], spot = document.getElementById("tourSpot");
-  if (!st.sel || !spot) return;
+  var st = TOUR_STEPS[t.i], spot = document.getElementById("tourSpot"), bar = document.getElementById("tourBar");
+  var vh = window.innerHeight, bh = bar ? bar.offsetHeight : 200;
+  function placeBar(top){ if (!bar) return; bar.style.top = top + "px"; bar.style.bottom = "auto"; }
+  if (!st.sel || !spot){ placeBar(Math.max(12, (vh - bh) / 2)); return; }
   var el = document.querySelector(st.sel);
-  if (!el){ spot.style.display = "none"; return; }
+  if (!el){ spot.style.display = "none"; placeBar(Math.max(12, (vh - bh) / 2)); return; }
   if (t.scrolled !== t.i){
     t.scrolled = t.i;
-    var r0 = el.getBoundingClientRect();
-    el.scrollIntoView({ block: r0.height > window.innerHeight*0.6 ? "start" : "center" });
-    if (r0.height > window.innerHeight*0.6) window.scrollBy(0, -70);
+    el.scrollIntoView({ block:"start" });
+    window.scrollBy(0, -96);
   }
   var r = el.getBoundingClientRect(), pad = 8;
+  var maxSpot = vh - bh - 44 - Math.max(r.top, 0) - pad;
+  var spotH = Math.min(r.height, Math.max(120, maxSpot));
   spot.style.display = "";
   spot.style.left = (r.left - pad) + "px"; spot.style.top = (r.top - pad) + "px";
-  spot.style.width = (r.width + pad*2) + "px"; spot.style.height = (r.height + pad*2) + "px";
+  spot.style.width = (r.width + pad*2) + "px"; spot.style.height = (spotH + pad*2) + "px";
+  var bottomEdge = r.top + spotH + pad;
+  if (vh - bottomEdge >= bh + 24) placeBar(bottomEdge + 16);
+  else if (r.top - pad >= bh + 24) placeBar(r.top - pad - bh - 16);
+  else placeBar(Math.max(12, vh - bh - 14));
 }
 window.addEventListener("scroll", function(){ if (state.ui.tour) positionTour(); }, { passive:true });
 window.addEventListener("resize", function(){ if (state.ui.tour) positionTour(); });
@@ -2976,6 +3063,7 @@ document.addEventListener("click", function(ev){
   if (!el) return;
   var act = el.getAttribute("data-act");
   if (act === "close-modal-bg" && ev.target !== el) return;
+  if (/^product-(new|edit|save|toggle|delete)$/.test(act) && !V.isAdmin()){ toast("Only a General Manager can add, edit or delete products.","err"); return; }
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
     case "toggle-rail": state.ui.railOpen = !state.ui.railOpen; commit(); break;
@@ -3098,11 +3186,11 @@ document.addEventListener("click", function(ev){
       updateDemoPreview(); break; }
     case "demo-extend": state.ui.extendForm = { id:el.getAttribute("data-user") }; commit(); break;
     case "extend-save": {
-      var ef = state.ui.extendForm, inp = document.querySelector('[data-uf="extend"]');
-      if (!ef || !inp || !inp.value){ toast("Pick a date and time.","err"); break; }
-      var dt = new Date(inp.value);
+      var ef = state.ui.extendForm;
+      if (!ef || !ef.sel){ toast("Pick a date and time.","err"); break; }
+      var dt = wheelDate(ef.sel);
       if (!(dt.getTime() > Date.now())){ toast("Pick a moment in the future.","err"); break; }
-      var newExp = dt.toISOString(), who = userById(ef.id);
+      var newExp = dt.toISOString();
       adminCall({ action:"update", id:ef.id, access_type:"demo", expires_at:newExp })
         .then(function(){ state.ui.extendForm = null; toast("Demo extended to " + fmtExpiry(newExp) + ".","ok"); refreshUsers(); commit(); })
         .catch(function(e){ toast(e.message,"err"); });
@@ -3115,7 +3203,8 @@ document.addEventListener("click", function(ev){
         .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "do-change-password": doChangePassword(); break;
-    case "demo-ack": state.ui.demoNotice = false; maybeStartTour(); commit(); break;
+    case "demo-ack": state.ui.welcome = null; maybeStartTour(); commit(); break;
+    case "set-theme": state.ui.theme = el.getAttribute("data-theme"); commit(); break;
     case "tour-next": tourStep(1); break;
     case "tour-back": tourStep(-1); break;
     case "tour-skip": tourEnd(); break;
