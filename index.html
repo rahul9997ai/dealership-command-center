@@ -359,7 +359,22 @@ tbody tr:hover{background:var(--surface-2)}
   .modal{box-shadow:none;width:100%;max-width:none}
   .modal-h,.no-print{display:none !important}
   .modal-b{max-height:none;overflow:visible;padding:0}
-  .doc{border:0;border-radius:0}
+  /* Tighter than the on-screen preview so a normal deal (one package,
+     under a dozen lines) fits on a single sheet instead of spilling a
+     mostly-empty second page. */
+  @page{margin:10mm}
+  .doc{border:0;border-radius:0;padding:0;font-size:11px;line-height:1.4}
+  .doc h1{font-size:17px}
+  .doc h3{font-size:11.5px;margin:14px 0 8px;padding-bottom:5px}
+  .doc .dh{padding-bottom:10px;margin-bottom:12px}
+  .doc .dlogo{width:36px;height:36px;font-size:12px}
+  .doc .cols{gap:10px 18px;margin-bottom:10px}
+  .doc th,.doc td{padding:5px 8px}
+  .doc .selectbox{padding:9px 14px;margin:9px 0}
+  .doc .selectbox .big{font-size:16px}
+  .doc .kv{padding:3px 0}
+  .doc .watermark{margin-top:8px;font-size:9px}
+  .doc, .doc *{page-break-inside:avoid}
 }
 @media (max-width:1180px){ .g4{grid-template-columns:repeat(2,minmax(0,1fr))} .fin-split{grid-template-columns:minmax(0,1fr)} .monitor{position:static} }
 @media (max-width:900px){
@@ -425,7 +440,7 @@ var PRODUCTS = [
     id:"asp", code:"ASP", name:"ASP/CPO Platinum Program", category:"Mechanical", active:true, taxRule:"standard",
     uses:{ term:true, km:true, deductible:true, interval:false },
     terms:[36,48,60,72,84,96,120], kms:[60000,80000,100000,120000,160000,200000], deductibles:[0,100,200],
-    costFactor:0.42,
+    cost:502,
     desc:"Platinum level mechanical coverage on the components that cost the most to repair, including parts, labour and diagnostic time, honoured at any authorized dealer in Canada.",
     benefit:"One covered repair usually costs more than the whole program. This keeps a four figure repair bill from landing on you three years from now, and it transfers to the next owner, which protects your resale value.",
     pricing:{ base:1195, term:{36:0,48:220,60:430,72:690,84:960,96:1240,120:1640}, km:{60000:0,80000:130,100000:260,120000:390,160000:640,200000:900}, deductible:{0:260,100:110,200:0} }
@@ -434,7 +449,7 @@ var PRODUCTS = [
     id:"ppm", code:"PPM", name:"Prepaid Maintenance", category:"Maintenance", active:true, taxRule:"standard",
     uses:{ term:false, km:true, deductible:false, interval:true },
     kms:[24000,40000,60000,80000,100000,120000], intervals:[8000,12000,16000],
-    costFactor:0.55,
+    cost:217,
     desc:"Prepays your scheduled maintenance visits at today's prices, including oil and filter changes, multi point inspections and tire rotations.",
     benefit:"Service prices go up every year. You are locking in today's price, the work is done by factory trained technicians, and your maintenance record stays complete, which is exactly what a buyer or an appraiser wants to see.",
     pricing:{ base:395, km:{24000:0,40000:240,60000:470,80000:690,100000:900,120000:1120}, interval:{8000:290,12000:150,16000:0} }
@@ -442,7 +457,7 @@ var PRODUCTS = [
   {
     id:"trp", code:"TRP", name:"Tire & Rim Protection", category:"Road Hazard", active:true, taxRule:"standard",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84],
-    costFactor:0.38,
+    cost:226,
     desc:"Repairs or replaces tires and rims damaged by potholes, nails, glass and other road hazards, with no limit on the number of claims.",
     benefit:"A single wheel and tire on this vehicle runs several hundred dollars, and our roads are hard on both. There is no claim limit, so one bad pothole in year two has already paid for the coverage.",
     pricing:{ base:595, term:{36:0,48:120,60:240,72:360,84:480} }
@@ -450,7 +465,7 @@ var PRODUCTS = [
   {
     id:"app", code:"APP", name:"Appearance Protection", category:"Appearance", active:true, taxRule:"standard",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84],
-    costFactor:0.34,
+    cost:255,
     desc:"Paint and interior protection against acid rain, bird droppings, tree sap, road salt, rips, burns and permanent staining.",
     benefit:"Winter salt and summer sap are what make a three year old car look five. This keeps the finish and the interior looking the way it does today, and that shows up directly in what the vehicle is worth at trade in.",
     pricing:{ base:749, term:{36:0,48:100,60:200,72:300,84:400} }
@@ -458,7 +473,7 @@ var PRODUCTS = [
   {
     id:"atr", code:"ATR", name:"Anti-Theft & Recovery", category:"Security", active:true, taxRule:"standard",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84,96],
-    costFactor:0.30,
+    cost:150,
     desc:"Etched vehicle identification and a recovery service that works with police to locate your vehicle, plus a benefit toward a replacement if it is not recovered.",
     benefit:"Vehicles in this segment are among the most targeted in the province. Etching makes yours far less attractive to a thief, and if it does go missing you get help recovering it plus a benefit toward the replacement.",
     pricing:{ base:499, term:{36:0,48:80,60:160,72:240,84:320,96:400} }
@@ -466,7 +481,7 @@ var PRODUCTS = [
   {
     id:"vrc", code:"VRC", name:"Vehicle Replacement Coverage", category:"Insurance", active:true, taxRule:"vrc",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72,84],
-    costFactor:0.45,
+    cost:403,
     desc:"If your vehicle is written off as a total loss, this coverage puts you into a comparable new vehicle rather than settling for depreciated value.",
     benefit:"Your insurer pays what the vehicle is worth on the day of the loss, not what it costs to replace it. This covers that gap with a new vehicle instead of a cheque that leaves you shopping with less than you started with.",
     pricing:{ base:895, term:{36:0,48:150,60:300,72:450,84:600} }
@@ -474,7 +489,7 @@ var PRODUCTS = [
   {
     id:"gap", code:"GAP", name:"Guaranteed Asset Protection", category:"Loan", active:true, taxRule:"standard",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[48,60,72,84,96],
-    costFactor:0.40,
+    cost:278,
     desc:"Covers the gap between your insurance settlement and the balance remaining on your finance contract if the vehicle is stolen or written off.",
     benefit:"On a longer term the balance owing stays above the vehicle's value for the first few years. Without this you can lose the vehicle and still owe thousands on it. This closes that gap so a total loss does not follow you.",
     pricing:{ base:695, term:{48:0,60:120,72:240,84:360,96:480} }
@@ -482,7 +497,7 @@ var PRODUCTS = [
   {
     id:"key", code:"KEY", name:"Key Replacement", category:"Convenience", active:true, taxRule:"standard",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,48,60,72],
-    costFactor:0.32,
+    cost:112,
     desc:"Replaces lost, stolen or damaged keys and remotes, including cutting, programming and roadside lockout assistance.",
     benefit:"A single smart key for this vehicle is a few hundred dollars once it is cut and programmed. This replaces them and gets you back on the road the same day instead of waiting on a tow.",
     pricing:{ base:349, term:{36:0,48:60,60:120,72:180} }
@@ -490,7 +505,7 @@ var PRODUCTS = [
   {
     id:"cpp", code:"CPP", name:"Ceramic Paint Protection", category:"Appearance", active:true, taxRule:"standard",
     uses:{ term:true, km:false, deductible:false, interval:false }, terms:[36,60,84],
-    costFactor:0.40,
+    cost:null,
     desc:"A professionally applied ceramic coating that protects the factory finish and makes the vehicle easier to keep clean.",
     benefit:"The coating does the work a weekly wash cannot. Dirt and road film release far more easily, and the factory finish stays sharp instead of dulling out over the first few winters.",
     pricing:null   /* deliberately not configured — the FSM must enter a price */
@@ -605,9 +620,15 @@ function totals(state, tx){
     if (!priced && !l.declined && anyPkg) unpriced++;
     var amount = priced ? price : 0;
     var tax = Math.round(amount*rate*100)/100;
+    /* Cost is a flat dollar figure for providing this product on the deal —
+       it does not scale with whichever term/km/deductible the customer
+       picked. Real per-tier dealer cost sheets exist, but the FSM asked for
+       one simple optional number rather than a full cost table; that's a
+       future refinement (mirroring the pricing table) if ever needed. */
+    var lineCost = priced ? (Number(prod.cost) || 0) : 0;
     if (!l.declined && anyPkg){
       if (prod.taxRule === "vrc") taxVrc += tax; else taxStd += tax;
-      sub += amount; cost += Math.round(amount*(prod.costFactor||0));
+      sub += amount; cost += lineCost;
     }
     var termForDay = (prod.uses.term && l.term) ? Number(l.term) : (primaryTerm(tx) || 60);
     var days = termForDay * 30.44;
@@ -618,7 +639,7 @@ function totals(state, tx){
     });
     lines.push({ lineId:l.lineId, product:prod, cfg:l, price: priced ? amount : null, configuredPrice:configured,
       overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax, perDayByTerm:perDayByTerm,
-      total:Math.round((amount+tax)*100)/100, cost:Math.round(amount*(prod.costFactor||0)), perDay:perDay });
+      total:Math.round((amount+tax)*100)/100, cost:lineCost, gross:priced?Math.round((amount-lineCost)*100)/100:null, perDay:perDay });
   }
 
   var productsSub = Math.round(sub*100)/100;
@@ -1200,12 +1221,7 @@ function viewFinance(){
     return `<div class="step ${s.done?"done":""}" data-act="scroll-step" data-step="${s.n}">
       <span class="n">${s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
 
-  var customerCard = `<div class="card" id="step-1"><div class="card-h"><h2>1 · Customer</h2>
-      <div class="sp"><select data-act="pick-customer" style="width:auto;min-width:210px">
-        <option value="">Load a demo customer…</option>
-        ${state.customers.filter(function(c){ return c.dealershipId === state.activeDealershipId; }).map(function(c){
-          return `<option value="${c.id}" ${tx.customer.id===c.id?"selected":""}>${esc(c.name)}</option>`; }).join("")}
-      </select></div></div>
+  var customerCard = `<div class="card" id="step-1"><div class="card-h"><h2>1 · Customer</h2></div>
     <div class="card-b"><div class="inline">
       <label class="f"><span>Full name</span><input type="text" value="${esc(tx.customer.name)}" data-bind="tx.customer.name"></label>
       <label class="f"><span>Phone</span><input type="text" value="${esc(tx.customer.phone)}" data-bind="tx.customer.phone"></label>
@@ -1213,12 +1229,7 @@ function viewFinance(){
     </div>
     <label class="f"><span>Address</span><input type="text" value="${esc(tx.customer.address)}" data-bind="tx.customer.address"></label></div></div>`;
 
-  var vehicleCard = `<div class="card" id="step-2"><div class="card-h"><h2>2 · Vehicle</h2>
-      <div class="sp"><select data-act="pick-vehicle" style="width:auto;min-width:230px">
-        <option value="">Load a demo vehicle…</option>
-        ${state.vehicles.filter(function(x){ return x.dealershipId === state.activeDealershipId; }).map(function(x){
-          return `<option value="${x.id}" ${tx.vehicle.id===x.id?"selected":""}>${esc(x.year+" "+x.model+" — "+x.stock)}</option>`; }).join("")}
-      </select></div></div>
+  var vehicleCard = `<div class="card" id="step-2"><div class="card-h"><h2>2 · Vehicle</h2></div>
     <div class="card-b"><div class="inline">
       <label class="f"><span>Year</span><input type="number" value="${esc(tx.vehicle.year)}" data-bind="tx.vehicle.year" data-type="num"></label>
       <label class="f"><span>Make</span><input type="text" value="${esc(tx.vehicle.make)}" data-bind="tx.vehicle.make"></label>
@@ -1282,7 +1293,7 @@ function viewFinance(){
       return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${PKG_SHORT[def.key]}</label>`;
     }).join("");
     var declineOn = !!(line && line.declined);
-    var declineBtn = `<label class="declinebtn ${declineOn?"on":""}"><input type="checkbox" data-act="toggle-decline" data-product="${p.id}" ${declineOn?"checked":""}>${declineOn?"Declined":"Decline"}</label>`;
+    var declineBtn = `<label class="declinebtn ${declineOn?"on":""}"><input type="checkbox" data-act="toggle-decline" data-product="${p.id}" ${declineOn?"checked":""}>${declineOn?"Undo":"Decline"}</label>`;
     var priceNote = !line ? (p.pricing ? "" : `<span class="tag warn">No price set</span>`)
       : (line.declined ? `<span class="tag danger">Declined</span>`
       : L.price === null ? `<span class="tag danger">Enter a retail price</span>`
@@ -1431,6 +1442,42 @@ function viewProducts(){
       <div class="tablewrap"><table><thead><tr><th>Product</th><th>Configuration rules</th><th>Tax</th><th class="right">Retail range</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div></div></div>`;
 }
+/* Generic starting wording per category, so a new product isn't left with
+   blank email copy — the FSM can always edit it, this is just a head start. */
+var CATEGORY_TEMPLATES = {
+  "mechanical": {
+    desc: "Mechanical coverage on the components that cost the most to repair, including parts, labour and diagnostic time, honoured at any authorized dealer.",
+    benefit: "One covered repair usually costs more than the whole program. This keeps a large repair bill from landing on you later, and it can transfer to the next owner, which helps protect resale value." },
+  "maintenance": {
+    desc: "Prepays your scheduled maintenance visits at today's prices, including inspections and routine service.",
+    benefit: "Service prices go up every year — this locks in today's price, the work is done by factory trained technicians, and your maintenance record stays complete, which is exactly what a buyer or an appraiser wants to see." },
+  "road hazard": {
+    desc: "Repairs or replaces tires and rims damaged by potholes, nails, glass and other road hazards, with no limit on the number of claims.",
+    benefit: "A tire and rim on this vehicle can run several hundred dollars, and our roads are hard on both. There's no claim limit, so one bad pothole can already pay for the coverage." },
+  "appearance": {
+    desc: "Protects the paint and interior from acid rain, road salt, stains and everyday wear.",
+    benefit: "This keeps the finish and interior looking the way they do today, which shows up directly in what the vehicle is worth at trade in." },
+  "security": {
+    desc: "Vehicle identification and a recovery service that works with police to help locate your vehicle if it's stolen.",
+    benefit: "This makes your vehicle far less attractive to a thief, and if it does go missing you get help recovering it." },
+  "insurance": {
+    desc: "If your vehicle is written off as a total loss, this coverage helps put you into a comparable replacement vehicle rather than settling for depreciated value.",
+    benefit: "Your insurer only pays what the vehicle was worth the day of the loss — this covers that gap instead of leaving you shopping with less than you started with." },
+  "loan": {
+    desc: "Covers the gap between your insurance settlement and the balance remaining on your finance contract if the vehicle is stolen or written off.",
+    benefit: "On a longer term, what you owe can stay above the vehicle's value for years. This closes that gap so a total loss doesn't follow you financially." },
+  "convenience": {
+    desc: "Replaces lost, stolen or damaged keys and remotes, including cutting, programming and roadside lockout assistance.",
+    benefit: "A single replacement key for this vehicle can run a few hundred dollars once cut and programmed — this gets you back on the road the same day." }
+};
+function categoryTemplate(category, name){
+  var key = String(category||"").trim().toLowerCase();
+  var t = CATEGORY_TEMPLATES[key] || {
+    desc: "Protects your vehicle and gives you added peace of mind for the life of the coverage.",
+    benefit: "This coverage is designed to protect your investment and can save you real money if something goes wrong." };
+  var nm = name || "This coverage";
+  return { desc: nm + " provides " + t.desc.charAt(0).toLowerCase() + t.desc.slice(1), benefit: t.benefit };
+}
 function numListInput(label, key, arr){
   return `<label class="f"><span>${esc(label)}</span><input type="text" data-pf="${key}" value="${arr?arr.join(", "):""}" placeholder="comma separated"></label>`;
 }
@@ -1477,8 +1524,9 @@ function productModal(){
       </div>
       <div class="inline">
         <label class="f"><span>Base retail price (blank = not configured)</span><input type="number" data-pf="base" value="${p.pricing?p.pricing.base:""}"></label>
-        <label class="f"><span>Cost factor (0–1, internal)</span><input type="number" step="0.01" data-pf="costFactor" value="${p.costFactor===undefined?0.4:p.costFactor}"></label>
+        <label class="f"><span>Dealer cost (optional, $)</span><input type="number" step="0.01" data-pf="cost" value="${p.cost===null||p.cost===undefined?"":p.cost}" placeholder="Leave blank if unknown"></label>
       </div>
+      <p class="small muted">Cost is a single flat dollar figure regardless of which term, kilometres or deductible get picked — it's used to show gross profit on reports and internal print. Leave it blank if you don't track cost; gross will just show as full retail. If you ever need cost to vary by term or kilometres the way price does, ask and we can add a cost table to match.</p>
       <p class="small muted">Adders are added to the base price for each option the FSM picks. Change an option list above and save to regenerate this grid.</p>
       ${adderGrid("Term adders (months)","term",p.uses.term?p.terms:null,p.pricing&&p.pricing.term)}
       ${adderGrid("Kilometre adders","km",p.uses.km?p.kms:null,p.pricing&&p.pricing.km)}
@@ -1503,7 +1551,8 @@ function saveProduct(){
   p.desc = f("desc").value.trim();
   p.benefit = f("benefit").value.trim();
   p.active = f("active").checked;
-  p.costFactor = Number(f("costFactor").value) || 0;
+  var costRaw = f("cost").value;
+  p.cost = costRaw === "" ? null : (Number(costRaw) || 0);
   p.uses = { term:f("use-term").checked, km:f("use-km").checked, interval:f("use-interval").checked, deductible:f("use-deductible").checked };
   p.terms = parseList(f("terms").value).filter(function(x){ return x>0 && x<=120; });
   p.kms = parseList(f("kms").value);
@@ -1541,13 +1590,19 @@ function presetRange(period){
   else from = to.slice(0,4) + "-01-01";
   return { from:from, to:to };
 }
+function canSeeAllReports(){
+  return V.isAdmin() || V.currentUser().role === "FSM Manager";
+}
 function filteredDeals(){
   var f = state.ui.reports;
   if (!f.from || !f.to){ var r = presetRange(f.period); f.from = f.from||r.from; f.to = f.to||r.to; }
   var pool = (V.isMaster() && f.dealership === "all") ? V.allDeals() : V.dealsForStore();
+  /* An FSM only ever sees their own deals here — "all" or someone else's
+     selection is only honoured for a GM, FSM Manager or master admin. */
+  var fsmFilter = canSeeAllReports() ? f.fsm : state.currentUserId;
   return pool.filter(function(d){
     if (d.createdAt < f.from || d.createdAt > f.to) return false;
-    if (f.fsm !== "all" && d.fsmUserId !== f.fsm) return false;
+    if (fsmFilter !== "all" && d.fsmUserId !== fsmFilter) return false;
     if (f.type !== "all" && d.type !== f.type) return false;
     if (f.product !== "all" && !d.lines.some(function(l){ return l.productId === f.product; })) return false;
     return true;
@@ -1581,10 +1636,11 @@ function viewReports(){
     ${V.isMaster() ? `<label class="f"><span>Dealership</span><select data-bind="ui.reports.dealership">
       <option value="active" ${f.dealership==="active"?"selected":""}>${esc(state.config.name)}</option>
       <option value="all" ${f.dealership==="all"?"selected":""}>All dealerships</option></select></label>` : ""}
-    <label class="f"><span>FSM</span><select data-bind="ui.reports.fsm">
+    ${canSeeAllReports() ? `<label class="f"><span>FSM</span><select data-bind="ui.reports.fsm">
       <option value="all">All FSM users</option>
       ${state.users.filter(function(u){ return u.role !== "Demo" && u.role !== "Master Administrator"; }).map(function(u){
-        return `<option value="${u.id}" ${f.fsm===u.id?"selected":""}>${esc(u.name)}</option>`; }).join("")}</select></label>
+        return `<option value="${u.id}" ${f.fsm===u.id?"selected":""}>${esc(u.name)}</option>`; }).join("")}</select></label>`
+      : `<label class="f"><span>FSM</span><input type="text" value="${esc(V.currentUser().name)} (you)" disabled></label>`}
     <label class="f"><span>Product</span><select data-bind="ui.reports.product">
       <option value="all">All products</option>
       ${state.products.map(function(p){ return `<option value="${p.id}" ${f.product===p.id?"selected":""}>${esc(p.name)}</option>`; }).join("")}</select></label>
@@ -1865,7 +1921,8 @@ function internalPrintSelected(tx, t, u, pkg){
   var rows = pkg.lines.map(function(L){
     return `<tr><td>${esc(L.product.name)}</td><td style="color:#0a7546;font-weight:700">SELECTED</td>
       <td>${esc(pkg.label)}</td><td>${esc(V.lineConfigText(L))||"—"}</td>
-      <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td></tr>`;
+      <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td>
+      <td style="text-align:right">${L.gross===null?"—":money(L.gross)}</td></tr>`;
   }).join("");
   var termCols = t.terms.map(function(tm){
     var r = (tx.finance.rates||{})[tm];
@@ -1903,9 +1960,12 @@ function internalPrintSelected(tx, t, u, pkg){
       <div><div class="lbl">PACKAGE PAYMENT</div><div>${pkgQuotes.length ? money(pkgQuotes[0].payment)+" "+C.freqLabel(pkgQuotes[0].frequency) : "—"}</div></div>
     </div>
     <h3>Products &amp; Dispositions</h3>
-    <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="5">Nothing is assigned to this package.</td></tr>`}</tbody></table>
-    <h3 style="margin-top:14px">Selected Package Total: ${money(pkg.total)}</h3>
+    <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th><th style="text-align:right">Gross</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="6">Nothing is assigned to this package.</td></tr>`}</tbody></table>
+    <div class="cols" style="margin-top:14px;margin-bottom:0">
+      <div><div class="lbl">SELECTED PACKAGE TOTAL</div><div><strong>${money(pkg.total)}</strong></div></div>
+      <div><div class="lbl">SELECTED PACKAGE GROSS</div><div><strong>${money(pkg.gross)}</strong></div></div>
+    </div>
     <div class="watermark">INTERNAL COPY · DEMONSTRATION DATA · NOT A CONTRACT</div></div>`;
 }
 function internalPrint(tx){
@@ -2588,7 +2648,7 @@ document.addEventListener("click", function(ev){
     case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing in this preview window.","err"); } break;
     case "product-new": state.ui.productEdit = { id:null, name:"", code:"", category:"", active:true, taxRule:"standard",
       uses:{term:true,km:false,interval:false,deductible:false}, terms:[36,48,60,72], kms:[], intervals:[], deductibles:[],
-      costFactor:0.4, desc:"", benefit:"", pricing:{ base:0, term:{} } }; commit(); break;
+      cost:null, desc:"", benefit:"", pricing:{ base:0, term:{} } }; commit(); break;
     case "product-edit": state.ui.productEdit = C.clone(C.productById(state, el.getAttribute("data-product"))); commit(); break;
     case "product-cancel": state.ui.productEdit = null; commit(); break;
     case "product-save": saveProduct(); break;
@@ -2643,6 +2703,19 @@ document.addEventListener("click", function(ev){
 });
 
 document.addEventListener("change", function(ev){
+  var el = ev.target;
+  if (el.getAttribute && el.getAttribute("data-pf") === "category" && state.ui.productEdit){
+    var proot = document.querySelector(".modal");
+    if (!proot) return;
+    var descEl = proot.querySelector('[data-pf="desc"]'), benEl = proot.querySelector('[data-pf="benefit"]');
+    var nameEl = proot.querySelector('[data-pf="name"]');
+    if (descEl && benEl && !descEl.value.trim() && !benEl.value.trim()){
+      var tmpl = categoryTemplate(el.value, nameEl ? nameEl.value.trim() : "");
+      descEl.value = tmpl.desc; benEl.value = tmpl.benefit;
+    }
+  }
+});
+document.addEventListener("change", function(ev){
   var el = ev.target, act = el.getAttribute("data-act");
   if (act === "switch-user"){
     state.currentUserId = el.value;
@@ -2660,30 +2733,6 @@ document.addEventListener("change", function(ev){
     if (state.ui.dealerForm){
       state.ui.dealerForm.brandKey = el.value;
       state.ui.dealerForm.logoMark = (D.BRANDS[el.value]||D.BRANDS.nissan).mark;
-    }
-    commit(); return;
-  }
-  if (act === "pick-customer"){
-    var c = state.customers.filter(function(x){ return x.id === el.value; })[0];
-    if (c) state.tx.customer = { id:c.id, name:c.name, phone:c.phone, email:c.email, address:c.address };
-    commit(); return;
-  }
-  if (act === "pick-vehicle"){
-    var v = state.vehicles.filter(function(x){ return x.id === el.value; })[0];
-    if (v){
-      state.tx.vehicle = { id:v.id, year:v.year, make:v.make, model:v.model, stock:v.stock, vin:v.vin,
-        odometer:v.odometer, condition:v.condition, price:v.price };
-      if (!state.tx.customer.name){
-        var owner = state.customers.filter(function(x){ return x.id === v.customerId; })[0];
-        if (owner) state.tx.customer = { id:owner.id, name:owner.name, phone:owner.phone, email:owner.email, address:owner.address };
-      }
-      if (!state.tx.finance.terms.length){
-        var dt = state.config.finance.defaultTerm;
-        state.tx.finance.terms = [dt];
-        if (!state.tx.finance.rates) state.tx.finance.rates = {};
-        if (state.tx.finance.rates[dt] === undefined) state.tx.finance.rates[dt] = state.config.finance.defaultApr;
-      }
-      if (!state.tx.finance.frequency) state.tx.finance.frequency = state.config.finance.defaultFrequency;
     }
     commit(); return;
   }
@@ -2746,12 +2795,18 @@ document.addEventListener("change", function(ev){
         line3 = makeLine(prod3);
         state.tx.lines.push(line3);
       }
+      /* Remember exactly which packages it was in so "Undo" can put it back
+         without the FSM re-checking every box, and never remove the line
+         while declined — that's what was silently wiping out the price and
+         its position in the line-up on undo before. */
+      line3.declinedFrom = C.clone(line3.packages || { preferred:false, essential:false, basic:false });
       line3.packages = { preferred:false, essential:false, basic:false };
       line3.declined = true;
     } else if (line3){
       line3.declined = false;
-      var anyPkg3 = line3.packages && (line3.packages.preferred || line3.packages.essential || line3.packages.basic);
-      if (!anyPkg3) state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line3.lineId; });
+      var restored = line3.declinedFrom || { preferred:true, essential:false, basic:false };
+      line3.packages = restored;
+      line3.declinedFrom = null;
     }
     if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
     commit(); return;
