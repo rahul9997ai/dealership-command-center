@@ -405,23 +405,29 @@ tbody tr:hover{background:var(--surface-2)}
 "use strict";
 
 /* Brand registry. finLabel is the customer-facing financial services name. */
-/* Lease fee defaults per brand's captive lender (acquisition/disposition fee,
-   excess-km rate, standard annual km allowance). Captives don't publish
-   residual % or money factor anywhere public — those come from a monthly
-   RVML sheet the captive sends dealers, per term/mileage/credit tier, and
-   change constantly — so those two stay FSM-entered per deal, defaulted to
-   a placeholder here. Fee figures are the captive's typical published range,
-   converted to CAD/km for this market; treat as a starting point and correct
-   from the dealer's actual RVML sheet when one is on hand. */
+/* Lease fee defaults per brand's CANADIAN captive lender — pulled from each
+   brand's .ca site/FAQ (Nissan Canada, INFINITI Canada, Toyota Canada,
+   Honda Canada Financial Services, Ford Credit Canada, Hyundai/Kia Canada,
+   GM Financial Canada, Mazda Financial Services Canada, BMW Financial
+   Services Canada), Ontario as the reference province where a figure
+   varied by province. Excess-km rate and standard annual km allowance ARE
+   publicly disclosed by most of these and are set from that. Disposition
+   fee is only sometimes published (Mazda Canada explicitly charges none;
+   GM Financial explicitly publishes up to $495) — where a brand doesn't
+   publish one, this is a reasonable placeholder, not a sourced figure.
+   Residual % and money factor are NEVER published anywhere by any
+   captive — those come from a monthly RVML sheet the captive sends
+   dealers, per term/mileage/credit tier, and change constantly — so those
+   two always stay FSM-entered per deal, never defaulted here. */
 var BRANDS = {
   nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", finLabel:"NISSAN FINANCIAL SERVICES",
-    lease:{ acquisitionFee:695, dispositionFee:395, excessKmRate:0.16, annualKm:20000, residualPlaceholder:58, moneyFactorPlaceholder:0.00125 } },
+    lease:{ acquisitionFee:695, dispositionFee:395, excessKmRate:0.12, annualKm:24000, residualPlaceholder:58, moneyFactorPlaceholder:0.00125 } },
   infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", finLabel:"INFINITI FINANCIAL SERVICES",
-    lease:{ acquisitionFee:795, dispositionFee:395, excessKmRate:0.20, annualKm:20000, residualPlaceholder:56, moneyFactorPlaceholder:0.00135 } },
+    lease:{ acquisitionFee:795, dispositionFee:395, excessKmRate:0.15, annualKm:24000, residualPlaceholder:56, moneyFactorPlaceholder:0.00135 } },
   toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", finLabel:"TOYOTA FINANCIAL SERVICES",
     lease:{ acquisitionFee:650, dispositionFee:350, excessKmRate:0.10, annualKm:20000, residualPlaceholder:60, moneyFactorPlaceholder:0.00110 } },
   honda:    { key:"honda",    label:"Honda",     mark:"HON", finLabel:"HONDA FINANCIAL SERVICES",
-    lease:{ acquisitionFee:595, dispositionFee:395, excessKmRate:0.10, annualKm:20000, residualPlaceholder:59, moneyFactorPlaceholder:0.00115 } },
+    lease:{ acquisitionFee:595, dispositionFee:395, excessKmRate:0.12, annualKm:24000, residualPlaceholder:59, moneyFactorPlaceholder:0.00115 } },
   ford:     { key:"ford",     label:"Ford",      mark:"FRD", finLabel:"FORD CREDIT FINANCIAL SERVICES",
     lease:{ acquisitionFee:695, dispositionFee:475, excessKmRate:0.16, annualKm:20000, residualPlaceholder:55, moneyFactorPlaceholder:0.00130 } },
   hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", finLabel:"HYUNDAI MOTOR FINANCE",
@@ -431,9 +437,9 @@ var BRANDS = {
   chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", finLabel:"GM FINANCIAL",
     lease:{ acquisitionFee:695, dispositionFee:495, excessKmRate:0.16, annualKm:20000, residualPlaceholder:54, moneyFactorPlaceholder:0.00130 } },
   mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", finLabel:"MAZDA FINANCIAL SERVICES",
-    lease:{ acquisitionFee:750, dispositionFee:350, excessKmRate:0.10, annualKm:20000, residualPlaceholder:58, moneyFactorPlaceholder:0.00115 } },
+    lease:{ acquisitionFee:750, dispositionFee:0, excessKmRate:0.08, annualKm:20000, residualPlaceholder:58, moneyFactorPlaceholder:0.00115 } },
   bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", finLabel:"BMW FINANCIAL SERVICES",
-    lease:{ acquisitionFee:925, dispositionFee:495, excessKmRate:0.20, annualKm:16000, residualPlaceholder:52, moneyFactorPlaceholder:0.00160 } }
+    lease:{ acquisitionFee:925, dispositionFee:495, excessKmRate:0.15, annualKm:16000, residualPlaceholder:52, moneyFactorPlaceholder:0.00160 } }
 };
 
 /* The three presentation packages. The brand name is prefixed at runtime,
