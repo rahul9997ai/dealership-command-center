@@ -163,6 +163,23 @@ tbody tr:hover{background:var(--surface-2)}
 .prodrow .phrow .right{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 .prodrow .phrow .nm{font-weight:600}
 .pkgpick{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;padding-top:9px;border-top:1px dashed var(--border)}
+.prodrow2{display:flex;align-items:center;gap:14px;flex-wrap:wrap;border:1px solid var(--border);border-radius:10px;padding:12px 16px;background:var(--surface-2)}
+.prodrow2 + .prodrow2{margin-top:10px}
+.prodrow2 .pr-icon{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:linear-gradient(140deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+.prodrow2 .pr-name{flex:1;min-width:180px}
+.prodrow2 .pr-name .nm{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.prodrow2 .pr-ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.pricebox{position:relative;width:112px}
+.pricebox .pfx{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
+.pricebox input{padding-left:22px}
+.pkgchk-row{display:flex;gap:10px;align-items:center}
+.pkgchk{display:inline-flex;align-items:center;gap:5px;font-size:12.5px;color:var(--text-2);cursor:pointer;user-select:none}
+.pkgchk input{accent-color:var(--blue);width:15px;height:15px}
+.pkgchk.on{color:var(--text);font-weight:600}
+.declinebtn{display:inline-flex;align-items:center;border:1px solid var(--border-strong);background:var(--rail);color:#fff;padding:7px 13px;border-radius:8px;cursor:pointer;font-size:13px;font-weight:600;white-space:nowrap}
+.declinebtn input{display:none}
+.declinebtn.on{background:var(--danger);border-color:var(--danger)}
+.declinebtn:hover{filter:brightness(1.1)}
 .pkgpick .lb{font-size:11.5px;color:var(--muted);align-self:center;margin-right:2px}
 .pkgbox{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--border-strong);border-radius:8px;padding:4px 9px;font-size:12px;cursor:pointer;background:var(--surface)}
 .pkgbox.on{border-color:var(--blue);background:var(--info-bg);color:var(--info);font-weight:600}
@@ -177,12 +194,13 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgselect .pks-count{font-size:11.5px;color:var(--muted)}
 .pkgselect .pks-total{font-size:20px;font-weight:700;margin-top:2px}
 .pkgselect.on .pks-total{color:var(--blue)}
-.cd-decline{padding:0 20px 16px}
-.decline-card{border:1px solid var(--warn);background:var(--warn-bg);border-radius:11px;padding:14px 16px;margin-top:10px}
-.decline-card .dc-q{font-weight:600;font-size:14px}
-.decline-card .dc-amt{font-size:24px;font-weight:700;margin-top:4px}
-.decline-card .dc-amt span{font-size:12px;font-weight:500;color:var(--muted)}
-.decline-card .dc-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.cd-waiver{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
+.wv-lbl{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--warn);margin-bottom:8px}
+.wv-card{display:flex;align-items:center;gap:10px;border:1px solid var(--warn);background:var(--warn-bg);border-radius:9px;padding:9px 12px}
+.wv-card + .wv-card{margin-top:8px}
+.wv-x{flex:0 0 auto;width:22px;height:22px;border-radius:6px;background:var(--warn);color:#fff;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700}
+.wv-name{font-weight:700;font-size:13px;color:var(--warn)}
+.wv-sub{font-size:11px;color:var(--warn);opacity:.85;margin-top:1px}
 .cfgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:9px;margin-top:10px}
 .cfgrid label.f{margin-bottom:0}
 .cfg-popover{background:var(--surface-2);border:1px dashed var(--border-strong);padding:11px;border-radius:9px}
@@ -211,13 +229,13 @@ tbody tr:hover{background:var(--surface-2)}
 .cd-note .nt1{font-weight:700;font-size:13.5px}
 .cd-note .nt2{font-size:11px;color:var(--muted);margin-top:3px}
 .cd-mid-veh{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:2px}
-.cd-body{padding:28px 20px;flex:1}
+.cd-body{padding:28px 40px;flex:1;max-width:1620px;width:100%;margin:0 auto;box-sizing:border-box}
 .cd-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:56px 24px;flex:1}
 .cd-welcome .hw{font-size:30px;font-weight:600;letter-spacing:-.02em}
 .cd-veh{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;justify-content:center;text-align:center;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:24px}
 .cd-veh .v1{font-size:19px;font-weight:600}
-.pkgrid{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:flex-start}
-.pkgcard{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2);display:flex;flex-direction:column;flex:0 1 260px;max-width:280px;min-width:225px;box-shadow:var(--shadow)}
+.pkgrid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
+.pkgcard{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2);display:flex;flex-direction:column;flex:1 1 380px;max-width:460px;min-width:300px;box-shadow:var(--shadow)}
 .pkgcard .ph{background:var(--rail);color:#fff;padding:12px 14px;font-weight:700;font-size:13px;letter-spacing:.07em;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px}
 .pkgcard .ph-icon{opacity:.85;font-size:12px}
 .pkgcard .pb{padding:14px 16px;flex:1}
@@ -564,6 +582,7 @@ function packageLabel(state, suffix){
 function totals(state, tx){
   var taxCfg = state.config.tax, fin = state.config.finance;
   var lines = [], sub = 0, taxStd = 0, taxVrc = 0, cost = 0, unpriced = 0, i;
+  var presentedTerms = sortedTerms(tx);
 
   for (i=0;i<tx.lines.length;i++){
     var l = tx.lines[i], prod = productById(state, l.productId);
@@ -574,18 +593,23 @@ function totals(state, tx){
     var price = (l.price === null || l.price === undefined || l.price === "") ? configured : Number(l.price);
     var rate = taxRateFor(prod, taxCfg);
     var priced = !(price === null || price === undefined || isNaN(price));
-    if (!priced && !l.declined) unpriced++;
+    var anyPkg = l.packages.preferred || l.packages.essential || l.packages.basic;
+    if (!priced && !l.declined && anyPkg) unpriced++;
     var amount = priced ? price : 0;
     var tax = Math.round(amount*rate*100)/100;
-    if (!l.declined){
+    if (!l.declined && anyPkg){
       if (prod.taxRule === "vrc") taxVrc += tax; else taxStd += tax;
       sub += amount; cost += Math.round(amount*(prod.costFactor||0));
     }
     var termForDay = (prod.uses.term && l.term) ? Number(l.term) : (primaryTerm(tx) || 60);
     var days = termForDay * 30.44;
     var perDay = (priced && days > 0) ? Math.round((amount/days)*100)/100 : null;
+    var perDayByTerm = (presentedTerms.length ? presentedTerms : [termForDay]).map(function(tm){
+      var d = tm * 30.44;
+      return { term:tm, perDay: (priced && d > 0) ? Math.round((amount/d)*100)/100 : null };
+    });
     lines.push({ lineId:l.lineId, product:prod, cfg:l, price: priced ? amount : null, configuredPrice:configured,
-      overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax,
+      overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax, perDayByTerm:perDayByTerm,
       total:Math.round((amount+tax)*100)/100, cost:Math.round(amount*(prod.costFactor||0)), perDay:perDay });
   }
 
@@ -603,7 +627,7 @@ function totals(state, tx){
   var baseAmount = Math.max(0, vPrice + adminFee + vehicleTax + lic - tradeAll + tradePay - down + feesTotal);
   var financed = Math.round((baseAmount + productsTotal)*100)/100;
 
-  var terms = sortedTerms(tx), rates = tx.finance.rates || {};
+  var terms = presentedTerms, rates = tx.finance.rates || {};
   var freq = tx.finance.frequency || null;
 
   function quotesFor(extraTotal){
@@ -672,6 +696,7 @@ function validate(state, tx){
   for (var i=0;i<t.lines.length;i++){
     var L = t.lines[i], p = L.product, c = L.cfg;
     if (c.declined) continue;
+    if (!(c.packages && (c.packages.preferred || c.packages.essential || c.packages.basic))) continue;
     if (p.uses.term && !c.term) errs.push(p.name + ": select a term.");
     if (p.uses.km && !c.km) errs.push(p.name + ": select kilometres.");
     if (p.uses.interval && !c.interval) errs.push(p.name + ": select a maintenance interval.");
@@ -1047,7 +1072,8 @@ function lineConfigText(L){
    emailed follow-up) narrows to that one package and that one term.
    Until then they show everything that has been assigned to a package. */
 function packagesToShow(t, tx){
-  var list, nonDeclined = t.lines.filter(function(L){ return !L.cfg.declined; });
+  var list, nonDeclined = t.lines.filter(function(L){ return !L.cfg.declined &&
+    L.cfg.packages && (L.cfg.packages.preferred || L.cfg.packages.essential || L.cfg.packages.basic); });
   if (t.packagesUsed) list = t.packages.filter(function(p){ return p.count > 0; });
   else if (nonDeclined.length) list = [{ key:"selected", label:"SELECTED PACKAGE", blurb:"", lines:nonDeclined,
     count:nonDeclined.length, quotes:t.quotes }];
@@ -1101,23 +1127,27 @@ function renderCustomerDisplay(tx){
             <div class="pt-amt">${q.payment===null?"—":money(q.payment)}</div>
             <div class="pt-freq muted">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div></div>`;
         }).join("")}</div>` : "";
-    return `<div class="pkgcard"><div class="ph"><span class="ph-icon">${PACKAGE_ICONS[p.key]||"●"}</span>${esc(p.label)}</div>${payBox}<div class="pb">${items}</div></div>`;
+    var declinedLines = t.lines.filter(function(L){ return L.cfg.declined; });
+    var waiverHtml = declinedLines.length ? `<div class="cd-waiver">
+      <div class="wv-lbl">Waiver</div>
+      ${declinedLines.map(function(L){
+        var perDayTxt = (L.perDayByTerm||[]).filter(function(x){ return x.perDay !== null; })
+          .map(function(x){ return money(x.perDay) + "/day (" + x.term + " mo)"; }).join(" · ");
+        return `<div class="wv-card">
+          <span class="wv-x">✕</span>
+          <div class="wv-txt"><div class="wv-name">${esc(L.product.name)}</div>
+            <div class="wv-sub">DECLINED — ${perDayTxt || "—"}</div></div>
+        </div>`;
+      }).join("")}
+    </div>` : "";
+    return `<div class="pkgcard"><div class="ph"><span class="ph-icon">${PACKAGE_ICONS[p.key]||"●"}</span>${esc(p.label)}</div>${payBox}<div class="pb">${items}${waiverHtml}</div></div>`;
   }).join("");
-
-  var declinedLines = t.lines.filter(function(L){ return L.cfg.declined; });
-  var declineHtml = declinedLines.length ? `<div class="cd-decline">${declinedLines.map(function(L){
-    return `<div class="decline-card">
-      <div class="dc-q">Still thinking about <strong>${esc(L.product.name)}</strong>?</div>
-      <div class="dc-amt">${L.perDay===null?"—":money(L.perDay)}<span> per day</span></div>
-      <div class="dc-sub">Are you sure you want to decline this protection?</div>
-    </div>`;
-  }).join("")}</div>` : "";
 
   return `<div class="cd">${head}<div class="cd-body">
     <div class="cd-veh"><div class="v1">${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}</div>
       <div class="muted small">${tx.customer.name ? "Prepared for " + esc(tx.customer.name) : ""}</div></div>
     <div class="pkgrid">${cards}</div>
-  </div>${declineHtml}${noteBar}${foot}</div>`;
+  </div>${noteBar}${foot}</div>`;
 }
 
 /* ---------------- FSM DISPLAY ---------------- */
@@ -1233,23 +1263,27 @@ function viewFinance(){
         : `<div class="notice warn">Pick at least one term and a payment frequency to see payments.</div>`}
     </div></div>`;
 
+  var PKG_SHORT = { preferred:"Pref", essential:"Esse", basic:"Basi" };
   var productRows = state.products.filter(function(p){ return p.active; }).map(function(p){
     var line = tx.lines.filter(function(l){ return l.productId === p.id; })[0];
     var L = line ? t.lines.filter(function(x){ return x.cfg.lineId === line.lineId; })[0] : null;
     var pkgs = line ? (line.packages || {}) : {};
+    var icon = PRODUCT_ICONS[p.id] || "🛡";
     var boxes = D.PACKAGES.map(function(def){
       var on = !!pkgs[def.key];
-      return `<label class="pkgbox ${on?"on":""}"><input type="checkbox" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${esc(C.packageLabel(state, def.suffix))}</label>`;
-    }).join("") + `<label class="pkgbox decline ${line&&line.declined?"on":""}"><input type="checkbox" data-act="toggle-decline" data-product="${p.id}" ${line&&line.declined?"checked":""}>Decline${L&&L.perDay!==null?" ("+money(L.perDay)+"/day)":""}</label>`;
+      return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${PKG_SHORT[def.key]}</label>`;
+    }).join("");
+    var declineOn = !!(line && line.declined);
+    var declineBtn = `<label class="declinebtn ${declineOn?"on":""}"><input type="checkbox" data-act="toggle-decline" data-product="${p.id}" ${declineOn?"checked":""}>${declineOn?"Declined":"Decline"}</label>`;
     var priceNote = !line ? (p.pricing ? "" : `<span class="tag warn">No price set</span>`)
       : (line.declined ? `<span class="tag danger">Declined</span>`
-      : L.price === null ? `<span class="tag danger">Price not configured — enter a retail price</span>`
-      : (L.overridden ? `<span class="tag warn">Price overridden</span>` : `<span class="tag ok">Configured price</span>`));
+      : L.price === null ? `<span class="tag danger">Enter a retail price</span>`
+      : (L.overridden ? `<span class="tag warn">Price overridden</span>` : `<span class="tag ok">Configured</span>`));
     var hasCfgFields = p.uses.term || p.uses.km || p.uses.interval || p.uses.deductible;
-    var cfgOpen = line && hasCfgFields && state.ui.productConfigOpen === p.id;
-    var gearBtn = (line && hasCfgFields) ? `<button type="button" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
+    var cfgOpen = hasCfgFields && state.ui.productConfigOpen === p.id;
+    var gearBtn = hasCfgFields ? `<button type="button" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
     var fields = "";
-    if (cfgOpen){
+    if (cfgOpen && line){
       var f2 = [];
       if (p.uses.term) f2.push(`<label class="f"><span>Term</span><select data-bind="line:${line.lineId}:term" data-type="num">
         <option value="">Select…</option>${selectOptions(p.terms, line.term, function(x){ return x + " Months"; })}</select></label>`);
@@ -1260,21 +1294,23 @@ function viewFinance(){
       if (p.uses.deductible) f2.push(`<label class="f"><span>Deductible</span><select data-bind="line:${line.lineId}:deductible" data-type="num">
         <option value="">Select…</option>${selectOptions(p.deductibles, line.deductible, function(x){ return Number(x)===0?"No deductible":"$"+x; })}</select></label>`);
       fields = `<div class="cfgrid cfg-popover">${f2.join("")}</div>`;
+    } else if (cfgOpen && !line){
+      fields = `<div class="cfg-popover small muted">Tick a package or Decline first, then set the term, kilometres and deductible here.</div>`;
     }
-    var priceField = line ? `<label class="f price-inline"><span>Retail price</span><input type="number" value="${L.price===null?"":L.price}" data-bind="line:${line.lineId}:price" data-type="num"
-      placeholder="${L.configuredPrice===null?"Enter price":L.configuredPrice}"></label>` : "";
-    return `<div class="prodrow">
-      <div class="phrow">
-        <div class="left"><span class="nm">${esc(p.name)}</span>${gearBtn}<span class="tag">${esc(p.category)}</span>${priceNote}</div>
-        <div class="right">${boxes}</div>
+    var priceVal = line && L && L.price !== null ? L.price : "";
+    var pricePlaceholder = line && L && L.configuredPrice !== null ? L.configuredPrice : "0.00";
+    var priceBind = line ? `line:${line.lineId}:price` : `newline:${p.id}:price`;
+    return `<div class="prodrow2">
+      <div class="pr-icon">${icon}</div>
+      <div class="pr-name">
+        <div class="nm">${esc(p.name)}${priceNote}</div>
+        <div class="tiny muted">${esc(p.category)} · Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</div>
       </div>
-      <div class="phrow" style="margin-top:8px;align-items:flex-end">
-        <div class="left" style="align-items:flex-end">
-          <span class="tag ${p.taxRule==="vrc"?"info":""}">Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</span>
-          ${priceField}
-        </div>
-        <div class="right">${line ? `<button class="btn sm" data-act="reset-price" data-line="${line.lineId}" ${line.priceOverridden===false && L && L.configuredPrice===null?"disabled":""}>Reset price</button>
-          <button class="btn sm danger" data-act="remove-line" data-line="${line.lineId}">Remove</button>` : ""}</div>
+      <div class="pr-ctrls">
+        <div class="pricebox"><span class="pfx">$</span><input type="number" value="${priceVal}" data-bind="${priceBind}" data-type="num" placeholder="${pricePlaceholder}"></div>
+        ${gearBtn}
+        <div class="pkgchk-row">${boxes}</div>
+        ${declineBtn}
       </div>
       ${fields}
     </div>`;
@@ -1336,7 +1372,8 @@ window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUse
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
   channel:channel, selectOptions:selectOptions, kpiCard:kpiCard, lineConfigText:lineConfigText,
-  packagesToShow:packagesToShow, STORAGE_KEY:STORAGE_KEY, allowedRouteKeys:allowedRouteKeys, navItems:navItems };
+  packagesToShow:packagesToShow, STORAGE_KEY:STORAGE_KEY, allowedRouteKeys:allowedRouteKeys, navItems:navItems,
+  PRODUCT_ICONS:PRODUCT_ICONS, PACKAGE_ICONS:PACKAGE_ICONS };
 })();
 /* =====================================================================
    Layer 4: PRODUCTS, REPORTS, USERS, DEALERSHIPS, SETTINGS,
@@ -2684,6 +2721,16 @@ document.addEventListener("change", function(ev){
   if (!bind) return;
   var raw = el.type === "checkbox" ? el.checked : el.value;
   var num = el.getAttribute("data-type") === "num";
+  if (bind.indexOf("newline:") === 0){
+    var nparts = bind.split(":"), nprod = C.productById(state, nparts[1]);
+    if (!nprod || raw === "") return;
+    var nline = state.tx.lines.filter(function(l){ return l.productId === nprod.id; })[0];
+    if (!nline){ nline = makeLine(nprod); state.tx.lines.push(nline); }
+    nline.price = num ? Number(raw) : raw;
+    var nconf = C.priceFor(nprod, nline);
+    nline.priceOverridden = !(nline.price === null || nconf === null || Number(nline.price) === Number(nconf));
+    commit(); return;
+  }
   if (bind.indexOf("line:") === 0){
     var parts = bind.split(":"), ln2 = findLine(parts[1]), field = parts[2];
     if (!ln2) return;
