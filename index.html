@@ -565,7 +565,7 @@ function newTransaction(fsmUserId, dealershipId){
     finance:{ tradeAllowance:0, tradePayout:0, downPayment:0, fees:[], feeAmount:0, rates:{}, terms:[], frequency:null },
     cash:{ tradeAllowance:0, tradePayout:0, downPayment:0, feeAmount:0 },
     lines:[],   /* { lineId, productId, term, km, interval, deductible, price, priceOverridden, packages{} } */
-    display:{ mode:"welcome", showPayment:true, selection:null }
+    display:{ mode:"welcome", showPayment:true, showPrices:false, selection:null }
   };
 }
 function primaryTerm(tx){
@@ -1188,7 +1188,7 @@ function renderCustomerDisplay(tx){
     var items = p.lines.map(function(L){
       var cfgTxt = lineConfigText(L);
       var icon = PRODUCT_ICONS[L.product.id] || "🛡";
-      var priceTxt = L.price===null ? "" : `<div class="pi-price">${money(L.price)}</div>`;
+      var priceTxt = (L.price===null || !(tx.type==="Cash" || tx.display.showPrices)) ? "" : `<div class="pi-price">${money(L.price)}</div>`;
       return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div>${priceTxt}</div>`;
     }).join("");
     /* Purely a showroom framing device — the customer's real total (below,
@@ -1199,7 +1199,7 @@ function renderCustomerDisplay(tx){
     var pricedCount = p.lines.filter(function(L){ return L.price !== null; }).length;
     var bundleHtml = "";
     var bundleMin = { preferred:4, essential:3, basic:2 }[p.key];
-    if (bundleMin && pricedCount >= bundleMin && p.sub > 0){
+    if (bundleMin && pricedCount >= bundleMin && p.sub > 0 && (tx.type==="Cash" || tx.display.showPrices)){
       var compareTotal = Math.round(p.sub*1.18*100)/100;
       var savings = Math.round((compareTotal-p.sub)*100)/100;
       var pct = Math.round((savings/compareTotal)*100);
@@ -1452,7 +1452,8 @@ function viewFinance(){
     </div></div>`;
 
   var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Presentation</h2>
-    <div class="sp"><label class="switch"><input type="checkbox" data-act="toggle-payment" ${tx.display.showPayment?"checked":""}> Show payments to customer</label></div></div>
+    <div class="sp"><label class="switch"><input type="checkbox" data-act="toggle-payment" ${tx.display.showPayment?"checked":""}> Show payments to customer</label>
+      ${tx.type==="Cash" ? "" : `<label class="switch" style="margin-left:14px"><input type="checkbox" data-act="toggle-prices" ${tx.display.showPrices?"checked":""}> Show product prices</label>`}</div></div>
     <div class="card-b">
       <div class="kv"><span class="k">All products total, with tax</span><span class="num">${money(t.productsTotal)}</span></div>
       <div class="kv total"><span>Financed with every product</span><span class="num">${money(t.amountFinanced)}</span></div>
@@ -2919,6 +2920,7 @@ document.addEventListener("change", function(ev){
     commit(); return;
   }
   if (act === "toggle-payment"){ state.tx.display.showPayment = el.checked; commit(); return; }
+  if (act === "toggle-prices"){ state.tx.display.showPrices = el.checked; commit(); return; }
   if (act === "report-preset"){
     state.ui.reports.period = el.value;
     var r = presetRange(el.value);
