@@ -1164,7 +1164,7 @@ function renderCustomerDisplay(tx){
   var freqWord = tx.finance.frequency ? C.freqLabel(tx.finance.frequency) : "bi-weekly or monthly";
   var noteBar = `<div class="cd-note"><div class="nt1">Premium protection for your ${esc(b.label)} investment</div>
     <div class="nt2">${tx.type==="Cash"
-      ? "All totals shown are due in full at signing, "+esc(state.config.tax.standard)+"% HST included."
+      ? "All totals shown are due in full at signing, plus "+esc(state.config.tax.standard)+"% HST."
       : "All payments shown are "+freqWord+", interest and "+esc(state.config.tax.standard)+"% HST included."}</div></div>`;
   var foot = `<div class="cd-foot"><span>${esc(cfg.name)} — ${esc(cfg.address)}, ${esc(cfg.city)}</span><span>${esc(cfg.phone)}</span>
     <span style="margin-left:auto">Preview — demonstration only</span></div>`;
@@ -1194,22 +1194,23 @@ function renderCustomerDisplay(tx){
     /* Purely a showroom framing device — the customer's real total (below,
        in payBox/dueTotal) never moves. "Individually" is this package's own
        real total marked up by a fixed, cosmetic multiplier so bundling two
-       or more Preferred/Essential products visibly "saves" something; Basic
-       is deliberately excluded so it still reads as the stripped-down option. */
+       or more products visibly "saves" something. Thresholds: Preferred 4+,
+       Essential 3+, Basic 2+. Shown pre-tax with "+ HST". */
     var pricedCount = p.lines.filter(function(L){ return L.price !== null; }).length;
     var bundleHtml = "";
-    if ((p.key === "preferred" || p.key === "essential") && pricedCount >= 2 && p.total > 0){
-      var compareTotal = Math.round(p.total*1.18*100)/100;
-      var savings = Math.round((compareTotal-p.total)*100)/100;
+    var bundleMin = { preferred:4, essential:3, basic:2 }[p.key];
+    if (bundleMin && pricedCount >= bundleMin && p.sub > 0){
+      var compareTotal = Math.round(p.sub*1.18*100)/100;
+      var savings = Math.round((compareTotal-p.sub)*100)/100;
       var pct = Math.round((savings/compareTotal)*100);
       bundleHtml = `<div class="bundle-badge">
-        <div class="bundle-top"><span class="bundle-compare">${money(compareTotal)}</span><span class="bundle-arrow">if bought one at a time →</span><span class="bundle-price">${money(p.total)}</span><span class="bundle-tag">Bundled</span></div>
+        <div class="bundle-top"><span class="bundle-compare">${money(compareTotal)}</span><span class="bundle-arrow">if bought one at a time →</span><span class="bundle-price">${money(p.sub)} + HST</span><span class="bundle-tag">Bundled</span></div>
         <div class="bundle-save">You're saving ${money(savings)} (${pct}%) by bundling these together</div>
       </div>`;
     }
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
-          <div class="pt-amt">${money(p.dueTotal)}</div></div></div>` : "")
+          <div class="pt-amt">${money(p.dueTotal - t.vehicleTax - p.tax)} + HST</div></div></div>` : "")
       : (tx.display.showPayment && p.quotes && p.quotes.length)
       ? `<div class="paybox">${p.quotes.map(function(q){
           return `<div class="payterm"><div class="pt-term">${q.term} mo</div>
@@ -1368,24 +1369,28 @@ function viewFinance(){
     </div></div>`;
 
   var PKG_SHORT = { preferred:"Pref", essential:"Esse", basic:"Basi" };
-  var productRows = state.products.filter(function(p){ return p.active; }).map(function(p){
+  var productRows = state.products.filter(function(p){ return p.active; }).map(function(p, rowIdx){
     var line = tx.lines.filter(function(l){ return l.productId === p.id; })[0];
     var L = line ? t.lines.filter(function(x){ return x.cfg.lineId === line.lineId; })[0] : null;
     var pkgs = line ? (line.packages || {}) : {};
     var icon = PRODUCT_ICONS[p.id] || "🛡";
+    /* Tab should walk straight down the price column, not detour through
+       every gear/package/decline control in between — those stay reachable
+       by click but drop out of the keyboard tab order (tabindex="-1"), so
+       DOM order alone carries Tab from one price box to the next. */
     var boxes = D.PACKAGES.map(function(def){
       var on = !!pkgs[def.key];
-      return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${PKG_SHORT[def.key]}</label>`;
+      return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" tabindex="-1" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${PKG_SHORT[def.key]}</label>`;
     }).join("");
     var declineOn = !!(line && line.declined);
-    var declineBtn = `<label class="declinebtn ${declineOn?"on":""}"><input type="checkbox" data-act="toggle-decline" data-product="${p.id}" ${declineOn?"checked":""}>${declineOn?"Undo":"Decline"}</label>`;
+    var declineBtn = `<label class="declinebtn ${declineOn?"on":""}"><input type="checkbox" tabindex="-1" data-act="toggle-decline" data-product="${p.id}" ${declineOn?"checked":""}>${declineOn?"Undo":"Decline"}</label>`;
     var priceNote = !line ? (p.pricing ? "" : `<span class="tag warn">No price set</span>`)
       : (line.declined ? `<span class="tag danger">Declined</span>`
       : L.price === null ? `<span class="tag danger">Enter a retail price</span>`
       : (L.overridden ? `<span class="tag warn">Price overridden</span>` : `<span class="tag ok">Configured</span>`));
     var hasCfgFields = p.uses.term || p.uses.km || p.uses.interval || p.uses.deductible;
     var cfgOpen = hasCfgFields && state.ui.productConfigOpen === p.id;
-    var gearBtn = hasCfgFields ? `<button type="button" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
+    var gearBtn = hasCfgFields ? `<button type="button" tabindex="-1" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
     var fields = "";
     if (cfgOpen && line){
       var f2 = [];
@@ -2870,7 +2875,6 @@ document.addEventListener("change", function(ev){
     var wasInAnyPkg = line2.packages.preferred || line2.packages.essential || line2.packages.basic;
     line2.packages[pkgKey] = el.checked;
     if (el.checked) line2.declined = false;
-    var anyPkg = line2.packages.preferred || line2.packages.essential || line2.packages.basic;
     /* The customer display lists products in the order they were selected
        into a package. A price typed in before any package is picked (or a
        product declined and later brought back) shouldn't count as "selected"
@@ -2880,7 +2884,10 @@ document.addEventListener("change", function(ev){
       state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line2.lineId; });
       state.tx.lines.push(line2);
     }
-    if (!anyPkg && !line2.declined) state.tx.lines = state.tx.lines.filter(function(l){ return l.lineId !== line2.lineId; });
+    /* Unchecking every package used to delete the whole line, which silently
+       wiped out a price the FSM had already typed in — a price now only
+       ever goes away if the FSM explicitly clears it (Reset) or removes the
+       line, never as a side effect of package checkboxes. */
     if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
     if (!state.tx.lines.length && state.tx.display.mode === "package") state.tx.display.mode = "welcome";
     commit(); return;
