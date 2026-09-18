@@ -255,6 +255,42 @@ tbody tr:hover{background:var(--surface-2)}
 .demo-chip .dc-time{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px}
 .demo-expiry{margin:12px 0;padding:12px 14px;border-radius:10px;background:var(--warn-bg);border:1px solid var(--warn)}
 .demo-expiry .big{font-size:17px;font-weight:800;margin:2px 0}
+.welcome-bg{position:fixed;inset:0;z-index:90;display:flex;align-items:center;justify-content:center;padding:20px;
+  background:rgba(4,10,22,.72);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);animation:wcFade .35s ease-out}
+.welcome-card{position:relative;overflow:hidden;width:100%;max-width:470px;padding:34px 32px 28px;border-radius:20px;text-align:center;
+  background:linear-gradient(160deg,var(--surface) 0%,var(--surface-2) 100%);border:1px solid var(--border-strong);
+  box-shadow:0 30px 80px rgba(0,0,0,.55);animation:wcPop .5s cubic-bezier(.2,.9,.3,1.2)}
+.welcome-card .wc-glow{position:absolute;top:-90px;left:50%;width:360px;height:220px;transform:translateX(-50%);
+  background:radial-gradient(closest-side,rgba(76,141,255,.35),rgba(76,141,255,0));pointer-events:none}
+.wc-badge{position:relative;display:inline-flex;align-items:center;gap:8px;padding:5px 13px;border-radius:999px;font-size:10.5px;
+  font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--warn);background:var(--warn-bg);border:1px solid var(--warn)}
+.wc-badge .dc-dot{width:7px;height:7px;border-radius:50%;background:var(--warn)}
+.welcome-card h2{position:relative;font-size:28px;margin:16px 0 8px;letter-spacing:-.02em}
+.wc-lead{position:relative;color:var(--text-2);margin:0 auto 18px;max-width:38ch;line-height:1.55}
+.wc-expiry{position:relative;margin:0 0 16px;padding:14px 16px;border-radius:14px;background:var(--surface-3);border:1px solid var(--border)}
+.wc-expiry .big{font-size:16px;font-weight:800;margin:3px 0 8px}
+.wc-count{display:flex;justify-content:center;align-items:baseline;gap:10px}
+.wc-timer{font-variant-numeric:tabular-nums;font-size:22px;font-weight:800;color:var(--blue-2);letter-spacing:.02em}
+.wc-btn{width:100%;margin-top:6px;padding:11px 14px;font-size:14px}
+@keyframes wcFade{from{opacity:0}to{opacity:1}}
+@keyframes wcPop{0%{opacity:0;transform:translateY(14px) scale(.94)}100%{opacity:1;transform:none}}
+.tour-block{position:fixed;inset:0;z-index:75}
+.tour-dim{position:fixed;inset:0;z-index:76;background:rgba(3,10,25,.66);pointer-events:none}
+.tour-spot{position:fixed;z-index:77;border-radius:14px;pointer-events:none;transition:all .25s ease;
+  box-shadow:0 0 0 9999px rgba(3,10,25,.66),0 0 0 2px var(--blue-2),0 0 26px rgba(76,141,255,.55)}
+.tour-bar{position:fixed;z-index:80;left:50%;bottom:18px;transform:translateX(-50%);width:min(580px,calc(100vw - 24px));
+  padding:16px 18px 14px;border-radius:16px;background:var(--surface);color:var(--text);border:1px solid var(--blue-2);
+  box-shadow:0 18px 50px rgba(0,0,0,.5);animation:tourPop .35s ease-out}
+@keyframes tourPop{from{opacity:0;transform:translateX(-50%) translateY(14px)}to{opacity:1;transform:translateX(-50%)}}
+.tour-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.tour-count{font-size:10.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--blue-2)}
+.tour-dots{display:flex;gap:5px}
+.tour-dots .td{width:7px;height:7px;border-radius:50%;background:var(--border-strong)}
+.tour-dots .td.done{background:var(--blue)}
+.tour-dots .td.on{background:var(--blue-2);box-shadow:0 0 0 3px rgba(76,141,255,.3)}
+.tour-bar h3{font-size:16px;margin:0 0 4px}
+.tour-bar p{margin:0 0 12px;color:var(--text-2);font-size:13px;line-height:1.5}
+.tour-btns{display:flex;align-items:center;gap:8px}
 .bundle-badge{margin:2px 16px 12px;padding:11px 13px;border-radius:10px;
   background:linear-gradient(135deg,var(--ok-bg),var(--surface));border:1px solid var(--ok);
   animation:bundlePop .5s ease-out, bundlePulse 2.6s ease-in-out .5s infinite}
@@ -2356,7 +2392,7 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + demoChip() + demoNoticeModal();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -2534,6 +2570,7 @@ function render(){
       }
     }
   }
+  if (state.ui.tour) positionTour();
 }
 window.__DCC_RENDER__ = render;
 
@@ -2663,7 +2700,7 @@ state.auth = null;
 function upsertProfileUser(p){
   var rec = { id:p.id, name:p.name, role:p.role, email:p.email, dealershipId:p.dealership_id || null,
     active:p.active !== false, demo:p.access_type === "demo", expiresAt:p.expires_at || null,
-    mustChange:!!p.must_change_password, accessDays:null, restrictions:[],
+    mustChange:!!p.must_change_password, onboarded:!!p.onboarded, accessDays:null, restrictions:[],
     initials:String(p.name||"?").split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase() };
   var ex = state.users.filter(function(u){ return u.id === p.id; })[0];
   if (ex){ for (var k in rec) ex[k] = rec[k]; } else state.users.push(rec);
@@ -2696,6 +2733,7 @@ function finishEnter(u){
   state.ui.demoNotice = !!(state.auth && state.auth.accessType === "demo");
   toast("Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
   refreshUsers();
+  if (!state.ui.demoNotice) maybeStartTour();
   commit();
 }
 function loadProfileAndEnter(){
@@ -2707,7 +2745,7 @@ function loadProfileAndEnter(){
       if (!p || !p.active) return failLogin("This account isn't active. Contact your administrator.");
       if (p.access_type === "demo" && p.expires_at && new Date(p.expires_at) <= new Date())
         return failLogin("Your demo access has expired. Contact your administrator.");
-      state.auth = { mustChange:!!p.must_change_password, accessType:p.access_type, expiresAt:p.expires_at };
+      state.auth = { mustChange:!!p.must_change_password, accessType:p.access_type, expiresAt:p.expires_at, onboarded:!!p.onboarded };
       upsertProfileUser(p);
       state.currentUserId = p.id; state.loggedIn = true; state.ui.loginError = null; state.ui.authChecking = false;
       if (!p.must_change_password) finishEnter(userById(p.id)); else commit();
@@ -2768,6 +2806,7 @@ setInterval(function(){
   var ms = new Date(a.expiresAt).getTime() - Date.now();
   if (ms <= 0){ failLogin("Your demo access has expired."); return; }
   var el = document.getElementById("demoTimer"); if (el) el.textContent = fmtRemaining(ms);
+  var el2 = document.getElementById("welcomeTimer"); if (el2) el2.textContent = fmtRemaining(ms);
 }, 1000);
 function renderChangePassword(){
   var err = state.ui.pwError;
@@ -2792,16 +2831,103 @@ function demoChip(){
 function demoNoticeModal(){
   var a = state.auth;
   if (!state.ui.demoNotice || !a || a.accessType !== "demo") return "";
-  return `<div class="modal-bg"><div class="modal" style="max-width:520px">
-    <div class="modal-h"><h2>You're using a demo account</h2></div>
+  var first = String((userById(state.currentUserId).name) || "").split(" ")[0] || "there";
+  return `<div class="welcome-bg"><div class="welcome-card">
+    <div class="wc-glow"></div>
+    <div class="wc-badge"><span class="dc-dot"></span>Demo access</div>
+    <h2>Welcome, ${esc(first)}</h2>
+    <p class="wc-lead">You're exploring AXIOM with the full functionality of your role. Everything you build here is yours to try.</p>
+    <div class="wc-expiry"><div class="lbl">Your access expires</div>
+      <div class="big">${esc(fmtExpiry(a.expiresAt))}</div>
+      <div class="wc-count"><span class="muted small">Time remaining</span><span class="wc-timer" id="welcomeTimer">${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</span></div></div>
+    <p class="small muted">A countdown stays at the top of your screen and you'll be signed out automatically when it reaches zero. Need more time? Ask your administrator.</p>
+    <button class="btn primary wc-btn" data-act="demo-ack">Continue to AXIOM</button>
+  </div></div>`;
+}
+function extendModal(){
+  var f = state.ui.extendForm;
+  if (!f) return "";
+  var u = userById(f.id);
+  var base = Math.max(Date.now(), u.expiresAt ? new Date(u.expiresAt).getTime() : 0) + 7*86400000;
+  var d = new Date(base); d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal" style="max-width:460px">
+    <div class="modal-h"><h2>Extend demo</h2><div class="sp">
+      <button class="btn" data-act="extend-cancel">Cancel</button>
+      <button class="btn primary" data-act="extend-save">Save new expiry</button></div></div>
     <div class="modal-b">
-      <p>Welcome to AXIOM. This is a time-limited demo of the platform — you have access to the full functionality of your role while it lasts.</p>
-      <div class="demo-expiry"><div class="lbl">Your access expires</div><div class="big">${esc(fmtExpiry(a.expiresAt))}</div>
-        <div class="muted small">Time remaining: <strong>${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</strong></div></div>
-      <p class="small muted">A countdown stays at the top of your screen. When it reaches zero you'll be signed out automatically. Talk to your administrator if you need more time.</p>
-      <div style="text-align:right;margin-top:14px"><button class="btn primary" data-act="demo-ack">Continue to AXIOM</button></div>
+      <p><strong>${esc(u.name)}</strong>${u.expiresAt ? ` currently expires <strong>${esc(fmtExpiry(u.expiresAt))}</strong>.` : "."}</p>
+      <label class="f"><span>New expiry (date &amp; time)</span><input type="datetime-local" data-uf="extend" value="${d.toISOString().slice(0,16)}"></label>
     </div></div></div>`;
 }
+
+/* ---------------- FIRST-LOGIN WALKTHROUGH ---------------- */
+var TOUR_STEPS = [
+  { sel:null, title:"Welcome to the Finance module", text:"This one-minute tour shows how a deal flows from customer to signed paperwork. Use Next to move along, or Skip any time." },
+  { sel:"#step-1", title:"1 · Customer", text:"Start with who you're helping. Name, phone and email feed the customer display, the printed copy and the emailed package." },
+  { sel:"#step-2", title:"2 · Vehicle", text:"Enter the vehicle and its selling price. That price drives every payment and total the customer sees." },
+  { sel:"#step-3", title:"3 · Finance or Cash setup", text:"Flip between Finance and Cash. Finance: pick the terms to present, set each rate and the payment frequency. Cash: enter any trade and deposit and it shows one total due." },
+  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick Pref, Esse or Basi to place it in a package, or Decline to show the customer what they're waiving. Tab jumps straight to the next price box." },
+  { sel:"#step-5", title:"5 · Presentation", text:"Control what the customer sees: show or hide payments and product prices, pick the package they chose, and use Split view to preview their screen live." },
+  { sel:".fin-toolbar", title:"Present, send & finish", text:"Open the customer display on their monitor, go full screen, email the package, print an internal or customer copy — then Complete transaction to send the deal to Reports." },
+  { sel:null, title:"You're all set", text:"That's the core flow. Reports (left menu) lists your completed deals, and you can reopen or edit any of them. Enjoy AXIOM." }
+];
+function maybeStartTour(){
+  if (!state.auth || state.auth.onboarded || state.ui.tour || !state.config) return;
+  state.route = "finance";
+  state.ui.tour = { i:0, scrolled:-1 };
+}
+function tourEnd(){
+  state.ui.tour = null;
+  if (state.auth) state.auth.onboarded = true;
+  var me = userById(state.currentUserId); if (me) me.onboarded = true;
+  if (sb) sb.rpc("mark_onboarded");
+  commit();
+}
+function tourStep(delta){
+  var t = state.ui.tour; if (!t) return;
+  var n = t.i + delta;
+  if (n >= TOUR_STEPS.length){ tourEnd(); return; }
+  if (n < 0) n = 0;
+  state.ui.tour = { i:n, scrolled:-1 };
+  commit();
+}
+function tourHtml(){
+  var t = state.ui.tour; if (!t) return "";
+  var st = TOUR_STEPS[t.i], last = t.i === TOUR_STEPS.length - 1;
+  var dots = TOUR_STEPS.map(function(x, k){ return `<span class="td ${k===t.i?"on":(k<t.i?"done":"")}"></span>`; }).join("");
+  return `<div class="tour-block"></div>${st.sel ? `<div class="tour-spot" id="tourSpot"></div>` : `<div class="tour-dim"></div>`}
+    <div class="tour-bar"><div class="tour-top"><span class="tour-count">Step ${t.i+1} of ${TOUR_STEPS.length}</span><div class="tour-dots">${dots}</div></div>
+      <h3>${esc(st.title)}</h3><p>${esc(st.text)}</p>
+      <div class="tour-btns"><button class="btn sm" data-act="tour-skip">${last?"Close":"Skip tour"}</button><span style="flex:1"></span>
+        ${t.i>0?`<button class="btn sm" data-act="tour-back">Back</button>`:""}
+        <button class="btn sm primary" data-act="tour-next">${last?"Finish":(t.i===0?"Start tour":"Next")}</button></div></div>`;
+}
+function positionTour(){
+  var t = state.ui.tour; if (!t) return;
+  var st = TOUR_STEPS[t.i], spot = document.getElementById("tourSpot");
+  if (!st.sel || !spot) return;
+  var el = document.querySelector(st.sel);
+  if (!el){ spot.style.display = "none"; return; }
+  if (t.scrolled !== t.i){
+    t.scrolled = t.i;
+    var r0 = el.getBoundingClientRect();
+    el.scrollIntoView({ block: r0.height > window.innerHeight*0.6 ? "start" : "center" });
+    if (r0.height > window.innerHeight*0.6) window.scrollBy(0, -70);
+  }
+  var r = el.getBoundingClientRect(), pad = 8;
+  spot.style.display = "";
+  spot.style.left = (r.left - pad) + "px"; spot.style.top = (r.top - pad) + "px";
+  spot.style.width = (r.width + pad*2) + "px"; spot.style.height = (r.height + pad*2) + "px";
+}
+window.addEventListener("scroll", function(){ if (state.ui.tour) positionTour(); }, { passive:true });
+window.addEventListener("resize", function(){ if (state.ui.tour) positionTour(); });
+document.addEventListener("keydown", function(ev){
+  if (!state.ui.tour) return;
+  if (ev.key === "ArrowRight" || ev.key === "Enter"){ ev.preventDefault(); tourStep(1); }
+  else if (ev.key === "ArrowLeft"){ ev.preventDefault(); tourStep(-1); }
+  else if (ev.key === "Escape"){ ev.preventDefault(); tourEnd(); }
+});
+
 function copyEmailText(){
   var box = document.getElementById("emailBody");
   var text = box ? box.value : buildEmail(state.tx).body;
@@ -2904,7 +3030,7 @@ document.addEventListener("click", function(ev){
     case "print-internal": state.ui.modal = { kind:"internal" }; commit(); break;
     case "print-customer": state.ui.modal = { kind:"customer" }; commit(); break;
     case "close-modal": case "close-modal-bg":
-      state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; commit(); break;
+      state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; state.ui.extendForm = null; commit(); break;
     case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing in this preview window.","err"); } break;
     case "product-new": state.ui.productEdit = { id:null, name:"", code:"", category:"", active:true, taxRule:"standard",
       uses:{term:true,km:false,interval:false,deductible:false}, terms:[36,48,60,72], kms:[], intervals:[], deductibles:[],
@@ -2970,16 +3096,15 @@ document.addEventListener("click", function(ev){
       Array.prototype.forEach.call(el.parentNode.children, function(b){ b.classList.toggle("on", b === el); });
       mr2.querySelector("#ufCustom").style.display = hv === "custom" ? "" : "none";
       updateDemoPreview(); break; }
-    case "demo-extend": {
-      var de = userById(el.getAttribute("data-user"));
-      var daysTxt = window.prompt("Extend " + de.name + "'s demo by how many days? (counted from the later of now or their current expiry)", "7");
-      if (daysTxt === null) break;
-      var addDays = Number(daysTxt);
-      if (!(addDays > 0)){ toast("Enter a number of days above zero.","err"); break; }
-      var baseMs = Math.max(Date.now(), de.expiresAt ? new Date(de.expiresAt).getTime() : 0);
-      var newExp = new Date(baseMs + addDays*86400000).toISOString();
-      adminCall({ action:"update", id:de.id, access_type:"demo", expires_at:newExp })
-        .then(function(){ toast("Demo extended to " + fmtExpiry(newExp) + ".","ok"); refreshUsers(); })
+    case "demo-extend": state.ui.extendForm = { id:el.getAttribute("data-user") }; commit(); break;
+    case "extend-save": {
+      var ef = state.ui.extendForm, inp = document.querySelector('[data-uf="extend"]');
+      if (!ef || !inp || !inp.value){ toast("Pick a date and time.","err"); break; }
+      var dt = new Date(inp.value);
+      if (!(dt.getTime() > Date.now())){ toast("Pick a moment in the future.","err"); break; }
+      var newExp = dt.toISOString(), who = userById(ef.id);
+      adminCall({ action:"update", id:ef.id, access_type:"demo", expires_at:newExp })
+        .then(function(){ state.ui.extendForm = null; toast("Demo extended to " + fmtExpiry(newExp) + ".","ok"); refreshUsers(); commit(); })
         .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "demo-convert": {
@@ -2990,14 +3115,18 @@ document.addEventListener("click", function(ev){
         .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "do-change-password": doChangePassword(); break;
-    case "demo-ack": state.ui.demoNotice = false; commit(); break;
+    case "demo-ack": state.ui.demoNotice = false; maybeStartTour(); commit(); break;
+    case "tour-next": tourStep(1); break;
+    case "tour-back": tourStep(-1); break;
+    case "tour-skip": tourEnd(); break;
+    case "extend-cancel": state.ui.extendForm = null; commit(); break;
     case "dealer-new": state.ui.dealerForm = { id:null, name:"", brandKey:"ford", logoMark:"", active:true,
       address:"", city:"", phone:"", email:"", dealerCode:"",
       finance:{ defaultApr:7.49, defaultTerm:72, defaultFrequency:"biweekly", adminFee:699, licensing:120 },
       tax:{ standard:13, vrc:8 } }; commit(); break;
     case "dealer-edit": state.ui.dealerForm = C.clone(V.dealershipById(el.getAttribute("data-dealership"))); commit(); break;
     case "dealer-cancel": state.ui.dealerForm = null; commit(); break;
-    case "dealer-save": saveDealer(); break;
+    case "dealer-save": saveDealer(); maybeStartTour(); break;
     case "dealer-delete": deleteDealer(el.getAttribute("data-dealership")); break;
     case "switch-to-dealership": V.setDealership(el.getAttribute("data-dealership")); state.route = "finance"; commit(); break;
     case "reset-demo": resetDemo(); break;

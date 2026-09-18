@@ -29,3 +29,12 @@ language sql security definer set search_path = public as $$
 $$;
 revoke all on function public.clear_must_change_password() from public, anon;
 grant execute on function public.clear_must_change_password() to authenticated;
+
+alter table public.profiles add column if not exists onboarded boolean not null default false;
+
+create or replace function public.mark_onboarded() returns void
+language sql security definer set search_path = public as $$
+  update public.profiles set onboarded = true where id = auth.uid();
+$$;
+revoke all on function public.mark_onboarded() from public, anon;
+grant execute on function public.mark_onboarded() to authenticated;
