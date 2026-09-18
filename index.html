@@ -1038,20 +1038,20 @@ function dealsForStore(){
    Dealerships. A General Manager sees everything except Dealerships (they
    run one store, they don't create new ones). An FSM Manager additionally
    oversees Users & access for their own store. A plain FSM — and a time
-   limited Demo account — only sees the deal-facing screens: Finance, Lease,
-   Cash, Products and Reports. */
+   limited Demo account — only sees the deal-facing screens: Finance (which
+   covers both finance and lease deals via the deal-type toggle), Cash,
+   Products and Reports. */
 function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
-  if (role === "General Manager") return ["dashboard","finance","lease","cash","products","reports","users","settings"];
-  if (role === "FSM Manager") return ["dashboard","finance","lease","cash","products","reports","users"];
-  return ["finance","lease","cash","products","reports"];
+  if (role === "General Manager") return ["dashboard","finance","cash","products","reports","users","settings"];
+  if (role === "FSM Manager") return ["dashboard","finance","cash","products","reports","users"];
+  return ["finance","cash","products","reports"];
 }
 function navItems(){
   var items = [
     { key:"dashboard", label:"Dashboard", ic:"▤" },
     { key:"finance", label:"Finance", ic:"◧" },
-    { key:"lease", label:"Lease", ic:"◫", tag:"Soon" },
     { key:"cash", label:"Cash", ic:"◨", tag:"Soon" },
     { key:"products", label:"Products", ic:"▦" },
     { key:"reports", label:"Reports", ic:"▥" },
@@ -2528,7 +2528,6 @@ function routeView(){
   switch (state.route){
     case "dashboard": return V.viewDashboard();
     case "finance": return V.viewFinance();
-    case "lease": return V.viewUnderConstruction("Lease");
     case "cash": return V.viewUnderConstruction("Cash");
     case "products": return viewProducts();
     case "reports": return viewReports();
