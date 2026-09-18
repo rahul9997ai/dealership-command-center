@@ -26,7 +26,7 @@
   --rail:#0c1d33;
   --rail-2:#16304f;
   --rail-text:#a9bcd4;
-  --ok:#0a7546; --ok-bg:#e7f6ef;
+  --ok:#0a7546; --ok-bg:#e7f6ef; --ok-shadow:rgba(10,117,70,.28);
   --warn:#8a5106; --warn-bg:#fdf2e3;
   --danger:#b42318; --danger-bg:#fdecea;
   --info:#1d61d8; --info-bg:#e9f0fd;
@@ -39,7 +39,7 @@
   --bg:#070c14; --surface:#0f1723; --surface-2:#131d2b; --surface-3:#1a2637;
   --text:#e9eff8; --text-2:#c2cee0; --muted:#8798ae; --border:#23324a; --border-strong:#35496a;
   --rail:#050a12; --rail-2:#111d30; --rail-text:#97a9c2;
-  --ok:#4ec08d; --ok-bg:#0f271d; --warn:#e2a862; --warn-bg:#2a2013; --danger:#f0897f; --danger-bg:#2b1614;
+  --ok:#4ec08d; --ok-bg:#0f271d; --ok-shadow:rgba(78,192,141,.28); --warn:#e2a862; --warn-bg:#2a2013; --danger:#f0897f; --danger-bg:#2b1614;
   --info:#79aaff; --info-bg:#122238;
   --shadow:0 1px 2px rgba(0,0,0,.5),0 10px 26px rgba(0,0,0,.42);
 }
@@ -242,11 +242,24 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:flex-start;gap:9px}
 .pkgcard .pi:last-child{border-bottom:0}
 .pkgcard .pi-icon{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:linear-gradient(140deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
-.pkgcard .pi-txt{min-width:0}
+.pkgcard .pi-txt{min-width:0;flex:1}
 .pkgcard .pi .n2{font-weight:600}
 .pkgcard .pi .c2{color:var(--muted);font-size:11.5px}
+.pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
+.bundle-badge{margin:2px 16px 12px;padding:11px 13px;border-radius:10px;
+  background:linear-gradient(135deg,var(--ok-bg),var(--surface));border:1px solid var(--ok);
+  animation:bundlePop .5s ease-out, bundlePulse 2.6s ease-in-out .5s infinite}
+.bundle-top{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.bundle-compare{text-decoration:line-through;color:var(--muted);font-size:12px}
+.bundle-arrow{color:var(--muted);font-size:12px}
+.bundle-price{font-weight:800;font-size:16px;color:var(--ok)}
+.bundle-save{margin-top:5px;font-size:11.5px;font-weight:700;color:var(--ok);display:flex;align-items:center;gap:5px}
+.bundle-tag{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.07em;color:#fff;background:var(--ok);
+  padding:2px 7px;border-radius:999px;text-transform:uppercase}
+@keyframes bundlePop{0%{opacity:0;transform:translateY(5px) scale(.96)}100%{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes bundlePulse{0%,100%{box-shadow:0 0 0 0 var(--ok-shadow)}50%{box-shadow:0 0 0 6px rgba(0,0,0,0)}}
 .pt-term{font-size:10.5px;color:var(--muted);letter-spacing:.04em}
 .pt-amt{font-size:16px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:2px}
 .pt-freq{font-size:10px;margin-top:1px}
@@ -1119,15 +1132,25 @@ function packagesToShow(t, tx){
   var list, nonDeclined = t.lines.filter(function(L){ return !L.cfg.declined &&
     L.cfg.packages && (L.cfg.packages.preferred || L.cfg.packages.essential || L.cfg.packages.basic); });
   if (t.packagesUsed) list = t.packages.filter(function(p){ return p.count > 0; });
-  else if (nonDeclined.length) list = [{ key:"selected", label:"SELECTED PACKAGE", blurb:"", lines:nonDeclined,
-    count:nonDeclined.length, quotes:t.quotes, dueTotal:t.isCash?t.cashDueTotal:null }];
+  else if (nonDeclined.length){
+    var s=0, tx1=0, c=0;
+    nonDeclined.forEach(function(L){ if (L.price!==null){ s+=L.price; tx1+=L.tax; c+=L.cost; } });
+    list = [{ key:"selected", label:"SELECTED PACKAGE", blurb:"", lines:nonDeclined,
+      count:nonDeclined.length, quotes:t.quotes, dueTotal:t.isCash?t.cashDueTotal:null,
+      sub:Math.round(s*100)/100, tax:Math.round(tx1*100)/100, total:Math.round((s+tx1)*100)/100,
+      cost:c, gross:Math.round((s-c)*100)/100 }];
+  }
   else list = [];
+  /* Keep every field a package object carries (dueTotal, sub, total, etc.) —
+     allow-listing fields here has silently dropped new ones more than once
+     when a package gets selected on the customer display. */
   var sel = tx && tx.display && tx.display.selection;
   if (sel && sel.package){
     list = list.filter(function(p){ return p.key === sel.package; });
     list = list.map(function(p){
-      var q = sel.term ? p.quotes.filter(function(x){ return x.term === sel.term; }) : p.quotes;
-      return { key:p.key, label:p.label, lines:p.lines, count:p.count, quotes:q, dueTotal:p.dueTotal };
+      var np = {}; for (var k in p) np[k] = p[k];
+      np.quotes = sel.term ? p.quotes.filter(function(x){ return x.term === sel.term; }) : p.quotes;
+      return np;
     });
   }
   return list;
@@ -1165,8 +1188,25 @@ function renderCustomerDisplay(tx){
     var items = p.lines.map(function(L){
       var cfgTxt = lineConfigText(L);
       var icon = PRODUCT_ICONS[L.product.id] || "🛡";
-      return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div></div>`;
+      var priceTxt = L.price===null ? "" : `<div class="pi-price">${money(L.price)}</div>`;
+      return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div>${priceTxt}</div>`;
     }).join("");
+    /* Purely a showroom framing device — the customer's real total (below,
+       in payBox/dueTotal) never moves. "Individually" is this package's own
+       real total marked up by a fixed, cosmetic multiplier so bundling two
+       or more Preferred/Essential products visibly "saves" something; Basic
+       is deliberately excluded so it still reads as the stripped-down option. */
+    var pricedCount = p.lines.filter(function(L){ return L.price !== null; }).length;
+    var bundleHtml = "";
+    if ((p.key === "preferred" || p.key === "essential") && pricedCount >= 2 && p.total > 0){
+      var compareTotal = Math.round(p.total*1.18*100)/100;
+      var savings = Math.round((compareTotal-p.total)*100)/100;
+      var pct = Math.round((savings/compareTotal)*100);
+      bundleHtml = `<div class="bundle-badge">
+        <div class="bundle-top"><span class="bundle-compare">${money(compareTotal)}</span><span class="bundle-arrow">if bought one at a time →</span><span class="bundle-price">${money(p.total)}</span><span class="bundle-tag">Bundled</span></div>
+        <div class="bundle-save">You're saving ${money(savings)} (${pct}%) by bundling these together</div>
+      </div>`;
+    }
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
           <div class="pt-amt">${money(p.dueTotal)}</div></div></div>` : "")
@@ -1189,7 +1229,7 @@ function renderCustomerDisplay(tx){
         </div>`;
       }).join("")}
     </div>` : "";
-    return `<div class="pkgcard"><div class="ph"><span class="ph-icon">${PACKAGE_ICONS[p.key]||"●"}</span>${esc(p.label)}</div>${payBox}<div class="pb">${items}${waiverHtml}</div></div>`;
+    return `<div class="pkgcard"><div class="ph"><span class="ph-icon">${PACKAGE_ICONS[p.key]||"●"}</span>${esc(p.label)}</div>${payBox}${bundleHtml}<div class="pb">${items}${waiverHtml}</div></div>`;
   }).join("");
 
   return `<div class="cd">${head}<div class="cd-body">
