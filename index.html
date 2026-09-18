@@ -185,6 +185,11 @@ tbody tr:hover{background:var(--surface-2)}
 .decline-card .dc-sub{font-size:12px;color:var(--muted);margin-top:4px}
 .cfgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:9px;margin-top:10px}
 .cfgrid label.f{margin-bottom:0}
+.cfg-popover{background:var(--surface-2);border:1px dashed var(--border-strong);padding:11px;border-radius:9px}
+.gearbtn{border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);width:24px;height:24px;border-radius:6px;cursor:pointer;font-size:12.5px;line-height:1;padding:0}
+.gearbtn:hover{background:var(--surface-3)}
+.gearbtn.on{background:var(--info-bg);color:var(--info);border-color:var(--info)}
+.price-inline{margin:0;max-width:160px}
 .catalog{display:grid;grid-template-columns:repeat(auto-fill,minmax(224px,1fr));gap:10px}
 .catcard{border:1px solid var(--border);border-radius:10px;padding:11px;background:var(--surface);display:flex;flex-direction:column;gap:6px}
 .catcard.sel{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
@@ -197,26 +202,29 @@ tbody tr:hover{background:var(--surface-2)}
 .monitor-bar .live{width:7px;height:7px;border-radius:50%;background:#37d39b}
 .monitor-bar .sp{margin-left:auto;display:flex;gap:6px}
 .cd{background:var(--surface);min-height:430px;display:flex;flex-direction:column}
-.cd-head{background:linear-gradient(120deg,var(--blue-deep),var(--blue));color:#fff;padding:16px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:2px}
-.cd-head .fs{font-size:16px;font-weight:700;letter-spacing:.1em}
+.cd-head{background:linear-gradient(120deg,var(--blue-deep),var(--blue));color:#fff;padding:22px 22px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:4px}
+.cd-head .fs{font-size:32px;font-weight:800;letter-spacing:.04em;line-height:1.1}
 .cd-head .sb{font-size:11.5px;opacity:.82}
-.cd-tagline{font-size:11.5px;opacity:.85;margin-top:2px;font-style:italic}
+.cd-tagline{font-size:13px;opacity:.9;margin-top:4px;font-style:italic}
 .cd-sub1{font-size:16px;font-weight:600;color:var(--blue);margin-top:2px}
 .cd-note{background:var(--surface-3);border-top:1px solid var(--border);padding:12px 20px;text-align:center}
 .cd-note .nt1{font-weight:700;font-size:13.5px}
 .cd-note .nt2{font-size:11px;color:var(--muted);margin-top:3px}
 .cd-mid-veh{font-size:22px;font-weight:600;letter-spacing:-.01em;margin-top:2px}
-.cd-body{padding:20px;flex:1}
+.cd-body{padding:28px 20px;flex:1}
 .cd-welcome{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:56px 24px;flex:1}
 .cd-welcome .hw{font-size:30px;font-weight:600;letter-spacing:-.02em}
-.cd-veh{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;border-bottom:1px solid var(--border);padding-bottom:12px;margin-bottom:14px}
+.cd-veh{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;justify-content:center;text-align:center;border-bottom:1px solid var(--border);padding-bottom:16px;margin-bottom:24px}
 .cd-veh .v1{font-size:19px;font-weight:600}
-.pkgrid{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(215px,1fr))}
-.pkgcard{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2);display:flex;flex-direction:column}
-.pkgcard .ph{background:var(--rail);color:#fff;padding:11px 14px;font-weight:700;font-size:13px;letter-spacing:.07em;text-align:center}
-.pkgcard .pb{padding:12px 14px;flex:1}
-.pkgcard .pi{padding:6px 0;border-bottom:1px solid var(--border);font-size:13px}
+.pkgrid{display:flex;flex-wrap:wrap;gap:24px;justify-content:center;align-items:flex-start}
+.pkgcard{border:1px solid var(--border);border-radius:11px;overflow:hidden;background:var(--surface-2);display:flex;flex-direction:column;flex:0 1 260px;max-width:280px;min-width:225px;box-shadow:var(--shadow)}
+.pkgcard .ph{background:var(--rail);color:#fff;padding:12px 14px;font-weight:700;font-size:13px;letter-spacing:.07em;text-align:center;display:flex;align-items:center;justify-content:center;gap:8px}
+.pkgcard .ph-icon{opacity:.85;font-size:12px}
+.pkgcard .pb{padding:14px 16px;flex:1}
+.pkgcard .pi{padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;display:flex;align-items:flex-start;gap:9px}
 .pkgcard .pi:last-child{border-bottom:0}
+.pkgcard .pi-icon{flex:0 0 auto;width:22px;height:22px;border-radius:7px;background:linear-gradient(140deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;margin-top:1px}
+.pkgcard .pi-txt{min-width:0}
 .pkgcard .pi .n2{font-weight:600}
 .pkgcard .pi .c2{color:var(--muted);font-size:11.5px}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
@@ -246,6 +254,9 @@ tbody tr:hover{background:var(--surface-2)}
 .doc .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:16px}
 .doc .lbl{font-size:10px;color:#667085;letter-spacing:.05em}
 .doc .watermark{margin-top:16px;text-align:center;color:#98a2b3;font-size:10.5px;letter-spacing:.14em}
+.doc .selectbox{display:grid;grid-template-columns:1fr 1fr;gap:20px;border:1px solid #c7d2fe;background:#eef2ff;border-radius:10px;padding:14px 20px;margin:14px 0;text-align:center}
+.doc .selectbox .big{font-size:22px;font-weight:800;color:#1d4ed8;margin-top:2px}
+.doc .selectbox .unit{font-size:12px;font-weight:600;color:#475467}
 .doc.cust{padding:0;overflow:hidden}
 .doc.cust .hero{background:linear-gradient(120deg,#0d2f6b,#1d61d8);color:#fff;padding:26px 30px}
 .doc.cust .hero h1{color:#fff;font-size:24px}
@@ -295,12 +306,16 @@ tbody tr:hover{background:var(--surface-2)}
 @keyframes axiomSpinRev{from{transform:rotate(0deg)}to{transform:rotate(-360deg)}}
 @keyframes axiomPulse{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:1;transform:scale(1.5)}}
 @keyframes axiomDrift{from{transform:translateX(0)}to{transform:translateX(-60px)}}
+@keyframes axiomCorePulse{0%,100%{opacity:.6;transform:scale(1)}50%{opacity:1;transform:scale(1.08)}}
 .axiom-ring1{animation:axiomSpin 50s linear infinite;transform-origin:200px 200px}
 .axiom-ring2{animation:axiomSpinRev 65s linear infinite;transform-origin:200px 200px}
 .axiom-ring3{animation:axiomSpin 85s linear infinite;transform-origin:200px 200px}
+.axiom-ring4{animation:axiomSpinRev 105s linear infinite;transform-origin:200px 200px}
+.axiom-ring5{animation:axiomSpin 130s linear infinite;transform-origin:200px 200px}
 .axiom-dot{animation:axiomPulse 3.6s ease-in-out infinite}
+.axiom-core{animation:axiomCorePulse 5s ease-in-out infinite;transform-origin:200px 200px}
 .axiom-wave path{animation:axiomDrift 30s linear infinite alternate}
-@media (prefers-reduced-motion:reduce){ .axiom-ring1,.axiom-ring2,.axiom-ring3,.axiom-dot,.axiom-wave path{animation:none} }
+@media (prefers-reduced-motion:reduce){ .axiom-ring1,.axiom-ring2,.axiom-ring3,.axiom-ring4,.axiom-ring5,.axiom-dot,.axiom-core,.axiom-wave path{animation:none} }
 @media (max-width:980px){
   .axiom-grid{grid-template-columns:1fr;justify-items:center;text-align:center}
   .axiom-left{min-height:auto;justify-content:center}
@@ -737,7 +752,7 @@ var state = {
   loggedIn:false,
   tx:null, completed:[], history:[], version:0,
   ui:{ split:true, present:false, railOpen:false, modal:null, theme:"dark", loginError:null,
-       productEdit:null, userForm:false, dealerForm:null, toast:null,
+       productEdit:null, productConfigOpen:null, userForm:false, dealerForm:null, toast:null,
        email:{ pkg:"all", term:"all" },
        reports:{ period:"monthly", from:"", to:"", fsm:"all", product:"all", type:"all", dealership:"active" } }
 };
@@ -1035,6 +1050,8 @@ function packagesToShow(t, tx){
   }
   return list;
 }
+var PRODUCT_ICONS = { asp:"🛡", ppm:"🔧", trp:"🛞", app:"🧴", atr:"🔒", vrc:"🚙", gap:"🚗", key:"🔑", cpp:"✨" };
+var PACKAGE_ICONS = { preferred:"★", essential:"◆", basic:"●" };
 function renderCustomerDisplay(tx){
   var b = brand(), cfg = state.config, t = C.totals(state, tx);
   var head = `<div class="cd-head"><div class="fs">${esc(b.finLabel)}</div>
@@ -1063,7 +1080,8 @@ function renderCustomerDisplay(tx){
   var cards = shown.map(function(p){
     var items = p.lines.map(function(L){
       var cfgTxt = lineConfigText(L);
-      return `<div class="pi"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div>`;
+      var icon = PRODUCT_ICONS[L.product.id] || "🛡";
+      return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div></div>`;
     }).join("");
     var payBox = (tx.display.showPayment && p.quotes && p.quotes.length)
       ? `<div class="paybox">${p.quotes.map(function(q){
@@ -1071,7 +1089,7 @@ function renderCustomerDisplay(tx){
             <div class="pt-amt">${q.payment===null?"—":money(q.payment)}</div>
             <div class="pt-freq muted">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div></div>`;
         }).join("")}</div>` : "";
-    return `<div class="pkgcard"><div class="ph">${esc(p.label)}</div>${payBox}<div class="pb">${items}</div></div>`;
+    return `<div class="pkgcard"><div class="ph"><span class="ph-icon">${PACKAGE_ICONS[p.key]||"●"}</span>${esc(p.label)}</div>${payBox}<div class="pb">${items}</div></div>`;
   }).join("");
 
   var declinedLines = t.lines.filter(function(L){ return L.cfg.declined; });
@@ -1215,28 +1233,34 @@ function viewFinance(){
       : (line.declined ? `<span class="tag danger">Declined</span>`
       : L.price === null ? `<span class="tag danger">Price not configured — enter a retail price</span>`
       : (L.overridden ? `<span class="tag warn">Price overridden</span>` : `<span class="tag ok">Configured price</span>`));
+    var hasCfgFields = p.uses.term || p.uses.km || p.uses.interval || p.uses.deductible;
+    var cfgOpen = line && hasCfgFields && state.ui.productConfigOpen === p.id;
+    var gearBtn = (line && hasCfgFields) ? `<button type="button" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
     var fields = "";
-    if (line){
-      var c = line, f2 = [];
-      if (p.uses.term) f2.push(`<label class="f"><span>Term</span><select data-bind="line:${c.lineId}:term" data-type="num">
-        <option value="">Select…</option>${selectOptions(p.terms, c.term, function(x){ return x + " Months"; })}</select></label>`);
-      if (p.uses.km) f2.push(`<label class="f"><span>Kilometres</span><select data-bind="line:${c.lineId}:km" data-type="num">
-        <option value="">Select…</option>${selectOptions(p.kms, c.km, function(x){ return km(x); })}</select></label>`);
-      if (p.uses.interval) f2.push(`<label class="f"><span>Service interval</span><select data-bind="line:${c.lineId}:interval" data-type="num">
-        <option value="">Select…</option>${selectOptions(p.intervals, c.interval, function(x){ return "Every " + km(x); })}</select></label>`);
-      if (p.uses.deductible) f2.push(`<label class="f"><span>Deductible</span><select data-bind="line:${c.lineId}:deductible" data-type="num">
-        <option value="">Select…</option>${selectOptions(p.deductibles, c.deductible, function(x){ return Number(x)===0?"No deductible":"$"+x; })}</select></label>`);
-      f2.push(`<label class="f"><span>Retail price</span><input type="number" value="${L.price===null?"":L.price}" data-bind="line:${c.lineId}:price" data-type="num"
-        placeholder="${L.configuredPrice===null?"Enter price":L.configuredPrice}"></label>`);
-      fields = `<div class="cfgrid">${f2.join("")}</div>`;
+    if (cfgOpen){
+      var f2 = [];
+      if (p.uses.term) f2.push(`<label class="f"><span>Term</span><select data-bind="line:${line.lineId}:term" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.terms, line.term, function(x){ return x + " Months"; })}</select></label>`);
+      if (p.uses.km) f2.push(`<label class="f"><span>Kilometres</span><select data-bind="line:${line.lineId}:km" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.kms, line.km, function(x){ return km(x); })}</select></label>`);
+      if (p.uses.interval) f2.push(`<label class="f"><span>Service interval</span><select data-bind="line:${line.lineId}:interval" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.intervals, line.interval, function(x){ return "Every " + km(x); })}</select></label>`);
+      if (p.uses.deductible) f2.push(`<label class="f"><span>Deductible</span><select data-bind="line:${line.lineId}:deductible" data-type="num">
+        <option value="">Select…</option>${selectOptions(p.deductibles, line.deductible, function(x){ return Number(x)===0?"No deductible":"$"+x; })}</select></label>`);
+      fields = `<div class="cfgrid cfg-popover">${f2.join("")}</div>`;
     }
+    var priceField = line ? `<label class="f price-inline"><span>Retail price</span><input type="number" value="${L.price===null?"":L.price}" data-bind="line:${line.lineId}:price" data-type="num"
+      placeholder="${L.configuredPrice===null?"Enter price":L.configuredPrice}"></label>` : "";
     return `<div class="prodrow">
       <div class="phrow">
-        <div class="left"><span class="nm">${esc(p.name)}</span><span class="tag">${esc(p.category)}</span>${priceNote}</div>
+        <div class="left"><span class="nm">${esc(p.name)}</span>${gearBtn}<span class="tag">${esc(p.category)}</span>${priceNote}</div>
         <div class="right">${boxes}</div>
       </div>
-      <div class="phrow" style="margin-top:8px">
-        <div class="left"><span class="tag ${p.taxRule==="vrc"?"info":""}">Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</span></div>
+      <div class="phrow" style="margin-top:8px;align-items:flex-end">
+        <div class="left" style="align-items:flex-end">
+          <span class="tag ${p.taxRule==="vrc"?"info":""}">Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</span>
+          ${priceField}
+        </div>
         <div class="right">${line ? `<button class="btn sm" data-act="reset-price" data-line="${line.lineId}" ${line.priceOverridden===false && L && L.configuredPrice===null?"disabled":""}>Reset price</button>
           <button class="btn sm danger" data-act="remove-line" data-line="${line.lineId}">Remove</button>` : ""}</div>
       </div>
@@ -1776,8 +1800,59 @@ function packagesOfLine(L){
   var p = L.cfg.packages || {};
   return D.PACKAGES.filter(function(def){ return p[def.key]; }).map(function(def){ return def.suffix; }).join(", ") || "—";
 }
+function internalPrintSelected(tx, t, u, pkg){
+  var savedAt = new Date().toLocaleString("en-CA");
+  var rows = pkg.lines.map(function(L){
+    return `<tr><td>${esc(L.product.name)}</td><td style="color:#0a7546;font-weight:700">SELECTED</td>
+      <td>${esc(pkg.label)}</td><td>${esc(V.lineConfigText(L))||"—"}</td>
+      <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td></tr>`;
+  }).join("");
+  var termCols = t.terms.map(function(tm){
+    var r = (tx.finance.rates||{})[tm];
+    var bq = t.baseQuotes.filter(function(x){ return x.term === tm; })[0];
+    return `<div><div class="lbl">${tm} MONTHS</div><div>@ ${r!==undefined&&r!==null&&r!==""?r+"%":"—"} · ${bq&&bq.basePayment!==null?money(bq.basePayment)+" "+C.freqLabel(bq.frequency):"—"}</div></div>`;
+  }).join("");
+  var pkgQuotes = pkg.quotes.filter(function(q){ return q.payment !== null; });
+  return `<div class="doc">
+    ${docHeader("F&I Transaction Detail", "Deal "+tx.id+" · "+C.fmtDate(tx.createdAt))}
+    <div class="cols">
+      <div><div class="lbl">CUSTOMER</div><div><strong>${esc(tx.customer.name||"—")}</strong></div></div>
+      <div><div class="lbl">VEHICLE</div><div><strong>${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}</strong></div></div>
+      <div><div class="lbl">VIN</div><div>${esc(tx.vehicle.vin||"—")}</div></div>
+      <div><div class="lbl">STOCK #</div><div>${esc(tx.vehicle.stock||"—")}</div></div>
+      <div><div class="lbl">F&amp;I MANAGER</div><div>${esc(u.name)}</div></div>
+      <div><div class="lbl">SAVED</div><div>${esc(savedAt)}</div></div>
+    </div>
+    <h3>Base Vehicle Payment</h3>
+    <div class="cols">
+      <div><div class="lbl">MODE</div><div>${esc(tx.type)}</div></div>
+      <div><div class="lbl">VEHICLE PRICE</div><div>${money(t.vehiclePrice)}</div></div>
+      <div><div class="lbl">TRADE-IN</div><div>${money(t.tradeAllowance)}</div></div>
+      <div><div class="lbl">DOWN PAYMENT</div><div>${money(t.downPayment)}</div></div>
+      ${termCols}
+    </div>
+    <div class="selectbox">
+      <div><div class="lbl">TERM${t.terms.length>1?"S":""} PRESENTED</div><div class="big">${t.terms.length?t.terms.join(", ")+" mo":"—"}</div></div>
+      <div><div class="lbl">PAYMENT WITH SELECTED PACKAGE</div>
+        ${pkgQuotes.length ? pkgQuotes.map(function(q){ return `<div class="big">${money(q.payment)} <span class="unit">${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="big">—</div>`}
+      </div>
+    </div>
+    <h3>Final Package</h3>
+    <div class="cols">
+      <div><div class="lbl">CUSTOMER SELECTED PACKAGE</div><div><strong>${esc(pkg.label)}</strong></div></div>
+      <div><div class="lbl">PACKAGE PAYMENT</div><div>${pkgQuotes.length ? money(pkgQuotes[0].payment)+" "+C.freqLabel(pkgQuotes[0].frequency) : "—"}</div></div>
+    </div>
+    <h3>Products &amp; Dispositions</h3>
+    <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5">Nothing is assigned to this package.</td></tr>`}</tbody></table>
+    <h3 style="margin-top:14px">Selected Package Total: ${money(pkg.total)}</h3>
+    <div class="watermark">INTERNAL COPY · DEMONSTRATION DATA · NOT A CONTRACT</div></div>`;
+}
 function internalPrint(tx){
   var t = C.totals(state, tx), u = userById(tx.fsmUserId);
+  var selKey = tx.display.selection ? tx.display.selection.package : null;
+  var selPkg = selKey ? t.packages.filter(function(p){ return p.key === selKey; })[0] : null;
+  if (selPkg) return internalPrintSelected(tx, t, u, selPkg);
   return `<div class="doc">
     ${docHeader("FSM transaction record — internal", "Deal "+tx.id+" · "+C.fmtDate(tx.createdAt))}
     <div class="cols">
@@ -2043,21 +2118,28 @@ function axiomMarkSvg(size){
   /* A geometric "A" monogram: two gradient legs meeting at an apex node
      (the "insight" the brand is named for), crossed by a cyan bar — reads
      as a letterform first, a circuit/AI mark second. Precise coordinates,
-     not a freeform sketch, so it stays crisp and symmetric at any size. */
+     not a freeform sketch, so it stays crisp and symmetric at any size.
+     Bolder strokes + a glow filter give it real weight instead of a thin line mark. */
+  var uid = "m" + Math.random().toString(36).slice(2,8);
   return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <linearGradient id="axiomMarkGrad" x1="0" y1="1" x2="1" y2="0">
-        <stop offset="0%" stop-color="#2f5fdc"/><stop offset="100%" stop-color="#8b6bf0"/>
+      <linearGradient id="axiomMarkGrad${uid}" x1="0" y1="1" x2="1" y2="0">
+        <stop offset="0%" stop-color="#2249c9"/><stop offset="55%" stop-color="#6d4fe0"/><stop offset="100%" stop-color="#8b6bf0"/>
       </linearGradient>
-      <radialGradient id="axiomNodeGrad" cx="50%" cy="35%" r="65%">
-        <stop offset="0%" stop-color="#9ceeff"/><stop offset="100%" stop-color="#5fd4f4"/>
+      <radialGradient id="axiomNodeGrad${uid}" cx="50%" cy="32%" r="70%">
+        <stop offset="0%" stop-color="#d6faff"/><stop offset="55%" stop-color="#7de6ff"/><stop offset="100%" stop-color="#38bdf8"/>
       </radialGradient>
+      <filter id="axiomGlow${uid}" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="3.2" result="b"/>
+        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
     </defs>
-    <circle cx="50" cy="52" r="46" fill="#0d1b4d" opacity=".05"/>
-    <path d="M50 14 L17 90" stroke="url(#axiomMarkGrad)" stroke-width="11" stroke-linecap="round" fill="none"/>
-    <path d="M50 14 L83 90" stroke="url(#axiomMarkGrad)" stroke-width="11" stroke-linecap="round" fill="none"/>
-    <path d="M29 64 L71 64" stroke="#5fd4f4" stroke-width="8" stroke-linecap="round" fill="none"/>
-    <circle cx="50" cy="14" r="7.5" fill="url(#axiomNodeGrad)"/>
+    <g filter="url(#axiomGlow${uid})">
+      <path d="M50 11 L14 92" stroke="url(#axiomMarkGrad${uid})" stroke-width="16" stroke-linecap="round" fill="none"/>
+      <path d="M50 11 L86 92" stroke="url(#axiomMarkGrad${uid})" stroke-width="16" stroke-linecap="round" fill="none"/>
+      <path d="M26 66 L74 66" stroke="#38bdf8" stroke-width="11" stroke-linecap="round" fill="none"/>
+      <circle cx="50" cy="11" r="10" fill="url(#axiomNodeGrad${uid})"/>
+    </g>
   </svg>`;
 }
 function axiomTargetSvg(){
@@ -2068,22 +2150,41 @@ function axiomTargetSvg(){
   </svg>`;
 }
 function axiomGlobeSvg(){
-  var dots = [
-    {x:200,y:50,r:4,c:"#5fd4f4",d:".2s"}, {x:350,y:200,r:4,c:"#a78bfa",d:".9s"},
-    {x:200,y:350,r:4,c:"#fff",d:"1.6s"}, {x:50,y:200,r:4,c:"#5fd4f4",d:"2.3s"},
-    {x:122,y:16,r:3,c:"#a78bfa",d:".5s"}, {x:384,y:130,r:3,c:"#5fd4f4",d:"1.1s"},
-    {x:34,y:372,r:3,c:"#fff",d:"1.9s"}, {x:330,y:340,r:3,c:"#a78bfa",d:"2.7s"}
-  ].map(function(p){ return `<circle class="axiom-dot" cx="${p.x}" cy="${p.y}" r="${p.r}" fill="${p.c}" style="animation-delay:${p.d}"/>`; }).join("");
+  /* Not a literal photoreal render (that needs a rendered/video asset, which
+     would break the single self-contained-file, zero-dependency setup) —
+     this pushes the same wireframe-globe idea further: a glowing core,
+     five independently-timed rings for real parallax depth, a denser node
+     network with connecting lines, and a soft outer bloom. */
+  var nodes = [
+    {x:200,y:42,r:4.5,c:"#38bdf8",d:".2s"}, {x:358,y:150,r:4,c:"#a78bfa",d:"1.4s"},
+    {x:358,y:250,r:4,c:"#fff",d:"2.6s"}, {x:200,y:358,r:4.5,c:"#38bdf8",d:".8s"},
+    {x:42,y:250,r:4,c:"#a78bfa",d:"2s"}, {x:42,y:150,r:4,c:"#fff",d:"3.2s"},
+    {x:116,y:20,r:3,c:"#a78bfa",d:".5s"}, {x:284,y:20,r:3,c:"#38bdf8",d:"1.1s"},
+    {x:392,y:116,r:3,c:"#fff",d:"1.7s"}, {x:392,y:284,r:3,c:"#a78bfa",d:"2.3s"},
+    {x:284,y:392,r:3,c:"#38bdf8",d:"2.9s"}, {x:116,y:392,r:3,c:"#fff",d:"3.5s"},
+    {x:20,y:284,r:3,c:"#a78bfa",d:"1.3s"}, {x:20,y:116,r:3,c:"#38bdf8",d:"1.9s"}
+  ];
+  var lines = [[0,6],[0,7],[1,7],[1,8],[2,9],[2,10],[3,10],[3,11],[4,11],[4,12],[5,12],[5,13],[0,13],[1,2],[4,5]];
+  var lineSvg = lines.map(function(pair){
+    var a = nodes[pair[0]], b = nodes[pair[1]];
+    return `<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="rgba(255,255,255,.14)" stroke-width="1"/>`;
+  }).join("");
+  var dotSvg = nodes.map(function(p){ return `<circle class="axiom-dot" cx="${p.x}" cy="${p.y}" r="${p.r}" fill="${p.c}" style="animation-delay:${p.d}"/>`; }).join("");
   return `<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <radialGradient id="axiomCoreGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#5fd4f4" stop-opacity=".35"/><stop offset="60%" stop-color="#6d4fe0" stop-opacity=".12"/><stop offset="100%" stop-color="#6d4fe0" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
+    <circle class="axiom-core" cx="200" cy="200" r="130" fill="url(#axiomCoreGrad)"/>
     <circle cx="200" cy="200" r="150" fill="none" stroke="rgba(255,255,255,.22)" stroke-width="1"/>
-    <g class="axiom-ring1"><ellipse cx="200" cy="200" rx="150" ry="55" fill="none" stroke="rgba(167,139,250,.55)" stroke-width="1.2"/></g>
-    <g class="axiom-ring2"><ellipse cx="200" cy="200" rx="150" ry="90" fill="none" stroke="rgba(95,212,244,.5)" stroke-width="1.2"/></g>
-    <g class="axiom-ring3"><ellipse cx="200" cy="200" rx="150" ry="125" fill="none" stroke="rgba(255,255,255,.28)" stroke-width="1"/></g>
-    <line x1="200" y1="50" x2="122" y2="16" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
-    <line x1="350" y1="200" x2="384" y2="130" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
-    <line x1="200" y1="350" x2="330" y2="340" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
-    <line x1="50" y1="200" x2="34" y2="372" stroke="rgba(255,255,255,.18)" stroke-width="1"/>
-    ${dots}
+    <g class="axiom-ring1"><ellipse cx="200" cy="200" rx="150" ry="42" fill="none" stroke="rgba(167,139,250,.5)" stroke-width="1.1"/></g>
+    <g class="axiom-ring2"><ellipse cx="200" cy="200" rx="150" ry="70" fill="none" stroke="rgba(95,212,244,.48)" stroke-width="1.1"/></g>
+    <g class="axiom-ring3"><ellipse cx="200" cy="200" rx="150" ry="100" fill="none" stroke="rgba(255,255,255,.24)" stroke-width="1"/></g>
+    <g class="axiom-ring4"><ellipse cx="200" cy="200" rx="150" ry="128" fill="none" stroke="rgba(167,139,250,.3)" stroke-width="1"/></g>
+    <g class="axiom-ring5"><ellipse cx="200" cy="200" rx="120" ry="150" fill="none" stroke="rgba(95,212,244,.22)" stroke-width="1"/></g>
+    ${lineSvg}
+    ${dotSvg}
   </svg>`;
 }
 function renderLogin(){
@@ -2355,6 +2456,10 @@ document.addEventListener("click", function(ev){
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
     case "toggle-rail": state.ui.railOpen = !state.ui.railOpen; commit(); break;
+    case "toggle-product-config": {
+      var pcid = el.getAttribute("data-product");
+      state.ui.productConfigOpen = (state.ui.productConfigOpen === pcid) ? null : pcid;
+      commit(); break; }
     case "toggle-theme": state.ui.theme = state.ui.theme === "dark" ? "light" : "dark"; commit(); break;
     case "toggle-split": state.ui.split = !state.ui.split; commit(); break;
     case "present": state.ui.present = true; commit(); break;
