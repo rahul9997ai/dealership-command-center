@@ -405,17 +405,35 @@ tbody tr:hover{background:var(--surface-2)}
 "use strict";
 
 /* Brand registry. finLabel is the customer-facing financial services name. */
+/* Lease fee defaults per brand's captive lender (acquisition/disposition fee,
+   excess-km rate, standard annual km allowance). Captives don't publish
+   residual % or money factor anywhere public — those come from a monthly
+   RVML sheet the captive sends dealers, per term/mileage/credit tier, and
+   change constantly — so those two stay FSM-entered per deal, defaulted to
+   a placeholder here. Fee figures are the captive's typical published range,
+   converted to CAD/km for this market; treat as a starting point and correct
+   from the dealer's actual RVML sheet when one is on hand. */
 var BRANDS = {
-  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", finLabel:"NISSAN FINANCIAL SERVICES" },
-  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", finLabel:"INFINITI FINANCIAL SERVICES" },
-  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", finLabel:"TOYOTA FINANCIAL SERVICES" },
-  honda:    { key:"honda",    label:"Honda",     mark:"HON", finLabel:"HONDA FINANCIAL SERVICES" },
-  ford:     { key:"ford",     label:"Ford",      mark:"FRD", finLabel:"FORD CREDIT FINANCIAL SERVICES" },
-  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", finLabel:"HYUNDAI MOTOR FINANCE" },
-  kia:      { key:"kia",      label:"Kia",       mark:"KIA", finLabel:"KIA FINANCE" },
-  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", finLabel:"GM FINANCIAL" },
-  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", finLabel:"MAZDA FINANCIAL SERVICES" },
-  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", finLabel:"BMW FINANCIAL SERVICES" }
+  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", finLabel:"NISSAN FINANCIAL SERVICES",
+    lease:{ acquisitionFee:695, dispositionFee:395, excessKmRate:0.16, annualKm:20000, residualPlaceholder:58, moneyFactorPlaceholder:0.00125 } },
+  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", finLabel:"INFINITI FINANCIAL SERVICES",
+    lease:{ acquisitionFee:795, dispositionFee:395, excessKmRate:0.20, annualKm:20000, residualPlaceholder:56, moneyFactorPlaceholder:0.00135 } },
+  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", finLabel:"TOYOTA FINANCIAL SERVICES",
+    lease:{ acquisitionFee:650, dispositionFee:350, excessKmRate:0.10, annualKm:20000, residualPlaceholder:60, moneyFactorPlaceholder:0.00110 } },
+  honda:    { key:"honda",    label:"Honda",     mark:"HON", finLabel:"HONDA FINANCIAL SERVICES",
+    lease:{ acquisitionFee:595, dispositionFee:395, excessKmRate:0.10, annualKm:20000, residualPlaceholder:59, moneyFactorPlaceholder:0.00115 } },
+  ford:     { key:"ford",     label:"Ford",      mark:"FRD", finLabel:"FORD CREDIT FINANCIAL SERVICES",
+    lease:{ acquisitionFee:695, dispositionFee:475, excessKmRate:0.16, annualKm:20000, residualPlaceholder:55, moneyFactorPlaceholder:0.00130 } },
+  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", finLabel:"HYUNDAI MOTOR FINANCE",
+    lease:{ acquisitionFee:595, dispositionFee:400, excessKmRate:0.12, annualKm:20000, residualPlaceholder:57, moneyFactorPlaceholder:0.00120 } },
+  kia:      { key:"kia",      label:"Kia",       mark:"KIA", finLabel:"KIA FINANCE",
+    lease:{ acquisitionFee:595, dispositionFee:400, excessKmRate:0.12, annualKm:20000, residualPlaceholder:56, moneyFactorPlaceholder:0.00120 } },
+  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", finLabel:"GM FINANCIAL",
+    lease:{ acquisitionFee:695, dispositionFee:495, excessKmRate:0.16, annualKm:20000, residualPlaceholder:54, moneyFactorPlaceholder:0.00130 } },
+  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", finLabel:"MAZDA FINANCIAL SERVICES",
+    lease:{ acquisitionFee:750, dispositionFee:350, excessKmRate:0.10, annualKm:20000, residualPlaceholder:58, moneyFactorPlaceholder:0.00115 } },
+  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", finLabel:"BMW FINANCIAL SERVICES",
+    lease:{ acquisitionFee:925, dispositionFee:495, excessKmRate:0.20, annualKm:16000, residualPlaceholder:52, moneyFactorPlaceholder:0.00160 } }
 };
 
 /* The three presentation packages. The brand name is prefixed at runtime,
@@ -550,15 +568,21 @@ function newTransaction(fsmUserId, dealershipId){
     customer:{ id:null, name:"", phone:"", email:"", address:"" },
     vehicle:{ id:null, year:"", make:"", model:"", stock:"", vin:"", odometer:"", condition:"New", price:null },
     finance:{ tradeAllowance:0, tradePayout:0, downPayment:0, fees:[], feeAmount:0, rates:{}, terms:[], frequency:null },
+    lease:{ term:39, annualKm:20000, residualPct:null, moneyFactor:null, tradeAllowance:0, tradePayout:0,
+      downPayment:0, feeAmount:0, acquisitionFee:null, dispositionFee:null, excessKmRate:null, frequency:null },
     lines:[],   /* { lineId, productId, term, km, interval, deductible, price, priceOverridden, packages{} } */
     display:{ mode:"welcome", showPayment:true, selection:null }
   };
 }
 function primaryTerm(tx){
+  if (tx.type === "Lease") return tx.lease.term || null;
   var ts = (tx.finance.terms || []).slice().sort(function(a,b){ return a-b; });
   return ts.length ? ts[0] : null;
 }
-function sortedTerms(tx){ return (tx.finance.terms || []).slice().sort(function(a,b){ return a-b; }); }
+function sortedTerms(tx){
+  if (tx.type === "Lease") return tx.lease.term ? [tx.lease.term] : [];
+  return (tx.finance.terms || []).slice().sort(function(a,b){ return a-b; });
+}
 
 function productById(state, id){
   for (var i=0;i<state.products.length;i++) if (state.products[i].id === id) return state.products[i];
@@ -592,6 +616,22 @@ function payment(principal, aprPct, months, freq){
   if (n <= 0) return 0;
   if (r === 0) return principal / n;
   return principal * r / (1 - Math.pow(1+r,-n));
+}
+/* Standard lease math: depreciation (cap cost minus residual, spread over
+   the term) plus the rent charge (cap cost plus residual, times the money
+   factor) — same formula every captive lender uses, monthly. Split across a
+   different payment frequency the same way a finance payment is. */
+function leaseMonthlyPayment(capCost, residual, moneyFactor, months){
+  if (!capCost || capCost <= 0 || !months) return 0;
+  var mf = Number(moneyFactor) || 0;
+  var depreciation = (capCost - residual) / months;
+  var rentCharge = (capCost + residual) * mf;
+  return Math.max(0, depreciation + rentCharge);
+}
+function leasePeriodPayment(capCost, residual, moneyFactor, months, freq){
+  var monthly = leaseMonthlyPayment(capCost, residual, moneyFactor, months);
+  var ppy = periodsPerYear(freq);
+  return monthly * 12 / ppy;
 }
 function brandOf(state){
   var d = state.config || {};
@@ -647,34 +687,71 @@ function totals(state, tx){
   var productsTotal = Math.round((productsSub+productsTax)*100)/100;
 
   var vPrice = Number(tx.vehicle.price)||0, adminFee = Number(fin.adminFee)||0, lic = Number(fin.licensing)||0;
-  var tradeAll = Number(tx.finance.tradeAllowance)||0, tradePay = Number(tx.finance.tradePayout)||0, down = Number(tx.finance.downPayment)||0;
-  var fees = tx.finance.fees || [];
-  var feeAmount = Number(tx.finance.feeAmount) || 0;
+  var isLease = tx.type === "Lease";
+  var lse = tx.lease || {};
+  var tradeAll = Number((isLease?lse:tx.finance).tradeAllowance)||0, tradePay = Number((isLease?lse:tx.finance).tradePayout)||0;
+  var down = Number((isLease?lse:tx.finance).downPayment)||0;
+  var fees = isLease ? [] : (tx.finance.fees || []);
+  var feeAmount = Number((isLease?lse:tx.finance).feeAmount) || 0;
   var feesTotal = Math.round((fees.reduce(function(sum, f){ return sum + (Number(f.amount)||0); }, 0) + feeAmount) * 100) / 100;
   var taxableVehicle = Math.max(0, vPrice + adminFee - tradeAll);
   var vehicleTax = Math.round(taxableVehicle*(Number(taxCfg.standard)/100)*100)/100;
-  var baseAmount = Math.max(0, vPrice + adminFee + vehicleTax + lic - tradeAll + tradePay - down + feesTotal);
-  var financed = Math.round((baseAmount + productsTotal)*100)/100;
 
-  var terms = presentedTerms, rates = tx.finance.rates || {};
-  var freq = tx.finance.frequency || null;
+  var terms, rates, freq, baseAmount, financed;
+  var leaseInfo = null;
+  var quotesFor;
 
-  function quotesFor(extraTotal){
-    if (!freq || !terms.length) return [];
-    return terms.map(function(tm){
-      var rateRaw = rates[tm];
-      var hasRate = !(rateRaw === undefined || rateRaw === null || rateRaw === "");
-      var rate = hasRate ? Number(rateRaw) : null;
-      var paymentsCount = Math.round(tm/12*periodsPerYear(freq));
-      if (!hasRate){
-        return { term:tm, frequency:freq, rate:null, basePayment:null, payment:null, difference:null, paymentsCount:paymentsCount };
-      }
-      var base = payment(baseAmount, rate, tm, freq);
-      var full = payment(baseAmount + extraTotal, rate, tm, freq);
-      return { term:tm, frequency:freq, rate:rate, basePayment:Math.round(base*100)/100,
-        payment:Math.round(full*100)/100, difference:Math.round((full-base)*100)/100,
-        paymentsCount:paymentsCount };
-    });
+  if (isLease){
+    var acqFee = Number(lse.acquisitionFee) || 0;
+    var capCost = Math.max(0, vPrice + adminFee + acqFee - tradeAll + tradePay - down + feesTotal);
+    var residualPct = lse.residualPct === null || lse.residualPct === "" || lse.residualPct === undefined ? null : Number(lse.residualPct);
+    var moneyFactor = lse.moneyFactor === null || lse.moneyFactor === "" || lse.moneyFactor === undefined ? null : Number(lse.moneyFactor);
+    var residualAmt = residualPct !== null ? Math.round(vPrice*(residualPct/100)*100)/100 : null;
+    var term = Number(lse.term) || null;
+    terms = term ? [term] : [];
+    rates = {};
+    freq = lse.frequency || null;
+    baseAmount = capCost;
+    financed = null;
+    leaseInfo = { capCost:Math.round(capCost*100)/100, residualPct:residualPct, residualAmount:residualAmt,
+      moneyFactor:moneyFactor, term:term, annualKm:Number(lse.annualKm)||null,
+      acquisitionFee:acqFee, dispositionFee:Number(lse.dispositionFee)||0, excessKmRate:Number(lse.excessKmRate)||0 };
+    quotesFor = function(extraTotal){
+      if (!freq || !term || residualPct === null || moneyFactor === null) return [];
+      var paymentsCount = Math.round(term/12*periodsPerYear(freq));
+      /* Canadian leases charge GST/HST on the periodic payment stream, not
+         the capitalized cost up front — unlike the vehicle-purchase tax
+         above, which taxes the cap cost once at signing. */
+      var taxMult = 1 + (Number(taxCfg.standard)/100);
+      var base = leasePeriodPayment(capCost, residualAmt, moneyFactor, term, freq);
+      var full = leasePeriodPayment(capCost + extraTotal, residualAmt, moneyFactor, term, freq);
+      var baseTaxed = base*taxMult, fullTaxed = full*taxMult;
+      return [{ term:term, frequency:freq, rate:null, basePayment:Math.round(baseTaxed*100)/100,
+        payment:Math.round(fullTaxed*100)/100, difference:Math.round((fullTaxed-baseTaxed)*100)/100,
+        paymentsCount:paymentsCount }];
+    };
+  } else {
+    baseAmount = Math.max(0, vPrice + adminFee + vehicleTax + lic - tradeAll + tradePay - down + feesTotal);
+    financed = Math.round((baseAmount + productsTotal)*100)/100;
+    terms = presentedTerms; rates = tx.finance.rates || {};
+    freq = tx.finance.frequency || null;
+    quotesFor = function(extraTotal){
+      if (!freq || !terms.length) return [];
+      return terms.map(function(tm){
+        var rateRaw = rates[tm];
+        var hasRate = !(rateRaw === undefined || rateRaw === null || rateRaw === "");
+        var rate = hasRate ? Number(rateRaw) : null;
+        var paymentsCount = Math.round(tm/12*periodsPerYear(freq));
+        if (!hasRate){
+          return { term:tm, frequency:freq, rate:null, basePayment:null, payment:null, difference:null, paymentsCount:paymentsCount };
+        }
+        var base = payment(baseAmount, rate, tm, freq);
+        var full = payment(baseAmount + extraTotal, rate, tm, freq);
+        return { term:tm, frequency:freq, rate:rate, basePayment:Math.round(base*100)/100,
+          payment:Math.round(full*100)/100, difference:Math.round((full-base)*100)/100,
+          paymentsCount:paymentsCount };
+      });
+    };
   }
 
   /* -------- the three presentation packages -------- */
@@ -704,7 +781,8 @@ function totals(state, tx){
     tradeAllowance:tradeAll, tradePayout:tradePay, downPayment:down,
     baseAmount:Math.round(baseAmount*100)/100, amountFinanced:financed,
     fees:fees, feeAmount:feeAmount, feesTotal:feesTotal, terms:terms, term:primaryTerm(tx), rates:rates, frequency:freq,
-    quotes:quotesFor(productsTotal), baseQuotes:quotesFor(0)
+    quotes:quotesFor(productsTotal), baseQuotes:quotesFor(0),
+    isLease:isLease, lease:leaseInfo
   };
 }
 
@@ -714,12 +792,19 @@ function validate(state, tx){
   if (!tx.customer.name) errs.push("Add a customer before completing the transaction.");
   if (!tx.vehicle.model || !tx.vehicle.stock) errs.push("Enter the vehicle model and stock number.");
   if (!tx.vehicle.price) errs.push("Enter the vehicle selling price.");
-  if (!t.terms.length) errs.push("Select at least one finance term to present.");
-  if (!tx.finance.frequency) errs.push("Select a payment frequency.");
-  t.terms.forEach(function(tm){
-    var r = (tx.finance.rates || {})[tm];
-    if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
-  });
+  if (tx.type === "Lease"){
+    if (!tx.lease.term) errs.push("Select a lease term.");
+    if (!tx.lease.frequency) errs.push("Select a payment frequency.");
+    if (tx.lease.residualPct === null || tx.lease.residualPct === "" || tx.lease.residualPct === undefined) errs.push("Enter the residual value (% of selling price) from this term's RVML sheet.");
+    if (tx.lease.moneyFactor === null || tx.lease.moneyFactor === "" || tx.lease.moneyFactor === undefined) errs.push("Enter the money factor from this term's RVML sheet.");
+  } else {
+    if (!t.terms.length) errs.push("Select at least one finance term to present.");
+    if (!tx.finance.frequency) errs.push("Select a payment frequency.");
+    t.terms.forEach(function(tm){
+      var r = (tx.finance.rates || {})[tm];
+      if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
+    });
+  }
   if (!tx.lines.length) warns.push("No products are selected. The customer display will show the welcome screen only.");
   else if (!t.packagesUsed) warns.push("No product has been assigned to a package yet, so the customer display is showing every selected product as one package.");
   for (var i=0;i<t.lines.length;i++){
@@ -889,6 +974,7 @@ function setDealership(id){
   state.config = dealershipById(id);
   state.tx = C.newTransaction(firstFsmFor(id), id);
   applyFinanceDefaults(state.tx);
+  applyLeaseDefaults(state.tx);
 }
 function firstFsmFor(id){
   var u = state.users.filter(function(x){ return x.active && x.dealershipId === id && x.role.indexOf("FSM") !== -1; })[0];
@@ -900,6 +986,19 @@ function applyFinanceDefaults(tx){
   tx.finance.rates = {};
   tx.finance.rates[defTerm] = state.config.finance.defaultApr;
   tx.finance.frequency = state.config.finance.defaultFrequency;
+}
+/* Residual % and money factor are never defaulted from a guess — they come
+   from the captive's monthly RVML sheet and the FSM must key in that term's
+   actual numbers. The brand placeholder fills the fee fields (which ARE
+   published, or close enough to be a safe starting point) and leaves
+   residual/money factor blank so the step can't look "done" by accident. */
+function applyLeaseDefaults(tx){
+  var lse = brand().lease || {};
+  if (!tx.lease.frequency) tx.lease.frequency = state.config.finance.defaultFrequency || "monthly";
+  if (tx.lease.acquisitionFee === null || tx.lease.acquisitionFee === undefined) tx.lease.acquisitionFee = lse.acquisitionFee || 0;
+  if (tx.lease.dispositionFee === null || tx.lease.dispositionFee === undefined) tx.lease.dispositionFee = lse.dispositionFee || 0;
+  if (tx.lease.excessKmRate === null || tx.lease.excessKmRate === undefined) tx.lease.excessKmRate = lse.excessKmRate || 0;
+  if (!tx.lease.annualKm) tx.lease.annualKm = lse.annualKm || 20000;
 }
 function userById(id){
   for (var i=0;i<state.users.length;i++) if (state.users[i].id === id) return state.users[i];
@@ -1123,7 +1222,7 @@ function renderCustomerDisplay(tx){
   var b = brand(), cfg = state.config, t = C.totals(state, tx);
   var head = `<div class="cd-head"><div class="fs">${esc(b.finLabel)}</div>
     <div class="cd-tagline">Stronger Coverage, Smarter Ownership, That's the Difference.</div></div>`;
-  var freqWord = tx.finance.frequency ? C.freqLabel(tx.finance.frequency) : "bi-weekly or monthly";
+  var freqWord = t.frequency ? C.freqLabel(t.frequency) : "bi-weekly or monthly";
   var noteBar = `<div class="cd-note"><div class="nt1">Premium protection for your ${esc(b.label)} investment</div>
     <div class="nt2">All payments shown are ${freqWord}, interest and ${esc(state.config.tax.standard)}% HST included.</div></div>`;
   var foot = `<div class="cd-foot"><span>${esc(cfg.name)} — ${esc(cfg.address)}, ${esc(cfg.city)}</span><span>${esc(cfg.phone)}</span>
@@ -1185,7 +1284,9 @@ function stepState(tx){
   return [
     { n:1, label:"Customer", done: !!tx.customer.name },
     { n:2, label:"Vehicle", done: !!(tx.vehicle.model && tx.vehicle.stock && tx.vehicle.price) },
-    { n:3, label:"Finance setup", done: !!(t.terms.length && tx.finance.frequency && t.terms.every(function(tm){
+    { n:3, label:tx.type==="Lease"?"Lease setup":"Finance setup", done: tx.type==="Lease"
+        ? !!(tx.lease.term && tx.lease.frequency && tx.lease.residualPct !== null && tx.lease.residualPct !== "" && tx.lease.moneyFactor !== null && tx.lease.moneyFactor !== "")
+        : !!(t.terms.length && tx.finance.frequency && t.terms.every(function(tm){
         var r = (tx.finance.rates||{})[tm]; return r !== undefined && r !== null && r !== ""; })) },
     { n:4, label:"Products & packages", done: tx.lines.length > 0 && t.unpricedCount === 0 },
     { n:5, label:"Presentation", done: tx.lines.length > 0 && t.unpricedCount === 0 && tx.display.mode === "package" }
@@ -1252,9 +1353,12 @@ function viewFinance(){
     return `<label class="f"><span>${tm} months — rate (APR %)</span><input type="number" step="0.01" value="${esc(r)}" data-act="term-rate" data-term="${tm}"></label>`;
   }).join("")}</div>` : "";
 
-  var financeCard = `<div class="card" id="step-3"><div class="card-h"><h2>3 · Finance setup</h2>
-    <div class="sp"><span class="tag">${t.terms.length ? t.terms.length + " term" + (t.terms.length>1?"s":"") + " presented" : "No term selected"}</span></div></div>
-    <div class="card-b">
+  var dealTypeToggle = `<div class="chiprow" style="margin-bottom:12px">
+    <button type="button" class="btn sm ${tx.type==="Finance"?"on":""}" data-act="set-deal-type" data-deal-type="Finance">Finance</button>
+    <button type="button" class="btn sm ${tx.type==="Lease"?"on":""}" data-act="set-deal-type" data-deal-type="Lease">Lease</button>
+  </div>`;
+
+  var financeBody = `
       <div class="inline">
         <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.finance.tradeAllowance)}" data-bind="tx.finance.tradeAllowance" data-type="num"></label>
         <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.finance.tradePayout)}" data-bind="tx.finance.tradePayout" data-type="num"></label>
@@ -1279,7 +1383,56 @@ function viewFinance(){
           <td class="right num">${q.rate===null?`<span class="tag warn">Enter rate</span>`:q.rate+"%"}</td>
           <td class="right num">${q.basePayment===null?"—":money(q.basePayment)+" "+C.freqLabel(q.frequency)}</td>
           <td class="right num">${q.paymentsCount}</td></tr>`; }).join("")}</tbody></table></div>`
-        : `<div class="notice warn">Pick at least one term and a payment frequency to see payments.</div>`}
+        : `<div class="notice warn">Pick at least one term and a payment frequency to see payments.</div>`}`;
+
+  var leaseTermChoices = [24,27,36,39,42,48];
+  var leaseTermChips = leaseTermChoices.map(function(tm){
+    var on = Number(tx.lease.term) === tm;
+    return `<label class="termchip ${on?"on":""}"><input type="radio" name="leaseterm" data-act="set-lease-term" data-term="${tm}" ${on?"checked":""}>${tm} Months</label>`;
+  }).join("");
+  var kmChoices = [12000,16000,20000,24000];
+  var lq = t.lease ? (t.baseQuotes[0] || null) : null;
+  var leaseBody = `
+      <div class="notice" style="margin-bottom:12px">Residual value and money factor are never guessed — they come off this vehicle's actual RVML sheet from ${esc(brand().finLabel)} for this term/kilometre/credit combination. Enter them from that sheet each time; everything else here defaults from the brand's typical published fees and can be corrected freely.</div>
+      <div style="margin-bottom:6px" class="small muted">Lease term</div>
+      <div class="chiprow" style="margin-bottom:12px">${leaseTermChips}</div>
+      <div class="inline">
+        <label class="f"><span>Residual value (% of selling price)</span><input type="number" step="0.1" value="${tx.lease.residualPct===null?"":esc(tx.lease.residualPct)}" data-bind="tx.lease.residualPct" data-type="num" placeholder="from RVML sheet"></label>
+        <label class="f"><span>Money factor</span><input type="number" step="0.00001" value="${tx.lease.moneyFactor===null?"":esc(tx.lease.moneyFactor)}" data-bind="tx.lease.moneyFactor" data-type="num" placeholder="from RVML sheet"></label>
+        <label class="f"><span>Annual kilometres</span><select data-bind="tx.lease.annualKm" data-type="num">${selectOptions(kmChoices, tx.lease.annualKm, function(x){ return km(x)+"/yr"; })}</select></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.lease.tradeAllowance)}" data-bind="tx.lease.tradeAllowance" data-type="num"></label>
+        <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.lease.tradePayout)}" data-bind="tx.lease.tradePayout" data-type="num"></label>
+        <label class="f"><span>Cash down / cap cost reduction</span><input type="number" value="${esc(tx.lease.downPayment)}" data-bind="tx.lease.downPayment" data-type="num"></label>
+        <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.lease.feeAmount)}" data-bind="tx.lease.feeAmount" data-type="num" placeholder="0.00"></label>
+      </div>
+      <div class="inline">
+        <label class="f"><span>Acquisition fee (capitalized)</span><input type="number" value="${esc(tx.lease.acquisitionFee)}" data-bind="tx.lease.acquisitionFee" data-type="num"></label>
+        <label class="f"><span>Disposition fee (due at lease end, informational)</span><input type="number" value="${esc(tx.lease.dispositionFee)}" data-bind="tx.lease.dispositionFee" data-type="num"></label>
+        <label class="f"><span>Excess kilometre rate ($/km)</span><input type="number" step="0.01" value="${esc(tx.lease.excessKmRate)}" data-bind="tx.lease.excessKmRate" data-type="num"></label>
+      </div>
+      <label class="f" style="max-width:280px"><span>Payment frequency shown to the customer</span>
+        <div class="chiprow">
+          <button type="button" class="btn sm ${tx.lease.frequency==="monthly"?"on":""}" data-act="set-lease-frequency" data-freq="monthly">Monthly</button>
+          <button type="button" class="btn sm ${tx.lease.frequency==="biweekly"?"on":""}" data-act="set-lease-frequency" data-freq="biweekly">Bi-weekly</button>
+        </div>
+      </label>
+      <div class="divider"></div>
+      ${lq ? `<div class="tablewrap"><table>
+        <thead><tr><th>Term</th><th class="right">Residual</th><th class="right">Money factor</th><th class="right">Base payment, no products</th><th class="right">Payments</th></tr></thead>
+        <tbody><tr><td>${lq.term} Months</td>
+          <td class="right num">${t.lease.residualPct===null?`<span class="tag warn">Enter residual %</span>`:t.lease.residualPct+"% ("+money(t.lease.residualAmount)+")"}</td>
+          <td class="right num">${t.lease.moneyFactor===null?`<span class="tag warn">Enter money factor</span>`:t.lease.moneyFactor}</td>
+          <td class="right num">${lq.basePayment===null?"—":money(lq.basePayment)+" "+C.freqLabel(lq.frequency)}</td>
+          <td class="right num">${lq.paymentsCount}</td></tr></tbody></table></div>`
+        : `<div class="notice warn">Pick a term, residual % and money factor to see payments.</div>`}`;
+
+  var financeCard = `<div class="card" id="step-3"><div class="card-h"><h2>3 · ${tx.type==="Lease"?"Lease":"Finance"} setup</h2>
+    <div class="sp"><span class="tag">${tx.type==="Lease" ? (t.terms.length?"Lease term selected":"No term selected") : (t.terms.length ? t.terms.length + " term" + (t.terms.length>1?"s":"") + " presented" : "No term selected")}</span></div></div>
+    <div class="card-b">
+      ${dealTypeToggle}
+      ${tx.type==="Lease" ? leaseBody : financeBody}
     </div></div>`;
 
   var PKG_SHORT = { preferred:"Pref", essential:"Esse", basic:"Basi" };
@@ -1388,6 +1541,7 @@ function viewFinance(){
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
   isMaster:isMaster, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
+  applyLeaseDefaults:applyLeaseDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
   channel:channel, selectOptions:selectOptions, kpiCard:kpiCard, lineConfigText:lineConfigText,
@@ -1924,11 +2078,17 @@ function internalPrintSelected(tx, t, u, pkg){
       <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td>
       <td style="text-align:right">${L.gross===null?"—":money(L.gross)}</td></tr>`;
   }).join("");
-  var termCols = t.terms.map(function(tm){
-    var r = (tx.finance.rates||{})[tm];
-    var bq = t.baseQuotes.filter(function(x){ return x.term === tm; })[0];
-    return `<div><div class="lbl">${tm} MONTHS</div><div>@ ${r!==undefined&&r!==null&&r!==""?r+"%":"—"} · ${bq&&bq.basePayment!==null?money(bq.basePayment)+" "+C.freqLabel(bq.frequency):"—"}</div></div>`;
-  }).join("");
+  var termCols = tx.type === "Lease"
+    ? t.terms.map(function(tm){
+        var bq = t.baseQuotes.filter(function(x){ return x.term === tm; })[0];
+        var rvmf = t.lease ? (t.lease.residualPct+"% RV · MF "+t.lease.moneyFactor) : "—";
+        return `<div><div class="lbl">${tm} MONTHS</div><div>@ ${rvmf} · ${bq&&bq.basePayment!==null?money(bq.basePayment)+" "+C.freqLabel(bq.frequency):"—"}</div></div>`;
+      }).join("")
+    : t.terms.map(function(tm){
+        var r = (tx.finance.rates||{})[tm];
+        var bq = t.baseQuotes.filter(function(x){ return x.term === tm; })[0];
+        return `<div><div class="lbl">${tm} MONTHS</div><div>@ ${r!==undefined&&r!==null&&r!==""?r+"%":"—"} · ${bq&&bq.basePayment!==null?money(bq.basePayment)+" "+C.freqLabel(bq.frequency):"—"}</div></div>`;
+      }).join("");
   var pkgQuotes = pkg.quotes.filter(function(q){ return q.payment !== null; });
   return `<div class="doc">
     ${docHeader("F&I Transaction Detail", "Deal "+tx.id+" · "+C.fmtDate(tx.createdAt))}
@@ -1983,7 +2143,9 @@ function internalPrint(tx){
         <div>Odometer ${esc(tx.vehicle.odometer||0)} km</div></div>
       <div><div class="lbl">TRANSACTION</div><div>Type ${esc(tx.type)}</div>
         <div>Terms presented ${t.terms.length?t.terms.join(", ")+" months":"—"}</div>
-        <div>Rates ${t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—"} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>
+        <div>${tx.type==="Lease"
+          ? (t.lease ? "Residual "+t.lease.residualPct+"% ("+money(t.lease.residualAmount)+") · MF "+t.lease.moneyFactor+" · "+km(t.lease.annualKm)+"/yr" : "—")
+          : "Rates "+(t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—")} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>
         <div>FSM ${esc(u.name)} (${esc(u.role)})</div></div>
     </div>
     <h3>Products</h3>
@@ -2018,14 +2180,21 @@ function internalPrint(tx){
       <div><div class="lbl">DEAL STRUCTURE</div>
         <div class="kv"><span class="k">Selling price</span><span>${money(t.vehiclePrice)}</span></div>
         <div class="kv"><span class="k">Administration fee</span><span>${money(t.adminFee)}</span></div>
+        ${tx.type==="Lease" && t.lease ? `<div class="kv"><span class="k">Acquisition fee (capitalized)</span><span>${money(t.lease.acquisitionFee)}</span></div>` : ""}
         <div class="kv"><span class="k">Trade allowance</span><span>${money(t.tradeAllowance)}</span></div>
         <div class="kv"><span class="k">Trade payout</span><span>${money(t.tradePayout)}</span></div>
-        <div class="kv"><span class="k">Vehicle tax ${state.config.tax.standard}%</span><span>${money(t.vehicleTax)}</span></div>
+        ${tx.type==="Lease" ? "" : `<div class="kv"><span class="k">Vehicle tax ${state.config.tax.standard}%</span><span>${money(t.vehicleTax)}</span></div>`}
         <div class="kv"><span class="k">Licensing</span><span>${money(t.licensing)}</span></div>
-        <div class="kv"><span class="k">Cash down</span><span>${money(t.downPayment)}</span></div>
+        <div class="kv"><span class="k">${tx.type==="Lease"?"Cash down / cap cost reduction":"Cash down"}</span><span>${money(t.downPayment)}</span></div>
         ${t.fees.map(function(f){ return `<div class="kv"><span class="k">${esc(f.name)} (non-taxable)</span><span>${money(Number(f.amount)||0)}</span></div>`; }).join("")}
         ${t.feeAmount ? `<div class="kv"><span class="k">Fees (non-taxable)</span><span>${money(t.feeAmount)}</span></div>` : ""}
-        <div class="kv total"><span>Financed with all products</span><span>${money(t.amountFinanced)}</span></div></div>
+        ${tx.type==="Lease" && t.lease ? `
+        <div class="kv"><span class="k">Residual value</span><span>${t.lease.residualPct===null?"—":t.lease.residualPct+"% ("+money(t.lease.residualAmount)+")"}</span></div>
+        <div class="kv"><span class="k">Money factor</span><span>${t.lease.moneyFactor===null?"—":t.lease.moneyFactor}</span></div>
+        <div class="kv"><span class="k">Disposition fee (at lease end)</span><span>${money(t.lease.dispositionFee)}</span></div>
+        <div class="kv"><span class="k">Excess km rate</span><span>${money(t.lease.excessKmRate)}/km over ${km(t.lease.annualKm)}/yr</span></div>
+        <div class="kv total"><span>Capitalized cost with all products</span><span>${money(t.lease.capCost + t.productsSub)}</span></div>`
+        : `<div class="kv total"><span>Financed with all products</span><span>${money(t.amountFinanced)}</span></div>`}</div>
       <div><div class="lbl">PAYMENTS, ALL PRODUCTS</div>
         ${t.quotes.length ? t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months</span><span>${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="kv"><span class="k">No term selected</span><span>—</span></div>`}
         <div style="margin-top:18px;border-top:1px solid #111;padding-top:4px;font-size:10px;color:#667085">FSM signature</div></div>
@@ -2082,7 +2251,8 @@ function buildEmail(tx){
       L.push("Payment with this package:");
       quotes.forEach(function(q){
         if (q.payment === null){ L.push("  - " + q.term + " months: rate still to be entered"); return; }
-        L.push("  - " + money(q.payment) + " " + C.freqLabel(q.frequency) + " over " + q.term + " months at " + q.rate + "%"
+        var rateTxt = q.rate === null ? "lease terms on file" : "at " + q.rate + "%";
+        L.push("  - " + money(q.payment) + " " + C.freqLabel(q.frequency) + " over " + q.term + " months " + rateTxt
           + " (" + money(q.difference) + " more than the vehicle on its own)");
       });
       L.push("");
@@ -2477,6 +2647,7 @@ function completeDeal(){
 function newDeal(){
   state.tx = C.newTransaction(state.tx ? state.tx.fsmUserId : V.firstFsmFor(state.activeDealershipId), state.activeDealershipId);
   V.applyFinanceDefaults(state.tx);
+  V.applyLeaseDefaults(state.tx);
   state.route = "finance";
   commit();
 }
@@ -2637,6 +2808,12 @@ document.addEventListener("click", function(ev){
       var ln = findLine(el.getAttribute("data-line"));
       if (ln){ ln.price = null; ln.priceOverridden = false; } commit(); break; }
     case "set-frequency": state.tx.finance.frequency = el.getAttribute("data-freq"); commit(); break;
+    case "set-lease-frequency": state.tx.lease.frequency = el.getAttribute("data-freq"); commit(); break;
+    case "set-deal-type": {
+      var newType = el.getAttribute("data-deal-type");
+      state.tx.type = newType;
+      if (newType === "Lease") V.applyLeaseDefaults(state.tx);
+      commit(); break; }
     case "cd-mode": state.tx.display.mode = el.getAttribute("data-mode"); commit(); break;
     case "scroll-step": {
       var target = document.getElementById("step-" + el.getAttribute("data-step"));
@@ -2756,6 +2933,10 @@ document.addEventListener("change", function(ev){
     state.tx.finance.rates[trm] = el.value === "" ? null : Number(el.value);
     commit(); return;
   }
+  if (act === "set-lease-term"){
+    state.tx.lease.term = Number(el.getAttribute("data-term"));
+    commit(); return;
+  }
   if (act === "toggle-package-list"){
     var pid2 = el.getAttribute("data-product"), pkgKey = el.getAttribute("data-package");
     var line2 = state.tx.lines.filter(function(l){ return l.productId === pid2; })[0];
@@ -2854,6 +3035,7 @@ document.addEventListener("change", function(ev){
 /* ---------------- BOOT ---------------- */
 function boot(){
   if (state.tx) V.applyFinanceDefaults(state.tx);
+  if (state.tx) V.applyLeaseDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
   commit();
