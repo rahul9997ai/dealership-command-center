@@ -261,16 +261,20 @@ tbody tr:hover{background:var(--surface-2)}
 .modal-h{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
 .modal-h .sp{margin-left:auto;display:flex;gap:8px}
 .modal-b{padding:18px;max-height:calc(100vh - 160px);overflow:auto}
-.doc{background:#fff;color:#111;padding:26px 30px;border:1px solid #dfe5ee;border-radius:9px;font-size:12.5px}
-.doc h1{font-size:19px;color:#111}
-.doc h3{font-size:13px;color:#111;margin-bottom:6px}
-.doc table{font-size:12px}
-.doc th,.doc td{border-bottom:1px solid #e3e8ef;color:#111}
+.doc{background:#fff;color:#1a1f29;padding:36px 42px;border:1px solid #dfe5ee;border-radius:9px;font-size:12.5px;line-height:1.65;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.doc h1{font-size:21px;color:#0d1b2e;letter-spacing:-.01em}
+.doc h3{font-size:13.5px;color:#0d1b2e;margin:26px 0 12px;padding-bottom:8px;border-bottom:1px solid #e3e8ef;letter-spacing:.02em;text-transform:uppercase}
+.doc table{font-size:12px;width:100%;border-collapse:collapse}
+.doc th{background:#f6f8fb;color:#4b5768;font-weight:700;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:9px 10px;border-bottom:1px solid #e3e8ef}
+.doc td{padding:9px 10px}
+.doc th,.doc td{border-bottom:1px solid #e3e8ef;color:#1a1f29}
+.doc tbody tr:nth-child(even){background:#fafbfd}
+.doc .kv{padding:6px 0}
 .doc .kv .k{color:#667085}
-.doc .dh{display:flex;gap:14px;align-items:center;border-bottom:2px solid #0d2f6b;padding-bottom:12px;margin-bottom:14px}
+.doc .dh{display:flex;gap:14px;align-items:center;border-bottom:2px solid #0d2f6b;padding-bottom:16px;margin-bottom:20px}
 .doc .dlogo{width:46px;height:46px;border-radius:9px;background:linear-gradient(140deg,#0d2f6b,#1d61d8);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700}
-.doc .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:16px;margin-bottom:16px}
-.doc .lbl{font-size:10px;color:#667085;letter-spacing:.05em}
+.doc .cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:18px 24px;margin-bottom:16px}
+.doc .lbl{font-size:10px;color:#667085;letter-spacing:.06em;font-weight:600;text-transform:uppercase;margin-bottom:2px}
 .doc .watermark{margin-top:16px;text-align:center;color:#98a2b3;font-size:10.5px;letter-spacing:.14em}
 .doc .selectbox{display:grid;grid-template-columns:1fr 1fr;gap:20px;border:1px solid #c7d2fe;background:#eef2ff;border-radius:10px;padding:14px 20px;margin:14px 0;text-align:center}
 .doc .selectbox .big{font-size:22px;font-weight:800;color:#1d4ed8;margin-top:2px}
@@ -345,10 +349,14 @@ tbody tr:hover{background:var(--surface-2)}
 @media (max-width:520px){ .axiom-word{font-size:42px} .axiom-slogan{font-size:24px} .axiom-page{padding:32px 18px} }
 
 @media print{
-  body *{visibility:hidden}
-  .modal-bg,.modal,.modal-b,.doc,.doc *{visibility:visible}
-  .modal-bg{position:absolute;inset:0;background:#fff;padding:0;display:block}
-  .modal{box-shadow:none;width:100%}
+  /* The old visibility:hidden trick left every hidden element still taking
+     up its normal layout height (visibility doesn't affect layout, only
+     paint), so the print engine paginated across the whole app's height —
+     one real page of content followed by several blank ones. Removing #root
+     from the flow entirely fixes that; only the open modal prints. */
+  #root{display:none !important}
+  .modal-bg{position:static !important;inset:auto;background:#fff;padding:0;display:block}
+  .modal{box-shadow:none;width:100%;max-width:none}
   .modal-h,.no-print{display:none !important}
   .modal-b{max-height:none;overflow:visible;padding:0}
   .doc{border:0;border-radius:0}
@@ -1607,14 +1615,17 @@ function viewReports(){
     <div class="card" style="margin-top:16px"><div class="card-h"><h2>Transactions</h2>
       <div class="sp"><span class="muted small">${deals.length} in range</span></div></div>
       <div class="card-b"><div class="tablewrap"><table>
-      <thead><tr><th>Date</th><th>Deal</th><th>Customer</th><th>Vehicle</th><th>Type</th><th>FSM</th><th class="right">Products</th><th class="right">Retail</th><th class="right">Gross</th></tr></thead>
+      <thead><tr><th>Date</th><th>Deal</th><th>Customer</th><th>Vehicle</th><th>Type</th><th>FSM</th><th class="right">Products</th><th class="right">Retail</th><th class="right">Gross</th><th></th></tr></thead>
       <tbody>${deals.slice().sort(function(a,b){ return a.createdAt<b.createdAt?1:-1; }).slice(0,60).map(function(d){
         var t = C.totals(state,d);
+        var editable = state.completed.some(function(c){ return c.id === d.id; });
         return `<tr><td class="nowrap">${C.fmtDate(d.createdAt)}</td><td class="nowrap">${esc(d.id)}</td>
           <td>${esc(d.customer.name||"—")}</td><td>${esc(d.vehicle.year+" "+d.vehicle.model)}</td>
           <td><span class="tag">${esc(d.type)}</span></td><td>${esc(userById(d.fsmUserId).name)}</td>
           <td class="right num">${t.lines.length}</td><td class="right num">${money0(t.productsSub)}</td>
-          <td class="right num">${money0(t.productGross)}</td></tr>`; }).join("")}
+          <td class="right num">${money0(t.productGross)}</td>
+          <td class="right nowrap">${editable ? `<button class="btn sm" data-act="deal-open" data-deal="${esc(d.id)}">Open</button>
+            <button class="btn sm danger" data-act="deal-delete" data-deal="${esc(d.id)}">Delete</button>` : ""}</td></tr>`; }).join("")}
       </tbody></table></div>
       ${deals.length>60?`<p class="small muted" style="margin-top:10px">Showing the 60 most recent of ${deals.length}.</p>`:""}</div></div>`
     : `<div class="card"><div class="empty">No transactions match these filters. Widen the date range or clear a filter.</div></div>`;
@@ -1881,7 +1892,7 @@ function internalPrintSelected(tx, t, u, pkg){
       ${termCols}
     </div>
     <div class="selectbox">
-      <div><div class="lbl">TERM${t.terms.length>1?"S":""} PRESENTED</div><div class="big">${t.terms.length?t.terms.join(", ")+" mo":"—"}</div></div>
+      <div><div class="lbl">TERM${t.terms.length>1?"S":""} PRESENTED</div><div class="big">${t.terms.length?t.terms.map(function(tm){ return tm+" Months"; }).join(", "):"—"}</div></div>
       <div><div class="lbl">PAYMENT WITH SELECTED PACKAGE</div>
         ${pkgQuotes.length ? pkgQuotes.map(function(q){ return `<div class="big">${money(q.payment)} <span class="unit">${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="big">—</div>`}
       </div>
@@ -1919,7 +1930,7 @@ function internalPrint(tx){
     <table><thead><tr><th>Product</th><th>Term</th><th>Kilometres</th><th>Interval</th><th>Deductible</th><th>Packages</th>
       <th style="text-align:right">Retail</th><th style="text-align:right">Tax rate</th><th style="text-align:right">Tax</th><th style="text-align:right">Total</th></tr></thead>
       <tbody>${t.lines.length ? t.lines.map(function(L){ return `<tr>
-        <td>${esc(L.product.name)}</td><td>${L.cfg.term?L.cfg.term+" mo":"—"}</td><td>${L.cfg.km?km(L.cfg.km):"—"}</td>
+        <td>${esc(L.product.name)}</td><td>${L.cfg.term?L.cfg.term+" Months":"—"}</td><td>${L.cfg.km?km(L.cfg.km):"—"}</td>
         <td>${L.cfg.interval?km(L.cfg.interval):"—"}</td>
         <td>${L.product.uses.deductible && L.cfg.deductible!==null && L.cfg.deductible!=="" ? "$"+L.cfg.deductible : "—"}</td>
         <td>${esc(packagesOfLine(L))}</td>
@@ -1929,7 +1940,7 @@ function internalPrint(tx){
       </tbody></table>
     <h3 style="margin-top:16px">Packages presented</h3>
     <table><thead><tr><th>Package</th><th style="text-align:right">Products</th><th style="text-align:right">Total with tax</th><th style="text-align:right">Gross</th>
-      ${t.terms.map(function(tm){ return `<th style="text-align:right">${tm} mo</th>`; }).join("")}</tr></thead>
+      ${t.terms.map(function(tm){ return `<th style="text-align:right">${tm} Months</th>`; }).join("")}</tr></thead>
       <tbody>${t.packages.map(function(p){ return `<tr><td>${esc(p.label)}</td><td style="text-align:right">${p.count}</td>
         <td style="text-align:right">${money(p.total)}</td><td style="text-align:right">${money(p.gross)}</td>
         ${t.terms.map(function(tm){
@@ -2409,6 +2420,24 @@ function newDeal(){
   state.route = "finance";
   commit();
 }
+/* Reopening a saved deal pulls it back out of "completed" and makes it the
+   live transaction again — completing it re-saves a fresh copy rather than
+   leaving a duplicate behind. */
+function openSavedDeal(id){
+  var deal = state.completed.filter(function(d){ return d.id === id; })[0];
+  if (!deal){ toast("That deal couldn't be found.","err"); return; }
+  state.completed = state.completed.filter(function(d){ return d.id !== id; });
+  var opened = C.clone(deal);
+  opened.status = "Open";
+  if (opened.dealershipId && opened.dealershipId !== state.activeDealershipId){
+    state.activeDealershipId = opened.dealershipId;
+    state.config = V.dealershipById(opened.dealershipId);
+  }
+  state.tx = opened;
+  state.route = "finance";
+  toast("Deal " + id + " reopened for editing.","ok");
+  commit();
+}
 function resetDemo(){
   state.dealerships = C.clone(D.DEALERSHIPS);
   state.activeDealershipId = "d1";
@@ -2515,6 +2544,13 @@ document.addEventListener("click", function(ev){
     case "exit-present": state.ui.present = false; commit(); break;
     case "open-customer-window": openCustomerWindow(); break;
     case "new-deal": newDeal(); break;
+    case "deal-open": openSavedDeal(el.getAttribute("data-deal")); break;
+    case "deal-delete": {
+      var delId = el.getAttribute("data-deal");
+      if (!window.confirm("Delete this completed deal? This can't be undone.")) break;
+      state.completed = state.completed.filter(function(d){ return d.id !== delId; });
+      toast("Deal " + delId + " deleted.","ok");
+      commit(); break; }
     case "complete": completeDeal(); break;
     case "email":
       state.ui.modal = { kind:"email" };
