@@ -1837,8 +1837,8 @@ function viewUsers(){
       <td class="small">${u.demo ? "Demo until<br>"+esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—") : "Full access"}</td>
       <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
-        ${u.demo ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}" ${canEdit?"":"disabled"}>Extend demo</button>
-        <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}" ${canEdit?"":"disabled"}>Make full access</button>` : ""}
+        ${u.demo && V.isMaster() ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}">Extend demo</button>
+        <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}">Make full access</button>` : ""}
         <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
         <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;

@@ -56,6 +56,8 @@ Deno.serve(async (req) => {
     if (!target || !canTouch(target)) return json({ error: "Not allowed" }, 403);
 
     if (body.action === "update") {
+      if (!isMaster && ("access_type" in body || "expires_at" in body))
+        return json({ error: "Only the Master Administrator can extend or change demo access" }, 403);
       const patch: Record<string, unknown> = {};
       for (const k of ["name", "role", "active", "access_type", "expires_at", "dealership_id"])
         if (k in body) patch[k] = body[k];
