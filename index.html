@@ -647,7 +647,11 @@ function totals(state, tx){
   var productsTax = Math.round((taxStd+taxVrc)*100)/100;
   var productsTotal = Math.round((productsSub+productsTax)*100)/100;
 
-  var vPrice = Number(tx.vehicle.price)||0, adminFee = Number(fin.adminFee)||0, lic = Number(fin.licensing)||0;
+  var vPrice = Number(tx.vehicle.price)||0;
+  /* No vehicle price yet means there's no deal to speak of — don't let the
+     admin fee/licensing/tax show up as a phantom balance on a brand new,
+     untouched transaction before the FSM has entered anything. */
+  var adminFee = vPrice > 0 ? (Number(fin.adminFee)||0) : 0, lic = vPrice > 0 ? (Number(fin.licensing)||0) : 0;
   var isCash = tx.type === "Cash";
   var src = isCash ? (tx.cash||{}) : tx.finance;
   var tradeAll = Number(src.tradeAllowance)||0, tradePay = Number(src.tradePayout)||0, down = Number(src.downPayment)||0;
