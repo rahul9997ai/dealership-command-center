@@ -1817,7 +1817,6 @@ function viewUsers(){
 }
 function userModal(){
   if (!state.ui.userForm) return "";
-  var soon = new Date(Date.now() + 14*86400000); soon.setMinutes(soon.getMinutes() - soon.getTimezoneOffset());
   return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal">
     <div class="modal-h"><h2>Invite a user</h2><div class="sp">
       <button class="btn" data-act="user-cancel">Cancel</button>
@@ -1835,13 +1834,32 @@ function userModal(){
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
       </div>
-      <div class="inline">
-        <label class="f"><span>Access type</span><select data-uf="access"><option value="full">Full access</option><option value="demo">Demo access (expires)</option></select></label>
-        <label class="f"><span>Demo expires (date &amp; time)</span><input type="datetime-local" data-uf="expires" value="${soon.toISOString().slice(0,16)}"></label>
+      <div class="f"><span>Access</span>
+        <div class="chiprow">
+          <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
+          <button type="button" class="btn sm" data-act="uf-access" data-val="demo">Demo (time limited)</button>
+        </div><input type="hidden" data-uf="access" value="full"></div>
+      <div id="ufDemoBox" class="f" style="display:none"><span>Demo lasts</span>
+        <div class="chiprow">
+          ${[[1,"1 hour"],[4,"4 hours"],[24,"1 day"],[72,"3 days"],[168,"7 days"],[336,"14 days"],[720,"30 days"]].map(function(d){
+            return `<button type="button" class="btn sm ${d[0]===168?"on":""}" data-act="uf-dur" data-hours="${d[0]}">${d[1]}</button>`; }).join("")}
+          <button type="button" class="btn sm" data-act="uf-dur" data-hours="custom">Custom</button>
+        </div><input type="hidden" data-uf="hours" value="168">
+        <div id="ufCustom" style="display:none;margin-top:8px;max-width:180px"><input type="number" min="1" data-uf="customdays" placeholder="Number of days"></div>
+        <div class="small muted" style="margin-top:8px">Expires <strong id="ufPreview"></strong></div>
       </div>
       <p class="small muted">No email verification is needed. Share the temporary password with the user — they'll be asked to set their own the first time they sign in. Demo users get the full functionality of the role you pick until the expiry.</p>
     </div></div></div>`;
 }
+function updateDemoPreview(){
+  var mr = document.querySelector(".modal"); if (!mr) return;
+  var pv = mr.querySelector("#ufPreview"); if (!pv) return;
+  var h = mr.querySelector('[data-uf="hours"]').value;
+  if (h === "custom") h = Number(mr.querySelector('[data-uf="customdays"]').value) * 24;
+  h = Number(h);
+  pv.textContent = h > 0 ? fmtExpiry(new Date(Date.now() + h*3600000).toISOString()) : "— enter a number of days";
+}
+document.addEventListener("input", function(ev){ if (ev.target.getAttribute && ev.target.getAttribute("data-uf") === "customdays") updateDemoPreview(); });
 function saveUser(){
   var root = document.querySelector(".modal");
   if (!root) return;
@@ -1850,13 +1868,16 @@ function saveUser(){
   if (!name){ toast("Enter the user's name.","err"); return; }
   if (!/^\S+@\S+\.\S+$/.test(email)){ toast("Enter a valid email address.","err"); return; }
   if (pw.length < 8){ toast("The temporary password needs at least 8 characters.","err"); return; }
-  var access = f("access").value, exp = f("expires").value;
-  if (access === "demo" && (!exp || new Date(exp) <= new Date())){ toast("Pick a demo expiry in the future.","err"); return; }
+  var access = f("access").value, hrs = f("hours").value;
+  if (hrs === "custom") hrs = Number(f("customdays").value) * 24;
+  hrs = Number(hrs);
+  if (access === "demo" && !(hrs > 0)){ toast("Choose how long the demo lasts.","err"); return; }
+  var exp = new Date(Date.now() + hrs*3600000).toISOString();
   var role = f("role").value;
   toast("Creating user…","info");
   adminCall({ action:"create", email:email, password:pw, name:name, role:role,
     dealership_id: role === "Master Administrator" ? null : (f("dealership").value || null),
-    access_type:access, expires_at: access === "demo" ? new Date(exp).toISOString() : null })
+    access_type:access, expires_at: access === "demo" ? exp : null })
   .then(function(){ state.ui.userForm = false; toast("User created — share the temporary password with " + name.split(" ")[0] + ".","ok"); refreshUsers(); commit(); })
   .catch(function(e){ toast(e.message, "err"); });
 }
@@ -2935,6 +2956,20 @@ document.addEventListener("click", function(ev){
         state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit();
       }).catch(function(e){ toast(e.message,"err"); });
       break; }
+    case "uf-access": {
+      var mr = document.querySelector(".modal"); if (!mr) break;
+      var av = el.getAttribute("data-val");
+      mr.querySelector('[data-uf="access"]').value = av;
+      Array.prototype.forEach.call(el.parentNode.children, function(b){ b.classList.toggle("on", b === el); });
+      mr.querySelector("#ufDemoBox").style.display = av === "demo" ? "" : "none";
+      updateDemoPreview(); break; }
+    case "uf-dur": {
+      var mr2 = document.querySelector(".modal"); if (!mr2) break;
+      var hv = el.getAttribute("data-hours");
+      mr2.querySelector('[data-uf="hours"]').value = hv;
+      Array.prototype.forEach.call(el.parentNode.children, function(b){ b.classList.toggle("on", b === el); });
+      mr2.querySelector("#ufCustom").style.display = hv === "custom" ? "" : "none";
+      updateDemoPreview(); break; }
     case "demo-extend": {
       var de = userById(el.getAttribute("data-user"));
       var daysTxt = window.prompt("Extend " + de.name + "'s demo by how many days? (counted from the later of now or their current expiry)", "7");
