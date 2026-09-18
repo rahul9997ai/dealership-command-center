@@ -1801,6 +1801,8 @@ function viewUsers(){
       <td class="small">${u.demo ? "Demo until<br>"+esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—") : "Full access"}</td>
       <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
+        ${u.demo ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}" ${canEdit?"":"disabled"}>Extend demo</button>
+        <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}" ${canEdit?"":"disabled"}>Make full access</button>` : ""}
         <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
         <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;
@@ -2932,6 +2934,25 @@ document.addEventListener("click", function(ev){
       adminCall({ action:"delete", id:uid2 }).then(function(){
         state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit();
       }).catch(function(e){ toast(e.message,"err"); });
+      break; }
+    case "demo-extend": {
+      var de = userById(el.getAttribute("data-user"));
+      var daysTxt = window.prompt("Extend " + de.name + "'s demo by how many days? (counted from the later of now or their current expiry)", "7");
+      if (daysTxt === null) break;
+      var addDays = Number(daysTxt);
+      if (!(addDays > 0)){ toast("Enter a number of days above zero.","err"); break; }
+      var baseMs = Math.max(Date.now(), de.expiresAt ? new Date(de.expiresAt).getTime() : 0);
+      var newExp = new Date(baseMs + addDays*86400000).toISOString();
+      adminCall({ action:"update", id:de.id, access_type:"demo", expires_at:newExp })
+        .then(function(){ toast("Demo extended to " + fmtExpiry(newExp) + ".","ok"); refreshUsers(); })
+        .catch(function(e){ toast(e.message,"err"); });
+      break; }
+    case "demo-convert": {
+      var dc = userById(el.getAttribute("data-user"));
+      if (!window.confirm("Give " + dc.name + " full access with no time limit?")) break;
+      adminCall({ action:"update", id:dc.id, access_type:"full" })
+        .then(function(){ toast(dc.name + " now has full access.","ok"); refreshUsers(); })
+        .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "do-change-password": doChangePassword(); break;
     case "demo-ack": state.ui.demoNotice = false; commit(); break;
