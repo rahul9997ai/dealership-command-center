@@ -248,88 +248,115 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
-.lw{--lw-navy:#050b18;--lw-blue:#2f8bff;--lw-blue-d:#0a67f2;--lw-ink:#f4f7fc;--lw-mut:#a9b5cb;position:relative;min-height:100vh;overflow:hidden;color:var(--lw-ink);background:var(--lw-navy);font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
-.lw *{box-sizing:border-box}
-.lw-bg{position:absolute;inset:-3%;background:var(--lw-navy) url(assets/hero-nissan.webp) center 62%/cover no-repeat;animation:lwZoom 36s ease-in-out infinite alternate;will-change:transform}
-.lw-shade{position:absolute;inset:0;background:
-  radial-gradient(120% 90% at 78% 50%,rgba(5,11,24,0) 0%,rgba(5,11,24,.55) 70%),
-  linear-gradient(90deg,rgba(5,11,24,.9) 0%,rgba(5,11,24,.62) 34%,rgba(5,11,24,.2) 64%,rgba(5,11,24,.4) 100%),
-  linear-gradient(180deg,rgba(5,11,24,.5) 0%,rgba(5,11,24,0) 26%,rgba(5,11,24,0) 66%,rgba(5,11,24,.8) 100%)}
-.lw-main{position:relative;z-index:2;min-height:100vh;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);align-items:center;gap:clamp(28px,5vw,90px);padding:0 clamp(24px,6.5vw,120px) clamp(20px,6vh,70px)}
-.lw-head{position:absolute;z-index:3;top:clamp(20px,3.6vh,40px);left:clamp(24px,6.5vw,120px)}
-.lw-lockup{animation:lwUp .9s cubic-bezier(.2,.7,.2,1) both}
-.lw-lockup .lp2-logo{display:flex;align-items:flex-start;gap:clamp(3px,.4vw,7px)}
-.lw-lockup .lp2-mark{width:clamp(46px,4.4vw,68px);height:clamp(38px,3.7vw,57px);display:block;flex:0 0 auto;filter:drop-shadow(0 0 18px rgba(47,139,255,.35))}
-.lw-lockup .lp2-xiom{font-size:clamp(34px,3.4vw,52px);font-weight:800;letter-spacing:.13em;line-height:1;margin:clamp(4px,.5vw,8px) 0 0 -.02em;
-  background:linear-gradient(100deg,#fff 0%,#fff 38%,#a9d0ff 50%,#fff 62%,#fff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lwSweep 8s ease-in-out 2s infinite}
-.lw-tag{margin:8px 0 0;font-size:clamp(9.5px,.78vw,11.5px);letter-spacing:.26em;text-transform:uppercase;color:var(--lw-mut);animation:lwUp .9s .2s cubic-bezier(.2,.7,.2,1) both}
-.lw-sig{margin-top:clamp(20px,1.9vw,30px);animation:lwUp .9s .35s both}
-.lw-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(26px,2.5vw,38px);line-height:1.1;color:#dfeaff;padding:.16em .2em .06em 0;word-spacing:.22em;
-  transform:rotate(-1.5deg);transform-origin:left center;clip-path:inset(0 100% 0 0);animation:lwWrite 1.9s cubic-bezier(.55,.1,.25,1) .9s forwards}
-.lw-hero{max-width:640px;padding-top:clamp(50px,9vh,110px)}
-.lw-eyebrow{font-size:clamp(10.5px,.85vw,12.5px);font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:#8fb6ff;animation:lwUp .9s .3s both}
-.lw-hero h1{margin:clamp(14px,2vh,22px) 0 0;font-size:clamp(32px,3.6vw,56px);line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff;white-space:nowrap;animation:lwUp .9s .45s cubic-bezier(.2,.7,.2,1) both}
-.lw-hero h1 em{font-style:normal;color:var(--lw-blue)}
-.lw-lead{margin:clamp(16px,2.4vh,26px) 0 0;max-width:34em;font-size:clamp(13.5px,1.12vw,16.5px);line-height:1.65;color:#c3cee2;animation:lwUp .9s .6s both}
-.lw-motto{display:flex;align-items:center;gap:14px;margin-top:clamp(20px,3.2vh,34px);font-size:clamp(11px,.9vw,13px);letter-spacing:.22em;text-transform:uppercase;color:#dbe6fa;animation:lwUp .9s .75s both}
-.lw-motto i{display:block;width:34px;height:2px;background:var(--lw-blue);border-radius:2px}
-.lw-side{display:flex;justify-content:center;animation:lwUp .9s .55s cubic-bezier(.2,.7,.2,1) both}
-.lw-card{width:min(360px,100%);padding:30px 28px 26px;border-radius:16px;background:linear-gradient(160deg,rgba(14,24,46,.72),rgba(8,15,32,.66));
-  border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2)}
-.lw-card h2{margin:0;font-size:24px;font-weight:600;letter-spacing:-.01em;color:#fff}
-.lw-sub{margin:6px 0 22px;font-size:13.5px;color:var(--lw-mut)}
-.lw-err{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,60,50,.16);border:1px solid rgba(240,120,110,.45);color:#ffd2cc;font-size:13px;line-height:1.4}
-.lw-field{display:flex;align-items:center;gap:10px;height:46px;margin-bottom:12px;padding:0 14px;border-radius:9px;color:#8fa0bd;background:rgba(3,8,20,.55);border:1px solid rgba(255,255,255,.13);transition:border-color .15s,box-shadow .15s,background .15s}
-.lw-field svg{width:18px;height:18px;flex:0 0 auto}
-.lw-field:hover{border-color:rgba(255,255,255,.24)}
-.lw-field:focus-within{border-color:rgba(90,160,255,.85);box-shadow:0 0 0 3px rgba(47,139,255,.16);background:rgba(3,8,20,.75);color:#a9c8f5}
-.lw .lw-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:#fff !important;font-family:inherit;font-size:14.5px;padding:0 !important;border-radius:0 !important}
-.lw-field input::placeholder{color:#7182a0}
-.lw-eye{border:0;background:transparent;color:#8fa0bd;cursor:pointer;display:flex;padding:4px;border-radius:6px}
-.lw-eye:hover{color:#fff}
-.lw-row{display:flex;justify-content:space-between;align-items:center;margin:4px 0 18px;font-size:12.5px}
-.lw-check{display:flex;align-items:center;gap:8px;cursor:pointer;color:#c9d3e6;white-space:nowrap}
-.lw-check input{position:absolute;opacity:0;pointer-events:none}
-.lw-check .bx{width:17px;height:17px;border-radius:4px;border:1.5px solid rgba(255,255,255,.35);display:flex;align-items:center;justify-content:center;background:rgba(3,8,20,.4)}
-.lw-check input:checked + .bx{background:var(--lw-blue-d);border-color:var(--lw-blue-d)}
-.lw-check input:checked + .bx::after{content:"";width:35%;height:60%;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-8%) rotate(45deg)}
-.lw-check input:focus-visible + .bx{box-shadow:0 0 0 3px rgba(47,139,255,.3)}
-.lw-link{color:#7fb6ff;cursor:pointer;white-space:nowrap}
-.lw-link:hover{color:#b3d3ff}
-.lw-btn{width:100%;height:46px;border:0;border-radius:9px;background:linear-gradient(180deg,#2f86ff,#0a5fe8);color:#fff;font-family:inherit;font-size:14.5px;font-weight:600;letter-spacing:.01em;cursor:pointer;
-  box-shadow:0 10px 26px rgba(10,103,242,.4),inset 0 1px 0 rgba(255,255,255,.25);transition:filter .15s,transform .1s}
-.lw-btn:hover{filter:brightness(1.1)}
-.lw-btn:active{transform:translateY(1px)}
-.lw-btn:focus-visible{outline:3px solid rgba(90,160,255,.45);outline-offset:2px}
-.lw-wait{text-align:center;padding:44px 28px}
-.lw-wait .lw-sub{margin:6px 0 0}
-.lw-spin{width:32px;height:32px;margin:0 auto 18px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:var(--lw-blue);animation:lwSpin .8s linear infinite}
-.lw-foot{position:absolute;z-index:2;left:clamp(24px,6.5vw,120px);bottom:22px;font-size:12px;letter-spacing:.08em;color:rgba(200,212,232,.6)}
-.lw-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;max-width:min(520px,calc(100vw - 32px));padding:12px 18px;border-radius:9px;background:rgba(8,15,32,.94);border:1px solid rgba(255,255,255,.14);color:#fff;font-size:14px;line-height:1.45;box-shadow:0 12px 30px rgba(0,0,0,.4)}
-.lw-toast.err{background:#7d1a12;border-color:#c55a50}
-@keyframes lwUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
-@keyframes lwWrite{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 -10% 0 0)}}
-@keyframes lwSweep{0%,55%{background-position:120% 0}100%{background-position:-120% 0}}
-@keyframes lwZoom{from{transform:scale(1.02)}to{transform:scale(1.13) translate(-1.2%,-.8%)}}
-@keyframes lwSpin{to{transform:rotate(360deg)}}
-@media (max-width:900px){
-  .lw-head{position:relative;top:auto;left:auto;z-index:3;padding:22px 22px 0;text-align:center}
-  .lw-lockup .lp2-logo{justify-content:center}
-  .lw-tag{letter-spacing:.18em}
-  .lw-sig span{transform-origin:center}
-  .lw-main{grid-template-columns:1fr;align-content:start;min-height:0;gap:26px;padding:22px 22px 64px}
-  .lw-hero{padding-top:0;text-align:center;max-width:none}
-  .lw-hero h1{white-space:normal;font-size:clamp(30px,8vw,44px)}
-  .lw-lead{margin-left:auto;margin-right:auto}
-  .lw-motto{justify-content:center}
-  .lw-side{justify-content:center}
-  .lw-shade{background:linear-gradient(180deg,rgba(5,11,24,.88),rgba(5,11,24,.66) 45%,rgba(5,11,24,.92))}
-  .lw-foot{left:0;right:0;text-align:center}
+.axl{
+  --axiom-navy:#020b18;--axiom-navy-2:#06152a;--axiom-blue:#087cff;--axiom-blue-bright:#168cff;--axiom-blue-glow:#006eff;--axiom-white:#f7f9fc;--axiom-muted:#a7b4c8;--axiom-border:rgba(130,170,220,.22);
+  --pad-x:clamp(20px,6.2vw,112px);
+  position:relative;min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;color:var(--axiom-white);background:radial-gradient(90% 80% at 62% 45%,var(--axiom-navy-2) 0%,var(--axiom-navy) 70%);
+  font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.axl *{box-sizing:border-box}
+.axl-bg{position:absolute;inset:0;pointer-events:none}
+.axl-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,11,24,.55) 0%,rgba(2,11,24,0) 42%,rgba(2,11,24,0) 78%,rgba(2,11,24,.5) 100%),radial-gradient(120% 90% at 50% 50%,rgba(2,11,24,0) 55%,rgba(2,11,24,.7) 100%)}
+.axl-geo{position:absolute;inset:0;width:100%;height:100%}
+.axl-head,.axl-main,.axl-foot{position:relative;z-index:2}
+.axl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,7.4vh,80px) calc(var(--pad-x) - 1.3vw) 0 var(--pad-x)}
+.axl-lockup .lp2-logo{display:flex;align-items:flex-start;gap:clamp(3px,.4vw,7px)}
+.axl-lockup .lp2-mark{width:clamp(52px,5.6vw,100px);height:clamp(43px,4.7vw,83px);display:block;flex:0 0 auto}
+.axl-lockup .lp2-xiom{font-size:clamp(36px,4.4vw,78px);font-weight:800;letter-spacing:.14em;line-height:1;margin:clamp(5px,.6vw,12px) 0 0 -.02em;color:#fff}
+.axl-desc,.axl-sig{margin-left:calc(clamp(52px,5.6vw,100px) + clamp(3px,.4vw,7px))}
+.axl-desc{margin-top:clamp(6px,.9vh,10px);margin-bottom:0;font-size:clamp(9.5px,.74vw,13px);letter-spacing:.2em;text-transform:uppercase;color:#c4d0e4;font-weight:500}
+.axl-sig{margin-top:clamp(6px,1vh,12px)}
+.axl-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(26px,2.3vw,40px);line-height:1.1;color:#e6efff;padding:.16em .2em .06em 0;word-spacing:.2em;
+  transform:rotate(-1.5deg);transform-origin:left center;clip-path:inset(0 100% 0 0);animation:axlWrite 1.9s cubic-bezier(.55,.1,.25,1) .5s forwards}
+.axl-nav{display:flex;align-items:center;gap:clamp(10px,1.35vw,24px);margin-top:clamp(0px,.4vh,6px);font-size:clamp(9px,.68vw,12px);letter-spacing:.2em;text-transform:uppercase;color:#dfe8f7;font-weight:500;white-space:nowrap}
+.axl-nav i{width:1px;height:1.7em;background:rgba(255,255,255,.55)}
+.axl-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:center;gap:clamp(24px,4vw,72px);padding:0 var(--pad-x)}
+.axl-hero{max-width:clamp(360px,46vw,720px);position:relative;top:-3.4vh}
+.axl-label{display:flex;align-items:center;gap:clamp(12px,1.4vw,26px);font-size:clamp(10px,.82vw,14.5px);letter-spacing:.26em;text-transform:uppercase;color:#e4ecf9;font-weight:500}
+.axl-label i{display:block;width:clamp(30px,2.9vw,52px);height:3px;background:var(--axiom-blue);border-radius:2px}
+.axl-hero h1{margin:clamp(14px,2.6vh,28px) 0 0;font-size:clamp(30px,2.6vw,48px);line-height:1.02;font-weight:800;letter-spacing:-.025em;color:#fff}
+.axl-hero h1 em{font-style:normal;color:var(--axiom-blue)}
+.axl-lead{margin:clamp(12px,2vh,22px) 0 0;max-width:30em;font-size:clamp(13.5px,1.1vw,19px);line-height:1.5;color:#c9d5e8}
+.axl-feats{display:flex;margin-top:clamp(18px,3.4vh,42px)}
+.axl-feat{width:clamp(92px,8.3vw,150px);padding:0 clamp(8px,1vw,18px);text-align:center;border-left:1px solid rgba(255,255,255,.17)}
+.axl-feat:first-child{border-left:0;padding-left:0}
+.axl-feat .ic{display:block;color:var(--axiom-blue-bright);margin:0 auto clamp(6px,.9vh,10px)}
+.axl-feat .ic svg{width:clamp(22px,2vw,34px);height:clamp(22px,2vw,34px);display:block;margin:0 auto}
+.axl-feat b{display:block;font-size:clamp(11px,.82vw,14px);font-weight:600;color:#fff}
+.axl-feat em{display:block;margin-top:4px;font-style:normal;font-size:clamp(10px,.72vw,12.5px);line-height:1.4;color:#b8c6dc}
+.axl-side{display:flex;justify-content:flex-end;position:relative;top:-8.4vh}
+.axl-card{width:clamp(320px,26.2vw,470px);padding:clamp(20px,2.2vw,38px) clamp(20px,2.1vw,36px) clamp(16px,1.9vw,30px);border-radius:16px;background:rgba(5,18,40,.6);border:1px solid rgba(100,160,255,.28);
+  box-shadow:0 0 0 1px rgba(8,124,255,.05),0 24px 70px rgba(0,8,26,.55),0 0 46px rgba(8,124,255,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.axl-card h2{margin:0;font-size:clamp(22px,1.75vw,31px);font-weight:700;letter-spacing:-.015em;color:#fff}
+.axl-sub{margin:clamp(5px,.7vh,9px) 0 clamp(16px,2.6vh,28px);font-size:clamp(12.5px,.96vw,17px);color:#d6e0f0}
+.axl-err{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,60,50,.16);border:1px solid rgba(240,120,110,.45);color:#ffd2cc;font-size:13px;line-height:1.4}
+.axl-field{display:flex;align-items:center;gap:12px;height:clamp(42px,3.4vw,54px);margin-bottom:clamp(10px,1.6vh,18px);padding:0 clamp(12px,1vw,18px);border-radius:8px;color:#dbe6f6;background:rgba(2,11,26,.55);border:1px solid var(--axiom-border);transition:border-color .15s,box-shadow .15s}
+.axl-field svg{width:clamp(16px,1.3vw,22px);height:clamp(16px,1.3vw,22px);flex:0 0 auto}
+.axl-field:hover{border-color:rgba(150,190,240,.4)}
+.axl-field:focus-within{border-color:rgba(60,150,255,.9);box-shadow:0 0 0 3px rgba(8,124,255,.18)}
+.axl .axl-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:#fff !important;font-family:inherit;font-size:clamp(13.5px,1.02vw,17px);padding:0 !important;border-radius:0 !important}
+.axl-field input::placeholder{color:#c6d3e8}
+.axl-eye{border:0;background:transparent;color:#dbe6f6;cursor:pointer;display:flex;padding:4px;border-radius:6px}
+.axl-eye:hover{color:#fff}
+.axl-row{display:flex;justify-content:space-between;align-items:center;margin:2px 0 clamp(14px,2.2vh,24px);font-size:clamp(12px,.9vw,15.5px)}
+.axl-check{display:flex;align-items:center;gap:10px;cursor:pointer;color:#eef3fb;white-space:nowrap}
+.axl-check input{position:absolute;opacity:0;pointer-events:none}
+.axl-check .bx{width:clamp(16px,1.35vw,22px);height:clamp(16px,1.35vw,22px);border-radius:4px;border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;background:rgba(2,11,26,.4)}
+.axl-check input:checked + .bx{background:var(--axiom-blue);border-color:var(--axiom-blue)}
+.axl-check input:checked + .bx::after{content:"";width:35%;height:60%;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-8%) rotate(45deg)}
+.axl-check input:focus-visible + .bx{box-shadow:0 0 0 3px rgba(8,124,255,.35)}
+.axl-link{color:#3d9bff;cursor:pointer;white-space:nowrap}
+.axl-link:hover{color:#7dbbff}
+.axl-btn{width:100%;height:clamp(44px,3.7vw,60px);border:0;border-radius:9px;background:linear-gradient(180deg,#1690ff,#0a6ff0);color:#fff;font-family:inherit;font-size:clamp(14px,1.1vw,19px);font-weight:700;cursor:pointer;
+  box-shadow:0 8px 26px rgba(8,124,255,.42),inset 0 1px 0 rgba(255,255,255,.25);transition:filter .15s,transform .1s}
+.axl-btn:hover{filter:brightness(1.1)}
+.axl-btn:active{transform:translateY(1px)}
+.axl-btn:focus-visible{outline:3px solid rgba(90,170,255,.5);outline-offset:2px}
+.axl-or{display:flex;align-items:center;gap:14px;margin:clamp(16px,2.6vh,28px) 0 clamp(12px,2vh,22px);font-size:clamp(11.5px,.88vw,15px);color:#dbe6f6}
+.axl-or::before,.axl-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.22)}
+.axl-ben{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.axl-ben div{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1vh,10px);font-size:clamp(11px,.86vw,15px);line-height:1.35;color:#e8eef9}
+.axl-ben svg{width:clamp(20px,1.7vw,30px);height:clamp(20px,1.7vw,30px);color:#e8f1ff}
+.axl-wait{text-align:center;padding:48px 28px}
+.axl-wait .axl-sub{margin:6px 0 0}
+.axl-spin{width:32px;height:32px;margin:0 auto 18px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:var(--axiom-blue);animation:axlSpin .8s linear infinite}
+.axl-foot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:clamp(12px,2vh,24px) calc(var(--pad-x) - 1.3vw) clamp(14px,5.2vh,56px) var(--pad-x)}
+.axl-trust{display:flex;align-items:center;flex-wrap:wrap}
+.axl-t{display:flex;align-items:center;gap:9px;white-space:nowrap;font-size:clamp(10px,.76vw,13.5px);color:#dfe8f7;padding:0 clamp(12px,1.45vw,26px);border-left:1px solid rgba(255,255,255,.22)}
+.axl-t:first-child{padding-left:0;border-left:0}
+.axl-t svg{width:clamp(16px,1.5vw,26px);height:clamp(16px,1.5vw,26px);color:#fff;flex:0 0 auto}
+.axl-tagline{display:flex;align-items:center;gap:clamp(12px,1.7vw,28px);font-size:clamp(9px,.7vw,12.5px);letter-spacing:.2em;text-transform:uppercase;color:#dbe6f6;white-space:nowrap}
+.axl-tagline i{display:block;width:clamp(28px,2.7vw,48px);height:3px;background:var(--axiom-blue);border-radius:2px}
+.axl-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;max-width:min(520px,calc(100vw - 32px));padding:12px 18px;border-radius:9px;background:rgba(6,21,42,.96);border:1px solid var(--axiom-border);color:#fff;font-size:14px;line-height:1.45;box-shadow:0 12px 30px rgba(0,0,0,.4)}
+.axl-toast.err{background:#7d1a12;border-color:#c55a50}
+@keyframes axlWrite{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 -10% 0 0)}}
+@keyframes axlSpin{to{transform:rotate(360deg)}}
+@media (max-width:1000px){
+  .axl{--pad-x:22px}
+  .axl-head{flex-direction:column;align-items:center;text-align:center;padding-top:22px}
+  .axl-lockup .lp2-logo{justify-content:center}
+  .axl-sig span{transform-origin:center}
+  .axl-nav{margin-top:14px}
+  .axl-main{grid-template-columns:1fr;align-content:start;gap:28px;padding-top:26px;padding-bottom:26px}
+  .axl-hero{max-width:none;text-align:center;top:0}
+  .axl-side{top:0}
+  .axl-desc,.axl-sig{margin-left:0}
+  .axl-label{justify-content:center}
+  .axl-lead{margin-left:auto;margin-right:auto}
+  .axl-feats{display:grid;grid-template-columns:1fr 1fr;gap:18px 0;justify-items:center}
+  .axl-feat{width:auto;border:0;padding:0 8px}
+  .axl-feat:nth-child(2n){border-left:1px solid rgba(255,255,255,.17)}
+  .axl-side{justify-content:center}
+  .axl-card{width:min(440px,100%)}
+  .axl-foot{flex-direction:column;align-items:center;gap:16px;text-align:center}
+  .axl-trust{justify-content:center;row-gap:10px}
+  .axl-geo{opacity:.6}
 }
-@media (prefers-reduced-motion:reduce){
-  .lw-bg,.lw-lockup,.lw-tag,.lw-sig,.lw-side,.lw-lockup .lp2-xiom,.lw-eyebrow,.lw-hero h1,.lw-lead,.lw-motto{animation:none !important}
-  .lw-sig span{clip-path:none !important;animation:none !important}
+@media (max-width:520px){
+  .axl-nav{gap:10px;letter-spacing:.14em}
+  .axl-t{padding:0 12px}
+  .axl-tagline{letter-spacing:.14em}
 }
+@media (prefers-reduced-motion:reduce){ .axl-sig span{animation:none !important;clip-path:none !important} }
 .demo-chip{white-space:nowrap;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
   padding:6px 14px;border-radius:999px;background:var(--rail);color:#fff;font-size:12px;box-shadow:var(--shadow);border:1px solid var(--warn)}
 .demo-chip .dc-dot{width:8px;height:8px;border-radius:50%;background:var(--warn);animation:bundlePulse 2s ease-in-out infinite}
@@ -2610,43 +2637,85 @@ function axMark(tone){
 function axLogo(tone){
   return `<div class="lp2-logo ${tone}" role="img" aria-label="AXIOM">${axMark(tone)}<span class="lp2-xiom">XIOM</span></div>`;
 }
+/* Decorative geometric "A" — pure SVG, no raster image. */
+function axGeoA(){
+  return `<svg class="axl-geo" viewBox="0 0 1774 887" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="gA1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b57c9" stop-opacity=".55"/><stop offset=".6" stop-color="#062a66" stop-opacity=".45"/><stop offset="1" stop-color="#020b18" stop-opacity=".1"/></linearGradient>
+      <linearGradient id="gA2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b7cff" stop-opacity=".95"/><stop offset="1" stop-color="#0a3d99" stop-opacity=".25"/></linearGradient>
+      <linearGradient id="gA3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a5fe8" stop-opacity="0"/><stop offset=".55" stop-color="#3b9bff"/><stop offset="1" stop-color="#bfe0ff"/></linearGradient>
+      <linearGradient id="gRail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1f86ff" stop-opacity="0"/><stop offset=".45" stop-color="#2f95ff" stop-opacity=".95"/><stop offset="1" stop-color="#1f86ff" stop-opacity="0"/></linearGradient>
+      <radialGradient id="gGlow" cx=".5" cy=".55" r=".55"><stop offset="0" stop-color="#0a5fe8" stop-opacity=".38"/><stop offset="1" stop-color="#0a5fe8" stop-opacity="0"/></radialGradient>
+      <filter id="fBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
+      <filter id="fSoft"><feGaussianBlur stdDeviation="2.2"/></filter>
+    </defs>
+    <ellipse cx="1000" cy="520" rx="640" ry="420" fill="url(#gGlow)"/>
+    <path fill-rule="evenodd" fill="url(#gA1)" d="M1036 52 L1420 887 H560 Z M1052 352 L1200 887 H830 Z"/>
+    <path fill="url(#gA2)" opacity=".55" d="M1036 52 L1190 250 L1140 330 L830 887 H700 Z"/>
+    <path fill="#0d47a8" opacity=".42" d="M1052 352 L1230 700 L1080 720 L960 610 Z"/>
+    <path d="M1036 52 L560 887" stroke="#2d8dff" stroke-width="2" fill="none" opacity=".9" filter="url(#fSoft)"/>
+    <path d="M1036 52 L1420 887" stroke="#1652b8" stroke-width="1.4" fill="none" opacity=".7"/>
+    <path fill="url(#gA3)" opacity=".95" d="M807 716 L1165 410 L1112 478 L960 690 Z"/>
+    <path fill="#66b3ff" opacity=".6" filter="url(#fBlur)" d="M807 716 L1150 420 L1090 505 Z"/>
+    <path d="M770 718 L1774 800" stroke="url(#gRail)" stroke-width="2.2" fill="none"/>
+    <path d="M840 730 L1774 850" stroke="url(#gRail)" stroke-width="1.2" fill="none" opacity=".7"/>
+    <path d="M1000 700 L1774 640" stroke="url(#gRail)" stroke-width="1" fill="none" opacity=".5"/>
+    <path d="M1120 40 L1774 -20" stroke="url(#gRail)" stroke-width="1" fill="none" opacity=".4"/>
+  </svg>`;
+}
 function axLanding(cardHtml){
-  return `<div class="lw">
-    <div class="lw-bg" role="img" aria-label="A Nissan dealership at dusk"></div>
-    <div class="lw-shade"></div>
-    <header class="lw-head" aria-label="AXIOM">
-      <div class="lw-lockup">${axLogo("light")}</div>
-      <p class="lw-tag">AI eXecutive Intelligence &amp; Operations Management</p>
-      <div class="lw-sig" aria-label="By Rahul Champaneri"><span>By Rahul Champaneri</span></div>
+  var feats = [
+    ["gear","F&amp;I Operations","Simplify. Automate.<br>Close Faster."],
+    ["bars","Performance","Real Data.<br>Real Growth."],
+    ["people","Team","Empower People.<br>Build Success."],
+    ["target","Growth","Drive More<br>Profitability."]
+  ].map(function(f){ return `<div class="axl-feat"><span class="ic">${axi(f[0])}</span><b>${f[1]}</b><em>${f[2]}</em></div>`; }).join("");
+  var trust = [["shield","Secure"],["bolt","Reliable"],["bars","Built for Dealers"],["people","Always Improving"]]
+    .map(function(t){ return `<span class="axl-t">${axi(t[0])}<span>${t[1]}</span></span>`; }).join("");
+  return `<div class="axl">
+    <div class="axl-bg" aria-hidden="true">${axGeoA()}</div>
+    <header class="axl-head">
+      <div class="axl-brand" aria-label="AXIOM">
+        <div class="axl-lockup">${axLogo("light")}</div>
+        <p class="axl-desc">AI eXecutive Intelligence &amp; Operations Management</p>
+        <div class="axl-sig" aria-label="By Rahul Champaneri"><span>By Rahul Champaneri</span></div>
+      </div>
+      <nav class="axl-nav" aria-label="Principles"><span>People</span><i></i><span>Process</span><i></i><span>Performance</span><i></i><span>Profit</span></nav>
     </header>
-    <main class="lw-main">
-      <section class="lw-hero">
-        <div class="lw-eyebrow">Dealership Command Center</div>
-        <h1>From the FSM's Mind<br>to the <em>FSM's Desk.</em></h1>
-        <p class="lw-lead">AXIOM brings the finance desk, the customer presentation and dealership reporting together in one intelligent command center — designed by an F&amp;I professional, for the people who close the deal.</p>
-        <div class="lw-motto"><i></i><span>See. Understand. Act.</span></div>
+    <main class="axl-main">
+      <section class="axl-hero">
+        <div class="axl-label"><span>Dealership Command Center</span><i></i></div>
+        <h1>Smarter Tools.<br><em>Stronger Dealerships.</em></h1>
+        <p class="axl-lead">Everything you need to manage F&amp;I, track performance and empower your team — in one place.</p>
+        <div class="axl-feats">${feats}</div>
       </section>
-      <section class="lw-side">${cardHtml}</section>
+      <section class="axl-side">${cardHtml}</section>
     </main>
-    <footer class="lw-foot">© ${new Date().getFullYear()} AXIOM</footer>
-    ${state.ui.toast ? `<div class="lw-toast ${state.ui.toast.kind==="err"?"err":""}" role="status">${esc(state.ui.toast.msg)}</div>` : ""}
+    <footer class="axl-foot">
+      <div class="axl-trust">${trust}</div>
+      <div class="axl-tagline"><i></i><span>Driving a brighter tomorrow.</span></div>
+    </footer>
+    ${state.ui.toast ? `<div class="axl-toast ${state.ui.toast.kind==="err"?"err":""}" role="status">${esc(state.ui.toast.msg)}</div>` : ""}
   </div>`;
 }
 function renderLogin(){
   var err = state.ui.loginError, checking = !!state.ui.authChecking;
   var remember = true; try { remember = localStorage.getItem("axiom_remember") !== "0"; } catch (e) {}
+  var benefits = `<div class="axl-ben"><div>${axi("shield")}<span>Secure<br>Access</span></div><div>${axi("people")}<span>Dealer<br>Focused</span></div><div>${axi("bars")}<span>Greater<br>Tomorrow</span></div></div>`;
   var card = checking
-    ? `<div class="lw-card lw-wait"><div class="lw-spin"></div><h2>Signing you in</h2><p class="lw-sub">Restoring your secure session…</p></div>`
-    : `<div class="lw-card">
-        <h2>Welcome back</h2>
-        <p class="lw-sub">Sign in to your Command Center</p>
-        ${err ? `<div class="lw-err" role="alert">${esc(err)}</div>` : ""}
-        <div class="lw-field">${axi("user")}<input type="text" id="loginEmail" placeholder="Email or username" autocomplete="username" spellcheck="false" aria-label="Email or username"></div>
-        <div class="lw-field">${axi("lock")}<input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" aria-label="Password">
-          <button type="button" class="lw-eye" data-act="toggle-pw" aria-label="Show or hide password">${axi("eye")}</button></div>
-        <div class="lw-row"><label class="lw-check"><input type="checkbox" id="loginRemember" ${remember ? "checked" : ""}><span class="bx"></span>Remember me</label>
-          <a class="lw-link" data-act="forgot-password">Forgot password?</a></div>
-        <button type="button" class="lw-btn" data-act="do-login">Sign in</button>
+    ? `<div class="axl-card axl-wait"><div class="axl-spin"></div><h2>Signing you in</h2><p class="axl-sub">Restoring your secure session…</p></div>`
+    : `<div class="axl-card">
+        <h2>Welcome Back</h2>
+        <p class="axl-sub">Sign in to your Command Center</p>
+        ${err ? `<div class="axl-err" role="alert">${esc(err)}</div>` : ""}
+        <div class="axl-field">${axi("user")}<input type="text" id="loginEmail" placeholder="Email or username" autocomplete="username" spellcheck="false" aria-label="Email or username"></div>
+        <div class="axl-field">${axi("lock")}<input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" aria-label="Password">
+          <button type="button" class="axl-eye" data-act="toggle-pw" aria-label="Show or hide password">${axi("eye")}</button></div>
+        <div class="axl-row"><label class="axl-check"><input type="checkbox" id="loginRemember" ${remember ? "checked" : ""}><span class="bx"></span>Remember me</label>
+          <a class="axl-link" data-act="forgot-password">Forgot password?</a></div>
+        <button type="button" class="axl-btn" data-act="do-login">Sign In</button>
+        <div class="axl-or"><span>or simply continue</span></div>
+        ${benefits}
       </div>`;
   return axLanding(card);
 }
@@ -3115,14 +3184,14 @@ setInterval(function(){
 }, 1000);
 function renderChangePassword(){
   var err = state.ui.pwError;
-  return axLanding(`<div class="lw-card">
+  return axLanding(`<div class="axl-card">
       <h2>Create your password</h2>
-      <p class="lw-sub">You signed in with a temporary password. Choose your own to continue.</p>
-      ${err ? `<div class="lw-err" role="alert">${esc(err)}</div>` : ""}
-      <div class="lw-field">${axi("lock")}<input type="password" id="newPw" placeholder="New password (8+ characters)" autocomplete="new-password" aria-label="New password"></div>
-      <div class="lw-field">${axi("lock")}<input type="password" id="newPw2" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password"></div>
-      <button type="button" class="lw-btn" data-act="do-change-password">Save and continue</button>
-      <div class="lw-row" style="justify-content:center;margin:16px 0 0"><a class="lw-link" data-act="logout">Sign out</a></div>
+      <p class="axl-sub">You signed in with a temporary password. Choose your own to continue.</p>
+      ${err ? `<div class="axl-err" role="alert">${esc(err)}</div>` : ""}
+      <div class="axl-field">${axi("lock")}<input type="password" id="newPw" placeholder="New password (8+ characters)" autocomplete="new-password" aria-label="New password"></div>
+      <div class="axl-field">${axi("lock")}<input type="password" id="newPw2" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password"></div>
+      <button type="button" class="axl-btn" data-act="do-change-password">Save and continue</button>
+      <div class="axl-row" style="justify-content:center;margin:16px 0 0"><a class="axl-link" data-act="logout">Sign out</a></div>
     </div>`);
 }
 function demoChip(){
