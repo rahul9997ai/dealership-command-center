@@ -6,7 +6,7 @@
 <title>Dealership Command Center — FSM Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
 /* ---- light (normal) mode: white + blue ---- */
 :root{
@@ -248,6 +248,64 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
+.lp{position:relative;min-height:max(100vh,780px);display:flex;flex-direction:column;overflow:hidden;color:#fff;background:#050b18;font-family:Inter,sans-serif}
+.lp-scene{position:absolute;inset:0;width:100%;height:100%}
+.lp-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,9,20,.86) 0%,rgba(4,9,20,.5) 38%,rgba(4,9,20,0) 62%),linear-gradient(180deg,rgba(4,9,20,.55) 0%,rgba(4,9,20,0) 22%)}
+.lp-head,.lp-main,.lp-quote,.lp-foot{position:relative;z-index:2}
+.lp-head{display:flex;align-items:center;gap:20px;padding:26px 56px 0;flex-wrap:wrap}
+.lp-brand{display:flex;align-items:center;gap:14px}
+.lp-word{font-size:46px;font-weight:800;letter-spacing:.09em;line-height:1}
+.lp-vr{width:1px;height:46px;background:rgba(255,255,255,.35);margin:0 6px}
+.lp-tag{font-size:15.5px;letter-spacing:.06em;line-height:1.35;color:#e6ecf7}
+.lp-sig{font-family:"Great Vibes",cursive;font-size:30px;color:#dfe7f5;letter-spacing:0;margin:2px 0 0 60px;line-height:1}
+.lp-trust{margin-left:auto;display:flex;gap:26px;font-size:13.5px;color:#dce4f2;align-self:flex-start;margin-top:8px}
+.lp-trust span{display:flex;align-items:center;gap:8px;padding-right:22px;border-right:1px solid rgba(255,255,255,.25)}
+.lp-trust span:last-child{border-right:0;padding-right:0}
+.lp-trust svg{color:#5aa2ff}
+.lp-main{flex:1;display:grid;grid-template-columns:1.05fr .95fr;gap:24px;padding:18px 56px 8px;align-items:start}
+.lp-eyebrow{font-size:12.5px;letter-spacing:.42em;color:#dbe4f3;margin:30px 0 12px}
+.lp-hero h1{font-size:clamp(44px,5vw,76px);line-height:.98;font-weight:800;letter-spacing:-.02em;margin:0 0 16px}
+.lp-hero h1 em{font-style:normal;color:var(--accent)}
+.lp-kick{font-size:16px;letter-spacing:.14em;font-weight:600}
+.lp-kick2{font-size:13px;letter-spacing:.28em;color:#c2cee2;margin:8px 0 22px}
+.lp-feats{display:flex;gap:16px}
+.lp-feats div{width:96px;text-align:center;font-size:11.5px;line-height:1.3;color:#e6ecf7}
+.lp-feats svg{display:block;margin:0 auto 6px;width:38px;height:38px;padding:8px;border-radius:9px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);color:var(--accent)}
+.lp-side{display:flex;justify-content:flex-end;align-items:center;padding-top:60px}
+.lp-card{width:min(390px,100%);padding:26px 26px 22px;border-radius:14px;background:rgba(14,22,40,.62);border:1px solid rgba(255,255,255,.16);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+.lp-card h2{font-size:33px;font-weight:800;margin:0 0 6px;letter-spacing:-.01em}
+.lp-sub{color:#dbe4f3;margin:0 0 18px;font-size:14.5px}
+.lp-err{margin:0 0 12px;padding:9px 12px;border-radius:8px;background:rgba(180,35,24,.25);border:1px solid rgba(240,137,127,.55);color:#ffd8d3;font-size:13px}
+.lp-field{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:0 14px;height:50px;border-radius:9px;background:rgba(238,242,248,.94);color:#4a5568}
+.lp-field input{flex:1;border:0;outline:0;background:transparent;font-size:15px;color:#0d1b2e;min-width:0}
+.lp-field input::placeholder{color:#6b778a}
+.lp-eye{border:0;background:transparent;color:#3b4557;cursor:pointer;display:flex;padding:0}
+.lp-row{display:flex;justify-content:space-between;margin:2px 0 14px;font-size:13px}
+.lp-row a{color:#7fb4ff;cursor:pointer}
+.lp-signin{width:100%;height:50px;border:0;border-radius:9px;background:var(--accent);color:#fff;font-size:16px;font-weight:700;cursor:pointer;
+  box-shadow:0 8px 22px rgba(0,0,0,.35);transition:filter .15s}
+.lp-signin:hover{filter:brightness(1.1)}
+.lp-note{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.16);text-align:center;font-size:12.5px;color:#dbe4f3}
+.lp-quote{display:flex;gap:12px;padding:0 56px 22px;font-size:15px;line-height:1.5;color:#e6ecf7;max-width:420px}
+.lp-quote .qb{width:3px;background:var(--accent);border-radius:2px}
+.lp-quote .qa{margin-top:6px}
+.lp-foot{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 56px;background:rgba(3,7,15,.92);font-size:12px;color:#c2cee2;letter-spacing:.02em}
+.lp-foot-mid{letter-spacing:.24em;font-size:11px;color:#dbe4f3}
+@media (min-aspect-ratio:8/5){
+  .lp-hero h1{font-size:clamp(40px,4.3vw,66px);margin-bottom:10px}
+  .lp-eyebrow{margin:16px 0 8px}.lp-kick2{margin:6px 0 14px}
+  .lp-side{padding-top:24px}
+}
+@media (max-width:980px){
+  .lp-head{padding:18px 20px 0}.lp-word{font-size:34px}.lp-tag{font-size:12px}.lp-sig{display:none}
+  .lp-trust{display:none}
+  .lp-main{grid-template-columns:1fr;padding:6px 20px 8px}
+  .lp-side{justify-content:center;padding-top:6px}
+  .lp-eyebrow{margin-top:14px}.lp-feats{display:none}.lp-quote{display:none}
+  .lp-shade{background:linear-gradient(180deg,rgba(4,9,20,.7),rgba(4,9,20,.45))}
+  .lp-foot{padding:12px 20px;flex-direction:column;text-align:center}.lp-foot-mid{display:none}
+}
 .demo-chip{white-space:nowrap;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
   padding:6px 14px;border-radius:999px;background:var(--rail);color:#fff;font-size:12px;box-shadow:var(--shadow);border:1px solid var(--warn)}
 .demo-chip .dc-dot{width:8px;height:8px;border-radius:50%;background:var(--warn);animation:bundlePulse 2s ease-in-out infinite}
@@ -1944,6 +2002,7 @@ function viewDealerships(){
       <td><span class="tag ${d.active?"ok":"danger"}">${d.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
         <button class="btn sm ${d.id===state.activeDealershipId?"on":""}" data-act="switch-to-dealership" data-dealership="${d.id}">${d.id===state.activeDealershipId?"Current":"Open"}</button>
+        <button class="btn sm" data-act="dealer-link" data-dealership="${d.id}" title="Copy a login link that opens this brand's sign-in page">Login link</button>
         <button class="btn sm" data-act="dealer-edit" data-dealership="${d.id}">Edit</button>
         <button class="btn sm danger" data-act="dealer-delete" data-dealership="${d.id}" ${state.dealerships.length<=1?"disabled":""}>Delete</button>
       </td></tr>`;
@@ -2498,41 +2557,172 @@ function axiomGlobeSvg(){
     ${dotSvg}
   </svg>`;
 }
+/* ---------------- BRAND LANDING PAGE ----------------
+   The sign-in page shows the dealership's brand: building sign, accent colour
+   and its vehicle line-up. It's chosen from ?brand=xxx in the link, else the
+   brand this device last signed in to, else Nissan. Each entry below is all a
+   new brand needs. A real photograph can replace the drawn scene by dropping
+   assets/brands/<key>.jpg (or .webp) in the repo and setting photo:true. */
+var LANDING = {
+  nissan:   { accent:"#1f7bff", top:"INNOVATION DRIVES PEOPLE FURTHER", bottom:"MOVING A BRIGHTER TOMORROW",
+              cars:[ {n:"ROGUE",t:"suv",c:"#8a929c"}, {n:"ALTIMA",t:"sedan",c:"#b3202b"}, {n:"KICKS",t:"suv",c:"#e7eaee"} ] },
+  infiniti: { accent:"#7a8fd8", top:"POWER. PRECISION. PRESENCE.", bottom:"INSPIRED PERFORMANCE",
+              cars:[ {n:"QX50",t:"suv",c:"#3a4150"}, {n:"Q50",t:"sedan",c:"#aab2bf"}, {n:"QX60",t:"suv",c:"#e4e7ec"} ] },
+  toyota:   { accent:"#ff2a3d", top:"DRIVEN BY TRUST", bottom:"LET'S GO PLACES",
+              cars:[ {n:"RAV4",t:"suv",c:"#c9ccd2"}, {n:"CAMRY",t:"sedan",c:"#b3202b"}, {n:"TACOMA",t:"truck",c:"#39424f"} ] },
+  honda:    { accent:"#ff3b3b", top:"DREAM. DRIVE. DELIVER.", bottom:"THE POWER OF PEOPLE",
+              cars:[ {n:"CR-V",t:"suv",c:"#2f4a7a"}, {n:"CIVIC",t:"sedan",c:"#e4e7ec"}, {n:"PILOT",t:"suv",c:"#7a7f88"} ] },
+  ford:     { accent:"#3f8cff", top:"BUILT FOR THE ROAD AHEAD", bottom:"TOUGH. TRUSTED. READY.",
+              cars:[ {n:"ESCAPE",t:"suv",c:"#b3202b"}, {n:"F-150",t:"truck",c:"#2b3a55"}, {n:"EXPLORER",t:"suv",c:"#d6d9de"} ] },
+  hyundai:  { accent:"#4d8fe6", top:"NEW THINKING. NEW POSSIBILITIES.", bottom:"PROGRESS FOR HUMANITY",
+              cars:[ {n:"TUCSON",t:"suv",c:"#8f98a3"}, {n:"ELANTRA",t:"sedan",c:"#e4e7ec"}, {n:"PALISADE",t:"suv",c:"#26324a"} ] },
+  kia:      { accent:"#ff4a5e", top:"MOVEMENT THAT INSPIRES", bottom:"POWER TO SURPRISE",
+              cars:[ {n:"SPORTAGE",t:"suv",c:"#4a5568"}, {n:"K5",t:"sedan",c:"#b3202b"}, {n:"TELLURIDE",t:"suv",c:"#d9dce1"} ] },
+  chevrolet:{ accent:"#e0b040", top:"FIND NEW ROADS", bottom:"DRIVEN TO PERFORM",
+              cars:[ {n:"EQUINOX",t:"suv",c:"#d9dce1"}, {n:"SILVERADO",t:"truck",c:"#2f4a7a"}, {n:"BLAZER",t:"suv",c:"#b3202b"} ] },
+  mazda:    { accent:"#d5d9e2", top:"DRIVE TOGETHER", bottom:"CRAFTED FOR THE DRIVER",
+              cars:[ {n:"CX-5",t:"suv",c:"#a3212e"}, {n:"MAZDA3",t:"sedan",c:"#7b8390"}, {n:"CX-30",t:"suv",c:"#e4e7ec"} ] },
+  bmw:      { accent:"#3d8bff", top:"THE ULTIMATE DRIVING MACHINE", bottom:"PRECISION IN MOTION",
+              cars:[ {n:"X3",t:"suv",c:"#e4e7ec"}, {n:"3 SERIES",t:"sedan",c:"#2f3f6a"}, {n:"X5",t:"suv",c:"#3a3f48"} ] }
+};
+function landingBrandKey(){
+  var k = null;
+  try { k = new URLSearchParams(location.search).get("brand"); } catch (e) {}
+  if (window.__LP_BRAND__) k = window.__LP_BRAND__;
+  if (!k || !LANDING[k]){ try { k = localStorage.getItem("axiom_brand"); } catch (e) { k = null; } }
+  return (k && LANDING[k]) ? k : "nissan";
+}
+var CAR_SHAPES = {
+  sedan: { body:"M6 92 C6 80 14 74 34 70 L78 62 C92 46 108 36 132 34 L184 34 C208 34 228 46 244 62 L272 68 C290 72 296 82 296 92 Z",
+           glass:"M96 60 C106 46 116 40 134 38 L182 38 C198 38 212 48 226 62 Z" },
+  suv:   { body:"M6 94 C6 78 16 70 36 66 L64 60 L92 30 C98 24 108 22 120 22 L214 22 C228 22 236 28 244 40 L256 62 L272 66 C290 70 296 80 296 94 Z",
+           glass:"M84 58 L100 34 L212 34 L240 58 Z" },
+  truck: { body:"M6 94 L6 76 C6 70 12 66 24 64 L60 62 L88 30 C94 24 104 22 116 22 L152 22 C162 22 168 28 172 36 L180 62 L296 62 L296 94 Z",
+           glass:"M92 58 L106 34 L150 34 L162 58 Z" }
+};
+function landingCar(x, y, sc, car, i){
+  var sh = CAR_SHAPES[car.t] || CAR_SHAPES.sedan, id = "c" + i;
+  return `<g transform="translate(${x},${y}) scale(${sc})">
+    <ellipse cx="150" cy="104" rx="150" ry="9" fill="#000" opacity=".55"/>
+    <defs><linearGradient id="${id}p" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${car.c}"/><stop offset="1" stop-color="#000" stop-opacity=".55"/></linearGradient>
+      <linearGradient id="${id}s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff" stop-opacity=".38"/><stop offset=".45" stop-color="#fff" stop-opacity="0"/></linearGradient>
+      <linearGradient id="${id}g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#7fa6d8" stop-opacity=".85"/><stop offset="1" stop-color="#0b1220"/></linearGradient>
+      <radialGradient id="${id}h"><stop offset="0" stop-color="#fff"/><stop offset="1" stop-color="#8fd0ff" stop-opacity="0"/></radialGradient></defs>
+    <path d="${sh.body}" fill="${car.c}"/><path d="${sh.body}" fill="url(#${id}p)"/><path d="${sh.body}" fill="url(#${id}s)"/>
+    <path d="${sh.glass}" fill="url(#${id}g)"/>
+    <line x1="14" y1="80" x2="288" y2="80" stroke="#000" stroke-opacity=".28" stroke-width="1.5"/>
+    <ellipse cx="288" cy="76" rx="16" ry="9" fill="url(#${id}h)"/><rect x="284" y="72" width="12" height="5" rx="2" fill="#fff"/>
+    <rect x="6" y="74" width="7" height="6" rx="2" fill="#ff3b3b"/>
+    <g><circle cx="72" cy="96" r="25" fill="#05070c"/><circle cx="72" cy="96" r="17" fill="#1a1f29"/><circle cx="72" cy="96" r="10" fill="#8b93a1"/><circle cx="72" cy="96" r="3" fill="#2a303c"/>
+       <circle cx="232" cy="96" r="25" fill="#05070c"/><circle cx="232" cy="96" r="17" fill="#1a1f29"/><circle cx="232" cy="96" r="10" fill="#8b93a1"/><circle cx="232" cy="96" r="3" fill="#2a303c"/></g>
+  </g>
+  <g transform="translate(${x + 150*sc},${y + 126*sc})"><rect x="-38" y="-9" width="76" height="17" rx="4" fill="#0a0f1a" stroke="#fff" stroke-opacity=".35"/>
+    <text x="0" y="4" text-anchor="middle" font-family="Inter,sans-serif" font-size="10" font-weight="700" fill="#fff" letter-spacing=".08em">${esc(car.n)}</text></g>`;
+}
+function landingScene(key){
+  var L = LANDING[key], b = D.BRANDS[key] || D.BRANDS.nissan, word = b.label.toUpperCase();
+  var panes = "";
+  for (var r=0; r<3; r++) for (var c=0; c<6; c++){
+    var x0 = 690 + c*52, y0 = 452 + r*74 - c*7;
+    panes += `<path d="M${x0} ${y0} L${x0+46} ${y0-6} L${x0+46} ${y0+62} L${x0} ${y0+68} Z" fill="url(#lpGlow)" opacity="${.62 + ((r+c)%3)*.12}"/>`;
+  }
+  var cars = landingCar(-30, 645, 1.35, L.cars[0], 1) + landingCar(330, 632, 1.5, L.cars[1], 2) + landingCar(720, 640, 1.4, L.cars[2], 3);
+  var motto = L.top.split(" ");
+  var lines = [], cur = "";
+  motto.forEach(function(w){ if ((cur + " " + w).trim().length > 15){ lines.push(cur.trim()); cur = w; } else cur += " " + w; });
+  if (cur.trim()) lines.push(cur.trim());
+  var mottoSvg = lines.slice(0,4).map(function(t, i){ return `<text x="1330" y="${186 + i*30}" font-size="24" letter-spacing=".1em" fill="#c3cad6" opacity=".7" font-family="Inter,sans-serif" font-weight="500" transform="rotate(-11 1330 ${186 + i*30})">${esc(t)}</text>`; }).join("");
+  var bot = L.bottom.split(" "), bl = [], bc = "";
+  bot.forEach(function(w){ if ((bc + " " + w).trim().length > 12){ bl.push(bc.trim()); bc = w; } else bc += " " + w; });
+  if (bc.trim()) bl.push(bc.trim());
+  var botSvg = bl.slice(0,3).map(function(t, i){ return `<text x="1395" y="${748 + i*26}" font-size="21" letter-spacing=".1em" fill="#d3d9e3" opacity=".8" font-family="Inter,sans-serif" font-weight="500" transform="rotate(4 1395 ${748 + i*26})">${esc(t)}</text>`; }).join("");
+  return `<svg class="lp-scene" viewBox="0 0 1536 1024" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="lpSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#040a17"/><stop offset=".32" stop-color="#0e1b38"/><stop offset=".5" stop-color="#252c52"/><stop offset=".62" stop-color="#5b4560"/><stop offset=".7" stop-color="#b06a4e"/></linearGradient>
+      <linearGradient id="lpWall" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#0d1526"/><stop offset="1" stop-color="#1a2439"/></linearGradient>
+      <linearGradient id="lpGlow" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffe3b0"/><stop offset="1" stop-color="#d28f4c"/></linearGradient>
+      <linearGradient id="lpGround" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#151d2e"/><stop offset="1" stop-color="#03060c"/></linearGradient>
+      <radialGradient id="lpHalo" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#ffb46b" stop-opacity=".55"/><stop offset="1" stop-color="#ffb46b" stop-opacity="0"/></radialGradient>
+      <filter id="lpBlur"><feGaussianBlur stdDeviation="6"/></filter>
+    </defs>
+    <rect width="1536" height="1024" fill="url(#lpSky)"/>
+    <g fill="#0a1226" opacity=".9">${[0,60,120,200,260,330,400].map(function(x,i){ return `<rect x="${x}" y="${470 - (i%3)*26}" width="${44 + (i%2)*20}" height="${120 + (i%3)*26}"/>`; }).join("")}</g>
+    <ellipse cx="240" cy="640" rx="360" ry="120" fill="url(#lpHalo)"/>
+    <polygon points="500,330 1440,138 1440,720 500,720" fill="url(#lpWall)"/>
+    <polygon points="486,318 1440,124 1440,150 486,344" fill="#1d2840"/>
+    <text x="700" y="332" font-size="96" font-weight="800" letter-spacing=".06em" fill="#fff" font-family="Inter,sans-serif" transform="rotate(-11 700 332)" style="filter:drop-shadow(0 0 14px rgba(255,255,255,.55))">${esc(word)}</text>
+    <polygon points="672,478 1000,418 1000,706 672,706" fill="#080d19"/>
+    ${panes}
+    <g stroke="#0a0f1c" stroke-width="5" opacity=".9"><line x1="672" y1="478" x2="672" y2="706"/><line x1="782" y1="458" x2="782" y2="706"/><line x1="892" y1="438" x2="892" y2="706"/><line x1="1000" y1="418" x2="1000" y2="706"/></g>
+    <polygon points="1380,250 1536,222 1536,700 1380,700" fill="#3c4655"/>
+    <circle cx="1450" cy="392" r="50" fill="#0b1220" stroke="#fff" stroke-width="7"/>
+    <text x="1450" y="398" text-anchor="middle" font-size="19" font-weight="800" fill="#fff" font-family="Inter,sans-serif" letter-spacing=".04em">${esc(b.mark)}</text>
+    ${mottoSvg}
+    <polygon points="1372,706 1536,682 1536,872 1372,900" fill="#2c3542" opacity=".95"/>${botSvg}
+    <g fill="#0b2a21"><circle cx="1400" cy="668" r="34"/><circle cx="1452" cy="660" r="42"/><circle cx="1510" cy="672" r="38"/><circle cx="1420" cy="700" r="30"/>
+       <circle cx="18" cy="560" r="44"/><circle cx="70" cy="590" r="36"/><circle cx="8" cy="620" r="40"/></g>
+    <g fill="#ffcf8a" opacity=".85"><circle cx="1418" cy="672" r="3"/><circle cx="1460" cy="654" r="3"/><circle cx="1498" cy="676" r="3"/><circle cx="34" cy="574" r="3"/><circle cx="60" cy="600" r="3"/></g>
+    <rect y="704" width="1536" height="320" fill="url(#lpGround)"/>
+    <g opacity=".5" filter="url(#lpBlur)"><ellipse cx="840" cy="760" rx="220" ry="18" fill="#ffb46b"/><ellipse cx="1180" cy="790" rx="160" ry="12" fill="#ffb46b" opacity=".6"/></g>
+    <g stroke="#fff" stroke-opacity=".08"><line x1="0" y1="820" x2="1536" y2="800"/><line x1="0" y1="900" x2="1536" y2="880"/></g>
+    ${cars}
+  </svg>`;
+}
+function lpIcon(n){
+  var i = {
+    shield:'<path d="M12 2l8 3v6c0 5-3.4 9-8 11-4.6-2-8-6-8-11V5z" fill="currentColor"/><path d="M8.5 12l2.4 2.4L15.5 9.6" stroke="#0a1224" stroke-width="2" fill="none"/>',
+    bolt:'<path d="M13 2L4 14h6l-1 8 9-12h-6z" fill="currentColor"/>',
+    bars:'<rect x="4" y="12" width="3.4" height="8" fill="currentColor"/><rect x="10.3" y="7" width="3.4" height="13" fill="currentColor"/><rect x="16.6" y="3" width="3.4" height="17" fill="currentColor"/>',
+    people:'<circle cx="8" cy="8" r="3.2" fill="currentColor"/><circle cx="16.5" cy="8.5" r="2.7" fill="currentColor"/><path d="M2 20c0-3.6 2.7-6 6-6s6 2.4 6 6zM13.6 20c.2-2.2 1.6-4 3.6-4.6 2.6.2 4.8 2 4.8 4.6z" fill="currentColor"/>',
+    gear:'<circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2.5l1.6 2.6 3-.6.6 3 2.6 1.6-1.4 2.7 1.4 2.7-2.6 1.6-.6 3-3-.6L12 21.5l-1.6-2.6-3 .6-.6-3-2.6-1.6L5.6 12 4.2 9.3l2.6-1.6.6-3 3 .6z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>',
+    trend:'<path d="M3 17l6-6 4 4 8-9" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M15 6h6v6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>',
+    user:'<circle cx="12" cy="8" r="4" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    lock:'<rect x="5" y="10" width="14" height="11" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 10V7a4 4 0 018 0v3" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+    eye:'<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="12" cy="12" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/>'
+  }[n];
+  return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${i}</svg>`;
+}
 function renderLogin(){
-  var err = state.ui.loginError;
-  if (state.ui.authChecking) return `<div class="axiom-page"><div style="margin:auto;color:#cbd5e1;font-size:14px;letter-spacing:.08em">Checking your session…</div></div>`;
-  return `<div class="axiom-page">
-    <svg class="axiom-wave" viewBox="0 0 1440 300" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M0 200 C 240 260, 480 140, 720 190 S 1200 260, 1440 190" stroke="rgba(95,212,244,.35)" stroke-width="2" fill="none"/>
-      <path d="M0 240 C 260 180, 500 260, 760 220 S 1200 160, 1440 230" stroke="rgba(167,139,250,.28)" stroke-width="2" fill="none"/>
-    </svg>
-    <div class="axiom-grid">
-      <div class="axiom-left">
-        <div class="axiom-globe-wrap">${axiomGlobeSvg()}</div>
-        <div class="axiom-left-inner">
-          <div class="axiom-brandrow">${axiomMarkSvg(56)}</div>
-          <h1 class="axiom-word">AXIOM</h1>
-          <p class="axiom-tagline">AI eXecutive Intelligence &amp; Operations Management</p>
-          <p class="axiom-sig">by Rahul Champaneri</p>
-          <p class="axiom-slogan"><span class="s1">See.</span> <span class="s2">Understand.</span> <span class="s3">Act.</span></p>
-          <p class="axiom-sub">${axiomTargetSvg()}<span>From the FSM's Mind to the FSM's Desk.</span></p>
+  var err = state.ui.loginError, key = landingBrandKey(), L = LANDING[key], b = D.BRANDS[key] || D.BRANDS.nissan;
+  var checking = !!state.ui.authChecking;
+  var card = checking
+    ? `<div class="lp-card"><h2>Checking your session…</h2><p class="lp-sub">One moment while we sign you back in.</p></div>`
+    : `<div class="lp-card">
+        <h2>Welcome Back</h2><p class="lp-sub">Sign in to your AXIOM Command Center</p>
+        ${err ? `<div class="lp-err">${esc(err)}</div>` : ""}
+        <label class="lp-field">${lpIcon("user")}<input type="text" id="loginEmail" placeholder="Email or Username" autocomplete="username"></label>
+        <label class="lp-field">${lpIcon("lock")}<input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password">
+          <button type="button" class="lp-eye" data-act="toggle-pw" title="Show or hide password">${lpIcon("eye")}</button></label>
+        <div class="lp-row"><span></span><a data-act="forgot-password">Forgot password?</a></div>
+        <button type="button" class="lp-signin" data-act="do-login">Sign In</button>
+        <div class="lp-note">Access your dealership tools, reports and more.</div>
+      </div>`;
+  return `<div class="lp" style="--accent:${L.accent}">
+    ${landingScene(key)}
+    <div class="lp-shade"></div>
+    <header class="lp-head">
+      <div class="lp-brand">${axiomMarkSvg(58)}
+        <div class="lp-word">AXIOM</div><div class="lp-vr"></div>
+        <div class="lp-tag">AI eXecutive Intelligence<br>and Operations Management<div class="lp-sig">By Rahul Champaneri</div></div></div>
+      <div class="lp-trust"><span>${lpIcon("shield")}Secure</span><span>${lpIcon("bolt")}Fast</span><span>${lpIcon("bars")}Reliable</span><span>${lpIcon("people")}Built for Dealers</span></div>
+    </header>
+    <main class="lp-main">
+      <section class="lp-hero">
+        <div class="lp-eyebrow">DEALERSHIP COMMAND CENTER</div>
+        <h1>Drive<br>A Smarter<br><em>Tomorrow</em></h1>
+        <div class="lp-kick">AI-POWERED TOOLS. REAL RESULTS.</div>
+        <div class="lp-kick2">PEOPLE. PROCESS. PERFORMANCE. PROFIT.</div>
+        <div class="lp-feats">
+          <div>${lpIcon("gear")}<span>Streamline<br>F&amp;I Operations</span></div>
+          <div>${lpIcon("bars")}<span>Track<br>Performance</span></div>
+          <div>${lpIcon("people")}<span>Empower<br>Your Team</span></div>
+          <div>${lpIcon("trend")}<span>Drive<br>More Profit</span></div>
         </div>
-      </div>
-      <div class="axiom-right">
-        <div class="axiom-card">
-          <div class="axiom-card-brand">${axiomMarkSvg(42)}
-            <div><div class="nm">AXIOM</div><div class="tg">AI eXecutive Intelligence &amp; Operations Management</div><div class="sig">by Rahul Champaneri</div></div>
-          </div>
-          <h2>Sign in to AXIOM</h2>
-          <p class="sub">Access your intelligent operating platform.</p>
-          ${err ? `<div class="axiom-err">${esc(err)}</div>` : ""}
-          <div class="axiom-field"><label>Email</label><input type="text" id="loginEmail" placeholder="you@yourcompany.com" autocomplete="username"></div>
-          <div class="axiom-field"><label>Password</label><input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password"></div>
-          <div class="axiom-row"><a data-act="forgot-password">Forgot password?</a></div>
-          <button type="button" class="axiom-signin" data-act="do-login">Sign In</button>
-        </div>
-      </div>
-    </div>
+      </section>
+      <section class="lp-side">${card}</section>
+    </main>
+    <div class="lp-quote"><div class="qb"></div><div>“Better tools. Stronger teams.<br>Happier customers.”<div class="qa">— Rahul Champaneri</div></div></div>
+    <footer class="lp-foot"><span>© ${new Date().getFullYear()} AXIOM. All rights reserved.</span><span class="lp-foot-mid">INTELLIGENCE TODAY. STRONGER DEALERSHIPS TOMORROW.</span><span>${esc(b.label)} edition</span></footer>
   </div>`;
 }
 
@@ -2911,6 +3101,7 @@ function finishEnter(u){
   }
   state.route = (u.role === "Master Administrator" || u.role === "General Manager" || u.role === "FSM Manager") ? "dashboard" : "finance";
   if (state.tx && !V.isAdmin()) state.tx.fsmUserId = u.id;
+  try { if (state.config && state.config.brandKey) localStorage.setItem("axiom_brand", state.config.brandKey); } catch (e) {}
   var isDemo = !!(state.auth && state.auth.accessType === "demo"), isFirst = !!(state.auth && !state.auth.onboarded);
   state.ui.welcome = (isDemo || isFirst) ? { demo:isDemo, first:isFirst } : null;
   toast("Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
@@ -3363,6 +3554,17 @@ document.addEventListener("click", function(ev){
         .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "do-change-password": doChangePassword(); break;
+    case "toggle-pw": {
+      var pwi = document.getElementById("loginPassword");
+      if (pwi) pwi.type = pwi.type === "password" ? "text" : "password";
+      break; }
+    case "dealer-link": {
+      var dl = V.dealershipById(el.getAttribute("data-dealership"));
+      var link = location.origin + location.pathname + "?brand=" + dl.brandKey;
+      var copied = false;
+      try { if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(link); copied = true; } } catch (e) {}
+      toast(copied ? "Login link copied: " + link : "Login link: " + link, "ok");
+      break; }
     case "demo-ack": state.ui.welcome = null; maybeStartTour(); commit(); break;
     case "set-theme": state.ui.theme = el.getAttribute("data-theme"); commit(); break;
     case "tour-next": tourStep(1); break;
