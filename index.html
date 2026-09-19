@@ -258,11 +258,11 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,11,24,.55) 0%,rgba(2,11,24,0) 42%,rgba(2,11,24,0) 78%,rgba(2,11,24,.5) 100%),radial-gradient(120% 90% at 50% 50%,rgba(2,11,24,0) 55%,rgba(2,11,24,.7) 100%)}
 .axl-geo{position:absolute;inset:0;width:100%;height:100%}
 .axl-head,.axl-main,.axl-foot{position:relative;z-index:2}
-.axl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,7.4vh,80px) calc(var(--pad-x) - 1.3vw) 0 var(--pad-x)}
+.axl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,7.4vh,80px) var(--pad-x) 0 var(--pad-x)}
 .axl-lockup .lp2-logo{display:flex;align-items:flex-start;gap:clamp(3px,.4vw,7px)}
 .axl-lockup .lp2-mark{width:clamp(52px,5.6vw,100px);height:clamp(43px,4.7vw,83px);display:block;flex:0 0 auto}
 .axl-lockup .lp2-xiom{font-size:clamp(36px,4.4vw,78px);font-weight:800;letter-spacing:.14em;line-height:1;margin:clamp(5px,.6vw,12px) 0 0 -.02em;color:#fff}
-.axl-desc,.axl-sig{margin-left:calc(clamp(52px,5.6vw,100px) + clamp(3px,.4vw,7px))}
+.axl-desc,.axl-sig{margin-left:0}
 .axl-desc{margin-top:clamp(6px,.9vh,10px);margin-bottom:0;font-size:clamp(9.5px,.74vw,13px);letter-spacing:.2em;text-transform:uppercase;color:#c4d0e4;font-weight:500}
 .axl-sig{margin-top:clamp(6px,1vh,12px)}
 .axl-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(26px,2.3vw,40px);line-height:1.1;color:#e6efff;padding:.16em .2em .06em 0;word-spacing:.2em;
@@ -270,7 +270,7 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-nav{display:flex;align-items:center;gap:clamp(10px,1.35vw,24px);margin-top:clamp(0px,.4vh,6px);font-size:clamp(9px,.68vw,12px);letter-spacing:.2em;text-transform:uppercase;color:#dfe8f7;font-weight:500;white-space:nowrap}
 .axl-nav i{width:1px;height:1.7em;background:rgba(255,255,255,.55)}
 .axl-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:center;gap:clamp(24px,4vw,72px);padding:0 var(--pad-x)}
-.axl-hero{max-width:clamp(360px,46vw,720px);position:relative;top:-3.4vh}
+.axl-hero{max-width:clamp(360px,46vw,720px);position:relative;top:-2vh}
 .axl-label{display:flex;align-items:center;gap:clamp(12px,1.4vw,26px);font-size:clamp(10px,.82vw,14.5px);letter-spacing:.26em;text-transform:uppercase;color:#e4ecf9;font-weight:500}
 .axl-label i{display:block;width:clamp(30px,2.9vw,52px);height:3px;background:var(--axiom-blue);border-radius:2px}
 .axl-hero h1{margin:clamp(14px,2.6vh,28px) 0 0;font-size:clamp(30px,2.6vw,48px);line-height:1.02;font-weight:800;letter-spacing:-.025em;color:#fff}
@@ -283,7 +283,7 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-feat .ic svg{width:clamp(22px,2vw,34px);height:clamp(22px,2vw,34px);display:block;margin:0 auto}
 .axl-feat b{display:block;font-size:clamp(11px,.82vw,14px);font-weight:600;color:#fff}
 .axl-feat em{display:block;margin-top:4px;font-style:normal;font-size:clamp(10px,.72vw,12.5px);line-height:1.4;color:#b8c6dc}
-.axl-side{display:flex;justify-content:flex-end;position:relative;top:-8.4vh}
+.axl-side{display:flex;justify-content:flex-end;position:relative;top:-2vh}
 .axl-card{width:clamp(320px,26.2vw,470px);padding:clamp(20px,2.2vw,38px) clamp(20px,2.1vw,36px) clamp(16px,1.9vw,30px);border-radius:16px;background:rgba(5,18,40,.6);border:1px solid rgba(100,160,255,.28);
   box-shadow:0 0 0 1px rgba(8,124,255,.05),0 24px 70px rgba(0,8,26,.55),0 0 46px rgba(8,124,255,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
 .axl-card h2{margin:0;font-size:clamp(22px,1.75vw,31px);font-weight:700;letter-spacing:-.015em;color:#fff}
@@ -319,7 +319,7 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-wait{text-align:center;padding:48px 28px}
 .axl-wait .axl-sub{margin:6px 0 0}
 .axl-spin{width:32px;height:32px;margin:0 auto 18px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:var(--axiom-blue);animation:axlSpin .8s linear infinite}
-.axl-foot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:clamp(12px,2vh,24px) calc(var(--pad-x) - 1.3vw) clamp(14px,5.2vh,56px) var(--pad-x)}
+.axl-foot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:clamp(12px,2vh,24px) var(--pad-x) clamp(14px,5.2vh,56px) var(--pad-x)}
 .axl-trust{display:flex;align-items:center;flex-wrap:wrap}
 .axl-t{display:flex;align-items:center;gap:9px;white-space:nowrap;font-size:clamp(10px,.76vw,13.5px);color:#dfe8f7;padding:0 clamp(12px,1.45vw,26px);border-left:1px solid rgba(255,255,255,.22)}
 .axl-t:first-child{padding-left:0;border-left:0}
@@ -2650,17 +2650,14 @@ function axGeoA(){
       <filter id="fSoft"><feGaussianBlur stdDeviation="2.2"/></filter>
     </defs>
     <ellipse cx="1000" cy="520" rx="640" ry="420" fill="url(#gGlow)"/>
-    <path fill-rule="evenodd" fill="url(#gA1)" d="M1036 52 L1420 887 H560 Z M1052 352 L1200 887 H830 Z"/>
-    <path fill="url(#gA2)" opacity=".55" d="M1036 52 L1190 250 L1140 330 L830 887 H700 Z"/>
-    <path fill="#0d47a8" opacity=".42" d="M1052 352 L1230 700 L1080 720 L960 610 Z"/>
-    <path d="M1036 52 L560 887" stroke="#2d8dff" stroke-width="2" fill="none" opacity=".9" filter="url(#fSoft)"/>
-    <path d="M1036 52 L1420 887" stroke="#1652b8" stroke-width="1.4" fill="none" opacity=".7"/>
-    <path fill="url(#gA3)" opacity=".95" d="M807 716 L1165 410 L1112 478 L960 690 Z"/>
-    <path fill="#66b3ff" opacity=".6" filter="url(#fBlur)" d="M807 716 L1150 420 L1090 505 Z"/>
-    <path d="M770 718 L1774 800" stroke="url(#gRail)" stroke-width="2.2" fill="none"/>
-    <path d="M840 730 L1774 850" stroke="url(#gRail)" stroke-width="1.2" fill="none" opacity=".7"/>
-    <path d="M1000 700 L1774 640" stroke="url(#gRail)" stroke-width="1" fill="none" opacity=".5"/>
-    <path d="M1120 40 L1774 -20" stroke="url(#gRail)" stroke-width="1" fill="none" opacity=".4"/>
+    <path fill="url(#gA1)" d="M1060 60 L600 887 L880 887 L1060 330 Z"/>
+    <path fill="url(#gA2)" opacity=".55" d="M1060 60 L1060 330 L1240 887 L1520 887 Z"/>
+    <path fill="#1b7cff" opacity=".5" d="M1060 60 L600 887 L680 887 L1060 150 Z"/>
+    <path fill="url(#gA3)" opacity=".9" d="M930 640 L1190 640 L1225 720 L895 720 Z"/>
+    <path d="M1060 60 L600 887 M1060 60 L1520 887" stroke="#2d8dff" stroke-width="1.6" fill="none" opacity=".75"/>
+    <path d="M1060 330 L880 887 M1060 330 L1240 887" stroke="#2d8dff" stroke-width="1" fill="none" opacity=".45"/>
+    <path d="M700 800 L1774 840" stroke="url(#gRail)" stroke-width="1.6" fill="none" opacity=".8"/>
+    <path d="M800 850 L1774 870" stroke="url(#gRail)" stroke-width="1" fill="none" opacity=".5"/>
   </svg>`;
 }
 function axLanding(cardHtml){
