@@ -249,111 +249,110 @@ tbody tr:hover{background:var(--surface-2)}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
 .axl{
-  --axiom-navy:#020b18;--axiom-navy-2:#06152a;--axiom-blue:#087cff;--axiom-blue-bright:#168cff;--axiom-blue-glow:#006eff;--axiom-white:#f7f9fc;--axiom-muted:#a7b4c8;--axiom-border:rgba(130,170,220,.22);
-  --pad-x:clamp(20px,6.2vw,112px);
-  position:relative;min-height:100vh;display:grid;grid-template-rows:auto 1fr auto;overflow:hidden;color:var(--axiom-white);background:radial-gradient(90% 80% at 62% 45%,var(--axiom-navy-2) 0%,var(--axiom-navy) 70%);
+  --ink:#0b1b3a;--blue:#0a6cf0;--blue2:#1a86ff;--mut:#5a6b88;--line:#d9e3f1;
+  --padl:3.1vw;--padr:4vw;
+  position:relative;min-height:100vh;display:grid;grid-template-rows:1fr auto auto;overflow:hidden;color:var(--ink);
+  background:linear-gradient(115deg,#ffffff 0%,#f3f7fd 45%,#e4eefb 100%);
   font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
 .axl *{box-sizing:border-box}
 .axl-bg{position:absolute;inset:0;pointer-events:none}
-.axl-bg::after{content:"";position:absolute;inset:0;background:linear-gradient(90deg,rgba(2,11,24,.55) 0%,rgba(2,11,24,0) 42%,rgba(2,11,24,0) 78%,rgba(2,11,24,.5) 100%),radial-gradient(120% 90% at 50% 50%,rgba(2,11,24,0) 55%,rgba(2,11,24,.7) 100%)}
 .axl-geo{position:absolute;inset:0;width:100%;height:100%}
-.axl-head,.axl-main,.axl-foot{position:relative;z-index:2}
-.axl-head{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:clamp(18px,7.4vh,80px) var(--pad-x) 0 var(--pad-x)}
-.axl-lockup .lp2-logo{display:flex;align-items:flex-start;gap:clamp(3px,.4vw,7px)}
-.axl-lockup .lp2-mark{width:clamp(52px,5.6vw,100px);height:clamp(43px,4.7vw,83px);display:block;flex:0 0 auto}
-.axl-lockup .lp2-xiom{font-size:clamp(36px,4.4vw,78px);font-weight:800;letter-spacing:.14em;line-height:1;margin:clamp(5px,.6vw,12px) 0 0 -.02em;color:#fff}
-.axl-desc,.axl-sig{margin-left:0}
-.axl-desc{margin-top:clamp(6px,.9vh,10px);margin-bottom:0;font-size:clamp(9.5px,.74vw,13px);letter-spacing:.2em;text-transform:uppercase;color:#c4d0e4;font-weight:500}
-.axl-sig{margin-top:clamp(6px,1vh,12px)}
-.axl-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(26px,2.3vw,40px);line-height:1.1;color:#e6efff;padding:.16em .2em .06em 0;word-spacing:.2em;
-  transform:rotate(-1.5deg);transform-origin:left center;clip-path:inset(0 100% 0 0);animation:axlWrite 1.9s cubic-bezier(.55,.1,.25,1) .5s forwards}
-.axl-nav{display:flex;align-items:center;gap:clamp(10px,1.35vw,24px);margin-top:clamp(0px,.4vh,6px);font-size:clamp(9px,.68vw,12px);letter-spacing:.2em;text-transform:uppercase;color:#dfe8f7;font-weight:500;white-space:nowrap}
-.axl-nav i{width:1px;height:1.7em;background:rgba(255,255,255,.55)}
-.axl-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:center;gap:clamp(24px,4vw,72px);padding:0 var(--pad-x)}
-.axl-hero{max-width:clamp(360px,46vw,720px);position:relative;top:-2vh}
-.axl-label{display:flex;align-items:center;gap:clamp(12px,1.4vw,26px);font-size:clamp(10px,.82vw,14.5px);letter-spacing:.26em;text-transform:uppercase;color:#e4ecf9;font-weight:500}
-.axl-label i{display:block;width:clamp(30px,2.9vw,52px);height:3px;background:var(--axiom-blue);border-radius:2px}
-.axl-hero h1{margin:clamp(14px,2.6vh,28px) 0 0;font-size:clamp(30px,2.6vw,48px);line-height:1.02;font-weight:800;letter-spacing:-.025em;color:#fff}
-.axl-hero h1 em{font-style:normal;color:var(--axiom-blue)}
-.axl-lead{margin:clamp(12px,2vh,22px) 0 0;max-width:30em;font-size:clamp(13.5px,1.1vw,19px);line-height:1.5;color:#c9d5e8}
-.axl-feats{display:flex;margin-top:clamp(18px,3.4vh,42px)}
-.axl-feat{width:clamp(92px,8.3vw,150px);padding:0 clamp(8px,1vw,18px);text-align:center;border-left:1px solid rgba(255,255,255,.17)}
-.axl-feat:first-child{border-left:0;padding-left:0}
-.axl-feat .ic{display:block;color:var(--axiom-blue-bright);margin:0 auto clamp(6px,.9vh,10px)}
-.axl-feat .ic svg{width:clamp(22px,2vw,34px);height:clamp(22px,2vw,34px);display:block;margin:0 auto}
-.axl-feat b{display:block;font-size:clamp(11px,.82vw,14px);font-weight:600;color:#fff}
-.axl-feat em{display:block;margin-top:4px;font-style:normal;font-size:clamp(10px,.72vw,12.5px);line-height:1.4;color:#b8c6dc}
-.axl-side{display:flex;justify-content:flex-end;position:relative;top:-2vh}
-.axl-card{width:clamp(320px,26.2vw,470px);padding:clamp(20px,2.2vw,38px) clamp(20px,2.1vw,36px) clamp(16px,1.9vw,30px);border-radius:16px;background:rgba(5,18,40,.6);border:1px solid rgba(100,160,255,.28);
-  box-shadow:0 0 0 1px rgba(8,124,255,.05),0 24px 70px rgba(0,8,26,.55),0 0 46px rgba(8,124,255,.1);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
-.axl-card h2{margin:0;font-size:clamp(22px,1.75vw,31px);font-weight:700;letter-spacing:-.015em;color:#fff}
-.axl-sub{margin:clamp(5px,.7vh,9px) 0 clamp(16px,2.6vh,28px);font-size:clamp(12.5px,.96vw,17px);color:#d6e0f0}
-.axl-err{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:rgba(210,60,50,.16);border:1px solid rgba(240,120,110,.45);color:#ffd2cc;font-size:13px;line-height:1.4}
-.axl-field{display:flex;align-items:center;gap:12px;height:clamp(42px,3.4vw,54px);margin-bottom:clamp(10px,1.6vh,18px);padding:0 clamp(12px,1vw,18px);border-radius:8px;color:#dbe6f6;background:rgba(2,11,26,.55);border:1px solid var(--axiom-border);transition:border-color .15s,box-shadow .15s}
-.axl-field svg{width:clamp(16px,1.3vw,22px);height:clamp(16px,1.3vw,22px);flex:0 0 auto}
-.axl-field:hover{border-color:rgba(150,190,240,.4)}
-.axl-field:focus-within{border-color:rgba(60,150,255,.9);box-shadow:0 0 0 3px rgba(8,124,255,.18)}
-.axl .axl-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:#fff !important;font-family:inherit;font-size:clamp(13.5px,1.02vw,17px);padding:0 !important;border-radius:0 !important}
-.axl-field input::placeholder{color:#c6d3e8}
-.axl-eye{border:0;background:transparent;color:#dbe6f6;cursor:pointer;display:flex;padding:4px;border-radius:6px}
-.axl-eye:hover{color:#fff}
-.axl-row{display:flex;justify-content:space-between;align-items:center;margin:2px 0 clamp(14px,2.2vh,24px);font-size:clamp(12px,.9vw,15.5px)}
-.axl-check{display:flex;align-items:center;gap:10px;cursor:pointer;color:#eef3fb;white-space:nowrap}
+.axl-head,.axl-main,.axl-feats,.axl-foot{position:relative;z-index:2}
+.axl-head{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:3.4vh var(--padr) 0 var(--padl)}
+.axl-lockup .lp2-logo{display:flex;align-items:flex-start;gap:.9vw}
+.axl-lockup .lp2-mark{width:4.1vw;min-width:44px;height:auto;display:block;flex:0 0 auto}
+.axl-lockup .lp2-xiom{font-size:clamp(30px,3vw,56px);font-weight:600;letter-spacing:.16em;line-height:1;margin:.15vw 0 0;color:var(--ink)}
+.axl-desc{margin:-.3vw 0 0 5.05vw;font-size:clamp(8.5px,.72vw,13px);letter-spacing:.14em;text-transform:uppercase;color:#3b4d70;font-weight:500;white-space:nowrap}
+.axl-sig{margin-top:.2vh}
+.axl-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(28px,2.55vw,46px);line-height:1.1;color:var(--ink);padding:.16em .2em .06em 0;word-spacing:.2em;
+  clip-path:inset(0 100% 0 0);animation:axlWrite 1.9s cubic-bezier(.55,.1,.25,1) .5s forwards}
+.axl-nav{display:flex;align-items:center;gap:1.45vw;margin-top:.9vh;font-size:clamp(9px,.74vw,13px);letter-spacing:.24em;text-transform:uppercase;color:#2a3a5c;font-weight:500;white-space:nowrap}
+.axl-nav i{width:1px;height:2em;background:#c3cfe2}
+.axl-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:start;gap:3vw;padding:16.4vh 10.7vw 0 9.45vw}
+.axl-hero{padding-top:11vh;max-width:46vw}
+.axl-label{display:flex;align-items:center;gap:1.4vw;font-size:clamp(10px,.86vw,15.5px);letter-spacing:.3em;text-transform:uppercase;color:#2a3a5c;font-weight:500}
+.axl-label i{display:block;width:3.3vw;height:2px;background:var(--blue);border-radius:2px}
+.axl-hero h1{margin:4.4vh 0 0;font-size:clamp(30px,2.95vw,56px);line-height:1.08;font-weight:700;letter-spacing:-.035em;color:var(--ink)}
+.axl-hero h1 em{font-style:normal;color:var(--blue)}
+.axl-lead{margin:2.2vh 0 0;max-width:27em;font-size:clamp(14px,1.35vw,24px);line-height:1.28;color:#2f4062;font-weight:400}
+.axl-feats{display:flex;padding:0 var(--padr) 0 var(--padl);margin-top:1vh}
+.axl-feat{width:7.85vw;min-width:96px;padding:0 .6vw;text-align:center;border-left:1px solid var(--line)}
+.axl-feat:first-child{border-left:0}
+.axl-feat .ic{display:block;color:var(--blue);margin:0 auto .9vh}
+.axl-feat .ic svg{width:clamp(22px,1.95vw,36px);height:clamp(22px,1.95vw,36px);display:block;margin:0 auto}
+.axl-feat b{display:block;font-size:clamp(10.5px,.72vw,13px);font-weight:700;color:var(--ink);letter-spacing:-.01em}
+.axl-feat em{display:block;margin-top:.4vh;font-style:normal;font-size:clamp(9.5px,.64vw,12px);line-height:1.35;color:#5a6b88}
+.axl-side{display:flex;justify-content:flex-end}
+.axl-card{width:30.8vw;min-width:340px;padding:2.3vw 2.2vw 1.9vw;border-radius:1.1vw;background:#fff;border:1px solid rgba(200,215,235,.6);
+  box-shadow:0 1px 2px rgba(20,50,100,.04),0 18px 50px rgba(30,70,140,.12)}
+.axl-card h2{margin:0;font-size:clamp(22px,1.85vw,34px);font-weight:700;letter-spacing:-.03em;color:var(--ink)}
+.axl-sub{margin:.4vh 0 2.6vh;font-size:clamp(13px,1.05vw,19px);color:var(--ink);letter-spacing:-.01em}
+.axl-err{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fdecea;border:1px solid #f1a9a1;color:#a3261b;font-size:13px;line-height:1.4}
+.axl-field{display:flex;align-items:center;gap:.9vw;height:clamp(44px,3.5vw,64px);margin-bottom:1.6vh;padding:0 1vw;border-radius:.6vw;color:#4a5b7a;background:#f5f8fc;border:1px solid var(--line);transition:border-color .15s,box-shadow .15s}
+.axl-field svg{width:clamp(17px,1.4vw,26px);height:clamp(17px,1.4vw,26px);flex:0 0 auto}
+.axl-field:hover{border-color:#b9c9e0}
+.axl-field:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(10,108,240,.15);background:#fff}
+.axl .axl-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:var(--ink) !important;font-family:inherit;font-size:clamp(14px,1.08vw,20px);padding:0 !important;border-radius:0 !important}
+.axl-field input::placeholder{color:#4a5b7a;opacity:1}
+.axl-eye{border:0;background:transparent;color:#1f3157;cursor:pointer;display:flex;padding:4px;border-radius:6px}
+.axl-row{display:flex;justify-content:space-between;align-items:center;margin:1vh 0 2vh;font-size:clamp(12px,.95vw,17px)}
+.axl-check{display:flex;align-items:center;gap:.7vw;cursor:pointer;color:var(--ink);white-space:nowrap}
 .axl-check input{position:absolute;opacity:0;pointer-events:none}
-.axl-check .bx{width:clamp(16px,1.35vw,22px);height:clamp(16px,1.35vw,22px);border-radius:4px;border:1.5px solid rgba(255,255,255,.4);display:flex;align-items:center;justify-content:center;background:rgba(2,11,26,.4)}
-.axl-check input:checked + .bx{background:var(--axiom-blue);border-color:var(--axiom-blue)}
+.axl-check .bx{width:clamp(17px,1.5vw,26px);height:clamp(17px,1.5vw,26px);border-radius:4px;border:1.5px solid #9fb3d1;display:flex;align-items:center;justify-content:center;background:#fff}
+.axl-check input:checked + .bx{background:var(--blue);border-color:var(--blue)}
 .axl-check input:checked + .bx::after{content:"";width:35%;height:60%;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-8%) rotate(45deg)}
-.axl-check input:focus-visible + .bx{box-shadow:0 0 0 3px rgba(8,124,255,.35)}
-.axl-link{color:#3d9bff;cursor:pointer;white-space:nowrap}
-.axl-link:hover{color:#7dbbff}
-.axl-btn{width:100%;height:clamp(44px,3.7vw,60px);border:0;border-radius:9px;background:linear-gradient(180deg,#1690ff,#0a6ff0);color:#fff;font-family:inherit;font-size:clamp(14px,1.1vw,19px);font-weight:700;cursor:pointer;
-  box-shadow:0 8px 26px rgba(8,124,255,.42),inset 0 1px 0 rgba(255,255,255,.25);transition:filter .15s,transform .1s}
-.axl-btn:hover{filter:brightness(1.1)}
+.axl-check input:focus-visible + .bx{box-shadow:0 0 0 3px rgba(10,108,240,.3)}
+.axl-link{color:var(--blue);cursor:pointer;white-space:nowrap}
+.axl-link:hover{text-decoration:underline}
+.axl-btn{width:100%;height:clamp(46px,3.6vw,66px);border:0;border-radius:.6vw;background:linear-gradient(180deg,#1a8dff,#0a66e8);color:#fff;font-family:inherit;font-size:clamp(15px,1.2vw,22px);font-weight:600;cursor:pointer;
+  box-shadow:0 8px 20px rgba(10,108,240,.28);transition:filter .15s,transform .1s}
+.axl-btn:hover{filter:brightness(1.07)}
 .axl-btn:active{transform:translateY(1px)}
-.axl-btn:focus-visible{outline:3px solid rgba(90,170,255,.5);outline-offset:2px}
-.axl-or{display:flex;align-items:center;gap:14px;margin:clamp(16px,2.6vh,28px) 0 clamp(12px,2vh,22px);font-size:clamp(11.5px,.88vw,15px);color:#dbe6f6}
-.axl-or::before,.axl-or::after{content:"";flex:1;height:1px;background:rgba(255,255,255,.22)}
+.axl-btn:focus-visible{outline:3px solid rgba(10,108,240,.4);outline-offset:2px}
+.axl-or{display:flex;align-items:center;gap:1vw;margin:2.6vh 0 1.8vh;font-size:clamp(12px,.98vw,17px);color:#2f4062}
+.axl-or::before,.axl-or::after{content:"";flex:1;height:1px;background:var(--line)}
 .axl-ben{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
-.axl-ben div{display:flex;flex-direction:column;align-items:center;gap:clamp(6px,1vh,10px);font-size:clamp(11px,.86vw,15px);line-height:1.35;color:#e8eef9}
-.axl-ben svg{width:clamp(20px,1.7vw,30px);height:clamp(20px,1.7vw,30px);color:#e8f1ff}
+.axl-ben div{display:flex;flex-direction:column;align-items:center;gap:1vh;font-size:clamp(12px,.98vw,17.5px);line-height:1.4;color:#2f4062}
+.axl-ben svg{width:clamp(22px,2vw,36px);height:clamp(22px,2vw,36px);color:#3a4d78}
 .axl-wait{text-align:center;padding:48px 28px}
 .axl-wait .axl-sub{margin:6px 0 0}
-.axl-spin{width:32px;height:32px;margin:0 auto 18px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:var(--axiom-blue);animation:axlSpin .8s linear infinite}
-.axl-foot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:clamp(12px,2vh,24px) var(--pad-x) clamp(14px,5.2vh,56px) var(--pad-x)}
+.axl-spin{width:32px;height:32px;margin:0 auto 18px;border-radius:50%;border:3px solid #dbe6f5;border-top-color:var(--blue);animation:axlSpin .8s linear infinite}
+.axl-foot{display:flex;justify-content:space-between;align-items:center;gap:20px;padding:5.2vh var(--padr) 3.6vh var(--padl)}
 .axl-trust{display:flex;align-items:center;flex-wrap:wrap}
-.axl-t{display:flex;align-items:center;gap:9px;white-space:nowrap;font-size:clamp(10px,.76vw,13.5px);color:#dfe8f7;padding:0 clamp(12px,1.45vw,26px);border-left:1px solid rgba(255,255,255,.22)}
+.axl-t{display:flex;align-items:center;gap:.6vw;white-space:nowrap;font-size:clamp(11px,.95vw,17px);color:#2f4062;padding:0 1.5vw;border-left:1px solid var(--line)}
 .axl-t:first-child{padding-left:0;border-left:0}
-.axl-t svg{width:clamp(16px,1.5vw,26px);height:clamp(16px,1.5vw,26px);color:#fff;flex:0 0 auto}
-.axl-tagline{display:flex;align-items:center;gap:clamp(12px,1.7vw,28px);font-size:clamp(9px,.7vw,12.5px);letter-spacing:.2em;text-transform:uppercase;color:#dbe6f6;white-space:nowrap}
-.axl-tagline i{display:block;width:clamp(28px,2.7vw,48px);height:3px;background:var(--axiom-blue);border-radius:2px}
-.axl-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;max-width:min(520px,calc(100vw - 32px));padding:12px 18px;border-radius:9px;background:rgba(6,21,42,.96);border:1px solid var(--axiom-border);color:#fff;font-size:14px;line-height:1.45;box-shadow:0 12px 30px rgba(0,0,0,.4)}
-.axl-toast.err{background:#7d1a12;border-color:#c55a50}
+.axl-t svg{width:clamp(18px,1.6vw,30px);height:clamp(18px,1.6vw,30px);color:#3a4d78;flex:0 0 auto}
+.axl-tagline{display:flex;align-items:center;gap:1.7vw;font-size:clamp(9px,.78vw,14px);letter-spacing:.3em;text-transform:uppercase;color:#2a3a5c;font-weight:600;white-space:nowrap}
+.axl-tagline i{display:block;width:3vw;height:2px;background:var(--blue);border-radius:2px}
+.axl-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:60;max-width:min(520px,calc(100vw - 32px));padding:12px 18px;border-radius:9px;background:#0b1b3a;color:#fff;font-size:14px;line-height:1.45;box-shadow:0 12px 30px rgba(0,0,0,.25)}
+.axl-toast.err{background:#a3261b}
 @keyframes axlWrite{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 -10% 0 0)}}
 @keyframes axlSpin{to{transform:rotate(360deg)}}
 @media (max-width:1000px){
-  .axl{--pad-x:22px}
-  .axl-head{flex-direction:column;align-items:center;text-align:center;padding-top:22px}
+  .axl{--padl:22px;--padr:22px;grid-template-rows:auto auto auto auto}
+  .axl-head{position:relative;flex-direction:column;align-items:center;text-align:center;padding:22px 22px 0}
   .axl-lockup .lp2-logo{justify-content:center}
-  .axl-sig span{transform-origin:center}
+  .axl-lockup .lp2-mark{width:52px}
+  .axl-desc{margin:8px 0 0;white-space:normal}
   .axl-nav{margin-top:14px}
-  .axl-main{grid-template-columns:1fr;align-content:start;gap:28px;padding-top:26px;padding-bottom:26px}
-  .axl-hero{max-width:none;text-align:center;top:0}
-  .axl-side{top:0}
-  .axl-desc,.axl-sig{margin-left:0}
+  .axl-main{grid-template-columns:1fr;gap:28px;padding:26px 22px 0}
+  .axl-hero{max-width:none;text-align:center;padding-top:0}
   .axl-label{justify-content:center}
   .axl-lead{margin-left:auto;margin-right:auto}
-  .axl-feats{display:grid;grid-template-columns:1fr 1fr;gap:18px 0;justify-items:center}
-  .axl-feat{width:auto;border:0;padding:0 8px}
-  .axl-feat:nth-child(2n){border-left:1px solid rgba(255,255,255,.17)}
   .axl-side{justify-content:center}
-  .axl-card{width:min(440px,100%)}
-  .axl-foot{flex-direction:column;align-items:center;gap:16px;text-align:center}
+  .axl-card{width:min(440px,100%);min-width:0;padding:22px 20px;border-radius:14px}
+  .axl-field{border-radius:8px;gap:12px;padding:0 14px}
+  .axl-btn{border-radius:9px}
+  .axl-feats{display:grid;grid-template-columns:1fr 1fr;gap:18px 0;justify-items:center;margin-top:28px}
+  .axl-feat{width:auto;border:0;padding:0 8px}
+  .axl-feat:nth-child(2n){border-left:1px solid var(--line)}
+  .axl-foot{flex-direction:column;align-items:center;gap:16px;text-align:center;padding-top:28px}
   .axl-trust{justify-content:center;row-gap:10px}
-  .axl-geo{opacity:.6}
+  .axl-t{padding:0 12px;gap:8px}
+  .axl-check{gap:10px}
 }
 @media (max-width:520px){
   .axl-nav{gap:10px;letter-spacing:.14em}
-  .axl-t{padding:0 12px}
   .axl-tagline{letter-spacing:.14em}
 }
 @media (prefers-reduced-motion:reduce){ .axl-sig span{animation:none !important;clip-path:none !important} }
@@ -2615,7 +2614,7 @@ function axi(n){
     shieldO:'<path d="M12 2.8l7.5 2.8v5.6c0 4.6-3.2 8.3-7.5 10-4.3-1.7-7.5-5.4-7.5-10V5.6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.6 12l2.4 2.4 4.4-4.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
     dealer:'<circle cx="8.6" cy="8.6" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="15.6" cy="8.6" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 18.5c0-3 2.4-4.8 5.6-4.8 1.4 0 2.6.3 3.4.9.8-.6 2-.9 3.4-.9 3.2 0 5.6 1.8 5.6 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
     barsO:'<path d="M5 20v-5M10.5 20V9M16 20V4M2.5 20.5h19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
-    shield:'<path d="M12 2.5l8 3v6.2c0 5-3.4 8.9-8 10.6-4.6-1.7-8-5.6-8-10.6V5.5z" fill="currentColor"/><path d="M8.4 12.2l2.5 2.5 4.7-4.9" fill="none" stroke="#0a1224" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    shield:'<path d="M12 2.5l8 3v6.2c0 5-3.4 8.9-8 10.6-4.6-1.7-8-5.6-8-10.6V5.5z" fill="currentColor"/><path d="M8.4 12.2l2.5 2.5 4.7-4.9" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
     bolt:'<path d="M13.5 2L4.5 13.5h6l-1.5 8.5 9-11.5h-6z" fill="currentColor"/>',
     bars:'<rect x="4" y="12" width="3.6" height="8" fill="currentColor"/><rect x="10.2" y="7" width="3.6" height="13" fill="currentColor"/><rect x="16.4" y="3" width="3.6" height="17" fill="currentColor"/>',
     people:'<circle cx="8" cy="8" r="3.3" fill="currentColor"/><circle cx="16.6" cy="8.6" r="2.8" fill="currentColor"/><path d="M1.8 20.5c0-3.8 2.8-6.2 6.2-6.2s6.2 2.4 6.2 6.2zM13.6 20.5c.2-2.3 1.7-4.1 3.7-4.7 2.6.2 4.9 2 4.9 4.7z" fill="currentColor"/>',
@@ -2627,11 +2626,13 @@ function axi(n){
 /* AXIOM lockup: the A monogram carries a blue lightning swoosh and reads as
    the first letter, followed by "XIOM". tone = "light" (on dark) or "dark". */
 function axMark(tone){
-  var a = tone === "light" ? "#ffffff" : "#0b1426";
+  var a = tone === "light" ? "#ffffff" : tone === "blue" ? `url(#lga${tone})` : "#0b1426";
+  var w = tone === "blue" ? "#5cc8ff" : `url(#lg${tone})`;
   return `<svg class="lp2-mark" viewBox="0 0 132 110" aria-hidden="true">
-      <defs><linearGradient id="lg${tone}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a55e6"/><stop offset="1" stop-color="#2f9bff"/></linearGradient></defs>
+      <defs><linearGradient id="lg${tone}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a55e6"/><stop offset="1" stop-color="#2f9bff"/></linearGradient>
+      <linearGradient id="lga${tone}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a4fe0"/><stop offset="1" stop-color="#1f8cff"/></linearGradient></defs>
       <path d="M4 106L50 6h24l50 100h-27L62 38 31 106z" fill="${a}"/>
-      <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="url(#lg${tone})"/>
+      <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="${w}"/>
     </svg>`;
 }
 function axLogo(tone){
@@ -2639,25 +2640,20 @@ function axLogo(tone){
 }
 /* Decorative geometric "A" — pure SVG, no raster image. */
 function axGeoA(){
-  return `<svg class="axl-geo" viewBox="0 0 1774 887" preserveAspectRatio="xMaxYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+  var dots=""; for (var r=0;r<12;r++) for (var c=0;c<9;c++) dots += `<circle cx="${1552+c*11}" cy="${220+r*18}" r="1.5"/>`;
+  return `<svg class="axl-geo" viewBox="0 0 1672 941" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
     <defs>
-      <linearGradient id="gA1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0b57c9" stop-opacity=".55"/><stop offset=".6" stop-color="#062a66" stop-opacity=".45"/><stop offset="1" stop-color="#020b18" stop-opacity=".1"/></linearGradient>
-      <linearGradient id="gA2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b7cff" stop-opacity=".95"/><stop offset="1" stop-color="#0a3d99" stop-opacity=".25"/></linearGradient>
-      <linearGradient id="gA3" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a5fe8" stop-opacity="0"/><stop offset=".55" stop-color="#3b9bff"/><stop offset="1" stop-color="#bfe0ff"/></linearGradient>
-      <linearGradient id="gRail" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1f86ff" stop-opacity="0"/><stop offset=".45" stop-color="#2f95ff" stop-opacity=".95"/><stop offset="1" stop-color="#1f86ff" stop-opacity="0"/></linearGradient>
-      <radialGradient id="gGlow" cx=".5" cy=".55" r=".55"><stop offset="0" stop-color="#0a5fe8" stop-opacity=".38"/><stop offset="1" stop-color="#0a5fe8" stop-opacity="0"/></radialGradient>
-      <filter id="fBlur" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="9"/></filter>
-      <filter id="fSoft"><feGaussianBlur stdDeviation="2.2"/></filter>
+      <linearGradient id="gW1" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#cfe0f7" stop-opacity="0"/><stop offset=".5" stop-color="#bcd5f5" stop-opacity=".7"/><stop offset="1" stop-color="#cfe0f7" stop-opacity="0"/></linearGradient>
+      <linearGradient id="gW2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffffff" stop-opacity=".9"/><stop offset="1" stop-color="#cfe1f8" stop-opacity=".5"/></linearGradient>
     </defs>
-    <ellipse cx="1000" cy="520" rx="640" ry="420" fill="url(#gGlow)"/>
-    <path fill="url(#gA1)" d="M1060 60 L600 887 L880 887 L1060 330 Z"/>
-    <path fill="url(#gA2)" opacity=".55" d="M1060 60 L1060 330 L1240 887 L1520 887 Z"/>
-    <path fill="#1b7cff" opacity=".5" d="M1060 60 L600 887 L680 887 L1060 150 Z"/>
-    <path fill="url(#gA3)" opacity=".9" d="M930 640 L1190 640 L1225 720 L895 720 Z"/>
-    <path d="M1060 60 L600 887 M1060 60 L1520 887" stroke="#2d8dff" stroke-width="1.6" fill="none" opacity=".75"/>
-    <path d="M1060 330 L880 887 M1060 330 L1240 887" stroke="#2d8dff" stroke-width="1" fill="none" opacity=".45"/>
-    <path d="M700 800 L1774 840" stroke="url(#gRail)" stroke-width="1.6" fill="none" opacity=".8"/>
-    <path d="M800 850 L1774 870" stroke="url(#gRail)" stroke-width="1" fill="none" opacity=".5"/>
+    <path d="M0 560 C300 640 700 900 1100 930 L0 941 Z" fill="url(#gW2)" opacity=".8"/>
+    <path d="M1672 120 C1560 300 1450 700 900 941 L1672 941 Z" fill="#d9e8fb" opacity=".45"/>
+    <path d="M1672 60 C1600 260 1500 620 1100 941" stroke="#ffffff" stroke-width="2" fill="none" opacity=".9"/>
+    <path d="M0 590 C420 640 900 860 1180 941" stroke="url(#gW1)" stroke-width="1.5" fill="none"/>
+    <path d="M0 640 C420 700 900 880 1300 941" stroke="url(#gW1)" stroke-width="1.5" fill="none"/>
+    <path d="M0 170 C60 230 120 330 130 460" stroke="#ffffff" stroke-width="2" fill="none" opacity=".9"/>
+    <path d="M1672 720 C1400 700 1100 780 700 941" stroke="#ffffff" stroke-width="2.5" fill="none" opacity=".9"/>
+    <g fill="#9fbde6" opacity=".55">${dots}</g>
   </svg>`;
 }
 function axLanding(cardHtml){
@@ -2673,7 +2669,7 @@ function axLanding(cardHtml){
     <div class="axl-bg" aria-hidden="true">${axGeoA()}</div>
     <header class="axl-head">
       <div class="axl-brand" aria-label="AXIOM">
-        <div class="axl-lockup">${axLogo("light")}</div>
+        <div class="axl-lockup">${axLogo("blue")}</div>
         <p class="axl-desc">AI eXecutive Intelligence &amp; Operations Management</p>
         <div class="axl-sig" aria-label="By Rahul Champaneri"><span>By Rahul Champaneri</span></div>
       </div>
@@ -2684,10 +2680,10 @@ function axLanding(cardHtml){
         <div class="axl-label"><span>Dealership Command Center</span><i></i></div>
         <h1>Smarter Tools.<br><em>Stronger Dealerships.</em></h1>
         <p class="axl-lead">Everything you need to manage F&amp;I, track performance and empower your team — in one place.</p>
-        <div class="axl-feats">${feats}</div>
       </section>
       <section class="axl-side">${cardHtml}</section>
     </main>
+    <div class="axl-feats">${feats}</div>
     <footer class="axl-foot">
       <div class="axl-trust">${trust}</div>
       <div class="axl-tagline"><i></i><span>Driving a brighter tomorrow.</span></div>
