@@ -248,6 +248,18 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
+.lpx{--u:calc(min(100vw,150vh)/1536);position:fixed;inset:0;background:#050b18;overflow:hidden}
+.lpx-stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(1536*var(--u));height:calc(1024*var(--u));background-size:100% 100%;background-repeat:no-repeat}
+.lpx-patch{position:absolute;background-repeat:no-repeat;pointer-events:none}
+.lpx-in,.lpx .lpx-in{position:absolute;border:0 !important;outline:0;background:transparent !important;box-shadow:none !important;border-radius:0 !important;color:#0d1b2e !important;font-family:Inter,sans-serif;font-size:calc(15.5*var(--u));min-width:0;padding:0 calc(6*var(--u))}
+.lpx-in::placeholder{color:#6b778a;opacity:1}
+.lpx-hit{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:calc(8*var(--u));padding:0}
+.lpx-hit:hover{background:rgba(255,255,255,.07)}
+.lpx-go:hover{background:rgba(255,255,255,.1)}
+.lpx-hit:focus-visible,.lpx-in:focus-visible{outline:2px solid #7fb4ff;outline-offset:1px}
+.lpx-note{position:absolute;left:calc(1029*var(--u));top:calc(236*var(--u));width:calc(316*var(--u));padding:calc(8*var(--u)) calc(12*var(--u));border-radius:calc(8*var(--u));
+  background:rgba(120,20,14,.86);border:1px solid rgba(240,137,127,.6);color:#ffe1dd;font-family:Inter,sans-serif;font-size:calc(13*var(--u));line-height:1.35}
+.lpx-note.ok{background:rgba(14,32,66,.86);border-color:rgba(127,180,255,.55);color:#dbe8ff}
 .lp{position:relative;min-height:max(100vh,780px);display:flex;flex-direction:column;overflow:hidden;color:#fff;background:#050b18;font-family:Inter,sans-serif}
 .lp-scene{position:absolute;inset:0;width:100%;height:100%}
 .lp-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(4,9,20,.86) 0%,rgba(4,9,20,.5) 38%,rgba(4,9,20,0) 62%),linear-gradient(180deg,rgba(4,9,20,.55) 0%,rgba(4,9,20,0) 22%)}
@@ -2682,8 +2694,47 @@ function lpIcon(n){
   }[n];
   return `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">${i}</svg>`;
 }
+/* A brand can have a full-page landing image (assets/brands/<key>.webp, 1536x1024,
+   same layout as Nissan's). The image is shown exactly as designed and real,
+   working fields sit precisely over its sign-in card. Brands without an image
+   yet use the drawn scene below. */
+var BRAND_PHOTOS = { nissan:"assets/brands/nissan.webp" };
+function photoField(imgUrl, left, top, w, h, srcX){
+  var srcW = 40, sx = w / srcW;
+  return `left:calc(${left}*var(--u));top:calc(${top}*var(--u));width:calc(${w}*var(--u));height:calc(${h}*var(--u));background-image:url(${imgUrl});`
+    + `background-size:calc(1536*var(--u)*${sx}) calc(1024*var(--u));background-position:calc(-${srcX}*var(--u)*${sx}) calc(-${top}*var(--u))`;
+}
+function renderPhotoLanding(key){
+  var img = BRAND_PHOTOS[key], err = state.ui.loginError, checking = !!state.ui.authChecking;
+  var note = checking ? "Checking your session…" : err;
+  return `<div class="lpx"><div class="lpx-stage" style="background-image:url(${img})">
+    ${note ? `<div class="lpx-note ${checking ? "ok" : ""}">${esc(note)}</div>` : ""}
+    ${checking ? "" : `
+    <div class="lpx-patch" style="${photoField(img, 1072, 411, 232, 44, 1255)}"></div>
+    <input class="lpx-in" id="loginEmail" type="text" placeholder="Email or Username" autocomplete="username" style="left:calc(1076*var(--u));top:calc(409*var(--u));width:calc(226*var(--u));height:calc(48*var(--u))">
+    <div class="lpx-patch" style="${photoField(img, 1072, 472, 226, 44, 1255)}"></div>
+    <input class="lpx-in" id="loginPassword" type="password" placeholder="Password" autocomplete="current-password" style="left:calc(1076*var(--u));top:calc(470*var(--u));width:calc(220*var(--u));height:calc(49*var(--u))">
+    <button type="button" class="lpx-hit" data-act="toggle-pw" title="Show or hide password" style="left:calc(1304*var(--u));top:calc(478*var(--u));width:calc(36*var(--u));height:calc(32*var(--u))"></button>
+    <button type="button" class="lpx-hit" data-act="forgot-password" title="Forgot password?" style="left:calc(1222*var(--u));top:calc(538*var(--u));width:calc(126*var(--u));height:calc(24*var(--u))"></button>
+    <button type="button" class="lpx-hit lpx-go" data-act="do-login" title="Sign in" style="left:calc(1029*var(--u));top:calc(579*var(--u));width:calc(316*var(--u));height:calc(52*var(--u))"></button>`}
+  </div></div>`;
+}
+var lpWasPhoto = null;
+window.addEventListener("resize", function(){
+  if (state.loggedIn) return;
+  var isPhoto = !!BRAND_PHOTOS[landingBrandKey()] && window.innerWidth >= 900;
+  if (lpWasPhoto !== null && isPhoto !== lpWasPhoto){
+    var e = document.getElementById("loginEmail"), pw = document.getElementById("loginPassword");
+    var ev = e ? e.value : "", pv = pw ? pw.value : "";
+    render();
+    var e2 = document.getElementById("loginEmail"), p2 = document.getElementById("loginPassword");
+    if (e2) e2.value = ev; if (p2) p2.value = pv;
+  }
+});
 function renderLogin(){
   var err = state.ui.loginError, key = landingBrandKey(), L = LANDING[key], b = D.BRANDS[key] || D.BRANDS.nissan;
+  lpWasPhoto = !!BRAND_PHOTOS[key] && window.innerWidth >= 900;
+  if (lpWasPhoto) return renderPhotoLanding(key);
   var checking = !!state.ui.authChecking;
   var card = checking
     ? `<div class="lp-card"><h2>Checking your session…</h2><p class="lp-sub">One moment while we sign you back in.</p></div>`
