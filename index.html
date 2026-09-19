@@ -255,17 +255,24 @@ tbody tr:hover{background:var(--surface-2)}
   radial-gradient(120% 90% at 78% 50%,rgba(5,11,24,0) 0%,rgba(5,11,24,.55) 70%),
   linear-gradient(90deg,rgba(5,11,24,.9) 0%,rgba(5,11,24,.62) 34%,rgba(5,11,24,.2) 64%,rgba(5,11,24,.4) 100%),
   linear-gradient(180deg,rgba(5,11,24,.5) 0%,rgba(5,11,24,0) 26%,rgba(5,11,24,0) 66%,rgba(5,11,24,.8) 100%)}
-.lw-main{position:relative;z-index:2;min-height:100vh;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,.75fr);align-items:center;gap:clamp(28px,5vw,90px);padding:0 clamp(24px,6.5vw,120px) clamp(24px,9vh,110px)}
-.lw-brand{display:flex;flex-direction:column;align-items:flex-start}
+.lw-main{position:relative;z-index:2;min-height:100vh;display:grid;grid-template-columns:minmax(0,1.2fr) minmax(0,.8fr);align-items:center;gap:clamp(28px,5vw,90px);padding:0 clamp(24px,6.5vw,120px) clamp(20px,6vh,70px)}
+.lw-head{position:absolute;z-index:3;top:clamp(20px,3.6vh,40px);left:clamp(24px,6.5vw,120px)}
 .lw-lockup{animation:lwUp .9s cubic-bezier(.2,.7,.2,1) both}
-.lw-lockup .lp2-logo,.lw-lockup .lw-logo{display:flex;align-items:flex-start;gap:clamp(4px,.6vw,10px)}
-.lw-lockup .lp2-mark{width:clamp(78px,9.4vw,150px);height:clamp(65px,7.8vw,125px);display:block;flex:0 0 auto;filter:drop-shadow(0 0 28px rgba(47,139,255,.35))}
-.lw-lockup .lp2-xiom{font-size:clamp(56px,8vw,128px);font-weight:800;letter-spacing:.13em;line-height:1;margin:clamp(7px,1vw,16px) 0 0 -.02em;
-  background:linear-gradient(100deg,#fff 0%,#fff 38%,#a9d0ff 50%,#fff 62%,#fff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lwSweep 7s ease-in-out 1.6s infinite}
-.lw-tag{margin:clamp(14px,2vw,26px) 0 0;font-size:clamp(11.5px,1.05vw,15px);letter-spacing:.3em;text-transform:uppercase;color:var(--lw-mut);animation:lwUp .9s .25s cubic-bezier(.2,.7,.2,1) both}
-.lw-sig{margin-top:clamp(10px,1.6vw,26px);animation:lwUp .9s .45s both}
-.lw-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(46px,5.6vw,96px);line-height:1.1;color:#e8f1ff;padding:0 .2em .08em 0;
-  word-spacing:.22em;text-shadow:0 0 30px rgba(47,139,255,.35);transform:rotate(-3deg);transform-origin:left center;clip-path:inset(0 100% 0 0);animation:lwWrite 2.6s cubic-bezier(.55,.1,.25,1) 1.1s forwards}
+.lw-lockup .lp2-logo{display:flex;align-items:flex-start;gap:clamp(3px,.4vw,7px)}
+.lw-lockup .lp2-mark{width:clamp(46px,4.4vw,68px);height:clamp(38px,3.7vw,57px);display:block;flex:0 0 auto;filter:drop-shadow(0 0 18px rgba(47,139,255,.35))}
+.lw-lockup .lp2-xiom{font-size:clamp(34px,3.4vw,52px);font-weight:800;letter-spacing:.13em;line-height:1;margin:clamp(4px,.5vw,8px) 0 0 -.02em;
+  background:linear-gradient(100deg,#fff 0%,#fff 38%,#a9d0ff 50%,#fff 62%,#fff 100%);background-size:250% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:lwSweep 8s ease-in-out 2s infinite}
+.lw-tag{margin:8px 0 0;font-size:clamp(9.5px,.78vw,11.5px);letter-spacing:.26em;text-transform:uppercase;color:var(--lw-mut);animation:lwUp .9s .2s cubic-bezier(.2,.7,.2,1) both}
+.lw-sig{margin-top:2px;animation:lwUp .9s .35s both}
+.lw-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(26px,2.5vw,38px);line-height:1.1;color:#dfeaff;padding:0 .2em .06em 0;word-spacing:.22em;
+  transform:rotate(-2deg);transform-origin:left center;clip-path:inset(0 100% 0 0);animation:lwWrite 1.9s cubic-bezier(.55,.1,.25,1) .9s forwards}
+.lw-hero{max-width:640px;padding-top:clamp(50px,9vh,110px)}
+.lw-eyebrow{font-size:clamp(10.5px,.85vw,12.5px);font-weight:600;letter-spacing:.34em;text-transform:uppercase;color:#8fb6ff;animation:lwUp .9s .3s both}
+.lw-hero h1{margin:clamp(14px,2vh,22px) 0 0;font-size:clamp(32px,3.6vw,56px);line-height:1.08;font-weight:700;letter-spacing:-.025em;color:#fff;white-space:nowrap;animation:lwUp .9s .45s cubic-bezier(.2,.7,.2,1) both}
+.lw-hero h1 em{font-style:normal;color:var(--lw-blue)}
+.lw-lead{margin:clamp(16px,2.4vh,26px) 0 0;max-width:34em;font-size:clamp(13.5px,1.12vw,16.5px);line-height:1.65;color:#c3cee2;animation:lwUp .9s .6s both}
+.lw-motto{display:flex;align-items:center;gap:14px;margin-top:clamp(20px,3.2vh,34px);font-size:clamp(11px,.9vw,13px);letter-spacing:.22em;text-transform:uppercase;color:#dbe6fa;animation:lwUp .9s .75s both}
+.lw-motto i{display:block;width:34px;height:2px;background:var(--lw-blue);border-radius:2px}
 .lw-side{display:flex;justify-content:center;animation:lwUp .9s .55s cubic-bezier(.2,.7,.2,1) both}
 .lw-card{width:min(360px,100%);padding:30px 28px 26px;border-radius:16px;background:linear-gradient(160deg,rgba(14,24,46,.72),rgba(8,15,32,.66));
   border:1px solid rgba(255,255,255,.14);box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1);backdrop-filter:blur(22px) saturate(1.2);-webkit-backdrop-filter:blur(22px) saturate(1.2)}
@@ -306,17 +313,21 @@ tbody tr:hover{background:var(--surface-2)}
 @keyframes lwZoom{from{transform:scale(1.02)}to{transform:scale(1.13) translate(-1.2%,-.8%)}}
 @keyframes lwSpin{to{transform:rotate(360deg)}}
 @media (max-width:900px){
-  .lw-main{grid-template-columns:1fr;align-content:center;gap:34px;padding:56px 22px 70px}
-  .lw-brand{align-items:center;text-align:center}
+  .lw-head{position:relative;top:auto;left:auto;z-index:3;padding:22px 22px 0;text-align:center}
   .lw-lockup .lp2-logo{justify-content:center}
-  .lw-tag{letter-spacing:.2em}
-  .lw-sig span{transform:rotate(-2deg);transform-origin:center}
+  .lw-tag{letter-spacing:.18em}
+  .lw-sig span{transform-origin:center}
+  .lw-main{grid-template-columns:1fr;align-content:start;min-height:0;gap:26px;padding:22px 22px 64px}
+  .lw-hero{padding-top:0;text-align:center;max-width:none}
+  .lw-hero h1{white-space:normal;font-size:clamp(30px,8vw,44px)}
+  .lw-lead{margin-left:auto;margin-right:auto}
+  .lw-motto{justify-content:center}
   .lw-side{justify-content:center}
-  .lw-shade{background:linear-gradient(180deg,rgba(5,11,24,.86),rgba(5,11,24,.62) 45%,rgba(5,11,24,.9))}
+  .lw-shade{background:linear-gradient(180deg,rgba(5,11,24,.88),rgba(5,11,24,.66) 45%,rgba(5,11,24,.92))}
   .lw-foot{left:0;right:0;text-align:center}
 }
 @media (prefers-reduced-motion:reduce){
-  .lw-bg,.lw-lockup,.lw-tag,.lw-sig,.lw-side,.lw-lockup .lp2-xiom{animation:none !important}
+  .lw-bg,.lw-lockup,.lw-tag,.lw-sig,.lw-side,.lw-lockup .lp2-xiom,.lw-eyebrow,.lw-hero h1,.lw-lead,.lw-motto{animation:none !important}
   .lw-sig span{clip-path:none !important;animation:none !important}
 }
 .demo-chip{white-space:nowrap;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
@@ -2603,11 +2614,17 @@ function axLanding(cardHtml){
   return `<div class="lw">
     <div class="lw-bg" role="img" aria-label="A Nissan dealership at dusk"></div>
     <div class="lw-shade"></div>
+    <header class="lw-head" aria-label="AXIOM">
+      <div class="lw-lockup">${axLogo("light")}</div>
+      <p class="lw-tag">AI eXecutive Intelligence &amp; Operations Management</p>
+      <div class="lw-sig" aria-label="By Rahul Champaneri"><span>By Rahul Champaneri</span></div>
+    </header>
     <main class="lw-main">
-      <section class="lw-brand" aria-label="AXIOM">
-        <div class="lw-lockup">${axLogo("light")}</div>
-        <p class="lw-tag">AI eXecutive Intelligence &amp; Operations Management</p>
-        <div class="lw-sig" aria-label="By Rahul Champaneri"><span>By Rahul Champaneri</span></div>
+      <section class="lw-hero">
+        <div class="lw-eyebrow">Dealership Command Center</div>
+        <h1>From the FSM's Mind<br>to the <em>FSM's Desk.</em></h1>
+        <p class="lw-lead">AXIOM brings the finance desk, the customer presentation and dealership reporting together in one intelligent command center — designed by an F&amp;I professional, for the people who close the deal.</p>
+        <div class="lw-motto"><i></i><span>See. Understand. Act.</span></div>
       </section>
       <section class="lw-side">${cardHtml}</section>
     </main>
