@@ -295,6 +295,8 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-field:hover{border-color:#b9c9e0}
 .axl-field:focus-within{border-color:var(--blue);box-shadow:0 0 0 3px rgba(10,108,240,.15);background:#fff}
 .axl .axl-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:var(--ink) !important;font-family:inherit;font-size:clamp(13px,.9vw,16px);padding:0 !important;border-radius:0 !important}
+.axl .axl-field input:-webkit-autofill,.axl .axl-field input:-webkit-autofill:hover,.axl .axl-field input:-webkit-autofill:focus{-webkit-box-shadow:0 0 0 1000px #f5f8fc inset !important;box-shadow:0 0 0 1000px #f5f8fc inset !important;-webkit-text-fill-color:#0b1b3a !important;caret-color:#0b1b3a;transition:background-color 99999s ease-out 0s}
+.axl .axl-field:focus-within input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px #fff inset !important;box-shadow:0 0 0 1000px #fff inset !important}
 .axl-field input::placeholder{color:#4a5b7a;opacity:1}
 .axl-eye{border:0;background:transparent;color:#1f3157;cursor:pointer;display:flex;padding:4px;border-radius:6px}
 .axl-row{display:flex;justify-content:space-between;align-items:center;margin:.8vh 0 1.6vh;font-size:clamp(11.5px,.8vw,14px)}
