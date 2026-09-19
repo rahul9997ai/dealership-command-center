@@ -6,7 +6,7 @@
 <title>Dealership Command Center — FSM Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
 <style>
 /* ---- light (normal) mode: white + blue ---- */
 :root{
@@ -248,68 +248,50 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
-.ax-page{position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;color:#e8eef9;background:#060b18;font-family:Inter,-apple-system,"Segoe UI",sans-serif}
-.ax-bg{position:absolute;inset:0;pointer-events:none;overflow:hidden}
-.ax-bg i{position:absolute;border-radius:50%;filter:blur(90px);opacity:.55;animation:axFloat 18s ease-in-out infinite}
-.ax-bg .o1{width:620px;height:620px;left:-160px;top:-180px;background:#1d61d8}
-.ax-bg .o2{width:560px;height:560px;right:-140px;top:12%;background:#6d4ce0;animation-delay:-6s;opacity:.4}
-.ax-bg .o3{width:520px;height:520px;left:32%;bottom:-260px;background:#0fb5d8;animation-delay:-11s;opacity:.28}
-.ax-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(140,170,220,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(140,170,220,.07) 1px,transparent 1px);
-  background-size:56px 56px;-webkit-mask-image:radial-gradient(ellipse at 50% 40%,#000 0,transparent 75%);mask-image:radial-gradient(ellipse at 50% 40%,#000 0,transparent 75%)}
-@keyframes axFloat{0%,100%{transform:translate(0,0)}50%{transform:translate(38px,26px)}}
-.ax-top,.ax-main,.ax-foot{position:relative;z-index:2}
-.ax-top{display:flex;align-items:center;justify-content:space-between;padding:26px 56px}
-.ax-logo{display:flex;align-items:center;gap:14px}
-.ax-wm{font-size:24px;font-weight:800;letter-spacing:.16em;line-height:1}
-.ax-wt{font-size:11.5px;color:#93a4c2;letter-spacing:.04em;margin-top:4px}
-.ax-chip{display:flex;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;font-size:12.5px;color:#b7c5de;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1)}
-.ax-chip .dot{width:7px;height:7px;border-radius:50%;background:#37d39b;box-shadow:0 0 0 4px rgba(55,211,155,.18)}
-.ax-main{flex:1;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:56px;align-items:center;padding:8px 56px 32px;max-width:1360px;width:100%;margin:0 auto}
-.ax-eyebrow{display:inline-block;padding:6px 13px;border-radius:999px;font-size:11.5px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:#8fb6ff;background:rgba(70,120,230,.14);border:1px solid rgba(110,160,255,.3)}
-.ax-hero h1{font-size:clamp(42px,5.4vw,74px);line-height:1.02;font-weight:800;letter-spacing:-.03em;margin:20px 0 18px}
-.ax-hero h1 span{background:linear-gradient(90deg,#5aa2ff,#8f7bff 60%,#37d0e8);-webkit-background-clip:text;background-clip:text;color:transparent}
-.ax-lead{max-width:56ch;font-size:17px;line-height:1.65;color:#b7c5de;margin:0 0 30px}
-.ax-feats{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:16px 26px;max-width:640px}
-.ax-feats li{display:flex;gap:13px;align-items:flex-start}
-.ax-feats .ic{flex:0 0 auto;width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;color:#7fb0ff;background:linear-gradient(145deg,rgba(90,140,255,.2),rgba(90,140,255,.06));border:1px solid rgba(120,165,255,.28)}
-.ax-feats b{display:block;font-size:14px;font-weight:600;color:#f1f5fc}
-.ax-feats em{display:block;font-style:normal;font-size:12.5px;line-height:1.5;color:#93a4c2;margin-top:2px}
-.ax-side{display:flex;justify-content:center}
-.ax-card{width:min(430px,100%);padding:34px 32px 26px;border-radius:20px;background:linear-gradient(160deg,rgba(24,36,64,.82),rgba(12,20,38,.82));
-  border:1px solid rgba(140,175,235,.22);box-shadow:0 30px 80px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.06);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
-.ax-cardtag{display:inline-flex;align-items:center;gap:7px;font-size:11.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#7fd8b5;margin-bottom:14px}
-.ax-cardtag svg{width:16px;height:16px}
-.ax-card h2{font-size:29px;font-weight:800;letter-spacing:-.02em;margin:0 0 6px;color:#fff}
-.ax-sub{margin:0 0 22px;color:#a9b8d2;font-size:14.5px}
-.ax-err{margin:0 0 16px;padding:10px 13px;border-radius:10px;background:rgba(200,50,40,.16);border:1px solid rgba(240,120,110,.45);color:#ffd2cc;font-size:13.5px;line-height:1.4}
-.ax-lbl{display:block;font-size:12.5px;font-weight:600;color:#c5d1e6;margin-bottom:7px}
+.ax-page{--ink:#f3efe7;--mut:#9ba1ab;--gold:#d8bd84;--gold2:#c9a25e;position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;color:var(--ink);background:#0d0f13;font-family:Inter,-apple-system,"Segoe UI",sans-serif}
+.ax-bg{position:absolute;inset:0;pointer-events:none}
+.ax-glow{position:absolute;left:50%;top:-18%;width:1100px;height:720px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(216,189,132,.13),rgba(216,189,132,0))}
+.ax-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:64px 64px;
+  -webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 42%,#000,transparent 78%);mask-image:radial-gradient(ellipse 60% 55% at 50% 42%,#000,transparent 78%)}
+.ax-top,.ax-center,.ax-tagline,.ax-foot{position:relative;z-index:2}
+.ax-top{display:flex;align-items:center;justify-content:space-between;padding:28px 48px}
+.ax-logo{display:flex;align-items:center;gap:13px}
+.ax-wm{font-size:17px;font-weight:700;letter-spacing:.24em}
+.ax-top-r{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
+.ax-center{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 20px}
+.ax-card{width:min(420px,100%);padding:38px 36px 30px;border-radius:18px;background:linear-gradient(180deg,#191b21,#14161b);
+  border:1px solid rgba(255,255,255,.09);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 40px 90px rgba(0,0,0,.55)}
+.ax-card h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:38px;line-height:1.1;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink)}
+.ax-sub{margin:0 0 26px;color:var(--mut);font-size:14.5px;line-height:1.5}
+.ax-err{margin:0 0 18px;padding:11px 14px;border-radius:10px;background:rgba(210,70,60,.12);border:1px solid rgba(235,110,100,.4);color:#ffcfc9;font-size:13.5px;line-height:1.45}
+.ax-lbl{display:block;font-size:12.5px;font-weight:500;color:#c9ccd3;margin-bottom:8px}
 .ax-lblrow{display:flex;align-items:center;justify-content:space-between}
-.ax-link{font-size:12.5px;color:#7fb0ff;cursor:pointer;margin-bottom:7px}
-.ax-link:hover{color:#a8caff}
-.ax-field{display:flex;align-items:center;gap:11px;margin-bottom:16px;padding:0 14px;height:50px;border-radius:12px;color:#7f92b3;
-  background:rgba(6,12,26,.65);border:1px solid rgba(140,170,220,.22);transition:border-color .15s,box-shadow .15s,background .15s}
-.ax-field:focus-within{border-color:rgba(120,170,255,.75);box-shadow:0 0 0 4px rgba(90,140,255,.16);background:rgba(8,16,34,.85);color:#9dbcf0}
-.ax-card .ax-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:#f3f6fc !important;font-size:15px;font-family:inherit;padding:0 !important;border-radius:0 !important}
-.ax-field input::placeholder{color:#6b7d9c}
-.ax-eye{border:0;background:transparent;color:#7f92b3;cursor:pointer;display:flex;padding:4px;border-radius:8px}
-.ax-eye:hover{color:#c5d6f2}
-.ax-btn{width:100%;height:52px;margin-top:6px;border:0;border-radius:12px;font-size:15.5px;font-weight:700;letter-spacing:.01em;color:#fff;cursor:pointer;
-  background:linear-gradient(135deg,#2f7bff,#5b5cf0 60%,#7a5cf0);box-shadow:0 12px 30px rgba(60,100,240,.42);transition:transform .12s,filter .15s,box-shadow .15s}
-.ax-btn:hover{filter:brightness(1.08);box-shadow:0 14px 36px rgba(60,100,240,.55)}
+.ax-link{font-size:12.5px;color:var(--gold);cursor:pointer;margin-bottom:8px}
+.ax-link:hover{color:#ecd7a6}
+.ax-field{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:0 15px;height:50px;border-radius:11px;background:#0e1014;border:1px solid rgba(255,255,255,.11);transition:border-color .15s,box-shadow .15s}
+.ax-field:hover{border-color:rgba(255,255,255,.2)}
+.ax-field:focus-within{border-color:rgba(216,189,132,.7);box-shadow:0 0 0 4px rgba(216,189,132,.13)}
+.ax-card .ax-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:var(--ink) !important;font-size:15px;font-family:inherit;padding:0 !important;border-radius:0 !important}
+.ax-field input::placeholder{color:#6c727d}
+.ax-eye{border:0;background:transparent;color:#7d838e;cursor:pointer;display:flex;padding:4px;border-radius:8px}
+.ax-eye:hover{color:var(--ink)}
+.ax-btn{width:100%;height:52px;margin-top:8px;border:0;border-radius:11px;font-size:15px;font-weight:650;letter-spacing:.01em;color:#1a1408;cursor:pointer;
+  background:linear-gradient(180deg,#e6cf98,#c9a55f);box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 10px 26px rgba(201,165,95,.22);transition:filter .15s,transform .1s}
+.ax-btn:hover{filter:brightness(1.07)}
 .ax-btn:active{transform:translateY(1px)}
-.ax-fine{display:flex;align-items:center;gap:8px;margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.09);font-size:12px;color:#8fa1c1;line-height:1.4}
-.ax-fine svg{flex:0 0 auto;width:15px;height:15px}
-.ax-spin{width:34px;height:34px;border-radius:50%;border:3px solid rgba(255,255,255,.14);border-top-color:#5aa2ff;animation:axSpin .8s linear infinite;margin-bottom:16px}
+.ax-fine{display:flex;align-items:center;gap:9px;margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:#858b96;line-height:1.45}
+.ax-fine svg{flex:0 0 auto;width:15px;height:15px;color:#858b96}
+.ax-wait{text-align:center;padding:52px 36px}
+.ax-wait .ax-sub{margin:0}
+.ax-spin{width:32px;height:32px;margin:0 auto 20px;border-radius:50%;border:2.5px solid rgba(255,255,255,.12);border-top-color:var(--gold);animation:axSpin .8s linear infinite}
 @keyframes axSpin{to{transform:rotate(360deg)}}
-.ax-foot{display:flex;justify-content:space-between;align-items:center;padding:16px 56px 22px;font-size:12px;color:#7f92b3}
-.ax-sig{font-family:"Great Vibes",cursive;font-size:22px;color:#a9b8d2}
-@media (max-width:980px){
-  .ax-top{padding:18px 20px}.ax-chip{display:none}
-  .ax-main{grid-template-columns:1fr;gap:28px;padding:4px 20px 24px}
-  .ax-hero h1{font-size:clamp(36px,10vw,52px)}.ax-lead{font-size:15px}
-  .ax-feats{grid-template-columns:1fr}
-  .ax-side{order:-1}.ax-hero{order:2}
-  .ax-foot{padding:14px 20px 20px}
+.ax-tagline{text-align:center;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:22px;color:rgba(216,189,132,.85);padding:8px 20px 22px;letter-spacing:.01em}
+.ax-foot{display:flex;justify-content:space-between;align-items:center;padding:18px 48px 26px;font-size:12px;color:#727884;border-top:1px solid rgba(255,255,255,.06)}
+.ax-sig{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:16px;color:#9ba1ab}
+@media (max-width:640px){
+  .ax-top{padding:20px 22px}.ax-top-r{display:none}
+  .ax-card{padding:30px 22px 24px}.ax-card h2{font-size:33px}
+  .ax-foot{padding:16px 22px 22px}
 }
 .demo-chip{white-space:nowrap;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
   padding:6px 14px;border-radius:999px;background:var(--rail);color:#fff;font-size:12px;box-shadow:var(--shadow);border:1px solid var(--warn)}
@@ -2489,17 +2471,17 @@ function renderOnboarding(){
 
 /* ---------------- AXIOM LOGIN ---------------- */
 function axiomMarkSvg(size){
-  /* An "A" whose crossbar is a rising arrow — see, understand, act — set in a
-     dark glass tile with a gradient rim. Two solid legs, one accent stroke. */
+  /* An "A" whose crossbar is a rising arrow — see, understand, act — in a
+     graphite tile with a champagne rim. Two solid legs, one gold accent. */
   var u = "m" + Math.random().toString(36).slice(2,8);
   return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AXIOM">
     <defs>
-      <linearGradient id="${u}bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#182b55"/><stop offset="1" stop-color="#080f22"/></linearGradient>
-      <linearGradient id="${u}rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6aa9ff"/><stop offset=".55" stop-color="#7d5cf2"/><stop offset="1" stop-color="#37d6ea"/></linearGradient>
-      <linearGradient id="${u}leg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#9dbcff"/></linearGradient>
-      <linearGradient id="${u}arw" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#2f7bff"/><stop offset="1" stop-color="#3fe6ec"/></linearGradient>
-      <radialGradient id="${u}sh" cx=".3" cy=".1" r=".9"><stop offset="0" stop-color="#ffffff" stop-opacity=".14"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></radialGradient>
-      <filter id="${u}gl" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><feGaussianBlur stdDeviation="2.4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+      <linearGradient id="${u}bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#23262e"/><stop offset="1" stop-color="#0e1014"/></linearGradient>
+      <linearGradient id="${u}rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#efdcae"/><stop offset=".5" stop-color="#b8965a"/><stop offset="1" stop-color="#e6cf98"/></linearGradient>
+      <linearGradient id="${u}leg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fffbf2"/><stop offset="1" stop-color="#d9cfba"/></linearGradient>
+      <linearGradient id="${u}arw" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#c9a25e"/><stop offset="1" stop-color="#f3dfa8"/></linearGradient>
+      <radialGradient id="${u}sh" cx=".3" cy=".1" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".1"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+      <filter id="${u}gl" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><feGaussianBlur stdDeviation="2" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
     </defs>
     <rect x="2" y="2" width="96" height="96" rx="27" fill="url(#${u}bg)"/>
     <rect x="2" y="2" width="96" height="96" rx="27" fill="url(#${u}sh)"/>
@@ -2570,45 +2552,33 @@ function axIcon(n){
   }[n];
   return `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">${i}</svg>`;
 }
+function axShell(cardHtml){
+  return `<div class="ax-page">
+    <div class="ax-bg" aria-hidden="true"><div class="ax-glow"></div><div class="ax-grid"></div></div>
+    <header class="ax-top"><div class="ax-logo">${axiomMarkSvg(40)}<span class="ax-wm">AXIOM</span></div>
+      <span class="ax-top-r">Dealership Command Center</span></header>
+    <main class="ax-center">${cardHtml}</main>
+    <div class="ax-tagline">See. Understand. Act.</div>
+    <footer class="ax-foot"><span>© ${new Date().getFullYear()} AXIOM</span><span class="ax-sig">by Rahul Champaneri</span></footer>
+  </div>`;
+}
 function renderLogin(){
   var err = state.ui.loginError, checking = !!state.ui.authChecking;
-  var form = checking
-    ? `<div class="ax-card"><div class="ax-spin"></div><h2>Signing you in</h2><p class="ax-sub">Restoring your secure session…</p></div>`
+  var card = checking
+    ? `<div class="ax-card ax-wait"><div class="ax-spin"></div><h2>Signing you in</h2><p class="ax-sub">Restoring your secure session…</p></div>`
     : `<div class="ax-card">
-        <div class="ax-cardtag">${axIcon("shield")}<span>Secure sign-in</span></div>
         <h2>Welcome back</h2>
         <p class="ax-sub">Sign in to your AXIOM Command Center.</p>
         ${err ? `<div class="ax-err" role="alert">${esc(err)}</div>` : ""}
         <label class="ax-lbl" for="loginEmail">Email</label>
-        <div class="ax-field">${axIcon("user")}<input type="text" id="loginEmail" placeholder="you@dealership.com" autocomplete="username" spellcheck="false"></div>
+        <div class="ax-field"><input type="text" id="loginEmail" placeholder="name@dealership.com" autocomplete="username" spellcheck="false"></div>
         <div class="ax-lblrow"><label class="ax-lbl" for="loginPassword">Password</label><a class="ax-link" data-act="forgot-password">Forgot password?</a></div>
-        <div class="ax-field">${axIcon("lock")}<input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
+        <div class="ax-field"><input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
           <button type="button" class="ax-eye" data-act="toggle-pw" aria-label="Show or hide password">${axIcon("eye")}</button></div>
         <button type="button" class="ax-btn" data-act="do-login">Sign in</button>
-        <div class="ax-fine">${axIcon("lock")}<span>Encrypted connection. Your access is set by your administrator.</span></div>
+        <div class="ax-fine">${axIcon("lock")}<span>Encrypted connection. Access is managed by your administrator.</span></div>
       </div>`;
-  return `<div class="ax-page">
-    <div class="ax-bg" aria-hidden="true"><i class="o1"></i><i class="o2"></i><i class="o3"></i><div class="ax-grid"></div></div>
-    <header class="ax-top">
-      <div class="ax-logo">${axiomMarkSvg(44)}<div><div class="ax-wm">AXIOM</div><div class="ax-wt">AI eXecutive Intelligence &amp; Operations Management</div></div></div>
-      <div class="ax-chip"><span class="dot"></span>All systems operational</div>
-    </header>
-    <main class="ax-main">
-      <section class="ax-hero">
-        <div class="ax-eyebrow">Dealership Command Center</div>
-        <h1>See. Understand.<br><span>Act.</span></h1>
-        <p class="ax-lead">One platform for the finance desk — from the FSM's mind to the FSM's desk. Build the deal, present it to the customer, and see exactly how your team performs.</p>
-        <ul class="ax-feats">
-          <li><span class="ic">${axIcon("deal")}</span><div><b>Finance &amp; cash deal desk</b><em>Structure payments, products and packages in one flow.</em></div></li>
-          <li><span class="ic">${axIcon("screen")}</span><div><b>Live customer presentation</b><em>A polished second-screen view that keeps the deal moving.</em></div></li>
-          <li><span class="ic">${axIcon("chart")}</span><div><b>Reporting you can trust</b><em>Gross, penetration and team results, always current.</em></div></li>
-          <li><span class="ic">${axIcon("team")}</span><div><b>Built for every dealership</b><em>Separate stores, roles and access — kept strictly apart.</em></div></li>
-        </ul>
-      </section>
-      <section class="ax-side">${form}</section>
-    </main>
-    <footer class="ax-foot"><span>© ${new Date().getFullYear()} AXIOM. All rights reserved.</span><span class="ax-sig">by Rahul Champaneri</span></footer>
-  </div>`;
+  return axShell(card);
 }
 
 /* ---------------- ROUTER + RENDER ---------------- */
@@ -3069,17 +3039,17 @@ setInterval(function(){
 }, 1000);
 function renderChangePassword(){
   var err = state.ui.pwError;
-  return `<div class="axiom-page"><div class="axiom-grid" style="grid-template-columns:1fr"><div class="axiom-right" style="margin:auto">
-    <div class="axiom-card">
-      <div class="axiom-card-brand">${axiomMarkSvg(42)}<div><div class="nm">AXIOM</div><div class="tg">Set your password</div></div></div>
-      <h2>Create your own password</h2>
-      <p class="sub">You signed in with a temporary password. Choose a new one to continue.</p>
-      ${err ? `<div class="axiom-err">${esc(err)}</div>` : ""}
-      <div class="axiom-field"><label>New password</label><input type="password" id="newPw" placeholder="At least 8 characters" autocomplete="new-password"></div>
-      <div class="axiom-field"><label>Confirm password</label><input type="password" id="newPw2" placeholder="Repeat the password" autocomplete="new-password"></div>
-      <button type="button" class="axiom-signin" data-act="do-change-password">Save and continue</button>
-      <div style="text-align:center;margin-top:12px"><a data-act="logout" style="cursor:pointer">Sign out</a></div>
-    </div></div></div></div>`;
+  return axShell(`<div class="ax-card">
+      <h2>Create your password</h2>
+      <p class="ax-sub">You signed in with a temporary password. Choose your own to continue.</p>
+      ${err ? `<div class="ax-err" role="alert">${esc(err)}</div>` : ""}
+      <label class="ax-lbl" for="newPw">New password</label>
+      <div class="ax-field"><input type="password" id="newPw" placeholder="At least 8 characters" autocomplete="new-password"></div>
+      <label class="ax-lbl" for="newPw2">Confirm password</label>
+      <div class="ax-field"><input type="password" id="newPw2" placeholder="Repeat the password" autocomplete="new-password"></div>
+      <button type="button" class="ax-btn" data-act="do-change-password">Save and continue</button>
+      <div class="ax-fine"><span><a class="ax-link" data-act="logout" style="cursor:pointer">Sign out</a></span></div>
+    </div>`);
 }
 function demoChip(){
   var a = state.auth;
