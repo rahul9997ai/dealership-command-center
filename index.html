@@ -313,7 +313,7 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-btn:focus-visible{outline:3px solid rgba(10,108,240,.4);outline-offset:2px}
 .axl-or{display:flex;align-items:center;gap:1vw;margin:2vh 0 1.4vh;font-size:clamp(11px,.82vw,14px);color:#2f4062}
 .axl-or::before,.axl-or::after{content:"";flex:1;height:1px;background:var(--line)}
-.axl-ben{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
+.axl-ben{margin-top:2.2vh;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;text-align:center}
 .axl-ben div{display:flex;flex-direction:column;align-items:center;gap:.8vh;font-size:clamp(11px,.82vw,14px);line-height:1.4;color:#2f4062}
 .axl-ben svg{width:clamp(20px,1.6vw,28px);height:clamp(20px,1.6vw,28px);color:#3a4d78}
 .axl-wait{text-align:center;padding:48px 28px}
@@ -2709,7 +2709,6 @@ function renderLogin(){
         <div class="axl-row"><label class="axl-check"><input type="checkbox" id="loginRemember" ${remember ? "checked" : ""}><span class="bx"></span>Remember me</label>
           <a class="axl-link" data-act="forgot-password">Forgot password?</a></div>
         <button type="button" class="axl-btn" data-act="do-login">Sign In</button>
-        <div class="axl-or"><span>or simply continue</span></div>
         ${benefits}
       </div>`;
   return axLanding(card);
