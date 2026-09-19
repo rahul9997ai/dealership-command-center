@@ -40,6 +40,10 @@ Deno.serve(async (req) => {
       if (String(password).length < 8) return json({ error: "Temporary password must be at least 8 characters" }, 400);
       const target = { role, dealership_id: isMaster ? (dealership_id ?? null) : me.dealership_id };
       if (!canTouch(target)) return json({ error: "Not allowed to create that user" }, 403);
+      if (target.dealership_id) {
+        const { data: dl } = await admin.from("dealerships").select("id").eq("id", target.dealership_id).maybeSingle();
+        if (!dl) return json({ error: "That dealership isn't saved in the cloud yet. Wait a few seconds after creating it, refresh, then try again." }, 400);
+      }
       if (access_type === "demo" && !expires_at) return json({ error: "Demo access needs an expiry" }, 400);
       const { data: created, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
       if (error) return json({ error: error.message }, 400);
@@ -63,6 +67,10 @@ Deno.serve(async (req) => {
         if (k in body) patch[k] = body[k];
       if (patch.role && !ROLES.includes(patch.role as string)) return json({ error: "Invalid role" }, 400);
       if (!isMaster) { delete patch.dealership_id; if (patch.role === "Master Administrator") return json({ error: "Not allowed" }, 403); }
+      if (patch.dealership_id) {
+        const { data: dl } = await admin.from("dealerships").select("id").eq("id", patch.dealership_id as string).maybeSingle();
+        if (!dl) return json({ error: "That dealership doesn't exist in the cloud." }, 400);
+      }
       if (patch.access_type === "full") patch.expires_at = null;
       const { error } = await admin.from("profiles").update(patch).eq("id", body.id);
       if (error) return json({ error: error.message }, 400);
