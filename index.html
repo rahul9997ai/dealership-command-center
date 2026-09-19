@@ -260,12 +260,14 @@ tbody tr:hover{background:var(--surface-2)}
 .axl-head,.axl-main,.axl-feats,.axl-foot{position:relative;z-index:2}
 .axl-head{position:absolute;top:0;left:0;right:0;z-index:3;display:flex;justify-content:space-between;align-items:flex-start;gap:24px;padding:3.4vh var(--padr) 0 var(--padl)}
 .axl-lockup .lp2-logo{display:flex;align-items:flex-start;gap:.9vw}
-.axl-lockup .lp2-mark{width:4.1vw;min-width:44px;height:auto;display:block;flex:0 0 auto}
-.axl-lockup .lp2-xiom{font-size:clamp(30px,3vw,56px);font-weight:600;letter-spacing:.16em;line-height:1;margin:.15vw 0 0;color:var(--ink)}
-.axl-desc{margin:-.3vw 0 0 5.05vw;font-size:clamp(8.5px,.72vw,13px);letter-spacing:.14em;text-transform:uppercase;color:#3b4d70;font-weight:500;white-space:nowrap}
+.axl-lockup .lp2-mark{width:4.8vw;min-width:48px;height:auto;display:block;flex:0 0 auto}
+.axl-lockup .lp2-xiom{font-size:clamp(34px,3.6vw,66px);font-weight:800;letter-spacing:.15em;line-height:1;margin:.15vw 0 0;color:var(--ink)}
+.axl-desc{margin:-.2vw 0 0 5.9vw;font-size:clamp(8.5px,.72vw,13px);letter-spacing:.14em;text-transform:uppercase;color:#3b4d70;font-weight:500;white-space:nowrap}
 .axl-sig{margin-top:.2vh}
-.axl-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(28px,2.55vw,46px);line-height:1.1;color:var(--ink);padding:.16em .2em .06em 0;word-spacing:.2em;
+.axl-sig span{display:inline-block;font-family:"Mrs Saint Delafield","Brush Script MT",cursive;font-size:clamp(22px,1.95vw,36px);line-height:1.1;color:var(--ink);padding:.16em .3em .32em .1em;word-spacing:.2em;position:relative;transform:rotate(-4deg);transform-origin:left center;
   clip-path:inset(0 100% 0 0);animation:axlWrite 1.9s cubic-bezier(.55,.1,.25,1) .5s forwards}
+.axl-sig span::after{content:"";position:absolute;left:.1em;right:.3em;bottom:.06em;height:6px;
+  background:radial-gradient(circle,var(--ink) 1.8px,transparent 2.3px) calc(50% - 6px) 50%/6px 6px no-repeat,radial-gradient(circle,var(--ink) 1.8px,transparent 2.3px) calc(50% + 6px) 50%/6px 6px no-repeat,linear-gradient(var(--ink),var(--ink)) left 50%/calc(50% - 14px) 1px no-repeat,linear-gradient(var(--ink),var(--ink)) right 50%/calc(50% - 14px) 1px no-repeat}
 .axl-nav{display:flex;align-items:center;gap:1.45vw;margin-top:.9vh;font-size:clamp(9px,.74vw,13px);letter-spacing:.24em;text-transform:uppercase;color:#2a3a5c;font-weight:500;white-space:nowrap}
 .axl-nav i{width:1px;height:2em;background:#c3cfe2}
 .axl-main{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:center;gap:3vw;padding:20vh 10.7vw 0 9.45vw}
@@ -2671,7 +2673,7 @@ function axLanding(cardHtml){
       <div class="axl-brand" aria-label="AXIOM">
         <div class="axl-lockup">${axLogo("blue")}</div>
         <p class="axl-desc">AI eXecutive Intelligence &amp; Operations Management</p>
-        <div class="axl-sig" aria-label="By Rahul Champaneri"><span>By Rahul Champaneri</span></div>
+        <div class="axl-sig" aria-label="by Rahul Champaneri"><span>by Rahul Champaneri</span></div>
       </div>
       <nav class="axl-nav" aria-label="Principles"><span>People</span><i></i><span>Process</span><i></i><span>Performance</span><i></i><span>Profit</span></nav>
     </header>
