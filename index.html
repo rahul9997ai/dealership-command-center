@@ -903,6 +903,7 @@ var state = {
   currentUserId:"u0",
   loggedIn:false,
   tx:null, completed:[], history:[], version:0,
+  cloud:{ productsByDealer:{} },
   ui:{ split:true, present:false, railOpen:false, modal:null, theme:"dark", loginError:null,
        productEdit:null, productConfigOpen:null, userForm:false, dealerForm:null, toast:null,
        email:{ pkg:"all", term:"all" },
@@ -964,6 +965,7 @@ function persist(){
 function commit(){
   state.version++;
   persist();
+  if (window.__DCC_CLOUD_PUSH__) window.__DCC_CLOUD_PUSH__();
   /* Deferred one tick: commit() usually runs inside a "change" handler fired
      by a field losing focus (e.g. Tab to the next field). This browser only
      finishes moving focus to that next field AFTER the change event returns —
@@ -983,8 +985,14 @@ function dealershipById(id){
   return state.dealerships[0];
 }
 function setDealership(id){
+  /* Each dealership has its own product list. Park the one we're leaving and
+     pick up (or start) the one we're entering. */
+  var cp = state.cloud.productsByDealer;
+  if (state.activeDealershipId && state.dealerships.some(function(d){ return d.id === state.activeDealershipId; }))
+    cp[state.activeDealershipId] = state.products;
   state.activeDealershipId = id;
   state.config = dealershipById(id);
+  state.products = cp[id] || (cp[id] = C.clone(D.PRODUCTS));
   state.tx = C.newTransaction(firstFsmFor(id), id);
   applyFinanceDefaults(state.tx);
 }
@@ -2014,6 +2022,7 @@ function saveDealer(){
 }
 function deleteDealer(id){
   if (state.dealerships.length <= 1){ toast("Keep at least one dealership.","err"); return; }
+  cloud.del.d.push(id); delete state.cloud.productsByDealer[id];
   state.dealerships = state.dealerships.filter(function(d){ return d.id !== id; });
   state.users.forEach(function(u){ if (u.dealershipId === id) u.active = false; });
   if (state.activeDealershipId === id){
@@ -2706,6 +2715,171 @@ var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZ
 var sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SB_URL, SB_KEY) : null;
 state.auth = null;
 
+/* ---------------- CLOUD DATA (Supabase, row-level secured) ----------------
+   Dealerships, products and completed deals live in Supabase so every device
+   sees the same data, and the database itself only hands each user the rows
+   for their own dealership (and, for non-GM roles, their own deals). Local
+   storage is just a cache. Every commit() schedules a diff-and-upsert; deletes
+   are always explicit so a reopened deal can never be deleted by accident. */
+var cloud = { loaded:false, snap:{ d:{}, p:{}, x:{} }, del:{ d:[], p:[], x:[] }, timer:null, running:false, warned:false, lastLoad:0 };
+var UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-/;
+window.__DCC_CLOUD__ = cloud;
+/* exposed for the in-browser test harness only */
+setTimeout(function(){ cloud.apply = cloudApply; cloud.diff = cloudDiff; cloud.wipe = cloudWipeLocal; }, 0);
+
+function cloudApply(dRows, pRows, xRows, keepTx){
+  var byDealer = {};
+  pRows.forEach(function(r){ (byDealer[r.dealership_id] = byDealer[r.dealership_id] || []).push(r.data); });
+  Object.keys(byDealer).forEach(function(k){ byDealer[k].sort(function(a, b){ return (a._sort||0) - (b._sort||0); }); });
+  state.dealerships = dRows.map(function(r){ var d = r.data; d.id = r.id; return d; });
+  state.cloud.productsByDealer = byDealer;
+  state.completed = xRows.map(function(r){ return r.data; });
+  state.history = [];
+  state.users = state.users.filter(function(u){ return u.id === "u0" || UUID_RE.test(u.id); });
+  cloud.snap = { d:{}, p:{}, x:{} };
+  state.dealerships.forEach(function(d){ cloud.snap.d[d.id] = JSON.stringify(d); });
+  Object.keys(byDealer).forEach(function(k){ byDealer[k].forEach(function(pr){ cloud.snap.p[k + "|" + pr.id] = JSON.stringify(pr); }); });
+  state.completed.forEach(function(x){ cloud.snap.x[x.id] = JSON.stringify(x); });
+  if (!state.dealerships.length){ state.activeDealershipId = null; state.config = null; state.tx = null; state.products = C.clone(D.PRODUCTS); return; }
+  var me = userById(state.currentUserId), has = function(id){ return state.dealerships.some(function(d){ return d.id === id; }); };
+  var want = V.isMaster() ? (has(state.activeDealershipId) ? state.activeDealershipId : state.dealerships[0].id)
+                          : ((me && has(me.dealershipId)) ? me.dealershipId : state.dealerships[0].id);
+  if (keepTx && has(state.activeDealershipId)){
+    state.config = state.dealerships.filter(function(d){ return d.id === state.activeDealershipId; })[0];
+    state.products = byDealer[state.activeDealershipId] || (byDealer[state.activeDealershipId] = C.clone(D.PRODUCTS));
+    return;
+  }
+  state.activeDealershipId = null;
+  V.setDealership(want);
+}
+function cloudFetch(){
+  return Promise.all([ sb.from("dealerships").select("*"), sb.from("products").select("*"), sb.from("deals").select("*") ]).then(function(rs){
+    rs.forEach(function(r){ if (r.error) throw r.error; });
+    return { d:rs[0].data, p:rs[1].data, x:rs[2].data };
+  });
+}
+/* A brand-new cloud has nothing in it. If the master administrator signs in on
+   the browser that already holds the dealerships they built before the cloud
+   existed, move all of it up once. */
+function cloudMigrate(){
+  var dl = state.dealerships.filter(function(d){ return d && d.id; });
+  var dRows = dl.map(function(d){ return { id:d.id, name:d.name || "Dealership", active:d.active !== false, data:d }; });
+  var pRows = [];
+  dl.forEach(function(d){
+    var list = state.cloud.productsByDealer[d.id] || state.products;
+    list.forEach(function(pr, i){ pr._sort = i; pRows.push({ dealership_id:d.id, id:pr.id, data:pr }); });
+  });
+  var ids = {}; dl.forEach(function(d){ ids[d.id] = 1; });
+  var xRows = state.completed.filter(function(x){ return x && x.id && ids[x.dealershipId]; })
+    .map(function(x){ return { id:x.id, dealership_id:x.dealershipId, fsm_user_id:x.fsmUserId || null, data:x }; });
+  return sb.from("dealerships").upsert(dRows).then(function(r){ if (r.error) throw r.error;
+    return pRows.length ? sb.from("products").upsert(pRows) : { error:null }; }).then(function(r){ if (r.error) throw r.error;
+    return xRows.length ? sb.from("deals").upsert(xRows) : { error:null }; }).then(function(r){ if (r.error) throw r.error;
+    toast("Your existing dealerships and deals were moved to the cloud.","ok"); });
+}
+function cloudLoad(){
+  return cloudFetch().then(function(r){
+    if (!r.d.length && V.isMaster() && state.dealerships.length) return cloudMigrate().then(cloudFetch);
+    return r;
+  }).then(function(r){
+    cloudApply(r.d, r.p, r.x, false);
+    cloud.loaded = true; cloud.lastLoad = Date.now();
+  });
+}
+function cloudDiff(){
+  if (state.activeDealershipId && state.dealerships.some(function(d){ return d.id === state.activeDealershipId; }))
+    state.cloud.productsByDealer[state.activeDealershipId] = state.products;
+  var out = { d:[], p:[], x:[], snapD:{}, snapP:{}, snapX:{} };
+  state.dealerships.forEach(function(d){
+    var j = JSON.stringify(d);
+    if (cloud.snap.d[d.id] !== j){ out.d.push({ id:d.id, name:d.name || "Dealership", active:d.active !== false, data:d }); out.snapD[d.id] = j; }
+  });
+  var known = {}; state.dealerships.forEach(function(d){ known[d.id] = 1; });
+  Object.keys(state.cloud.productsByDealer).forEach(function(k){
+    if (!known[k]) return;
+    state.cloud.productsByDealer[k].forEach(function(pr, i){
+      pr._sort = i;
+      var j = JSON.stringify(pr), key = k + "|" + pr.id;
+      if (cloud.snap.p[key] !== j){ out.p.push({ dealership_id:k, id:pr.id, data:pr }); out.snapP[key] = j; }
+    });
+  });
+  state.completed.forEach(function(x){
+    if (!x || !x.id || !known[x.dealershipId]) return;
+    var j = JSON.stringify(x);
+    if (cloud.snap.x[x.id] !== j){ out.x.push({ id:x.id, dealership_id:x.dealershipId, fsm_user_id:x.fsmUserId || null, data:x }); out.snapX[x.id] = j; }
+  });
+  return out;
+}
+function cloudHasWork(df){ return df.d.length || df.p.length || df.x.length || cloud.del.d.length || cloud.del.p.length || cloud.del.x.length; }
+function cloudPush(){
+  if (!cloud.loaded || !state.loggedIn || !sb) return Promise.resolve(true);
+  if (cloud.running){ cloudSchedule(); return Promise.resolve(false); }
+  var df = cloudDiff();
+  if (!cloudHasWork(df)) return Promise.resolve(true);
+  cloud.running = true;
+  var dels = cloud.del; cloud.del = { d:[], p:[], x:[] };
+  function chk(r){ if (r && r.error) throw r.error; return r; }
+  var chain = Promise.resolve();
+  if (df.d.length) chain = chain.then(function(){ return sb.from("dealerships").upsert(df.d).then(chk); });
+  if (df.p.length) chain = chain.then(function(){ return sb.from("products").upsert(df.p).then(chk); });
+  if (df.x.length) chain = chain.then(function(){ return sb.from("deals").upsert(df.x).then(chk); });
+  dels.p.forEach(function(k){ chain = chain.then(function(){ return sb.from("products").delete().eq("dealership_id", k.dealer).eq("id", k.id).then(chk); }); });
+  if (dels.x.length) chain = chain.then(function(){ return sb.from("deals").delete().in("id", dels.x).then(chk); });
+  dels.d.forEach(function(id){
+    chain = chain.then(function(){ return sb.from("products").delete().eq("dealership_id", id).then(chk); })
+      .then(function(){ return sb.from("deals").delete().eq("dealership_id", id).then(chk); })
+      .then(function(){ return sb.from("dealerships").delete().eq("id", id).then(chk); });
+  });
+  return chain.then(function(){
+    for (var k in df.snapD) cloud.snap.d[k] = df.snapD[k];
+    for (var k2 in df.snapP) cloud.snap.p[k2] = df.snapP[k2];
+    for (var k3 in df.snapX) cloud.snap.x[k3] = df.snapX[k3];
+    cloud.running = false; cloud.warned = false; return true;
+  }, function(e){
+    cloud.running = false;
+    cloud.del.d = dels.d.concat(cloud.del.d); cloud.del.p = dels.p.concat(cloud.del.p); cloud.del.x = dels.x.concat(cloud.del.x);
+    if (!cloud.warned){ cloud.warned = true; toast("Couldn't save your latest changes to the cloud — will retry. (" + (e.message || "network") + ")","err"); }
+    setTimeout(cloudSchedule, 8000);
+    return false;
+  });
+}
+function cloudSchedule(){
+  if (!cloud.loaded || !state.loggedIn || !sb) return;
+  clearTimeout(cloud.timer);
+  cloud.timer = setTimeout(function(){ cloud.timer = null; cloudPush(); }, 900);
+}
+window.__DCC_CLOUD_PUSH__ = cloudSchedule;
+/* Pick up changes made on other devices when the tab comes back into focus —
+   but never while this browser has unsaved changes of its own. */
+document.addEventListener("visibilitychange", function(){
+  if (document.visibilityState !== "visible" || !cloud.loaded || !state.loggedIn || cloud.running || cloud.timer) return;
+  if (Date.now() - cloud.lastLoad < 45000) return;
+  if (cloudHasWork(cloudDiff())) return;
+  cloudFetch().then(function(r){ cloudApply(r.d, r.p, r.x, true); cloud.lastLoad = Date.now(); commit(); }, function(){});
+});
+function cloudWipeLocal(){
+  state.dealerships = []; state.completed = []; state.history = []; state.customers = []; state.vehicles = [];
+  state.products = C.clone(D.PRODUCTS); state.cloud.productsByDealer = {};
+  state.users = state.users.filter(function(u){ return u.id === "u0"; });
+  state.tx = null; state.config = null; state.activeDealershipId = null; state.currentUserId = "u0";
+  cloud.snap = { d:{}, p:{}, x:{} }; cloud.del = { d:[], p:[], x:[] }; cloud.loaded = false;
+}
+/* End a session: save anything pending first, then clear the cached business
+   data so the next person on this computer can never see it. If saving fails
+   the cache is kept so nothing is lost. */
+function endSession(msg){
+  clearTimeout(cloud.timer); cloud.timer = null;
+  var flush = cloud.loaded ? cloudPush() : Promise.resolve(true);
+  return flush.then(function(ok){
+    var done = function(){
+      if (ok && cloud.loaded) cloudWipeLocal();
+      state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.tour = null; state.ui.authChecking = false;
+      state.ui.loginError = msg || null; commit();
+    };
+    return sb ? sb.auth.signOut().then(done, done) : (done(), null);
+  });
+}
+
 function upsertProfileUser(p){
   var rec = { id:p.id, name:p.name, role:p.role, email:p.email, dealershipId:p.dealership_id || null,
     active:p.active !== false, demo:p.access_type === "demo", expiresAt:p.expires_at || null,
@@ -2729,10 +2903,7 @@ function refreshUsers(){
   if (!sb || !V.isAdmin()) return;
   adminCall({ action:"list" }).then(function(r){ (r.users || []).forEach(upsertProfileUser); commit(); }).catch(function(){});
 }
-function failLogin(msg){
-  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.authChecking = false; state.ui.loginError = msg || null; commit(); };
-  return sb ? sb.auth.signOut().then(done, done) : (done(), Promise.resolve());
-}
+function failLogin(msg){ return endSession(msg); }
 function finishEnter(u){
   if (state.dealerships.length){
     if (u.dealershipId && state.dealerships.some(function(d){ return d.id === u.dealershipId; })) V.setDealership(u.dealershipId);
@@ -2758,8 +2929,13 @@ function loadProfileAndEnter(){
         return failLogin("Your demo access has expired. Contact your administrator.");
       state.auth = { mustChange:!!p.must_change_password, accessType:p.access_type, expiresAt:p.expires_at, onboarded:!!p.onboarded };
       upsertProfileUser(p);
-      state.currentUserId = p.id; state.loggedIn = true; state.ui.loginError = null; state.ui.authChecking = false;
-      if (!p.must_change_password) finishEnter(userById(p.id)); else commit();
+      state.currentUserId = p.id;
+      return cloudLoad().then(function(){
+        state.loggedIn = true; state.ui.loginError = null; state.ui.authChecking = false;
+        if (!p.must_change_password) finishEnter(userById(p.id)); else commit();
+      }, function(e){
+        return endSession("Couldn't load your dealership data (" + (e && e.message ? e.message : "network problem") + "). Please try again.");
+      });
     });
   });
 }
@@ -2777,10 +2953,7 @@ function doLogin(){
     return loadProfileAndEnter();
   });
 }
-function doLogout(){
-  var done = function(){ state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.loginError = null; commit(); };
-  if (sb) sb.auth.signOut().then(done, done); else done();
-}
+function doLogout(){ endSession(null); }
 function doChangePassword(){
   var a = document.getElementById("newPw"), b = document.getElementById("newPw2");
   var pw = a ? a.value : "", pw2 = b ? b.value : "";
@@ -3074,6 +3247,7 @@ document.addEventListener("click", function(ev){
       var delId = el.getAttribute("data-deal");
       if (!window.confirm("Delete this completed deal? This can't be undone.")) break;
       state.completed = state.completed.filter(function(d){ return d.id !== delId; });
+      cloud.del.x.push(delId);
       toast("Deal " + delId + " deleted.","ok");
       commit(); break; }
     case "complete": completeDeal(); break;
@@ -3126,6 +3300,7 @@ document.addEventListener("click", function(ev){
     case "product-delete": {
       var did = el.getAttribute("data-product");
       state.products = state.products.filter(function(p){ return p.id !== did; });
+      cloud.del.p.push({ dealer:state.activeDealershipId, id:did });
       state.tx.lines = state.tx.lines.filter(function(l){ return l.productId !== did; });
       toast("Product removed from the master list.","ok"); commit(); break; }
     case "user-new": state.ui.userForm = true; state.ui.inviteSel = null; commit(); break;
