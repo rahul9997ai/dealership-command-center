@@ -249,6 +249,10 @@ tbody tr:hover{background:var(--surface-2)}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
 .lpx{--u:calc(min(100vw,150vh)/1536);position:fixed;inset:0;background:#050b18;overflow:hidden}
+.lpx-bg{position:absolute;inset:-40px;background-size:cover;background-position:center;filter:blur(38px) brightness(.55) saturate(1.1)}
+body.lp-on{overflow:hidden;background:#050b18}
+.lpx .lpx-in:focus,.lpx .lpx-in:focus-visible,.lpx .lpx-hit:focus,.lpx .lpx-hit:focus-visible{outline:none !important;box-shadow:none !important}
+.lpx-stage{-webkit-mask-image:linear-gradient(90deg,transparent 0,#000 2.5%,#000 97.5%,transparent),linear-gradient(180deg,transparent 0,#000 2.5%,#000 97.5%,transparent);-webkit-mask-composite:source-in;mask-image:linear-gradient(90deg,transparent 0,#000 2.5%,#000 97.5%,transparent),linear-gradient(180deg,transparent 0,#000 2.5%,#000 97.5%,transparent);mask-composite:intersect}
 .lpx-stage{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:calc(1536*var(--u));height:calc(1024*var(--u));background-size:100% 100%;background-repeat:no-repeat}
 .lpx-patch{position:absolute;background-repeat:no-repeat;pointer-events:none}
 .lpx-in,.lpx .lpx-in{position:absolute;border:0 !important;outline:0;background:transparent !important;box-shadow:none !important;border-radius:0 !important;color:#0d1b2e !important;font-family:Inter,sans-serif;font-size:calc(15.5*var(--u));min-width:0;padding:0 calc(6*var(--u))}
@@ -256,7 +260,6 @@ tbody tr:hover{background:var(--surface-2)}
 .lpx-hit{position:absolute;border:0;background:transparent;cursor:pointer;border-radius:calc(8*var(--u));padding:0}
 .lpx-hit:hover{background:rgba(255,255,255,.07)}
 .lpx-go:hover{background:rgba(255,255,255,.1)}
-.lpx-hit:focus-visible,.lpx-in:focus-visible{outline:2px solid #7fb4ff;outline-offset:1px}
 .lpx-note{position:absolute;left:calc(1029*var(--u));top:calc(236*var(--u));width:calc(316*var(--u));padding:calc(8*var(--u)) calc(12*var(--u));border-radius:calc(8*var(--u));
   background:rgba(120,20,14,.86);border:1px solid rgba(240,137,127,.6);color:#ffe1dd;font-family:Inter,sans-serif;font-size:calc(13*var(--u));line-height:1.35}
 .lpx-note.ok{background:rgba(14,32,66,.86);border-color:rgba(127,180,255,.55);color:#dbe8ff}
@@ -2707,7 +2710,7 @@ function photoField(imgUrl, left, top, w, h, srcX){
 function renderPhotoLanding(key){
   var img = BRAND_PHOTOS[key], err = state.ui.loginError, checking = !!state.ui.authChecking;
   var note = checking ? "Checking your session…" : err;
-  return `<div class="lpx"><div class="lpx-stage" style="background-image:url(${img})">
+  return `<div class="lpx"><div class="lpx-bg" style="background-image:url(${img})"></div><div class="lpx-stage" style="background-image:url(${img})">
     ${note ? `<div class="lpx-note ${checking ? "ok" : ""}">${esc(note)}</div>` : ""}
     ${checking ? "" : `
     <div class="lpx-patch" style="${photoField(img, 1072, 411, 232, 44, 1255)}"></div>
@@ -2816,6 +2819,7 @@ function render(){
   }
   root.innerHTML = state.loggedIn ? ((state.auth && state.auth.mustChange) ? renderChangePassword() : V.renderShell(routeView())) : renderLogin();
   ov.innerHTML = (state.loggedIn && !(state.auth && state.auth.mustChange)) ? renderOverlay() : "";
+  try { document.body.classList.toggle("lp-on", !!document.querySelector(".lpx")); } catch (e) {}
   window.scrollTo(0, y);
   if (fp){
     var next = null;
