@@ -6,7 +6,7 @@
 <title>Dealership Command Center — FSM Preview</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Great+Vibes&display=swap" rel="stylesheet">
 <style>
 /* ---- light (normal) mode: white + blue ---- */
 :root{
@@ -248,50 +248,142 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--surface-3);border-bottom:1px solid var(--border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 6px}
-.ax-page{--ink:#f3efe7;--mut:#9ba1ab;--gold:#d8bd84;--gold2:#c9a25e;position:relative;min-height:100vh;display:flex;flex-direction:column;overflow:hidden;color:var(--ink);background:#0d0f13;font-family:Inter,-apple-system,"Segoe UI",sans-serif}
-.ax-bg{position:absolute;inset:0;pointer-events:none}
-.ax-glow{position:absolute;left:50%;top:-18%;width:1100px;height:720px;transform:translateX(-50%);background:radial-gradient(closest-side,rgba(216,189,132,.13),rgba(216,189,132,0))}
-.ax-grid{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.035) 1px,transparent 1px);background-size:64px 64px;
-  -webkit-mask-image:radial-gradient(ellipse 60% 55% at 50% 42%,#000,transparent 78%);mask-image:radial-gradient(ellipse 60% 55% at 50% 42%,#000,transparent 78%)}
-.ax-top,.ax-center,.ax-tagline,.ax-foot{position:relative;z-index:2}
-.ax-top{display:flex;align-items:center;justify-content:space-between;padding:28px 48px}
-.ax-logo{display:flex;align-items:center;gap:13px}
-.ax-wm{font-size:17px;font-weight:700;letter-spacing:.24em}
-.ax-top-r{font-size:12.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}
-.ax-center{flex:1;display:flex;align-items:center;justify-content:center;padding:12px 20px}
-.ax-card{width:min(420px,100%);padding:38px 36px 30px;border-radius:18px;background:linear-gradient(180deg,#191b21,#14161b);
-  border:1px solid rgba(255,255,255,.09);box-shadow:0 1px 0 rgba(255,255,255,.05) inset,0 40px 90px rgba(0,0,0,.55)}
-.ax-card h2{font-family:"Instrument Serif",Georgia,serif;font-weight:400;font-size:38px;line-height:1.1;letter-spacing:-.01em;margin:0 0 8px;color:var(--ink)}
-.ax-sub{margin:0 0 26px;color:var(--mut);font-size:14.5px;line-height:1.5}
-.ax-err{margin:0 0 18px;padding:11px 14px;border-radius:10px;background:rgba(210,70,60,.12);border:1px solid rgba(235,110,100,.4);color:#ffcfc9;font-size:13.5px;line-height:1.45}
-.ax-lbl{display:block;font-size:12.5px;font-weight:500;color:#c9ccd3;margin-bottom:8px}
-.ax-lblrow{display:flex;align-items:center;justify-content:space-between}
-.ax-link{font-size:12.5px;color:var(--gold);cursor:pointer;margin-bottom:8px}
-.ax-link:hover{color:#ecd7a6}
-.ax-field{display:flex;align-items:center;gap:10px;margin-bottom:18px;padding:0 15px;height:50px;border-radius:11px;background:#0e1014;border:1px solid rgba(255,255,255,.11);transition:border-color .15s,box-shadow .15s}
-.ax-field:hover{border-color:rgba(255,255,255,.2)}
-.ax-field:focus-within{border-color:rgba(216,189,132,.7);box-shadow:0 0 0 4px rgba(216,189,132,.13)}
-.ax-card .ax-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:var(--ink) !important;font-size:15px;font-family:inherit;padding:0 !important;border-radius:0 !important}
-.ax-field input::placeholder{color:#6c727d}
-.ax-eye{border:0;background:transparent;color:#7d838e;cursor:pointer;display:flex;padding:4px;border-radius:8px}
-.ax-eye:hover{color:var(--ink)}
-.ax-btn{width:100%;height:52px;margin-top:8px;border:0;border-radius:11px;font-size:15px;font-weight:650;letter-spacing:.01em;color:#1a1408;cursor:pointer;
-  background:linear-gradient(180deg,#e6cf98,#c9a55f);box-shadow:0 1px 0 rgba(255,255,255,.4) inset,0 10px 26px rgba(201,165,95,.22);transition:filter .15s,transform .1s}
-.ax-btn:hover{filter:brightness(1.07)}
-.ax-btn:active{transform:translateY(1px)}
-.ax-fine{display:flex;align-items:center;gap:9px;margin-top:22px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);font-size:12px;color:#858b96;line-height:1.45}
-.ax-fine svg{flex:0 0 auto;width:15px;height:15px;color:#858b96}
-.ax-wait{text-align:center;padding:52px 36px}
-.ax-wait .ax-sub{margin:0}
-.ax-spin{width:32px;height:32px;margin:0 auto 20px;border-radius:50%;border:2.5px solid rgba(255,255,255,.12);border-top-color:var(--gold);animation:axSpin .8s linear infinite}
+.lp2{
+  /* colour system */
+  --lp-navy:#060e1d;--lp-navy-2:#0a1730;--lp-blue:#0a67f2;--lp-blue-2:#2f8bff;--lp-white:#ffffff;--lp-gray:#5d6a80;--lp-gray-2:#8a95a8;--lp-line:#e2e8f1;--lp-ink:#0b1426;
+  /* one design unit = 1px on the 1536x1024 reference */
+  --u:max(.5px,calc(min(100vw,150vh)/1536));
+  --px:calc(60*var(--u));
+  --fs-wm:calc(58*var(--u));--fs-h1:calc(69*var(--u));--fs-lead:calc(20*var(--u));--fs-tag:calc(15.5*var(--u));--fs-sig:calc(30*var(--u));
+  --fs-label:calc(12*var(--u));--fs-ft:calc(14.5*var(--u));--fs-fs:calc(12.5*var(--u));--fs-quote:calc(19*var(--u));--fs-trust:calc(14*var(--u));
+  --fs-h2:calc(29*var(--u));--fs-sub:calc(16.5*var(--u));--fs-in:calc(16*var(--u));--fs-small:calc(14.5*var(--u));--fs-ben:calc(12.5*var(--u));--fs-msg:calc(12*var(--u));
+  display:grid;grid-template-columns:70.2% 29.8%;min-height:100vh;color:var(--lp-white);background:var(--lp-navy);font-family:Inter,-apple-system,"Segoe UI",sans-serif;-webkit-font-smoothing:antialiased}
+.lp2 *{box-sizing:border-box}
+.lp2-hero{position:relative;display:flex;flex-direction:column;min-height:100vh;overflow:hidden;isolation:isolate}
+.lp2-photo{position:absolute;inset:0;z-index:-2;background:#060e1d url(assets/hero-nissan.webp) no-repeat;background-size:cover;background-position:0% 100%}
+.lp2-photo::after{content:"";position:absolute;inset:0;background:
+  linear-gradient(180deg,rgba(5,11,26,.78) 0%,rgba(5,11,26,.5) 30%,rgba(5,11,26,0) 52%,rgba(5,11,26,.15) 70%,rgba(5,11,26,.82) 100%),
+  linear-gradient(90deg,rgba(5,11,26,.78) 0%,rgba(5,11,26,.35) 42%,rgba(5,11,26,0) 70%)}
+.lp2-hero-in{flex:1;display:flex;flex-direction:column;padding:calc(38*var(--u)) var(--px) calc(24*var(--u))}
+.lp2-brand{display:flex;justify-content:space-between;align-items:flex-start;gap:calc(24*var(--u))}
+.lp2-brand-l{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:calc(26*var(--u));align-items:center}
+.lp2-logo{display:flex;align-items:flex-start;gap:calc(6*var(--u));grid-row:1;grid-column:1}
+.lp2-mark{width:calc(112*var(--u));height:calc(93*var(--u));display:block;flex:0 0 auto}
+.lp2-xiom{font-size:var(--fs-wm);font-weight:800;letter-spacing:.13em;line-height:1;margin:calc(12*var(--u)) 0 0 calc(-2*var(--u))}
+.lp2-logo.dark .lp2-xiom{color:var(--lp-ink)}
+.lp2-tagline{display:flex;flex-direction:column;font-size:var(--fs-tag);letter-spacing:.06em;line-height:1.25;color:#dce5f5;padding-left:calc(24*var(--u));border-left:1px solid rgba(255,255,255,.35)}
+.lp2-tagline.hero{grid-row:1;grid-column:2}
+.lp2-sig{font-family:"Great Vibes",cursive;font-size:var(--fs-sig);line-height:1;color:#e8eefb;letter-spacing:.01em}
+.lp2-sig.hero{grid-row:2;grid-column:1 / span 2;margin:calc(-18*var(--u)) 0 0 calc(236*var(--u));white-space:nowrap}
+.lp2-brand-r{text-align:right;padding-top:calc(8*var(--u));margin-right:calc(-26*var(--u))}
+.lp2-label{font-size:var(--fs-label);letter-spacing:.3em;white-space:nowrap;font-weight:500;color:#e9effb}
+.lp2-pills{display:flex;justify-content:flex-end;align-items:center;gap:calc(14*var(--u));margin-top:calc(16*var(--u));font-size:calc(10.5*var(--u));letter-spacing:.22em;white-space:nowrap;color:#c4d0e6}
+.lp2-pills i{width:1px;height:calc(11*var(--u));background:rgba(255,255,255,.4)}
+.lp2-copy{margin-top:calc(26*var(--u))}
+.lp2-copy h1{margin:0;font-size:var(--fs-h1);line-height:.9;font-weight:800;letter-spacing:-.025em}
+.lp2-copy h1 em{font-style:normal;color:var(--lp-blue-2)}
+.lp2-copy p{margin:calc(16*var(--u)) 0 0;max-width:calc(452*var(--u));font-size:var(--fs-lead);line-height:1.27;color:#eaf0fb;font-weight:400}
+.lp2-feats{display:flex;margin-top:calc(26*var(--u))}
+.lp2-feat{width:calc(112*var(--u));text-align:center;padding:0 calc(6*var(--u));border-left:1px solid rgba(255,255,255,.16)}
+.lp2-feat:first-child{border-left:0;padding-left:0}
+.lp2-feat .ic{display:flex;width:calc(54*var(--u));height:calc(54*var(--u));margin:0 auto calc(10*var(--u));align-items:center;justify-content:center;border-radius:calc(9*var(--u));
+  background:linear-gradient(160deg,rgba(255,255,255,.11),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.12);color:var(--lp-blue-2)}
+.lp2-feat .ic svg{width:62%;height:62%}
+.lp2-feat b{display:block;font-size:var(--fs-ft);font-weight:600}
+.lp2-feat em{display:block;margin-top:calc(6*var(--u));font-style:normal;font-size:var(--fs-fs);line-height:1.32;color:#c6d1e6}
+.lp2-spacer{flex:1;min-height:calc(150*var(--u))}
+.lp2-quote{display:flex;gap:calc(18*var(--u));margin:0 0 calc(24*var(--u));max-width:calc(420*var(--u))}
+.lp2-quote .qb{width:calc(4*var(--u));min-width:3px;background:var(--lp-blue);border-radius:2px}
+.lp2-quote p{margin:0;font-size:var(--fs-quote);line-height:1.36;font-style:italic;color:#e6edfa}
+.lp2-quote cite{display:block;margin-top:calc(9*var(--u));font-style:normal;font-size:calc(17*var(--u));color:#e6edfa}
+.lp2-trust{display:flex;justify-content:space-between;align-items:center;gap:calc(20*var(--u));padding:calc(24*var(--u)) var(--px) calc(20*var(--u));background:linear-gradient(0deg,rgba(4,9,20,.96),rgba(4,9,20,.7))}
+.lp2-trust-l{display:flex;align-items:center;flex-wrap:nowrap}
+.lp2-t{display:flex;align-items:center;gap:calc(9*var(--u));white-space:nowrap;font-size:var(--fs-trust);padding:0 calc(22*var(--u));border-left:1px solid rgba(255,255,255,.22)}
+.lp2-t:first-child{padding-left:0;border-left:0}
+.lp2-t svg{width:calc(27*var(--u));height:calc(27*var(--u));color:#fff;flex:0 0 auto}
+.lp2-trust-r{position:relative;flex:0 1 calc(300*var(--u));font-size:calc(10.5*var(--u));letter-spacing:.18em;line-height:1.65;color:#dbe5f8}
+.lp2-trust-r i{display:block;width:calc(52*var(--u));height:calc(3*var(--u));min-height:2px;background:var(--lp-blue);margin-top:calc(10*var(--u))}
+.lp2-login{display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;padding:calc(100*var(--u)) calc(34*var(--u)) calc(64*var(--u));color:var(--lp-ink);background:linear-gradient(180deg,#ffffff,#f5f8fc);min-height:100vh}
+.lp2-lbrand{margin-bottom:calc(42*var(--u));padding-left:calc(30*var(--u))}
+.lp2-brandblock{display:grid;grid-template-columns:auto 1fr;column-gap:calc(20*var(--u));align-items:center}
+.lp2-brandblock .lp2-mark{width:calc(98*var(--u));height:calc(82*var(--u))}
+.lp2-brandblock .col{display:flex;flex-direction:column}
+.lp2-brandblock .wm{font-size:calc(49*var(--u));font-weight:800;letter-spacing:.12em;line-height:1;color:var(--lp-ink)}
+.lp2-brandblock .lp2-tagline{border:0;padding:0;margin:calc(7*var(--u)) 0 0;font-size:calc(14.5*var(--u));color:#2a3550;letter-spacing:.05em}
+.lp2-brandblock .lp2-sig{color:#1a2440;margin:calc(2*var(--u)) 0 0 calc(4*var(--u));font-size:calc(26*var(--u))}
+.lp2-card{background:var(--lp-white);border:1px solid var(--lp-line);border-radius:calc(9*var(--u));box-shadow:0 calc(14*var(--u)) calc(38*var(--u)) rgba(15,30,60,.07);padding:calc(34*var(--u)) calc(28*var(--u)) calc(26*var(--u))}
+.lp2-card h2{margin:0;font-size:var(--fs-h2);font-weight:700;letter-spacing:-.015em;color:var(--lp-ink)}
+.lp2-sub{margin:calc(8*var(--u)) 0 calc(28*var(--u));font-size:var(--fs-sub);color:var(--lp-gray)}
+.lp2-err{margin:0 0 calc(16*var(--u));padding:calc(10*var(--u)) calc(13*var(--u));border-radius:6px;background:#fdecea;border:1px solid #f3b8b2;color:#8f1d14;font-size:var(--fs-small);line-height:1.4}
+.lp2-field{display:flex;align-items:center;gap:calc(12*var(--u));height:calc(52*var(--u));min-height:44px;margin-bottom:calc(16*var(--u));padding:0 calc(15*var(--u));border-radius:calc(5*var(--u));background:#fff;border:1px solid #dbe2ee;color:#4a5872;transition:border-color .15s,box-shadow .15s}
+.lp2-field svg{width:calc(24*var(--u));min-width:18px;height:calc(24*var(--u));min-height:18px;flex:0 0 auto}
+.lp2-field:focus-within{border-color:var(--lp-blue);box-shadow:0 0 0 3px rgba(10,103,242,.11)}
+.lp2 .lp2-field input{flex:1;min-width:0;height:100%;border:0 !important;outline:none !important;box-shadow:none !important;background:transparent !important;color:var(--lp-ink) !important;font-family:inherit;font-size:var(--fs-in);padding:0 !important;border-radius:0 !important}
+.lp2-field input::placeholder{color:#8d99ae}
+.lp2-eye{border:0;background:transparent;color:#2a3550;cursor:pointer;display:flex;padding:4px;border-radius:6px}
+.lp2-row{display:flex;justify-content:space-between;align-items:center;margin:calc(4*var(--u)) 0 calc(20*var(--u));font-size:var(--fs-small)}
+.lp2-check{white-space:nowrap;display:flex;align-items:center;gap:calc(10*var(--u));cursor:pointer;color:var(--lp-ink)}
+.lp2-check input{position:absolute;opacity:0;pointer-events:none}
+.lp2-check .bx{width:calc(23*var(--u));min-width:18px;height:calc(23*var(--u));min-height:18px;border-radius:4px;background:#fff;border:1.5px solid #b9c4d8;display:flex;align-items:center;justify-content:center}
+.lp2-check input:checked + .bx{background:var(--lp-blue);border-color:var(--lp-blue)}
+.lp2-check input:checked + .bx::after{content:"";width:35%;height:60%;border:solid #fff;border-width:0 2px 2px 0;transform:translateY(-8%) rotate(45deg)}
+.lp2-check input:focus-visible + .bx{box-shadow:0 0 0 3px rgba(10,103,242,.2)}
+.lp2-link{color:var(--lp-blue);cursor:pointer;text-decoration:none;white-space:nowrap}
+.lp2-link:hover{text-decoration:underline}
+.lp2-btn{width:100%;height:calc(56*var(--u));min-height:46px;border:0;border-radius:calc(5*var(--u));background:var(--lp-blue);color:#fff;font-family:inherit;font-size:max(15px,calc(17.5*var(--u)));font-weight:600;cursor:pointer;transition:background .15s,transform .1s}
+.lp2-btn:hover{background:#0857d4}
+.lp2-btn:active{transform:translateY(1px)}
+.lp2-btn:focus-visible{outline:3px solid rgba(10,103,242,.35);outline-offset:2px}
+.lp2-rule{height:1px;background:var(--lp-line);margin:calc(30*var(--u)) 0 calc(24*var(--u))}
+.lp2-benefits{display:grid;grid-template-columns:repeat(3,1fr);gap:calc(8*var(--u));text-align:center}
+.lp2-benefits div{display:flex;flex-direction:column;align-items:center;gap:calc(9*var(--u));color:var(--lp-gray);font-size:var(--fs-ben);white-space:nowrap}
+.lp2-benefits svg{width:calc(30*var(--u));min-width:22px;height:calc(30*var(--u));min-height:22px;color:var(--lp-blue)}
+.lp2-wait{text-align:center;padding:calc(60*var(--u)) calc(28*var(--u))}
+.lp2-wait .lp2-sub{margin:0}
+.lp2-spin{width:34px;height:34px;margin:0 auto 20px;border-radius:50%;border:3px solid #dbe4f3;border-top-color:var(--lp-blue);animation:axSpin .8s linear infinite}
 @keyframes axSpin{to{transform:rotate(360deg)}}
-.ax-tagline{text-align:center;font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:22px;color:rgba(216,189,132,.85);padding:8px 20px 22px;letter-spacing:.01em}
-.ax-foot{display:flex;justify-content:space-between;align-items:center;padding:18px 48px 26px;font-size:12px;color:#727884;border-top:1px solid rgba(255,255,255,.06)}
-.ax-sig{font-family:"Instrument Serif",Georgia,serif;font-style:italic;font-size:16px;color:#9ba1ab}
-@media (max-width:640px){
-  .ax-top{padding:20px 22px}.ax-top-r{display:none}
-  .ax-card{padding:30px 22px 24px}.ax-card h2{font-size:33px}
-  .ax-foot{padding:16px 22px 22px}
+.lp2-toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);z-index:50;max-width:min(520px,calc(100vw - 32px));padding:12px 18px;border-radius:8px;background:#0b1426;color:#fff;font-size:14px;line-height:1.45;box-shadow:0 12px 30px rgba(0,0,0,.35)}
+.lp2-toast.err{background:#8f1d14}
+.lp2-msg{margin-top:auto;padding-top:calc(50*var(--u));padding-left:calc(16*var(--u));font-size:var(--fs-msg);letter-spacing:.18em;white-space:nowrap;color:var(--lp-gray)}
+.lp2-msg i{display:block;width:calc(56*var(--u));height:calc(3*var(--u));min-height:2px;background:var(--lp-blue);margin-top:calc(16*var(--u))}
+/* tablet: keep the two-section split, use readable fixed sizes and a lighter hero */
+@media (max-width:1099px) and (min-width:900px){
+  .lp2{--u:.62px;grid-template-columns:57% 43%;--fs-wm:38px;--fs-h1:40px;--fs-lead:15px;--fs-tag:11.5px;--fs-sig:24px;--fs-label:11px;--fs-ft:13px;--fs-fs:11.5px;--fs-quote:15px;--fs-trust:12.5px;
+    --fs-h2:26px;--fs-sub:15px;--fs-in:15px;--fs-small:14px;--fs-ben:12px;--fs-msg:12px;--px:28px}
+  .lp2-mark{width:70px;height:59px}.lp2-brandblock .lp2-mark{width:60px;height:50px}.lp2-brandblock .wm{font-size:28px}
+  .lp2-brandblock .lp2-tagline{font-size:11px}.lp2-brandblock .lp2-sig{font-size:22px}
+  .lp2-brand-r{display:none}.lp2-copy p{max-width:none}.lp2-quote{display:none}
+  .lp2-feat{width:96px}.lp2-feat em{display:none}.lp2-feat .ic{width:46px;height:46px}
+  .lp2-trust-r{display:none}.lp2-t{padding:0 14px}
+  .lp2-login{padding:56px 24px 40px}.lp2-card{padding:26px 22px 22px}.lp2-field{height:48px}.lp2-btn{height:50px}.lp2-msg{margin-top:36px}
+  .lp2-spacer{min-height:120px}
+  .lp2-photo{inset:auto 0 0 0;aspect-ratio:1/1;background-size:cover;background-position:26% 100%}
+  .lp2-photo::after{background:linear-gradient(180deg,#060e1d 0%,rgba(6,14,29,.35) 30%,rgba(6,14,29,0) 55%,rgba(6,14,29,.85) 100%)}
+}
+/* mobile: stack — branding, message, photography, login, indicators */
+@media (max-width:899px){
+  .lp2{--u:.62px;display:flex;flex-direction:column;--fs-wm:36px;--fs-h1:36px;--fs-lead:15.5px;--fs-tag:12px;--fs-sig:24px;--fs-label:11px;--fs-ft:13px;--fs-fs:12px;--fs-trust:13px;
+    --fs-h2:26px;--fs-sub:15px;--fs-in:16px;--fs-small:14.5px;--fs-ben:12.5px;--fs-msg:11.5px;--px:20px;background:#fff}
+  .lp2-hero,.lp2-hero-in{display:contents}
+  .lp2-brand{order:1;background:var(--lp-navy);padding:22px 20px 0;display:block}
+  .lp2-brand-r,.lp2-quote,.lp2-spacer,.lp2-trust-r,.lp2-lbrand{display:none}
+  .lp2-brand-l{grid-template-columns:1fr;row-gap:8px}
+  .lp2-tagline.hero{grid-row:2;grid-column:1;border:0;padding:0;margin-top:2px}
+  .lp2-sig.hero{grid-row:3;grid-column:1;padding:0;margin:0}
+  .lp2-mark{width:62px;height:52px}
+  .lp2-copy{order:2;background:var(--lp-navy);margin:0;padding:22px 20px 8px}
+  .lp2-feats{order:3;background:var(--lp-navy);margin:0;padding:14px 20px 26px;display:grid;grid-template-columns:1fr 1fr;gap:18px 12px}
+  .lp2-feat{width:auto;border:0;padding:0;text-align:left;display:grid;grid-template-columns:auto 1fr;column-gap:12px;align-items:center}
+  .lp2-feat .ic{grid-row:1/3;margin:0;width:44px;height:44px}.lp2-feat b{align-self:end}.lp2-feat em{display:none}
+  .lp2-photo{order:4;position:relative;inset:auto;z-index:0;height:min(58vw,300px);background-position:8% 100%}
+  .lp2-photo::after{background:linear-gradient(180deg,rgba(6,14,29,.9),rgba(6,14,29,0) 35%,rgba(6,14,29,.2))}
+  .lp2-login{order:5;min-height:0;padding:28px 18px 24px;align-items:center}
+  .lp2-login>*{width:100%;max-width:520px}
+  .lp2-card{padding:24px 18px 20px}
+  .lp2-trust{order:6;padding:20px;flex-direction:column;align-items:flex-start;background:var(--lp-navy)}
+  .lp2-trust-l{display:grid;grid-template-columns:1fr 1fr;gap:14px 10px;width:100%}
+  .lp2-t{padding:0;border:0}
+  .lp2-msg{margin-top:24px}
 }
 .demo-chip{white-space:nowrap;position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:9px;
   padding:6px 14px;border-radius:999px;background:var(--rail);color:#fff;font-size:12px;box-shadow:var(--shadow);border:1px solid var(--warn)}
@@ -2539,46 +2631,105 @@ function axiomGlobeSvg(){
   </svg>`;
 }
 /* ---------------- AXIOM LANDING PAGE ---------------- */
-function axIcon(n){
+/* ---------------- LANDING PAGE (split layout) ----------------
+   LandingPage
+   ├─ HeroSection: BrandHeader · HeroCopy · FeatureGrid · HeroPhotography · Quote · TrustIndicators
+   └─ LoginSection: AxiomBrand · LoginCard · LoginBenefits · closing message */
+function axi(n){
   var i = {
-    shield:'<path d="M12 2.5l8 3v6c0 5-3.4 8.8-8 10.5-4.6-1.7-8-5.5-8-10.5v-6z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.6 12.1l2.4 2.4 4.4-4.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
     user:'<circle cx="12" cy="8" r="3.8" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M4.5 20.5c0-4 3.4-6.5 7.5-6.5s7.5 2.5 7.5 6.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
     lock:'<rect x="5" y="10.5" width="14" height="10" rx="2.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8.2 10.5V7.8a3.8 3.8 0 017.6 0v2.7" fill="none" stroke="currentColor" stroke-width="1.7"/>',
     eye:'<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z" fill="none" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="12" r="2.8" fill="none" stroke="currentColor" stroke-width="1.7"/>',
-    deal:'<rect x="4" y="3.5" width="16" height="17" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M8 8.5h8M8 12h8M8 15.5h4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>',
-    screen:'<rect x="3" y="4.5" width="18" height="12" rx="2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M9 20h6M12 16.5V20" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7.5 12.5l3-3 2.5 2 3.5-4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
-    chart:'<path d="M4 20V10M10 20V4M16 20v-7M22 20H2" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>',
-    team:'<circle cx="9" cy="8.5" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M2.8 19.5c0-3.4 2.8-5.5 6.2-5.5s6.2 2.1 6.2 5.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M16 5.6a3 3 0 010 5.8M18.6 14.6c1.6.7 2.6 2.2 2.6 4.4" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>'
+    shieldO:'<path d="M12 2.8l7.5 2.8v5.6c0 4.6-3.2 8.3-7.5 10-4.3-1.7-7.5-5.4-7.5-10V5.6z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M8.6 12l2.4 2.4 4.4-4.6" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>',
+    dealer:'<circle cx="8.6" cy="8.6" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="15.6" cy="8.6" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="M3 18.5c0-3 2.4-4.8 5.6-4.8 1.4 0 2.6.3 3.4.9.8-.6 2-.9 3.4-.9 3.2 0 5.6 1.8 5.6 4.8" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>',
+    barsO:'<path d="M5 20v-5M10.5 20V9M16 20V4M2.5 20.5h19" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>',
+    shield:'<path d="M12 2.5l8 3v6.2c0 5-3.4 8.9-8 10.6-4.6-1.7-8-5.6-8-10.6V5.5z" fill="currentColor"/><path d="M8.4 12.2l2.5 2.5 4.7-4.9" fill="none" stroke="#0a1224" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    bolt:'<path d="M13.5 2L4.5 13.5h6l-1.5 8.5 9-11.5h-6z" fill="currentColor"/>',
+    bars:'<rect x="4" y="12" width="3.6" height="8" fill="currentColor"/><rect x="10.2" y="7" width="3.6" height="13" fill="currentColor"/><rect x="16.4" y="3" width="3.6" height="17" fill="currentColor"/>',
+    people:'<circle cx="8" cy="8" r="3.3" fill="currentColor"/><circle cx="16.6" cy="8.6" r="2.8" fill="currentColor"/><path d="M1.8 20.5c0-3.8 2.8-6.2 6.2-6.2s6.2 2.4 6.2 6.2zM13.6 20.5c.2-2.3 1.7-4.1 3.7-4.7 2.6.2 4.9 2 4.9 4.7z" fill="currentColor"/>',
+    gear:'<path fill-rule="evenodd" fill="currentColor" d="M12 2l1.8 2.7 3.2-.7.6 3.2 2.8 1.7-1.5 2.9 1.5 2.9-2.8 1.7-.6 3.2-3.2-.7L12 22l-1.8-2.7-3.2.7-.6-3.2-2.8-1.7 1.5-2.9-1.5-2.9 2.8-1.7.6-3.2 3.2.7zM12 8.4a3.6 3.6 0 100 7.2 3.6 3.6 0 000-7.2z"/>',
+    target:'<circle cx="11" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="11" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M11 13L21 3M16 3h5v5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
   }[n];
-  return `<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">${i}</svg>`;
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${i}</svg>`;
 }
-function axShell(cardHtml){
-  return `<div class="ax-page">
-    <div class="ax-bg" aria-hidden="true"><div class="ax-glow"></div><div class="ax-grid"></div></div>
-    <header class="ax-top"><div class="ax-logo">${axiomMarkSvg(40)}<span class="ax-wm">AXIOM</span></div>
-      <span class="ax-top-r">Dealership Command Center</span></header>
-    <main class="ax-center">${cardHtml}</main>
-    <div class="ax-tagline">See. Understand. Act.</div>
-    <footer class="ax-foot"><span>© ${new Date().getFullYear()} AXIOM</span><span class="ax-sig">by Rahul Champaneri</span></footer>
+/* AXIOM lockup: the A monogram carries a blue lightning swoosh and reads as
+   the first letter, followed by "XIOM". tone = "light" (on dark) or "dark". */
+function axMark(tone){
+  var a = tone === "light" ? "#ffffff" : "#0b1426";
+  return `<svg class="lp2-mark" viewBox="0 0 132 110" aria-hidden="true">
+      <defs><linearGradient id="lg${tone}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a55e6"/><stop offset="1" stop-color="#2f9bff"/></linearGradient></defs>
+      <path d="M4 106L50 6h24l50 100h-27L62 38 31 106z" fill="${a}"/>
+      <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="url(#lg${tone})"/>
+    </svg>`;
+}
+function axLogo(tone){
+  return `<div class="lp2-logo ${tone}" role="img" aria-label="AXIOM">${axMark(tone)}<span class="lp2-xiom">XIOM</span></div>`;
+}
+function axBrandBlock(tone){
+  return `<div class="lp2-brandblock ${tone}" role="img" aria-label="AXIOM — AI eXecutive Intelligence and Operations Management, by Rahul Champaneri">${axMark(tone)}
+    <div class="col"><div class="wm">AXIOM</div>
+      <div class="lp2-tagline"><span>AI eXecutive Intelligence</span><span>and Operations Management</span></div>
+      <div class="lp2-sig">By Rahul Champaneri</div></div></div>`;
+}
+function axLanding(cardHtml){
+  var feats = [
+    ["gear","F&amp;I Operations","Simplify. Automate.<br>Close Faster."],
+    ["bars","Performance","Real Data.<br>Real Growth."],
+    ["people","Team","Empower People.<br>Build Success."],
+    ["target","Growth","Drive More<br>Profitability."]
+  ].map(function(f){ return `<div class="lp2-feat"><span class="ic">${axi(f[0])}</span><b>${f[1]}</b><em>${f[2]}</em></div>`; }).join("");
+  var trust = [["shield","Secure"],["bolt","Reliable"],["bars","Built for Dealers"],["people","Always Improving"]]
+    .map(function(t){ return `<span class="lp2-t">${axi(t[0])}<span>${t[1]}</span></span>`; }).join("");
+  return `<div class="lp2">
+    <section class="lp2-hero">
+      <div class="lp2-photo" role="img" aria-label="A Nissan dealership at dusk with a Rogue, Altima and Kicks in front"></div>
+      <div class="lp2-hero-in">
+        <header class="lp2-brand">
+          <div class="lp2-brand-l">${axLogo("light")}
+            <div class="lp2-tagline hero"><span>AI eXecutive Intelligence</span><span>and Operations Management</span></div>
+            <div class="lp2-sig hero">By Rahul Champaneri</div></div>
+          <div class="lp2-brand-r"><div class="lp2-label">DEALERSHIP COMMAND CENTER</div>
+            <div class="lp2-pills"><span>PEOPLE</span><i></i><span>PROCESS</span><i></i><span>PERFORMANCE</span><i></i><span>PROFIT</span></div></div>
+        </header>
+        <div class="lp2-copy">
+          <h1>Drive a Smarter<br><em>Tomorrow</em></h1>
+          <p>AI-powered tools to streamline F&amp;I operations, track performance, empower your team and deliver exceptional customer experiences.</p>
+        </div>
+        <div class="lp2-feats">${feats}</div>
+        <div class="lp2-spacer"></div>
+        <blockquote class="lp2-quote"><div class="qb"></div><div><p>“Better tools. Stronger teams.<br>Happier customers.”</p><cite>— Rahul Champaneri</cite></div></blockquote>
+      </div>
+      <footer class="lp2-trust"><div class="lp2-trust-l">${trust}</div>
+        <div class="lp2-trust-r"><span>TECHNOLOGY DRIVES PEOPLE.<br>PEOPLE DRIVE A BRIGHTER TOMORROW.</span><i></i></div></footer>
+    </section>
+    <section class="lp2-login">
+      <div class="lp2-lbrand">${axBrandBlock("dark")}</div>
+      ${cardHtml}
+      <div class="lp2-msg"><span>PEOPLE. PROCESS. PERFORMANCE. PROFIT.</span><i></i></div>
+    </section>
+    ${state.ui.toast ? `<div class="lp2-toast ${state.ui.toast.kind==="err"?"err":""}" role="status">${esc(state.ui.toast.msg)}</div>` : ""}
   </div>`;
 }
 function renderLogin(){
   var err = state.ui.loginError, checking = !!state.ui.authChecking;
+  var remember = true; try { remember = localStorage.getItem("axiom_remember") !== "0"; } catch (e) {}
+  var benefits = `<div class="lp2-benefits"><div>${axi("shieldO")}<span>Secure Access</span></div><div>${axi("dealer")}<span>Dealer Focused</span></div><div>${axi("barsO")}<span>Greater Tomorrow</span></div></div>`;
   var card = checking
-    ? `<div class="ax-card ax-wait"><div class="ax-spin"></div><h2>Signing you in</h2><p class="ax-sub">Restoring your secure session…</p></div>`
-    : `<div class="ax-card">
-        <h2>Welcome back</h2>
-        <p class="ax-sub">Sign in to your AXIOM Command Center.</p>
-        ${err ? `<div class="ax-err" role="alert">${esc(err)}</div>` : ""}
-        <label class="ax-lbl" for="loginEmail">Email</label>
-        <div class="ax-field"><input type="text" id="loginEmail" placeholder="name@dealership.com" autocomplete="username" spellcheck="false"></div>
-        <div class="ax-lblrow"><label class="ax-lbl" for="loginPassword">Password</label><a class="ax-link" data-act="forgot-password">Forgot password?</a></div>
-        <div class="ax-field"><input type="password" id="loginPassword" placeholder="Enter your password" autocomplete="current-password">
-          <button type="button" class="ax-eye" data-act="toggle-pw" aria-label="Show or hide password">${axIcon("eye")}</button></div>
-        <button type="button" class="ax-btn" data-act="do-login">Sign in</button>
-        <div class="ax-fine">${axIcon("lock")}<span>Encrypted connection. Access is managed by your administrator.</span></div>
+    ? `<div class="lp2-card lp2-wait"><div class="lp2-spin"></div><h2>Signing you in</h2><p class="lp2-sub">Restoring your secure session…</p></div>`
+    : `<div class="lp2-card">
+        <h2>Welcome Back</h2>
+        <p class="lp2-sub">Sign in to your Command Center</p>
+        ${err ? `<div class="lp2-err" role="alert">${esc(err)}</div>` : ""}
+        <div class="lp2-field">${axi("user")}<input type="text" id="loginEmail" placeholder="Email or Username" autocomplete="username" spellcheck="false" aria-label="Email or Username"></div>
+        <div class="lp2-field">${axi("lock")}<input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" aria-label="Password">
+          <button type="button" class="lp2-eye" data-act="toggle-pw" aria-label="Show or hide password">${axi("eye")}</button></div>
+        <div class="lp2-row"><label class="lp2-check"><input type="checkbox" id="loginRemember" ${remember ? "checked" : ""}><span class="bx"></span>Remember me</label>
+          <a class="lp2-link" data-act="forgot-password">Forgot password?</a></div>
+        <button type="button" class="lp2-btn" data-act="do-login">Sign In</button>
+        <div class="lp2-rule"></div>
+        ${benefits}
       </div>`;
-  return axShell(card);
+  return axLanding(card);
 }
 
 /* ---------------- ROUTER + RENDER ---------------- */
@@ -2990,6 +3141,8 @@ function doLogin(){
   var pw = pwEl ? pwEl.value : "";
   if (!email || !pw){ state.ui.loginError = "Enter your email and password."; commit(); return; }
   if (!sb){ state.ui.loginError = "The sign-in service couldn't load. Check your connection and refresh."; commit(); return; }
+  var remEl = document.getElementById("loginRemember");
+  try { localStorage.setItem("axiom_remember", remEl && !remEl.checked ? "0" : "1"); sessionStorage.setItem("axiom_active", "1"); } catch (e) {}
   sb.auth.signInWithPassword({ email:email, password:pw }).then(function(r){
     if (r.error){
       state.ui.loginError = /invalid login|banned|not found/i.test(r.error.message) ? "That email and password don't match an active account." : r.error.message;
@@ -3016,8 +3169,12 @@ function authInit(){
   state.loggedIn = false;
   if (!sb) return;
   state.ui.authChecking = true;
+  /* "Remember me" unticked = the session lasts only until the browser is closed. */
+  var forget = false;
+  try { forget = localStorage.getItem("axiom_remember") === "0" && !sessionStorage.getItem("axiom_active"); } catch (e) {}
   sb.auth.getSession().then(function(r){
-    if (r.data && r.data.session) return loadProfileAndEnter();
+    if (r.data && r.data.session && forget) return sb.auth.signOut().then(function(){ state.ui.authChecking = false; commit(); });
+    if (r.data && r.data.session){ try { sessionStorage.setItem("axiom_active", "1"); } catch (e) {} return loadProfileAndEnter(); }
     state.ui.authChecking = false; commit();
   }, function(){ state.ui.authChecking = false; commit(); });
 }
@@ -3039,16 +3196,15 @@ setInterval(function(){
 }, 1000);
 function renderChangePassword(){
   var err = state.ui.pwError;
-  return axShell(`<div class="ax-card">
+  return axLanding(`<div class="lp2-card">
       <h2>Create your password</h2>
-      <p class="ax-sub">You signed in with a temporary password. Choose your own to continue.</p>
-      ${err ? `<div class="ax-err" role="alert">${esc(err)}</div>` : ""}
-      <label class="ax-lbl" for="newPw">New password</label>
-      <div class="ax-field"><input type="password" id="newPw" placeholder="At least 8 characters" autocomplete="new-password"></div>
-      <label class="ax-lbl" for="newPw2">Confirm password</label>
-      <div class="ax-field"><input type="password" id="newPw2" placeholder="Repeat the password" autocomplete="new-password"></div>
-      <button type="button" class="ax-btn" data-act="do-change-password">Save and continue</button>
-      <div class="ax-fine"><span><a class="ax-link" data-act="logout" style="cursor:pointer">Sign out</a></span></div>
+      <p class="lp2-sub">You signed in with a temporary password. Choose your own to continue.</p>
+      ${err ? `<div class="lp2-err" role="alert">${esc(err)}</div>` : ""}
+      <div class="lp2-field">${axi("lock")}<input type="password" id="newPw" placeholder="New password (8+ characters)" autocomplete="new-password" aria-label="New password"></div>
+      <div class="lp2-field">${axi("lock")}<input type="password" id="newPw2" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password"></div>
+      <button type="button" class="lp2-btn" data-act="do-change-password">Save and continue</button>
+      <div class="lp2-rule"></div>
+      <div style="text-align:center"><a class="lp2-link" data-act="logout">Sign out</a></div>
     </div>`);
 }
 function demoChip(){
@@ -3430,7 +3586,7 @@ document.addEventListener("click", function(ev){
     case "reset-demo": resetDemo(); break;
     case "do-login": doLogin(); break;
     case "logout": doLogout(); break;
-    case "forgot-password": toast("Ask your administrator to reset your password — they can set a new temporary one for you under Users and access.","info"); break;
+    case "forgot-password": toast("Ask your administrator to reset your password — they can set a new temporary one for you under Users and access.","info"); commit(); break;
   }
 });
 
