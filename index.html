@@ -2839,6 +2839,7 @@ function completeDeal(){
   if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
   var done = C.clone(state.tx);
   done.status = "Completed"; done.createdAt = C.todayISO();
+  state.completed = state.completed.filter(function(d){ return d.id !== done.id; });
   state.completed.push(done);
   state.tx.status = "Completed";
   state.tx.display.mode = "thankyou";
@@ -2851,13 +2852,12 @@ function newDeal(){
   state.route = "finance";
   commit();
 }
-/* Reopening a saved deal pulls it back out of "completed" and makes it the
-   live transaction again — completing it re-saves a fresh copy rather than
-   leaving a duplicate behind. */
+/* Reopening a saved deal loads a copy as the live transaction but leaves the
+   saved record in Reports, so nothing vanishes if you leave without finishing.
+   Completing it again replaces the saved record (matched by deal id). */
 function openSavedDeal(id){
   var deal = state.completed.filter(function(d){ return d.id === id; })[0];
   if (!deal){ toast("That deal couldn't be found.","err"); return; }
-  state.completed = state.completed.filter(function(d){ return d.id !== id; });
   var opened = C.clone(deal);
   opened.status = "Open";
   if (opened.dealershipId && opened.dealershipId !== state.activeDealershipId){
