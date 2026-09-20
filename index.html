@@ -1157,6 +1157,7 @@ function allowedRouteKeys(){
   if (role === "Master Administrator") return null;
   if (role === "General Manager") return ["dashboard","finance","products","reports","users","settings"];
   if (role === "FSM Manager") return ["finance","products","reports"];
+  if (role === "Salesperson") return [];
   return ["finance","products","reports"];
 }
 function navItems(){
@@ -2006,7 +2007,7 @@ function userModal(){
       <div class="inline">
         <label class="f"><span>Temporary password</span><input type="text" data-uf="password" placeholder="At least 8 characters"></label>
         <label class="f"><span>Role</span><select data-uf="role">
-          <option>FSM</option><option>FSM Manager</option><option>General Manager</option>
+          <option>FSM</option><option>FSM Manager</option><option>General Manager</option><option>Salesperson</option>
           ${V.isMaster()?"<option>Master Administrator</option>":""}</select></label>
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
@@ -2144,6 +2145,13 @@ function deleteDealer(id){
 }
 
 /* ---------------- SETTINGS ---------------- */
+function viewSalespersonRedirect(){
+  return `<div class="grid g2"><div class="card"><div class="card-h"><h2>Axiom Pulse</h2></div><div class="card-b">
+    <div class="notice info">Your account is set up for deliveries, not Command Center. Sign in at
+      <strong>pulse.rahulchamp.ca</strong> to see your assigned deliveries and enable notifications.</div>
+    <button class="btn" data-act="logout" style="margin-top:12px">Sign out</button>
+  </div></div></div>`;
+}
 function viewSettings(){
   var canEdit = V.isAdmin(), dis = canEdit ? "" : "disabled", b = V.brand();
   return `<div class="grid g2">
@@ -2718,6 +2726,7 @@ function renderLogin(){
 function routeView(){
   if (!state.config) return renderOnboarding();
   var allowed = V.allowedRouteKeys();
+  if (allowed && allowed.length === 0) return viewSalespersonRedirect();
   if (allowed && allowed.indexOf(state.route) === -1) state.route = allowed[0] || "finance";
   switch (state.route){
     case "dashboard": return V.viewDashboard();
