@@ -18,17 +18,24 @@ Deno.serve(async (req) => {
     const { data: u } = await admin.auth.getUser(token);
     if (!u?.user) return json({ error: "Not signed in" }, 401);
     const { data: me } = await admin.from("profiles").select("*").eq("id", u.user.id).single();
-    if (!me || !me.active || !["Master Administrator", "General Manager"].includes(me.role))
+    if (!me || !me.active || !["Master Administrator", "General Manager", "FSM"].includes(me.role))
       return json({ error: "Not allowed" }, 403);
     const isMaster = me.role === "Master Administrator";
+    // An FSM can only invite/manage Salesperson accounts in their own dealership
+    // (delivery coordination in Axiom Pulse) — everything else stays GM/Master only.
+    const isFsmOnly = me.role === "FSM";
 
     const body = await req.json();
-    const canTouch = (target: { role: string; dealership_id: string | null }) =>
-      isMaster || (target.role !== "Master Administrator" && target.dealership_id === me.dealership_id);
+    const canTouch = (target: { role: string; dealership_id: string | null }) => {
+      if (isMaster) return true;
+      if (isFsmOnly) return target.role === "Salesperson" && target.dealership_id === me.dealership_id;
+      return target.role !== "Master Administrator" && target.dealership_id === me.dealership_id;
+    };
 
     if (body.action === "list") {
       let q = admin.from("profiles").select("*").order("created_at");
       if (!isMaster) q = q.eq("dealership_id", me.dealership_id);
+      if (isFsmOnly) q = q.eq("role", "Salesperson");
       const { data, error } = await q;
       if (error) throw error;
       return json({ users: data });
@@ -38,6 +45,7 @@ Deno.serve(async (req) => {
       const { email, password, name, role, dealership_id, access_type, expires_at } = body;
       if (!email || !password || !name || !ROLES.includes(role)) return json({ error: "Missing or invalid fields" }, 400);
       if (String(password).length < 8) return json({ error: "Temporary password must be at least 8 characters" }, 400);
+      if (isFsmOnly && role !== "Salesperson") return json({ error: "FSM can only invite Salesperson accounts" }, 403);
       const target = { role, dealership_id: isMaster ? (dealership_id ?? null) : me.dealership_id };
       if (!canTouch(target)) return json({ error: "Not allowed to create that user" }, 403);
       if (target.dealership_id) {
@@ -66,6 +74,7 @@ Deno.serve(async (req) => {
       for (const k of ["name", "role", "active", "access_type", "expires_at", "dealership_id"])
         if (k in body) patch[k] = body[k];
       if (patch.role && !ROLES.includes(patch.role as string)) return json({ error: "Invalid role" }, 400);
+      if (isFsmOnly && patch.role && patch.role !== "Salesperson") return json({ error: "Not allowed" }, 403);
       if (!isMaster) { delete patch.dealership_id; if (patch.role === "Master Administrator") return json({ error: "Not allowed" }, 403); }
       if (patch.dealership_id) {
         const { data: dl } = await admin.from("dealerships").select("id").eq("id", patch.dealership_id as string).maybeSingle();

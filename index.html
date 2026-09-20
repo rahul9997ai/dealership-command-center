@@ -1158,6 +1158,7 @@ function allowedRouteKeys(){
   if (role === "General Manager") return ["dashboard","finance","products","reports","users","settings"];
   if (role === "FSM Manager") return ["finance","products","reports"];
   if (role === "Salesperson") return [];
+  if (role === "FSM") return ["finance","products","reports","users"];
   return ["finance","products","reports"];
 }
 function navItems(){
@@ -1967,8 +1968,9 @@ function viewReports(){
 
 /* ---------------- USERS ---------------- */
 function viewUsers(){
-  var canEdit = V.isAdmin();
-  var rows = V.storeUsers().filter(function(u){ return u.id !== "u0"; }).map(function(u){
+  var isFsmOnly = V.currentUser().role === "FSM";
+  var canEdit = V.isAdmin() || isFsmOnly;
+  var rows = V.storeUsers().filter(function(u){ return u.id !== "u0" && (!isFsmOnly || u.role === "Salesperson"); }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
     return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(u.email)}</div></td>
       <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
@@ -2006,9 +2008,9 @@ function userModal(){
       </div>
       <div class="inline">
         <label class="f"><span>Temporary password</span><input type="text" data-uf="password" placeholder="At least 8 characters"></label>
-        <label class="f"><span>Role</span><select data-uf="role">
-          <option>FSM</option><option>FSM Manager</option><option>General Manager</option><option>Salesperson</option>
-          ${V.isMaster()?"<option>Master Administrator</option>":""}</select></label>
+        <label class="f"><span>Role</span><select data-uf="role" ${V.currentUser().role==="FSM"?"disabled":""}>
+          ${V.currentUser().role==="FSM" ? "<option>Salesperson</option>" : `<option>FSM</option><option>FSM Manager</option><option>General Manager</option><option>Salesperson</option>
+          ${V.isMaster()?"<option>Master Administrator</option>":""}`}</select></label>
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
       </div>
