@@ -42,10 +42,30 @@ Deno.serve(async (req) => {
     }
 
     if (body.action === "create") {
-      const { email, password, name, role, dealership_id, access_type, expires_at } = body;
-      if (!email || !password || !name || !ROLES.includes(role)) return json({ error: "Missing or invalid fields" }, 400);
+      const { password, name, role, dealership_id, access_type, expires_at } = body;
+      if (!password || !name || !ROLES.includes(role)) return json({ error: "Missing or invalid fields" }, 400);
       if (String(password).length < 8) return json({ error: "Temporary password must be at least 8 characters" }, 400);
       if (isFsmOnly && role !== "Salesperson") return json({ error: "FSM can only invite Salesperson accounts" }, 403);
+
+      // Salesperson accounts sign in with a username, not a real email —
+      // Supabase Auth still needs an email under the hood, so we generate a
+      // hidden one deterministically from the username. The salesperson
+      // never sees or uses it; the Pulse sign-in screen maps it back.
+      let email: string;
+      let username: string | null = null;
+      if (role === "Salesperson") {
+        username = String(body.username || "").trim().toLowerCase();
+        if (!/^[a-z0-9._-]{3,30}$/.test(username)) {
+          return json({ error: "Username must be 3-30 characters: letters, numbers, dots, underscores or hyphens only" }, 400);
+        }
+        const { data: taken } = await admin.from("profiles").select("id").ilike("username", username).maybeSingle();
+        if (taken) return json({ error: "That username is already taken" }, 400);
+        email = `${username}@pulse.local`;
+      } else {
+        email = String(body.email || "").trim();
+        if (!email) return json({ error: "Missing or invalid fields" }, 400);
+      }
+
       const target = { role, dealership_id: isMaster ? (dealership_id ?? null) : me.dealership_id };
       if (!canTouch(target)) return json({ error: "Not allowed to create that user" }, 403);
       if (target.dealership_id) {
@@ -56,7 +76,7 @@ Deno.serve(async (req) => {
       const { data: created, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
       if (error) return json({ error: error.message }, 400);
       const { error: pe } = await admin.from("profiles").insert({
-        id: created.user.id, email, name, role, dealership_id: target.dealership_id,
+        id: created.user.id, email, username, name, role, dealership_id: target.dealership_id,
         access_type: access_type === "demo" ? "demo" : "full",
         expires_at: access_type === "demo" ? expires_at : null, must_change_password: true,
       });
