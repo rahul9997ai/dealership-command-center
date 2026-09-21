@@ -1972,7 +1972,7 @@ function viewUsers(){
   var canEdit = V.isAdmin() || isFsmOnly;
   var rows = V.storeUsers().filter(function(u){ return u.id !== "u0" && (!isFsmOnly || u.role === "Salesperson"); }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
-    return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(u.email)}</div></td>
+    return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${u.username ? "@" + esc(u.username) : esc(u.email)}</div></td>
       <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
       <td>${V.isMaster() && u.role !== "Master Administrator" ? `<select data-act="assign-dealership" data-user="${u.id}" style="min-width:190px">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
@@ -2004,7 +2004,9 @@ function userModal(){
     <div class="modal-b">
       <div class="inline">
         <label class="f"><span>Full name</span><input type="text" data-uf="name" placeholder="e.g. Alexis Nadeau"></label>
-        <label class="f"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca"></label>
+        ${V.currentUser().role==="FSM"
+          ? `<label class="f"><span>Username</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>`
+          : `<label class="f"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca (Salesperson: leave blank)"></label>`}
       </div>
       <div class="inline">
         <label class="f"><span>Temporary password</span><input type="text" data-uf="password" placeholder="At least 8 characters"></label>
@@ -2014,6 +2016,9 @@ function userModal(){
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
       </div>
+      ${V.currentUser().role==="FSM" ? "" : `<div class="inline">
+        <label class="f"><span>Username (Salesperson role only)</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
+      </div>`}
       <div class="f"><span>Access</span>
         <div class="chiprow">
           <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
@@ -2022,27 +2027,38 @@ function userModal(){
       <div id="ufDemoBox" class="f" style="display:none"><span>Demo ends</span>
         ${wheelPicker(state.ui.inviteSel || (state.ui.inviteSel = defaultWheelSel(Date.now() + 7*86400000)), "invite")}
       </div>
-      <p class="small muted">No email verification is needed. Share the temporary password with the user — they'll be asked to set their own the first time they sign in. Demo users get the full functionality of the role you pick until the expiry.</p>
+      <p class="small muted">No email verification is needed. Share the temporary password with the user — they'll be asked to set their own the first time they sign in. A Salesperson signs in with a Username and password in Axiom Pulse instead of an email. Demo users get the full functionality of the role you pick until the expiry.</p>
     </div></div></div>`;
 }
 function saveUser(){
   var root = document.querySelector(".modal");
   if (!root) return;
-  function f(k){ return root.querySelector('[data-uf="'+k+'"]'); }
-  var name = f("name").value.trim(), email = f("email").value.trim().toLowerCase(), pw = f("password").value.trim();
+  function f(k){ var el = root.querySelector('[data-uf="'+k+'"]'); return el ? el : null; }
+  var name = f("name").value.trim(), pw = f("password").value.trim();
+  var role = f("role").value;
   if (!name){ toast("Enter the user's name.","err"); return; }
-  if (!/^\S+@\S+\.\S+$/.test(email)){ toast("Enter a valid email address.","err"); return; }
   if (pw.length < 8){ toast("The temporary password needs at least 8 characters.","err"); return; }
+  var payload = { action:"create", password:pw, name:name, role:role,
+    dealership_id: role === "Master Administrator" ? null : (f("dealership").value || null) };
+  if (role === "Salesperson"){
+    var usernameEl = f("username");
+    var username = usernameEl ? usernameEl.value.trim().toLowerCase() : "";
+    if (!/^[a-z0-9._-]{3,30}$/.test(username)){ toast("Username must be 3-30 characters: letters, numbers, dots, underscores or hyphens only.","err"); return; }
+    payload.username = username;
+  } else {
+    var emailEl = f("email");
+    var email = emailEl ? emailEl.value.trim().toLowerCase() : "";
+    if (!/^\S+@\S+\.\S+$/.test(email)){ toast("Enter a valid email address.","err"); return; }
+    payload.email = email;
+  }
   var access = f("access").value;
   var expDate = wheelDate(state.ui.inviteSel || defaultWheelSel(Date.now() + 7*86400000));
   if (access === "demo" && !(expDate.getTime() > Date.now())){ toast("Pick a demo end date and time in the future.","err"); return; }
-  var exp = expDate.toISOString();
-  var role = f("role").value;
+  payload.access_type = access;
+  payload.expires_at = access === "demo" ? expDate.toISOString() : null;
   toast("Creating user…","info");
-  adminCall({ action:"create", email:email, password:pw, name:name, role:role,
-    dealership_id: role === "Master Administrator" ? null : (f("dealership").value || null),
-    access_type:access, expires_at: access === "demo" ? exp : null })
-  .then(function(){ state.ui.userForm = false; toast("User created — share the temporary password with " + name.split(" ")[0] + ".","ok"); refreshUsers(); commit(); })
+  adminCall(payload)
+  .then(function(){ state.ui.userForm = false; toast("User created — share the temporary " + (role==="Salesperson"?"username and ":"") + "password with " + name.split(" ")[0] + ".","ok"); refreshUsers(); commit(); })
   .catch(function(e){ toast(e.message, "err"); });
 }
 
@@ -3070,7 +3086,7 @@ function endSession(msg){
 }
 
 function upsertProfileUser(p){
-  var rec = { id:p.id, name:p.name, role:p.role, email:p.email, dealershipId:p.dealership_id || null,
+  var rec = { id:p.id, name:p.name, role:p.role, email:p.email, username:p.username || null, dealershipId:p.dealership_id || null,
     active:p.active !== false, demo:p.access_type === "demo", expiresAt:p.expires_at || null,
     mustChange:!!p.must_change_password, onboarded:!!p.onboarded, accessDays:null, restrictions:[],
     initials:String(p.name||"?").split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase() };
@@ -3089,7 +3105,7 @@ function adminCall(body){
   });
 }
 function refreshUsers(){
-  if (!sb || !V.isAdmin()) return;
+  if (!sb || !(V.isAdmin() || V.currentUser().role === "FSM")) return;
   adminCall({ action:"list" }).then(function(r){ (r.users || []).forEach(upsertProfileUser); commit(); }).catch(function(){});
 }
 function failLogin(msg){ return endSession(msg); }
