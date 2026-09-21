@@ -3526,7 +3526,10 @@ document.addEventListener("click", function(ev){
         /* A leftover from before real accounts existed — it only lives in this browser, so there's nothing on the server to delete. */
         state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); break;
       }
-      adminCall({ action:"delete", id:uid2 }).then(function(){
+      adminCall({ action:"delete", id:uid2 }).then(function(r){
+        if (r && r.deactivated){
+          ud.active = false; toast(ud.name + " has linked records, so the account was deactivated and can no longer sign in.","ok"); commit(); refreshUsers(); return;
+        }
         state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit();
       }).catch(function(e){ toast(e.message,"err"); });
       break; }

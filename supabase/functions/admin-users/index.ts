@@ -98,8 +98,19 @@ Deno.serve(async (req) => {
 
     if (body.action === "delete") {
       if (body.id === me.id) return json({ error: "You can't delete yourself" }, 400);
+      const { data: tgt } = await admin.from("profiles").select("role, dealership_id").eq("id", body.id).single();
+      if (!tgt) return json({ error: "User not found" }, 404);
+      if (tgt.role === "Master Administrator") return json({ error: "A master administrator can't be removed" }, 403);
+      if (!canTouch(tgt)) return json({ error: "Not allowed" }, 403);
       const { error } = await admin.auth.admin.deleteUser(body.id);
-      if (error) return json({ error: error.message }, 400);
+      if (error) {
+        // The account is referenced by other records (e.g. deliveries), so it can't be erased.
+        // Deactivate and ban it instead so it can no longer sign in.
+        const { error: e2 } = await admin.from("profiles").update({ active: false }).eq("id", body.id);
+        if (e2) return json({ error: error.message }, 400);
+        await admin.auth.admin.updateUserById(body.id, { ban_duration: "876000h" });
+        return json({ ok: true, deactivated: true });
+      }
       return json({ ok: true });
     }
     return json({ error: "Unknown action" }, 400);
