@@ -1970,7 +1970,14 @@ function viewReports(){
 function viewUsers(){
   var isFsmOnly = V.currentUser().role === "FSM";
   var canEdit = V.isAdmin() || isFsmOnly;
-  var rows = V.storeUsers().filter(function(u){ return u.id !== "u0" && (!isFsmOnly || u.role === "Salesperson"); }).map(function(u){
+  // Salespeople are Pulse-only accounts (delivery coordination) — they never
+  // sign into Command Center, so mixing them into this list is confusing for
+  // a master administrator or general manager managing finance-side access.
+  // An FSM's own view is the exception: that's specifically where they
+  // invite and manage the salespeople assigned to their deliveries.
+  var rows = V.storeUsers().filter(function(u){
+    return u.id !== "u0" && (isFsmOnly ? u.role === "Salesperson" : u.role !== "Salesperson");
+  }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
     return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${u.username ? "@" + esc(u.username) : esc(u.email)}</div></td>
       <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
