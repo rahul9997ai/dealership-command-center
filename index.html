@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Dealership Command Center — FSM Preview</title>
+<link rel="manifest" href="/manifest.webmanifest">
+<link rel="icon" type="image/png" sizes="192x192" href="/icons/icon-192.png">
+<link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pinyon+Script&display=swap" rel="stylesheet">
@@ -3829,6 +3832,12 @@ window.__DCC_TEST__ = { productIconSvg:V.productIconSvg, state:state, render:ren
   viewDealerships:viewDealerships, routeView:routeView, presetRange:presetRange, priceRange:priceRange,
   saveDealer:saveDealer, deleteDealer:deleteDealer, customerWindowDoc:customerWindowDoc, renderOnboarding:renderOnboarding };
 })();
+</script>
+<script>
+/* Installable app / Android (Trusted Web Activity) support — see sw.js. */
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function () { navigator.serviceWorker.register("/sw.js").catch(function () {}); });
+}
 </script>
 </body>
 </html>

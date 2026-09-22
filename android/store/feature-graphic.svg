@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 500" width="1024" height="500">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#132a4d"/><stop offset="1" stop-color="#070c14"/></linearGradient>
+    <linearGradient id="sw" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#0a55e6"/><stop offset="1" stop-color="#2f9bff"/></linearGradient>
+  </defs>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <g transform="translate(110 150) scale(1.8)">
+    <path d="M4 106L50 6h24l50 100h-27L62 38 31 106z" fill="#fff"/>
+    <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="url(#sw)"/>
+  </g>
+  <text x="400" y="245" fill="#fff" font-family="Inter,Segoe UI,Roboto,sans-serif" font-size="72" font-weight="700" letter-spacing="2">Axiom Flow</text>
+  <text x="404" y="300" fill="#a9bcd4" font-family="Inter,Segoe UI,Roboto,sans-serif" font-size="28">The F&amp;I command center for dealerships</text>
+</svg>
