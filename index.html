@@ -305,6 +305,7 @@ tbody tr:hover{background:var(--surface-2)}
   box-shadow:0 1px 2px rgba(20,50,100,.04),0 18px 50px rgba(30,70,140,.12)}
 .axl-card h2{margin:0;font-size:clamp(20px,1.5vw,28px);font-weight:700;letter-spacing:-.03em;color:var(--ink)}
 .axl-sub{margin:.3vh 0 2vh;font-size:clamp(12px,.88vw,16px);color:var(--ink);letter-spacing:-.01em}
+.axl-ok{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#e9f6ef;border:1px solid #9fd3b6;color:#0a6a3f;font-size:13px;line-height:1.4}
 .axl-err{margin:0 0 14px;padding:10px 12px;border-radius:8px;background:#fdecea;border:1px solid #f1a9a1;color:#a3261b;font-size:13px;line-height:1.4}
 .axl-field{display:flex;align-items:center;gap:.9vw;height:clamp(40px,2.8vw,50px);margin-bottom:1.3vh;padding:0 1vw;border-radius:.6vw;color:#4a5b7a;background:#f5f8fc;border:1px solid var(--line);transition:border-color .15s,box-shadow .15s}
 .axl-field svg{width:clamp(16px,1.15vw,21px);height:clamp(16px,1.15vw,21px);flex:0 0 auto}
@@ -2970,8 +2971,18 @@ function renderLogin(){
   var err = state.ui.loginError, checking = !!state.ui.authChecking;
   var remember = true; try { remember = localStorage.getItem("axiom_remember") !== "0"; } catch (e) {}
   var benefits = `<div class="axl-ben"><div>${axi("shield")}<span>Secure<br>Access</span></div><div>${axi("people")}<span>Dealer<br>Focused</span></div><div>${axi("bars")}<span>Greater<br>Tomorrow</span></div></div>`;
+  var forgotCard = `<div class="axl-card">
+        <h2>Reset your password</h2>
+        <p class="axl-sub">Enter your work email and we'll send you a reset link.</p>
+        ${state.ui.forgotMsg ? `<div class="axl-ok" role="status">${esc(state.ui.forgotMsg)}</div>` : ""}
+        <div class="axl-field">${axi("user")}<input type="text" id="resetEmail" placeholder="Email" autocomplete="email" spellcheck="false" aria-label="Email"></div>
+        <button type="button" class="axl-btn" data-act="do-reset" ${state.ui.forgotBusy ? "disabled" : ""}>${state.ui.forgotBusy ? "Sending…" : "Send reset link"}</button>
+        <p class="axl-sub" style="margin:14px 0 0;font-size:12px">Salespeople: ask your manager to reset your password.</p>
+        <div class="axl-row" style="justify-content:center;margin:12px 0 0"><a class="axl-link" data-act="back-login">Back to sign in</a></div>
+      </div>`;
   var card = checking
     ? `<div class="axl-card axl-wait"><div class="axl-spin"></div><h2>Signing you in</h2><p class="axl-sub">Restoring your secure session…</p></div>`
+    : state.ui.forgot ? forgotCard
     : `<div class="axl-card">
         <h2>Welcome Back</h2>
         <p class="axl-sub">Sign in to your Command Center</p>
@@ -3164,6 +3175,8 @@ function resetDemo(){
    for more than one FSM on one browser. */
 var SB_URL = "https://tbptlrewwxhggxxfdiks.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRicHRscmV3d3hoZ2d4eGZkaWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2OTYzMTksImV4cCI6MjEwNTI3MjMxOX0.lYDOQbBWj4ZEHD2VkBfKtl1mTnSXlIGmkPb2dt6B4lU";
+/* Arriving from a password-reset email: the URL carries type=recovery. Remember it before supabase-js clears the hash. */
+var RECOVERY = /(^|[#&?])type=recovery/.test(String(location.hash) + String(location.search));
 var sb = (window.supabase && window.supabase.createClient) ? window.supabase.createClient(SB_URL, SB_KEY) : null;
 state.auth = null;
 
@@ -3379,12 +3392,12 @@ function loadProfileAndEnter(){
       if (!p || !p.active) return failLogin("This account isn't active. Contact your administrator.");
       if (p.access_type === "demo" && p.expires_at && new Date(p.expires_at) <= new Date())
         return failLogin("Your demo access has expired. Contact your administrator.");
-      state.auth = { mustChange:!!p.must_change_password, accessType:p.access_type, expiresAt:p.expires_at, onboarded:!!p.onboarded };
+      state.auth = { mustChange:!!p.must_change_password || RECOVERY, accessType:p.access_type, expiresAt:p.expires_at, onboarded:!!p.onboarded };
       upsertProfileUser(p);
       state.currentUserId = p.id;
       return cloudLoad().then(function(){
         state.loggedIn = true; state.ui.loginError = null; state.ui.authChecking = false;
-        if (!p.must_change_password) finishEnter(userById(p.id)); else commit();
+        if (!p.must_change_password && !RECOVERY) finishEnter(userById(p.id)); else commit();
       }, function(e){
         return endSession("Couldn't load your dealership data (" + (e && e.message ? e.message : "network problem") + "). Please try again.");
       });
@@ -3416,7 +3429,7 @@ function doChangePassword(){
   sb.auth.updateUser({ password:pw }).then(function(r){
     if (r.error){ state.ui.pwError = r.error.message; commit(); return; }
     return sb.rpc("clear_must_change_password").then(function(){
-      state.auth.mustChange = false; state.ui.pwError = null;
+      RECOVERY = false; state.auth.mustChange = false; state.ui.pwError = null;
       finishEnter(userById(state.currentUserId));
     });
   });
@@ -3427,7 +3440,7 @@ function authInit(){
   state.ui.authChecking = true;
   /* "Remember me" unticked = the session lasts only until the browser is closed. */
   var forget = false;
-  try { forget = localStorage.getItem("axiom_remember") === "0" && !sessionStorage.getItem("axiom_active"); } catch (e) {}
+  try { forget = !RECOVERY && localStorage.getItem("axiom_remember") === "0" && !sessionStorage.getItem("axiom_active"); } catch (e) {}
   sb.auth.getSession().then(function(r){
     if (r.data && r.data.session && forget) return sb.auth.signOut().then(function(){ state.ui.authChecking = false; commit(); });
     if (r.data && r.data.session){ try { sessionStorage.setItem("axiom_active", "1"); } catch (e) {} return loadProfileAndEnter(); }
@@ -3453,8 +3466,8 @@ setInterval(function(){
 function renderChangePassword(){
   var err = state.ui.pwError;
   return axLanding(`<div class="axl-card">
-      <h2>Create your password</h2>
-      <p class="axl-sub">You signed in with a temporary password. Choose your own to continue.</p>
+      <h2>${RECOVERY ? "Reset your password" : "Create your password"}</h2>
+      <p class="axl-sub">${RECOVERY ? "Choose a new password for your account." : "You signed in with a temporary password. Choose your own to continue."}</p>
       ${err ? `<div class="axl-err" role="alert">${esc(err)}</div>` : ""}
       <div class="axl-field">${axi("lock")}<input type="password" id="newPw" placeholder="New password (8+ characters)" autocomplete="new-password" aria-label="New password"></div>
       <div class="axl-field">${axi("lock")}<input type="password" id="newPw2" placeholder="Confirm password" autocomplete="new-password" aria-label="Confirm password"></div>
@@ -3678,6 +3691,9 @@ document.addEventListener("keydown", function(ev){
   if (ev.key === "Enter" && ev.target && (ev.target.id === "loginEmail" || ev.target.id === "loginPassword")){
     ev.preventDefault(); doLogin();
   }
+  if (ev.key === "Enter" && ev.target && ev.target.id === "resetEmail"){
+    ev.preventDefault(); var rb = document.querySelector("[data-act=do-reset]"); if (rb) rb.click();
+  }
 });
 document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
@@ -3886,7 +3902,18 @@ document.addEventListener("click", function(ev){
     case "reset-demo": resetDemo(); break;
     case "do-login": doLogin(); break;
     case "logout": doLogout(); break;
-    case "forgot-password": toast("Ask your administrator to reset your password — they can set a new temporary one for you under Users and access.","info"); commit(); break;
+    case "forgot-password": state.ui.forgot = true; state.ui.forgotMsg = null; state.ui.loginError = null; commit(); break;
+    case "back-login": state.ui.forgot = false; state.ui.forgotMsg = null; commit(); break;
+    case "do-reset": {
+      var rem = document.getElementById("resetEmail"), rev = rem ? rem.value.trim() : "";
+      if (!/^\S+@\S+\.\S+$/.test(rev)){ state.ui.forgotMsg = "Enter a valid email address."; commit(); break; }
+      state.ui.forgotBusy = true; commit();
+      fetch(SB_URL + "/functions/v1/request-password-reset", { method:"POST", headers:{ "Content-Type":"application/json", apikey:SB_KEY },
+        body:JSON.stringify({ email:rev, app:"command" }) })
+        .then(function(){ state.ui.forgotMsg = "If that email is registered, we've sent a reset link. Check your inbox (and spam folder). It expires in 1 hour."; })
+        .catch(function(){ state.ui.forgotMsg = "We couldn't send that right now. Try again in a moment, or ask your administrator to reset it."; })
+        .then(function(){ state.ui.forgotBusy = false; commit(); });
+      break; }
   }
 });
 
