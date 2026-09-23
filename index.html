@@ -2179,17 +2179,17 @@ function viewUsers(){
         <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}">Make full access</button>` : ""}
         ${(u.role !== "Salesperson" && u.role !== "Master Administrator" && !isFsmOnly) ? `<button class="btn sm" data-act="user-pulse" data-user="${u.id}" ${canEdit?"":"disabled"}>${u.pulseOn ? "Turn off Pulse" : "Turn on Pulse"}</button>` : ""}
         <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
-        <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}${u.role === "Salesperson" ? "" : " (Command Center)"}</button>
+        <button class="btn sm" data-act="user-toggle" data-user="${u.id}" title="${u.role === "Salesperson" ? "Turns their Axiom Pulse access on or off" : "Turns Command Center access on or off — Axiom Pulse is not affected"}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;
   }).join("");
   return `<div class="card"><div class="card-h"><h2>Users and access</h2>
     <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
       <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
     <div class="card-b">
-      <p class="tiny muted" style="margin:0 0 6px">App build 2026-09-23.4</p>
-      <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
+      <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div></div>`;
+      <tbody>${rows}</tbody></table></div>
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-23.5</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
