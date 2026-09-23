@@ -2183,6 +2183,7 @@ function viewUsers(){
     <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
       <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
     <div class="card-b">
+      <p class="tiny muted" style="margin:0 0 6px">App build 2026-09-23.4</p>
       <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div></div></div>`;
@@ -2771,13 +2772,18 @@ function askConfirm(title, message, yesLabel, onYes){
   state.ui.confirm = { title:title, message:message, yes:yesLabel };
   commit();
 }
+function showNotice(title, message){
+  pendingConfirm = null;
+  state.ui.confirm = { title:title, message:message, notice:true };
+  commit();
+}
 function confirmModal(){
   var c = state.ui.confirm;
   if (!c) return "";
   return `<div class="modal-bg" data-act="confirm-bg"><div class="modal" style="max-width:460px">
     <div class="modal-h"><h2>${esc(c.title)}</h2><div class="sp">
-      <button class="btn" data-act="confirm-no">Cancel</button>
-      <button class="btn danger" data-act="confirm-yes">${esc(c.yes)}</button></div></div>
+      ${c.notice ? `<button class="btn primary" data-act="confirm-no">OK</button>` : `<button class="btn" data-act="confirm-no">Cancel</button>
+      <button class="btn danger" data-act="confirm-yes">${esc(c.yes)}</button>`}</div></div>
     <div class="modal-b"><p style="margin:0">${esc(c.message)}</p></div></div></div>`;
 }
 function renderOverlay(){
@@ -3812,10 +3818,21 @@ document.addEventListener("click", function(ev){
         toast("Removing " + ud.name + "…","info");
         adminCall({ action:"delete", id:uid2 }).then(function(r){
           if (r && r.deactivated){
-            ud.active = false; toast(ud.name + " has linked records, so the account was deactivated and can no longer sign in.","ok"); commit(); refreshUsers(); return;
+            ud.active = false; commit(); refreshUsers();
+            showNotice(ud.name + " was deactivated", "This account still has linked records, so it couldn't be erased. It was deactivated and can no longer sign in.");
+            return;
           }
-          state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); refreshUsers();
-        }).catch(function(e){ toast("Couldn't remove " + ud.name + ": " + e.message,"err"); });
+          /* Don't trust "ok" alone: re-read the server list and confirm the account is really gone. */
+          return adminCall({ action:"list" }).then(function(l){
+            var still = (l.users || []).some(function(x){ return x.id === uid2; });
+            if (still){ showNotice("Couldn't remove " + ud.name, "The server reported success, but the account still exists. Please try again, and if it keeps happening, tell Rahul the time it happened."); return; }
+            state.users = state.users.filter(function(u){ return u.id !== uid2; });
+            toast(ud.name + " was removed.","ok"); commit();
+          });
+        }).catch(function(e){
+          if (window.console) console.error("Remove user failed", e);
+          showNotice("Couldn't remove " + ud.name, (e && e.message) ? e.message : "Something went wrong reaching the server. Check your connection and try again.");
+        });
       });
       break; }
     case "confirm-yes": { var cf = pendingConfirm; pendingConfirm = null; state.ui.confirm = null; commit(); if (cf) cf(); break; }
