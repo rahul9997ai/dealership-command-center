@@ -7,6 +7,48 @@ const cors = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
+const APPS = {
+  command: { name: "AXIOM Command Center", url: "https://finance.rahulchamp.ca/" },
+  pulse: { name: "AXIOM Pulse", url: "https://pulse.rahulchamp.ca/" },
+} as const;
+const FROM_ADDRESS = "no-reply@rahulchamp.ca";
+const esc = (s: string) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
+
+/* Branded email through Resend. Best effort: returns false instead of throwing. */
+async function sendMail(app: "command" | "pulse", to: string, subject: string, html: string, text: string): Promise<boolean> {
+  try {
+    const key = Deno.env.get("RESEND_API_KEY");
+    if (!key || !to || to.endsWith("@pulse.local")) return false;
+    const res = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: `${APPS[app].name} <${FROM_ADDRESS}>`, to: [to], subject, html, text }),
+    });
+    if (!res.ok) console.error("Resend rejected the email", res.status, await res.text());
+    return res.ok;
+  } catch (e) { console.error("sendMail failed", (e as Error).message); return false; }
+}
+function mailShell(appName: string, inner: string) {
+  return `<!doctype html><html><body style="margin:0;background:#eef2f8;font-family:Arial,Helvetica,sans-serif;color:#0b1b3a">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f8;padding:28px 12px"><tr><td align="center">
+<table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dbe4f0">
+<tr><td style="background:#1f4a86;padding:26px 30px"><div style="font-size:26px;font-weight:800;letter-spacing:.16em;color:#ffffff">AXIOM</div>
+<div style="font-size:11px;letter-spacing:.14em;color:#c9d9f0;margin-top:6px;text-transform:uppercase">${esc(appName)}</div></td></tr>
+${inner}
+<tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4"><div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">AXIOM · AI eXecutive Intelligence &amp; Operations Management</div></td></tr>
+</table></td></tr></table></body></html>`;
+}
+function credentialsHtml(appName: string, appUrl: string, first: string, email: string, tempPw: string, heading: string, intro: string, extra: string) {
+  return mailShell(appName, `
+<tr><td style="padding:30px 30px 6px"><div style="font-size:20px;font-weight:700;margin-bottom:12px">${esc(heading)}</div>
+<div style="font-size:14.5px;line-height:1.6;color:#33456a">Hi ${esc(first)}, ${esc(intro)}</div></td></tr>
+<tr><td style="padding:14px 30px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f8fc;border:1px solid #dbe4f0;border-radius:10px">
+<tr><td style="padding:14px 18px;font-size:13px;color:#5a6b88">Sign-in email<div style="font-size:15px;font-weight:700;color:#0b1b3a;margin-top:3px">${esc(email)}</div></td></tr>
+<tr><td style="padding:0 18px 14px;font-size:13px;color:#5a6b88">Temporary password<div style="font-size:16px;font-weight:700;color:#0b1b3a;margin-top:3px;font-family:Consolas,Menlo,monospace;letter-spacing:.04em">${esc(tempPw)}</div></td></tr></table></td></tr>
+<tr><td style="padding:18px 30px 6px"><a href="${appUrl}" style="display:inline-block;background:#1a72e8;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:9px">Sign in</a></td></tr>
+<tr><td style="padding:14px 30px 26px"><div style="font-size:12.5px;line-height:1.6;color:#5a6b88">You'll be asked to choose your own password the first time you sign in. ${extra}Please don't forward this email — it contains your temporary password.</div></td></tr>`);
+}
+
 const ROLES = ["Master Administrator", "General Manager", "FSM Manager", "FSM", "Salesperson"];
 
 Deno.serve(async (req) => {
@@ -91,7 +133,26 @@ Deno.serve(async (req) => {
         must_change_password: true,
       });
       if (pe) { await admin.auth.admin.deleteUser(created.user.id); return json({ error: pe.message }, 400); }
-      return json({ ok: true, id: created.user.id });
+      let inviteSent = false;
+      if (body.send_invite !== false && role !== "Salesperson") {
+        const first = String(name).split(" ")[0];
+        const extra = (ccEnabled && pulseEnabled ? `The same email and password also work in AXIOM Pulse (${APPS.pulse.url}). ` : "")
+          + (ccEnabled && ccType === "demo" && ccExp ? `Your demo access ends ${new Date(ccExp).toUTCString()}. ` : "");
+        inviteSent = await sendMail(app, email, `You're invited to ${APPS[app].name}`,
+          credentialsHtml(APPS[app].name, APPS[app].url, first, email, String(password), `Welcome to ${APPS[app].name}`, `you've been given access to ${APPS[app].name}. Here are your sign-in details.`, extra),
+          `Hi ${first},
+
+You've been invited to ${APPS[app].name}.
+
+Sign in: ${APPS[app].url}
+Email: ${email}
+Temporary password: ${password}
+
+You'll choose your own password the first time you sign in.
+
+AXIOM`);
+      }
+      return json({ ok: true, id: created.user.id, invite_sent: inviteSent });
     }
 
     const { data: target } = await admin.from("profiles").select("*").eq("id", body.id).single();
@@ -132,7 +193,24 @@ Deno.serve(async (req) => {
       const { error } = await admin.auth.admin.updateUserById(body.id, { password: body.password });
       if (error) return json({ error: error.message }, 400);
       await admin.from("profiles").update({ must_change_password: true }).eq("id", body.id);
-      return json({ ok: true });
+      let emailed = false;
+      if (body.send_email && target.role !== "Salesperson" && target.email) {
+        const first = String(target.name || "there").split(" ")[0];
+        emailed = await sendMail(app, target.email, `Your ${APPS[app].name} password was reset`,
+          credentialsHtml(APPS[app].name, APPS[app].url, first, target.email, String(body.password), "Your password was reset", `an administrator reset your ${APPS[app].name} password. Use the temporary password below to sign in.`, ""),
+          `Hi ${first},
+
+An administrator reset your ${APPS[app].name} password.
+
+Sign in: ${APPS[app].url}
+Email: ${target.email}
+Temporary password: ${body.password}
+
+You'll choose your own password when you sign in.
+
+AXIOM`);
+      }
+      return json({ ok: true, emailed });
     }
 
     if (body.action === "delete") {

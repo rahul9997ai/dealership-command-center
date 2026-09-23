@@ -2189,7 +2189,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-23.5</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-23.6</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2215,7 +2215,8 @@ function userModal(){
       ${V.currentUser().role==="FSM" ? "" : `<div class="inline">
         <label class="f"><span>Username (Salesperson role only)</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
       </div>`}
-      <label class="switch" style="margin:4px 0 10px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
+      <label class="switch" style="margin:4px 0 6px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
+      <label class="switch" style="margin:0 0 10px"><input type="checkbox" data-uf="invite" checked> Email them an invite with their sign-in details and temporary password</label>
       <div class="f"><span>Command Center access</span>
         <div class="chiprow">
           <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
@@ -2257,9 +2258,17 @@ function saveUser(){
   payload.pulse_enabled = role === "Salesperson" ? true : !!(pulseBox && pulseBox.checked);
   payload.cc_enabled = role !== "Salesperson";
   payload.app = "command";
+  var inviteBox = f("invite");
+  payload.send_invite = role !== "Salesperson" && !!(inviteBox && inviteBox.checked);
   toast("Creating user…","info");
   adminCall(payload)
-  .then(function(){ state.ui.userForm = false; toast("User created — share the temporary " + (role==="Salesperson"?"username and ":"") + "password with " + name.split(" ")[0] + ".","ok"); refreshUsers(); commit(); })
+  .then(function(r){
+    state.ui.userForm = false;
+    var first = name.split(" ")[0];
+    if (r && r.invite_sent) toast("User created — an invite with the sign-in details was emailed to " + payload.email + ".","ok");
+    else if (payload.send_invite) toast("User created, but the invite email couldn't be sent. Share the temporary password with " + first + " yourself.","err");
+    else toast("User created — share the temporary " + (role==="Salesperson"?"username and ":"") + "password with " + first + ".","ok");
+    refreshUsers(); commit(); })
   .catch(function(e){ toast(e.message, "err"); });
 }
 
@@ -2799,7 +2808,7 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -3557,6 +3566,27 @@ function wheelPicker(sel, setName){
       ${wheel("ap", ["AM","PM"], sel.ap)}
     </div></div>`;
 }
+function genTempPassword(){
+  var chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789", out = "", a = new Uint32Array(12);
+  (window.crypto || window.msCrypto).getRandomValues(a);
+  for (var i=0;i<12;i++) out += chars[a[i] % chars.length];
+  return out;
+}
+function resetPwModal(){
+  var f = state.ui.pwReset;
+  if (!f) return "";
+  var u = userById(f.id), canMail = u.role !== "Salesperson" && u.email && !/@pulse\.local$/.test(u.email);
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal" style="max-width:480px">
+    <div class="modal-h"><h2>Reset password</h2><div class="sp">
+      <button class="btn" data-act="pwreset-cancel">Cancel</button>
+      <button class="btn primary" data-act="pwreset-save">Set password</button></div></div>
+    <div class="modal-b">
+      <p style="margin-top:0"><strong>${esc(u.name)}</strong> will use this temporary password and choose their own the next time they sign in.</p>
+      <label class="f"><span>Temporary password (at least 8 characters)</span>
+        <div class="inline" style="gap:8px"><input type="text" id="pwResetVal" value="${esc(f.value || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" data-act="pwreset-gen">Generate</button></div></label>
+      <label class="switch" style="margin-top:10px"><input type="checkbox" id="pwResetMail" ${canMail ? "checked" : "disabled"}> Email it to ${canMail ? esc(u.email) : "them (not available for this account)"}</label>
+    </div></div></div>`;
+}
 function extendModal(){
   var f = state.ui.extendForm;
   if (!f) return "";
@@ -3704,6 +3734,9 @@ function sendEmail(){
 }
 
 /* ---------------- EVENTS ---------------- */
+document.addEventListener("input", function(ev){
+  if (ev.target && ev.target.id === "pwResetVal" && state.ui.pwReset) state.ui.pwReset.value = ev.target.value;
+});
 document.addEventListener("keydown", function(ev){
   if (ev.key === "Enter" && ev.target && (ev.target.id === "loginEmail" || ev.target.id === "loginPassword")){
     ev.preventDefault(); doLogin();
@@ -3799,7 +3832,7 @@ document.addEventListener("click", function(ev){
     case "print-internal": state.ui.modal = { kind:"internal" }; commit(); break;
     case "print-customer": state.ui.modal = { kind:"customer" }; commit(); break;
     case "close-modal": case "close-modal-bg":
-      state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; state.ui.extendForm = null; commit(); break;
+      state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; state.ui.extendForm = null; state.ui.pwReset = null; commit(); break;
     case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing in this preview window.","err"); } break;
     case "product-new": state.ui.productEdit = { id:null, name:"", code:"", category:"", active:true, taxRule:"standard",
       uses:{term:true,km:false,interval:false,deductible:false}, terms:[36,48,60,72], kms:[], intervals:[], deductibles:[],
@@ -3821,14 +3854,22 @@ document.addEventListener("click", function(ev){
     case "user-new": state.ui.userForm = true; state.ui.inviteSel = null; commit(); break;
     case "user-cancel": state.ui.userForm = false; commit(); break;
     case "user-save": saveUser(); break;
-    case "user-setpw": {
-      var upw = userById(el.getAttribute("data-user"));
-      var next = window.prompt("Set a temporary password for " + upw.name + " (min 8 characters). They'll choose their own at next sign-in:", "");
-      if (next === null) break;
-      next = next.trim();
-      if (next.length < 8){ toast("Password not changed — use at least 8 characters.","err"); break; }
-      adminCall({ action:"reset_password", id:upw.id, password:next })
-        .then(function(){ toast("Temporary password set for " + upw.name + ".","ok"); refreshUsers(); })
+    case "user-setpw": state.ui.pwReset = { id:el.getAttribute("data-user"), value:genTempPassword() }; commit(); break;
+    case "pwreset-gen": { var pv = document.getElementById("pwResetVal"); if (pv){ pv.value = genTempPassword(); state.ui.pwReset.value = pv.value; } break; }
+    case "pwreset-cancel": state.ui.pwReset = null; commit(); break;
+    case "pwreset-save": {
+      var pr = state.ui.pwReset, pvEl = document.getElementById("pwResetVal"), pm = document.getElementById("pwResetMail");
+      var pwNext = pvEl ? pvEl.value.trim() : "";
+      if (!pr) break;
+      if (pwNext.length < 8){ toast("Password not changed — use at least 8 characters.","err"); break; }
+      var pwUser = userById(pr.id), wantMail = !!(pm && pm.checked && !pm.disabled);
+      adminCall({ action:"reset_password", id:pr.id, password:pwNext, send_email:wantMail, app:"command" })
+        .then(function(r){
+          state.ui.pwReset = null;
+          if (wantMail && r && r.emailed) toast("Temporary password set and emailed to " + pwUser.email + ".","ok");
+          else if (wantMail) toast("Temporary password set, but the email couldn't be sent. Share it with " + pwUser.name + " yourself.","err");
+          else toast("Temporary password set for " + pwUser.name + ".","ok");
+          refreshUsers(); commit(); })
         .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "user-toggle": {
@@ -4117,7 +4158,7 @@ document.addEventListener("change", function(ev){
 
 /* ---------------- BOOT ---------------- */
 function boot(){
-  state.ui.confirm = null;
+  state.ui.confirm = null; state.ui.pwReset = null;
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
