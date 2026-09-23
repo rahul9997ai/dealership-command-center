@@ -26,6 +26,10 @@ Deno.serve(async (req) => {
     const isFsmOnly = me.role === "FSM";
 
     const body = await req.json();
+    // Which app is asking? Pulse sends no "app", so fall back to the page's origin.
+    const app: "command" | "pulse" = body.app === "pulse" || body.app === "command"
+      ? body.app
+      : ((req.headers.get("origin") || "").includes("pulse") ? "pulse" : "command");
     const canTouch = (target: { role: string; dealership_id: string | null }) => {
       if (isMaster) return true;
       if (isFsmOnly) return target.role === "Salesperson" && target.dealership_id === me.dealership_id;
@@ -72,13 +76,19 @@ Deno.serve(async (req) => {
         const { data: dl } = await admin.from("dealerships").select("id").eq("id", target.dealership_id).maybeSingle();
         if (!dl) return json({ error: "That dealership isn't saved in the cloud yet. Wait a few seconds after creating it, refresh, then try again." }, 400);
       }
-      if (access_type === "demo" && !expires_at) return json({ error: "Demo access needs an expiry" }, 400);
+      // Access per app. Salespeople are Pulse-only; everyone else gets both unless told otherwise.
+      const ccEnabled = role === "Salesperson" ? false : body.cc_enabled !== false;
+      const pulseEnabled = body.pulse_enabled !== false;
+      const ccType = (body.cc_access_type ?? access_type) === "demo" ? "demo" : "full";
+      const ccExp = (body.cc_expires_at ?? expires_at) || null;
+      if (ccEnabled && ccType === "demo" && !ccExp) return json({ error: "Demo access needs an expiry" }, 400);
       const { data: created, error } = await admin.auth.admin.createUser({ email, password, email_confirm: true });
       if (error) return json({ error: error.message }, 400);
       const { error: pe } = await admin.from("profiles").insert({
         id: created.user.id, email, username, name, role, dealership_id: target.dealership_id,
-        access_type: access_type === "demo" ? "demo" : "full",
-        expires_at: access_type === "demo" ? expires_at : null, must_change_password: true,
+        cc_enabled: ccEnabled, cc_access_type: ccType, cc_expires_at: ccType === "demo" ? ccExp : null,
+        pulse_enabled: pulseEnabled, pulse_access_type: "full", pulse_expires_at: null,
+        must_change_password: true,
       });
       if (pe) { await admin.auth.admin.deleteUser(created.user.id); return json({ error: pe.message }, 400); }
       return json({ ok: true, id: created.user.id });
@@ -88,11 +98,15 @@ Deno.serve(async (req) => {
     if (!target || !canTouch(target)) return json({ error: "Not allowed" }, 403);
 
     if (body.action === "update") {
-      if (!isMaster && ("access_type" in body || "expires_at" in body))
+      if (!isMaster && ["access_type", "expires_at", "cc_access_type", "cc_expires_at", "pulse_access_type", "pulse_expires_at"].some((k) => k in body))
         return json({ error: "Only the Master Administrator can extend or change demo access" }, 403);
       const patch: Record<string, unknown> = {};
-      for (const k of ["name", "role", "active", "access_type", "expires_at", "dealership_id"])
+      for (const k of ["name", "role", "dealership_id", "cc_enabled", "cc_access_type", "cc_expires_at", "pulse_enabled", "pulse_access_type", "pulse_expires_at"])
         if (k in body) patch[k] = body[k];
+      // Legacy names: access_type / expires_at mean Command Center; "active" means the calling app.
+      if ("access_type" in body) patch.cc_access_type = body.access_type;
+      if ("expires_at" in body) patch.cc_expires_at = body.expires_at;
+      if ("active" in body) patch[app === "pulse" ? "pulse_enabled" : "cc_enabled"] = !!body.active;
       if (patch.role && !ROLES.includes(patch.role as string)) return json({ error: "Invalid role" }, 400);
       if (isFsmOnly && patch.role && patch.role !== "Salesperson") return json({ error: "Not allowed" }, 403);
       if (!isMaster) { delete patch.dealership_id; if (patch.role === "Master Administrator") return json({ error: "Not allowed" }, 403); }
@@ -100,11 +114,16 @@ Deno.serve(async (req) => {
         const { data: dl } = await admin.from("dealerships").select("id").eq("id", patch.dealership_id as string).maybeSingle();
         if (!dl) return json({ error: "That dealership doesn't exist in the cloud." }, 400);
       }
-      if (patch.access_type === "full") patch.expires_at = null;
+      if (patch.cc_access_type === "full") patch.cc_expires_at = null;
+      if (patch.pulse_access_type === "full") patch.pulse_expires_at = null;
       const { error } = await admin.from("profiles").update(patch).eq("id", body.id);
       if (error) return json({ error: error.message }, 400);
-      if ("active" in patch)
-        await admin.auth.admin.updateUserById(body.id, { ban_duration: patch.active ? "none" : "876000h" });
+      // Only block sign-in entirely when neither app has access left.
+      if ("cc_enabled" in patch || "pulse_enabled" in patch) {
+        const { data: after } = await admin.from("profiles").select("cc_enabled, pulse_enabled").eq("id", body.id).single();
+        const anyApp = !!(after && (after.cc_enabled || after.pulse_enabled));
+        await admin.auth.admin.updateUserById(body.id, { ban_duration: anyApp ? "none" : "876000h" });
+      }
       return json({ ok: true });
     }
 
@@ -118,15 +137,24 @@ Deno.serve(async (req) => {
 
     if (body.action === "delete") {
       if (body.id === me.id) return json({ error: "You can't delete yourself" }, 400);
-      const { data: tgt } = await admin.from("profiles").select("role, dealership_id").eq("id", body.id).single();
+      const { data: tgt } = await admin.from("profiles").select("role, dealership_id, cc_enabled, pulse_enabled").eq("id", body.id).single();
       if (!tgt) return json({ error: "User not found" }, 404);
       if (tgt.role === "Master Administrator") return json({ error: "A master administrator can't be removed" }, 403);
       if (!canTouch(tgt)) return json({ error: "Not allowed" }, 403);
+
+      // Remove from just this app when the person also uses the other one.
+      const hereOn = app === "pulse" ? tgt.pulse_enabled : tgt.cc_enabled;
+      const otherOn = app === "pulse" ? tgt.cc_enabled : tgt.pulse_enabled;
+      if (hereOn && otherOn) {
+        const { error: re } = await admin.from("profiles").update({ [app === "pulse" ? "pulse_enabled" : "cc_enabled"]: false }).eq("id", body.id);
+        if (re) return json({ error: re.message }, 400);
+        return json({ ok: true, revoked: app, kept: true });
+      }
+
       const { error } = await admin.auth.admin.deleteUser(body.id);
       if (error) {
-        // The account is referenced by other records (e.g. deliveries), so it can't be erased.
-        // Deactivate and ban it instead so it can no longer sign in.
-        const { error: e2 } = await admin.from("profiles").update({ active: false }).eq("id", body.id);
+        // Still referenced by other records, so it can't be erased: switch every app off and block sign-in.
+        const { error: e2 } = await admin.from("profiles").update({ cc_enabled: false, pulse_enabled: false }).eq("id", body.id);
         if (e2) return json({ error: error.message }, 400);
         await admin.auth.admin.updateUserById(body.id, { ban_duration: "876000h" });
         return json({ ok: true, deactivated: true });

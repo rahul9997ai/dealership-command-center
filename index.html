@@ -2171,13 +2171,15 @@ function viewUsers(){
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
         </select>` : esc(dealer)}</td>
       <td class="small">${esc((u.restrictions||[]).join(" · ")||"—")}</td>
-      <td class="small">${u.demo ? "Demo until<br>"+esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—") : "Full access"}</td>
+      <td class="small">${u.role === "Salesperson" ? "Axiom Pulse" : `<div>Command Center: ${!u.ccOn ? "No access" : (u.demo ? "Demo until "+esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—") : "Full access")}</div>
+        <div class="muted">Axiom Pulse: ${u.pulseOn ? "Full access" : "No access"}</div>`}</td>
       <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
         ${u.demo && V.isMaster() ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}">Extend demo</button>
         <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}">Make full access</button>` : ""}
+        ${(u.role !== "Salesperson" && u.role !== "Master Administrator" && !isFsmOnly) ? `<button class="btn sm" data-act="user-pulse" data-user="${u.id}" ${canEdit?"":"disabled"}>${u.pulseOn ? "Turn off Pulse" : "Turn on Pulse"}</button>` : ""}
         <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
-        <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
+        <button class="btn sm" data-act="user-toggle" data-user="${u.id}" ${canEdit&&u.role!=="Master Administrator"?"":"disabled"}>${u.active?"Deactivate":"Activate"}${u.role === "Salesperson" ? "" : " (Command Center)"}</button>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&u.id!==state.currentUserId&&u.role!=="Master Administrator"?"":"disabled"}>Remove</button></td></tr>`;
   }).join("");
   return `<div class="card"><div class="card-h"><h2>Users and access</h2>
@@ -2213,7 +2215,8 @@ function userModal(){
       ${V.currentUser().role==="FSM" ? "" : `<div class="inline">
         <label class="f"><span>Username (Salesperson role only)</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
       </div>`}
-      <div class="f"><span>Access</span>
+      <label class="switch" style="margin:4px 0 10px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
+      <div class="f"><span>Command Center access</span>
         <div class="chiprow">
           <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
           <button type="button" class="btn sm" data-act="uf-access" data-val="demo">Demo (time limited)</button>
@@ -2250,6 +2253,10 @@ function saveUser(){
   if (access === "demo" && !(expDate.getTime() > Date.now())){ toast("Pick a demo end date and time in the future.","err"); return; }
   payload.access_type = access;
   payload.expires_at = access === "demo" ? expDate.toISOString() : null;
+  var pulseBox = f("pulse");
+  payload.pulse_enabled = role === "Salesperson" ? true : !!(pulseBox && pulseBox.checked);
+  payload.cc_enabled = role !== "Salesperson";
+  payload.app = "command";
   toast("Creating user…","info");
   adminCall(payload)
   .then(function(){ state.ui.userForm = false; toast("User created — share the temporary " + (role==="Salesperson"?"username and ":"") + "password with " + name.split(" ")[0] + ".","ok"); refreshUsers(); commit(); })
@@ -3346,8 +3353,13 @@ function endSession(msg){
 }
 
 function upsertProfileUser(p){
+  var isSp = p.role === "Salesperson";
+  var ccOn = p.cc_enabled !== false && !isSp, pulseOn = p.pulse_enabled !== false;
+  var ccType = p.cc_access_type || p.access_type, ccExp = p.cc_expires_at !== undefined ? p.cc_expires_at : p.expires_at;
   var rec = { id:p.id, name:p.name, role:(p.role === "FSM Manager" ? "FSM" : p.role), email:p.email, username:p.username || null, dealershipId:p.dealership_id || null,
-    active:p.active !== false, demo:p.access_type === "demo", expiresAt:p.expires_at || null,
+    /* "active" is per app: Command Center staff by their Command Center access, Salespeople (Pulse only) by their Pulse access. */
+    active: isSp ? pulseOn : ccOn, ccOn:ccOn, pulseOn:pulseOn,
+    demo:ccType === "demo", expiresAt:ccExp || null,
     mustChange:!!p.must_change_password, onboarded:!!p.onboarded, accessDays:null, restrictions:[],
     initials:String(p.name||"?").split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase() };
   var ex = state.users.filter(function(u){ return u.id === p.id; })[0];
@@ -3390,9 +3402,14 @@ function loadProfileAndEnter(){
     return sb.from("profiles").select("*").eq("id", user.id).single().then(function(pr){
       var p = pr.data;
       if (!p || !p.active) return failLogin("This account isn't active. Contact your administrator.");
-      if (p.access_type === "demo" && p.expires_at && new Date(p.expires_at) <= new Date())
-        return failLogin("Your demo access has expired. Contact your administrator.");
-      state.auth = { mustChange:!!p.must_change_password || RECOVERY, accessType:p.access_type, expiresAt:p.expires_at, onboarded:!!p.onboarded };
+      var ccOn = p.cc_enabled !== false && p.role !== "Salesperson";
+      var ccType = p.cc_access_type || p.access_type, ccExp = p.cc_expires_at !== undefined ? p.cc_expires_at : p.expires_at;
+      if (!ccOn) return failLogin(p.role === "Salesperson" || p.pulse_enabled !== false
+        ? "This account doesn't have Command Center access. Sign in to Axiom Pulse instead, or ask your administrator."
+        : "This account isn't active. Contact your administrator.");
+      if (ccType === "demo" && ccExp && new Date(ccExp) <= new Date())
+        return failLogin("Your Command Center demo access has expired. Contact your administrator.");
+      state.auth = { mustChange:!!p.must_change_password || RECOVERY, accessType:ccType, expiresAt:ccExp, onboarded:!!p.onboarded };
       upsertProfileUser(p);
       state.currentUserId = p.id;
       return cloudLoad().then(function(){
@@ -3818,21 +3835,34 @@ document.addEventListener("click", function(ev){
       var uu = userById(el.getAttribute("data-user"));
       if (uu.role === "Master Administrator") { toast("A master administrator can't be deactivated.","err"); break; }
       if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uu.id)){ uu.active = !uu.active; commit(); break; }
-      adminCall({ action:"update", id:uu.id, active:!uu.active })
+      adminCall(uu.role === "Salesperson" ? { action:"update", id:uu.id, pulse_enabled:!uu.active, app:"command" } : { action:"update", id:uu.id, cc_enabled:!uu.active, app:"command" })
         .then(function(){ refreshUsers(); }).catch(function(e){ toast(e.message,"err"); });
+      break; }
+    case "user-pulse": {
+      var up = userById(el.getAttribute("data-user"));
+      adminCall({ action:"update", id:up.id, pulse_enabled:!up.pulseOn, app:"command" })
+        .then(function(){ toast(up.name + (up.pulseOn ? " no longer has Axiom Pulse access." : " now has Axiom Pulse access."),"ok"); refreshUsers(); })
+        .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "user-delete": {
       var uid2 = el.getAttribute("data-user");
       var ud = userById(uid2);
       if (ud.role === "Master Administrator") { toast("A master administrator can't be removed.","err"); break; }
       if (uid2 === state.currentUserId) { toast("You can't remove your own account.","err"); break; }
-      askConfirm("Remove " + ud.name + "?", "They will no longer be able to sign in, and the account is removed. This can't be undone.", "Remove user", function(){
+      askConfirm("Remove " + ud.name + "?", ud.role === "Salesperson"
+        ? "This deletes their account, including their Axiom Pulse sign-in. This can't be undone."
+        : "They lose Command Center access. If they also use Axiom Pulse they keep that login; otherwise the account is deleted. This can't be undone.", "Remove user", function(){
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uid2)){
           /* A leftover from before real accounts existed — it only lives in this browser, so there's nothing on the server to delete. */
           state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); return;
         }
         toast("Removing " + ud.name + "…","info");
-        adminCall({ action:"delete", id:uid2 }).then(function(r){
+        adminCall({ action:"delete", id:uid2, app:"command" }).then(function(r){
+          if (r && r.kept){
+            ud.ccOn = false; if (ud.role !== "Salesperson") ud.active = false; commit(); refreshUsers();
+            showNotice(ud.name + " removed from Command Center", "They no longer have Command Center access. Their Axiom Pulse login is unchanged.");
+            return;
+          }
           if (r && r.deactivated){
             ud.active = false; commit(); refreshUsers();
             showNotice(ud.name + " was deactivated", "This account still has linked records, so it couldn't be erased. It was deactivated and can no longer sign in.");
