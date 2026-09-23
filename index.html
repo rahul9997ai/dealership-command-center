@@ -251,27 +251,17 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--cd-text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--cd-surface-3);border-bottom:1px solid var(--cd-border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--cd-price-bg);border:1px solid var(--cd-border);border-radius:8px;padding:8px 6px}
-.cd .sv{margin:2px 16px 12px;padding:11px 13px;border-radius:10px;background:rgba(31,140,92,.11);border:1px solid rgba(31,140,92,.38)}
-.cd .sv-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.cd .sv-lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ok)}
-.cd .sv-amt{font-size:16px;font-weight:800;color:var(--ok)}
-.cd .sv-amt em{font-style:normal;font-weight:600;font-size:12.5px;opacity:.9}
-.cd .sv-sub{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--cd-muted)}
-.cd .sv-was{text-decoration:line-through}
-.cd .sv-now{font-weight:800;font-size:14px;color:var(--cd-text)}
-.cd .sv-tag{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.07em;color:#fff;background:var(--ok);padding:2px 7px;border-radius:999px;text-transform:uppercase}
-.cd .sv-note{margin-top:5px;font-size:10.5px;color:var(--cd-muted)}
-.cd .gift{position:relative;overflow:hidden;padding:12px 16px 13px;text-align:center;
-  background:linear-gradient(135deg,#fff7e0 0%,#fbe6b0 55%,#f6d98e 100%);border-bottom:1px solid #e4c26a;color:#5a3f06}
-:root[data-theme="dark"] .cd .gift{background:linear-gradient(135deg,rgba(214,165,50,.22),rgba(214,165,50,.1));border-bottom:1px solid rgba(214,165,50,.5);color:#f6dc98}
-.cd .gift::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:gfShine 5.5s ease-in-out 1.2s infinite}
-@keyframes gfShine{0%,70%{left:-80px}100%{left:120%}}
-.cd .gf-tag{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
-.cd .gf-tag svg{width:16px;height:16px}
-.cd .gf-item{margin-top:6px}
-.cd .gf-name{font-size:16.5px;font-weight:800;letter-spacing:.01em}
-.cd .gf-sub{font-size:11px;opacity:.85;margin-top:2px}
-@media (prefers-reduced-motion:reduce){ .cd .gift::after{animation:none;display:none} }
+.cd .sv{display:flex;align-items:center;gap:11px;margin:2px 16px 12px;padding:10px 13px;border-radius:9px;background:var(--cd-surface-3);border:1px solid var(--cd-border);border-left:3px solid var(--cd-blue)}
+.cd .sv-ic{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
+.cd .sv-ic svg{width:15px;height:15px}
+.cd .sv-t{font-size:13.5px;font-weight:700;color:var(--cd-text)}
+.cd .sv-s{font-size:11.5px;color:var(--cd-muted);margin-top:1px}
+.cd .gift{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--cd-surface-3);border-bottom:1px solid var(--cd-border);border-left:3px solid var(--cd-blue);color:var(--cd-text)}
+.cd .gf-ic{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
+.cd .gf-ic svg{width:18px;height:18px}
+.cd .gf-tag{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cd-blue)}
+.cd .gf-name{font-size:15px;font-weight:700;margin-top:1px}
+.cd .gf-sub{font-size:11.5px;color:var(--cd-muted);margin-top:2px}
 .offers-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .gift-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
 .gift-row .gr-2{grid-column:1 / -1;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -1481,6 +1471,7 @@ function productIconSvg(p){
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + PI_SVG[k] + '</svg>';
 }
 var GIFT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="9" width="17" height="4" rx="1"/><path d="M5 13v7h14v-7M12 9v11M12 9c-2.5 0-4-1-4-2.4A1.9 1.9 0 0111.2 5.3C11.8 6.2 12 9 12 9zM12 9c2.5 0 4-1 4-2.4a1.9 1.9 0 00-3.2-1.3C12.2 6.2 12 9 12 9z"/></svg>';
+var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
 function hexRgb(h){ h = String(h).replace("#",""); if (h.length === 3) h = h.split("").map(function(c){ return c+c; }).join(""); var n = parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
 function rgbHex(a){ return "#" + a.map(function(x){ x = Math.max(0,Math.min(255,Math.round(x))); return (x<16?"0":"") + x.toString(16); }).join(""); }
 function mixHex(a, b, t){ var A = hexRgb(a), B = hexRgb(b); return rgbHex([0,1,2].map(function(i){ return A[i] + (B[i]-A[i])*t; })); }
@@ -1538,16 +1529,13 @@ function renderCustomerDisplay(tx){
        attached one to this package. */
     var saveHtml = "";
     if (p.discount > 0){
-      var showList = tx.type==="Cash" || tx.display.showPrices;
-      var pctTxt = String(p.discountPct).replace(/\.0$/,"");
-      saveHtml = `<div class="sv"><div class="sv-top"><span class="sv-lbl">Package savings</span>
-        <span class="sv-amt">You save ${money(p.discount)} <em>(${pctTxt}%)</em></span></div>
-        ${showList ? `<div class="sv-sub"><span class="sv-was">${money(p.listSub)}</span><span>→</span><span class="sv-now">${money(p.sub)} + HST</span><span class="sv-tag">Bundled</span></div>` : ""}
-        <div class="sv-note">Savings shown before HST.</div></div>`;
+      saveHtml = `<div class="sv"><span class="sv-ic">${CHECK_SVG}</span><div><div class="sv-t">Bundle savings applied</div>
+        <div class="sv-s">${tx.type==="Cash" ? "Reflected in your total below." : "Reflected in your payment above."}</div></div></div>`;
     }
-    var giftHtml = (p.gifts && p.gifts.length) ? `<div class="gift"><div class="gf-tag">${GIFT_SVG}<span>Complimentary gift</span></div>
-      ${p.gifts.map(function(g){ return `<div class="gf-item"><div class="gf-name">${esc(g.name)}</div>
-        <div class="gf-sub">Included with this package at no additional charge${g.showValue && Number(g.value) > 0 ? " · valued at " + money(g.value) : ""}</div></div>`; }).join("")}</div>` : "";
+    var giftHtml = (p.gifts && p.gifts.length) ? `<div class="gift"><span class="gf-ic">${GIFT_SVG}</span><div>
+      <div class="gf-tag">Complimentary with this package</div>
+      ${p.gifts.map(function(g){ return `<div class="gf-name">${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <span style="font-weight:500;font-size:12px;color:var(--cd-muted)">· valued at ${money(g.value)}</span>` : ""}</div>`; }).join("")}
+      <div class="gf-sub">Included at no additional charge.</div></div></div>` : "";
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
           <div class="pt-amt">${money(p.dueTotal - t.vehicleTax - p.tax)} + HST</div></div></div>` : "")
@@ -2601,7 +2589,7 @@ function customerPrint(tx){
         <div style="margin-top:6px">${p.lines.map(function(L){
           var cfg = V.lineConfigText(L);
           return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
-        ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Package savings: ${money(p.discount)}</strong> (${String(p.discountPct).replace(/\.0$/,"")}%), before HST</div>` : ""}
+        ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Bundle savings applied</strong> — reflected in your payment.</div>` : ""}
         ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary gift:</strong> ${p.gifts.map(function(g){ return esc(g.name) + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
         ${tx.display.showPayment && tx.type==="Cash" ? `<div style="margin-top:8px;font-size:12px"><div><strong>${money(p.dueTotal)}</strong> due in full</div></div>` : ""}
         ${(tx.display.showPayment && tx.type!=="Cash" && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
@@ -2645,7 +2633,7 @@ function buildEmail(tx){
         L.push("");
       }
     }
-    if (p.discount > 0) L.push("Package savings: " + money(p.discount) + " (" + String(p.discountPct).replace(/\.0$/,"") + "%), before HST, already reflected in the payment above.");
+    if (p.discount > 0) L.push("Bundle savings applied, already reflected in the payment above.");
     if (p.gifts && p.gifts.length){
       L.push("Complimentary gift, included at no additional charge: " + p.gifts.map(function(g){ return g.name + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", "));
     }
@@ -2708,7 +2696,7 @@ function buildEmailHtml(tx){
           <div style="font-size:10px;color:#667085">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div>
         </div>`;
       }).join("")}</div>` : "");
-    var offerHtml = ((p.discount > 0) ? `<div style="margin-top:10px;padding:9px 12px;border-radius:8px;background:#e9f6ef;color:#0a7546;font-size:13px"><strong>You save ${money(p.discount)}</strong> (${String(p.discountPct).replace(/\.0$/,"")}%) with this package, before HST.</div>` : "")
+    var offerHtml = ((p.discount > 0) ? `<div style="margin-top:10px;padding:9px 12px;border-radius:8px;background:#e9f6ef;color:#0a7546;font-size:13px"><strong>Bundle savings applied</strong> — already reflected in the payment above.</div>` : "")
       + ((p.gifts && p.gifts.length) ? `<div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#fff4d6;border:1px solid #e4c26a;color:#5a3f06;font-size:13px"><div style="font-size:10px;font-weight:700;letter-spacing:.14em">COMPLIMENTARY GIFT</div>${p.gifts.map(function(g){ return `<div style="font-weight:700;font-size:14px;margin-top:3px">${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <span style="font-weight:400;font-size:12px">(valued at ${money(g.value)})</span>` : ""}</div>`; }).join("")}<div style="font-size:11.5px;margin-top:2px">Included with this package at no additional charge.</div></div>` : "");
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;border:1px solid #dde3ec;border-radius:10px;overflow:hidden">
       <tr><td style="background:${brandColor};color:#ffffff;padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</td></tr>
