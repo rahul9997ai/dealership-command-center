@@ -238,7 +238,7 @@ tbody tr:hover{background:var(--surface-2)}
 .cd-veh .v1{font-size:19px;font-weight:600}
 .pkgrid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
 .pkgcard{border:1px solid var(--cd-border);border-radius:11px;overflow:hidden;background:var(--cd-surface-2);display:flex;flex-direction:column;flex:1 1 380px;max-width:460px;min-width:300px;box-shadow:var(--cd-shadow)}
-.pkgcard .ph{background:linear-gradient(180deg,var(--cd-blue-2),var(--cd-blue-deep));color:#fff;padding:20px 14px;font-weight:700;font-size:28px;letter-spacing:.05em;text-align:center;display:flex;align-items:center;justify-content:center;gap:10px}
+.pkgcard .ph{background:linear-gradient(180deg,var(--cd-blue-2),var(--cd-blue-deep));color:#fff;padding:20px 14px;font-weight:700;font-size:28px;letter-spacing:.05em;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .pkgcard .ph-icon{opacity:.9;font-size:18px}
 .pkgcard .pb{padding:14px 16px;flex:1}
 .pkgcard .pi{padding:8px 0;border-bottom:1px solid var(--cd-border);font-size:13px;display:flex;align-items:flex-start;gap:9px}
@@ -251,17 +251,12 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--cd-text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--cd-surface-3);border-bottom:1px solid var(--cd-border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--cd-price-bg);border:1px solid var(--cd-border);border-radius:8px;padding:8px 6px}
-.cd .sv{display:flex;align-items:center;gap:11px;margin:2px 16px 12px;padding:10px 13px;border-radius:9px;background:var(--cd-surface-3);border:1px solid var(--cd-border);border-left:3px solid var(--cd-blue)}
-.cd .sv-ic{flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
-.cd .sv-ic svg{width:15px;height:15px}
-.cd .sv-t{font-size:13.5px;font-weight:700;color:var(--cd-text)}
-.cd .sv-s{font-size:11.5px;color:var(--cd-muted);margin-top:1px}
-.cd .gift{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--cd-surface-3);border-bottom:1px solid var(--cd-border);border-left:3px solid var(--cd-blue);color:var(--cd-text)}
-.cd .gf-ic{flex:0 0 auto;width:34px;height:34px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
-.cd .gf-ic svg{width:18px;height:18px}
-.cd .gf-tag{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cd-blue)}
-.cd .gf-name{font-size:15px;font-weight:700;margin-top:1px}
-.cd .gf-sub{font-size:11.5px;color:var(--cd-muted);margin-top:2px}
+.cd .ph-badges{display:flex;flex-wrap:wrap;gap:7px;justify-content:center;letter-spacing:0;font-weight:600}
+.cd .ph-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.02em;line-height:1.3;
+  color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);text-transform:none}
+.cd .ph-chip svg{width:14px;height:14px;flex:0 0 auto}
+.cd .ph-chip.gift{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.6)}
+.cd .ph-chip small{font-size:11px;font-weight:500;opacity:.85}
 .offers-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .gift-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
 .gift-row .gr-2{grid-column:1 / -1;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -774,7 +769,7 @@ function newTransaction(fsmUserId, dealershipId){
     cash:{ tradeAllowance:0, tradePayout:0, downPayment:0, feeAmount:0 },
     lines:[],   /* { lineId, productId, term, km, interval, deductible, price, priceOverridden, packages{} } */
     display:{ mode:"welcome", showPayment:true, showPrices:false, showConfig:false, selection:null },
-    offers:{ discount:{ scope:"package", type:"percent", deal:0, packages:{ preferred:0, essential:0, basic:0 } }, gifts:[] }
+    offers:{ discount:{ enabled:false, scope:"package", type:"percent", deal:0, packages:{ preferred:0, essential:0, basic:0 } }, gifts:[] }
   };
 }
 function primaryTerm(tx){
@@ -833,16 +828,18 @@ function normOffers(o){
   o = o || {};
   var d = o.discount || {};
   var pk = d.packages || {};
+  var vals = { preferred:Number(pk.preferred)||0, essential:Number(pk.essential)||0, basic:Number(pk.basic)||0 };
+  var anyVal = (Number(d.deal) || 0) > 0 || vals.preferred > 0 || vals.essential > 0 || vals.basic > 0;
   return {
-    discount:{ scope: d.scope === "deal" ? "deal" : "package", type: d.type === "amount" ? "amount" : "percent",
-      deal: Number(d.deal) || 0,
-      packages:{ preferred:Number(pk.preferred)||0, essential:Number(pk.essential)||0, basic:Number(pk.basic)||0 } },
+    discount:{ enabled: d.enabled === undefined ? anyVal : !!d.enabled,
+      scope: d.scope === "deal" ? "deal" : "package", type: d.type === "amount" ? "amount" : "percent",
+      deal: Number(d.deal) || 0, packages:vals },
     gifts: Array.isArray(o.gifts) ? o.gifts : []
   };
 }
 function discountFor(o, pkgKey, base){
   var d = o.discount, v = d.scope === "deal" ? d.deal : (d.packages[pkgKey] || 0);
-  if (!(v > 0) || !(base > 0)) return 0;
+  if (!d.enabled || !(v > 0) || !(base > 0)) return 0;
   var amt = d.type === "percent" ? base * Math.min(v, 100) / 100 : v;
   return Math.round(Math.min(amt, base) * 100) / 100;
 }
@@ -1214,7 +1211,7 @@ function canEditProducts(){ return isAdmin() || isFinanceManager(); }
 function ensureOffers(tx){
   if (!tx) return;
   var o = tx.offers;
-  if (!o || !o.discount || !o.discount.packages || !Array.isArray(o.gifts)) tx.offers = C.normOffers(o);
+  if (!o || !o.discount || !o.discount.packages || !Array.isArray(o.gifts) || o.discount.enabled === undefined) tx.offers = C.normOffers(o);
 }
 function storeUsers(){
   return state.users.filter(function(u){ return isMaster() ? true : u.dealershipId === state.activeDealershipId; });
@@ -1527,15 +1524,12 @@ function renderCustomerDisplay(tx){
     /* Savings and gifts are real: the discount is already inside this package's
        price and payments, and a gift is only shown when the Finance Manager
        attached one to this package. */
-    var saveHtml = "";
-    if (p.discount > 0){
-      saveHtml = `<div class="sv"><span class="sv-ic">${CHECK_SVG}</span><div><div class="sv-t">Bundle savings applied</div>
-        <div class="sv-s">${tx.type==="Cash" ? "Reflected in your total below." : "Reflected in your payment above."}</div></div></div>`;
-    }
-    var giftHtml = (p.gifts && p.gifts.length) ? `<div class="gift"><span class="gf-ic">${GIFT_SVG}</span><div>
-      <div class="gf-tag">Complimentary with this package</div>
-      ${p.gifts.map(function(g){ return `<div class="gf-name">${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <span style="font-weight:500;font-size:12px;color:var(--cd-muted)">· valued at ${money(g.value)}</span>` : ""}</div>`; }).join("")}
-      <div class="gf-sub">Included at no additional charge.</div></div></div>` : "";
+    var badges = [];
+    if (p.discount > 0) badges.push(`<span class="ph-chip">${CHECK_SVG}<span>Bundle savings applied</span></span>`);
+    (p.gifts || []).forEach(function(g){
+      badges.push(`<span class="ph-chip gift">${GIFT_SVG}<span>Complimentary gift: ${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <small>· ${money(g.value)} value</small>` : ""}</span></span>`);
+    });
+    var badgeHtml = badges.length ? `<div class="ph-badges">${badges.join("")}</div>` : "";
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
           <div class="pt-amt">${money(p.dueTotal - t.vehicleTax - p.tax)} + HST</div></div></div>` : "")
@@ -1558,7 +1552,7 @@ function renderCustomerDisplay(tx){
         </div>`;
       }).join("")}
     </div>` : "";
-    return `<div class="pkgcard"><div class="ph">${esc(p.label)}</div>${giftHtml}${payBox}${saveHtml}<div class="pb">${items}${waiverHtml}</div></div>`;
+    return `<div class="pkgcard"><div class="ph"><div>${esc(p.label)}</div>${badgeHtml}</div>${payBox}<div class="pb">${items}${waiverHtml}</div></div>`;
   }).join("");
 
   return `<div class="cd" style="${cdThemeStyle()}">${head}<div class="cd-body">
@@ -1804,15 +1798,16 @@ function viewFinance(){
   var offersCard = `<div class="card" id="step-offers"><div class="card-h"><h2>Offers · savings &amp; complimentary gift</h2></div>
     <div class="card-b">
       <div class="lbl" style="margin-bottom:6px">Package savings</div>
-      <p class="muted small" style="max-width:76ch">A real price reduction: it lowers the package price, the HST, the amount financed and the payments, and it shows on the customer display as a savings badge.</p>
-      <div class="chiprow" style="margin:10px 0">
+      <p class="muted small" style="max-width:76ch">A real price reduction: it lowers the package price, the HST, the amount financed and the payments. The customer display shows a "Bundle savings applied" badge on the package, with no amounts. Switching this on or off clears any values entered.</p>
+      <label class="switch" style="margin:8px 0"><input type="checkbox" data-act="offer-toggle" ${dsc.enabled?"checked":""}> Bundle savings</label>
+      ${!dsc.enabled ? "" : `<div class="chiprow" style="margin:10px 0">
         <button type="button" class="btn sm ${dsc.scope==="package"?"on":""}" data-act="offer-scope" data-val="package">Per package</button>
         <button type="button" class="btn sm ${dsc.scope==="deal"?"on":""}" data-act="offer-scope" data-val="deal">Whole deal</button>
         <span style="width:14px"></span>
         <button type="button" class="btn sm ${dsc.type==="percent"?"on":""}" data-act="offer-dtype" data-val="percent">% off</button>
         <button type="button" class="btn sm ${dsc.type==="amount"?"on":""}" data-act="offer-dtype" data-val="amount">$ off</button>
       </div>
-      ${dscInputs}
+      ${dscInputs}`}
       <div class="divider"></div>
       <div class="lbl" style="margin-bottom:6px">Complimentary gift</div>
       <p class="muted small" style="max-width:76ch">A gift is free to the customer and appears as a highlighted banner on the packages you choose. Enter a dealer cost so reports stay accurate.</p>
@@ -2770,12 +2765,27 @@ function printModal(){
       <button class="btn primary" data-act="do-print">Print</button></div></div>
     <div class="modal-b">${m.kind==="internal"?internalPrint(state.tx):customerPrint(state.tx)}</div></div></div>`;
 }
+var pendingConfirm = null;
+function askConfirm(title, message, yesLabel, onYes){
+  pendingConfirm = onYes;
+  state.ui.confirm = { title:title, message:message, yes:yesLabel };
+  commit();
+}
+function confirmModal(){
+  var c = state.ui.confirm;
+  if (!c) return "";
+  return `<div class="modal-bg" data-act="confirm-bg"><div class="modal" style="max-width:460px">
+    <div class="modal-h"><h2>${esc(c.title)}</h2><div class="sp">
+      <button class="btn" data-act="confirm-no">Cancel</button>
+      <button class="btn danger" data-act="confirm-yes">${esc(c.yes)}</button></div></div>
+    <div class="modal-b"><p style="margin:0">${esc(c.message)}</p></div></div></div>`;
+}
 function renderOverlay(){
   if (state.ui.present){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -3667,7 +3677,7 @@ document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
   if (!el) return;
   var act = el.getAttribute("data-act");
-  if (act === "close-modal-bg" && ev.target !== el) return;
+  if ((act === "close-modal-bg" || act === "confirm-bg") && ev.target !== el) return;
   if (/^product-(new|edit|save|toggle|delete|template)$/.test(act) && !V.canEditProducts()){ toast("Only a General Manager or Finance Manager can add, edit or delete products.","err"); return; }
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
@@ -3685,17 +3695,25 @@ document.addEventListener("click", function(ev){
     case "deal-open": openSavedDeal(el.getAttribute("data-deal")); break;
     case "deal-delete": {
       var delId = el.getAttribute("data-deal");
-      if (!window.confirm("Delete this completed deal? This can't be undone.")) break;
-      state.completed = state.completed.filter(function(d){ return d.id !== delId; });
-      cloud.del.x.push(delId);
-      toast("Deal " + delId + " deleted.","ok");
-      commit(); break; }
+      askConfirm("Delete this deal?", "Deal " + delId + " will be permanently deleted. This can't be undone.", "Delete deal", function(){
+        state.completed = state.completed.filter(function(d){ return d.id !== delId; });
+        cloud.del.x.push(delId);
+        toast("Deal " + delId + " deleted.","ok");
+        commit();
+      });
+      break; }
     case "complete": completeDeal(); break;
     case "product-template":
       if (state.products.length){ toast("This dealership already has products.","err"); break; }
       state.products = C.clone(D.PRODUCTS);
       state.cloud.productsByDealer[state.activeDealershipId] = state.products;
       toast("Starter template loaded. Edit the names, prices and rules to match your store.","ok"); commit(); break;
+    case "offer-toggle": {
+      V.ensureOffers(state.tx);
+      var dd = state.tx.offers.discount;
+      dd.enabled = !dd.enabled;
+      dd.scope = "package"; dd.type = "percent"; dd.deal = 0; dd.packages = { preferred:0, essential:0, basic:0 };
+      commit(); break; }
     case "offer-scope": V.ensureOffers(state.tx); state.tx.offers.discount.scope = el.getAttribute("data-val"); commit(); break;
     case "offer-dtype": V.ensureOffers(state.tx); state.tx.offers.discount.type = el.getAttribute("data-val"); commit(); break;
     case "gift-add": {
@@ -3786,18 +3804,22 @@ document.addEventListener("click", function(ev){
       var ud = userById(uid2);
       if (ud.role === "Master Administrator") { toast("A master administrator can't be removed.","err"); break; }
       if (uid2 === state.currentUserId) { toast("You can't remove your own account.","err"); break; }
-      if (!window.confirm("Remove " + ud.name + "? They will no longer be able to sign in.")) break;
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uid2)){
-        /* A leftover from before real accounts existed — it only lives in this browser, so there's nothing on the server to delete. */
-        state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); break;
-      }
-      adminCall({ action:"delete", id:uid2 }).then(function(r){
-        if (r && r.deactivated){
-          ud.active = false; toast(ud.name + " has linked records, so the account was deactivated and can no longer sign in.","ok"); commit(); refreshUsers(); return;
+      askConfirm("Remove " + ud.name + "?", "They will no longer be able to sign in, and the account is removed. This can't be undone.", "Remove user", function(){
+        if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uid2)){
+          /* A leftover from before real accounts existed — it only lives in this browser, so there's nothing on the server to delete. */
+          state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); return;
         }
-        state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit();
-      }).catch(function(e){ toast(e.message,"err"); });
+        toast("Removing " + ud.name + "…","info");
+        adminCall({ action:"delete", id:uid2 }).then(function(r){
+          if (r && r.deactivated){
+            ud.active = false; toast(ud.name + " has linked records, so the account was deactivated and can no longer sign in.","ok"); commit(); refreshUsers(); return;
+          }
+          state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); refreshUsers();
+        }).catch(function(e){ toast("Couldn't remove " + ud.name + ": " + e.message,"err"); });
+      });
       break; }
+    case "confirm-yes": { var cf = pendingConfirm; pendingConfirm = null; state.ui.confirm = null; commit(); if (cf) cf(); break; }
+    case "confirm-no": case "confirm-bg": pendingConfirm = null; state.ui.confirm = null; commit(); break;
     case "uf-access": {
       var mr = document.querySelector(".modal"); if (!mr) break;
       var av = el.getAttribute("data-val");
@@ -3818,10 +3840,11 @@ document.addEventListener("click", function(ev){
       break; }
     case "demo-convert": {
       var dc = userById(el.getAttribute("data-user"));
-      if (!window.confirm("Give " + dc.name + " full access with no time limit?")) break;
-      adminCall({ action:"update", id:dc.id, access_type:"full" })
-        .then(function(){ toast(dc.name + " now has full access.","ok"); refreshUsers(); })
-        .catch(function(e){ toast(e.message,"err"); });
+      askConfirm("Give " + dc.name + " full access?", "Their demo time limit is removed and they keep full access.", "Make full access", function(){
+        adminCall({ action:"update", id:dc.id, access_type:"full" })
+          .then(function(){ toast(dc.name + " now has full access.","ok"); refreshUsers(); })
+          .catch(function(e){ toast(e.message,"err"); });
+      });
       break; }
     case "do-change-password": doChangePassword(); break;
     case "toggle-pw": {
@@ -4020,6 +4043,7 @@ document.addEventListener("change", function(ev){
 
 /* ---------------- BOOT ---------------- */
 function boot(){
+  state.ui.confirm = null;
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
