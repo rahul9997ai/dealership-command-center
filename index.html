@@ -251,6 +251,36 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgcard .pi-price{flex:0 0 auto;font-weight:700;font-size:12.5px;color:var(--cd-text);margin-top:1px;white-space:nowrap}
 .paybox{display:flex;gap:8px;flex-wrap:wrap;padding:12px 14px;background:var(--cd-surface-3);border-bottom:1px solid var(--cd-border)}
 .payterm{flex:1;min-width:84px;text-align:center;background:var(--cd-price-bg);border:1px solid var(--cd-border);border-radius:8px;padding:8px 6px}
+.cd .sv{margin:2px 16px 12px;padding:11px 13px;border-radius:10px;background:rgba(31,140,92,.11);border:1px solid rgba(31,140,92,.38)}
+.cd .sv-top{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.cd .sv-lbl{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ok)}
+.cd .sv-amt{font-size:16px;font-weight:800;color:var(--ok)}
+.cd .sv-amt em{font-style:normal;font-weight:600;font-size:12.5px;opacity:.9}
+.cd .sv-sub{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:12px;color:var(--cd-muted)}
+.cd .sv-was{text-decoration:line-through}
+.cd .sv-now{font-weight:800;font-size:14px;color:var(--cd-text)}
+.cd .sv-tag{margin-left:auto;font-size:9.5px;font-weight:800;letter-spacing:.07em;color:#fff;background:var(--ok);padding:2px 7px;border-radius:999px;text-transform:uppercase}
+.cd .sv-note{margin-top:5px;font-size:10.5px;color:var(--cd-muted)}
+.cd .gift{position:relative;overflow:hidden;padding:12px 16px 13px;text-align:center;
+  background:linear-gradient(135deg,#fff7e0 0%,#fbe6b0 55%,#f6d98e 100%);border-bottom:1px solid #e4c26a;color:#5a3f06}
+:root[data-theme="dark"] .cd .gift{background:linear-gradient(135deg,rgba(214,165,50,.22),rgba(214,165,50,.1));border-bottom:1px solid rgba(214,165,50,.5);color:#f6dc98}
+.cd .gift::after{content:"";position:absolute;top:0;bottom:0;width:60px;left:-80px;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:gfShine 5.5s ease-in-out 1.2s infinite}
+@keyframes gfShine{0%,70%{left:-80px}100%{left:120%}}
+.cd .gf-tag{display:inline-flex;align-items:center;gap:7px;font-size:10.5px;font-weight:800;letter-spacing:.16em;text-transform:uppercase}
+.cd .gf-tag svg{width:16px;height:16px}
+.cd .gf-item{margin-top:6px}
+.cd .gf-name{font-size:16.5px;font-weight:800;letter-spacing:.01em}
+.cd .gf-sub{font-size:11px;opacity:.85;margin-top:2px}
+@media (prefers-reduced-motion:reduce){ .cd .gift::after{animation:none;display:none} }
+.offers-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.gift-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
+.gift-row .gr-2{grid-column:1 / -1;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.swatch-row{display:flex;gap:8px;flex-wrap:wrap;margin:8px 0}
+.swatch{display:inline-flex;align-items:center;gap:8px;border:1.5px solid var(--border-strong);border-radius:999px;padding:5px 12px 5px 6px;background:var(--surface);cursor:pointer;font-size:12.5px}
+.swatch i{width:18px;height:18px;border-radius:50%;display:block}
+.swatch.on{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
+.emptystate{text-align:center;padding:34px 20px}
+.emptystate h3{margin:0 0 6px;font-size:18px}
 .axl{
   --ink:#0b1b3a;--blue:#0a6cf0;--blue2:#1a86ff;--mut:#5a6b88;--line:#d9e3f1;
   --padl:3.1vw;--padr:4vw;
@@ -601,17 +631,23 @@ tbody tr:hover{background:var(--surface-2)}
 
 /* Brand registry. finLabel is the customer-facing financial services name. */
 var BRANDS = {
-  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", finLabel:"NISSAN FINANCIAL SERVICES" },
-  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", finLabel:"INFINITI FINANCIAL SERVICES" },
-  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", finLabel:"TOYOTA FINANCIAL SERVICES" },
-  honda:    { key:"honda",    label:"Honda",     mark:"HON", finLabel:"HONDA FINANCIAL SERVICES" },
-  ford:     { key:"ford",     label:"Ford",      mark:"FRD", finLabel:"FORD CREDIT FINANCIAL SERVICES" },
-  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", finLabel:"HYUNDAI MOTOR FINANCE" },
-  kia:      { key:"kia",      label:"Kia",       mark:"KIA", finLabel:"KIA FINANCE" },
-  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", finLabel:"GM FINANCIAL" },
-  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", finLabel:"MAZDA FINANCIAL SERVICES" },
-  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", finLabel:"BMW FINANCIAL SERVICES" }
+  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", color:"#2c5a9b", finLabel:"NISSAN FINANCIAL SERVICES" },
+  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", color:"#3c4654", finLabel:"INFINITI FINANCIAL SERVICES" },
+  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", color:"#a3282f", finLabel:"TOYOTA FINANCIAL SERVICES" },
+  honda:    { key:"honda",    label:"Honda",     mark:"HON", color:"#a3282f", finLabel:"HONDA FINANCIAL SERVICES" },
+  ford:     { key:"ford",     label:"Ford",      mark:"FRD", color:"#1f4a8a", finLabel:"FORD CREDIT FINANCIAL SERVICES" },
+  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", color:"#1f3a68", finLabel:"HYUNDAI MOTOR FINANCE" },
+  kia:      { key:"kia",      label:"Kia",       mark:"KIA", color:"#8a2b3a", finLabel:"KIA FINANCE" },
+  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", color:"#9a7420", finLabel:"GM FINANCIAL" },
+  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", color:"#8a2b3a", finLabel:"MAZDA FINANCIAL SERVICES" },
+  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", color:"#1f3a68", finLabel:"BMW FINANCIAL SERVICES" }
 };
+/* Colour schemes a General Manager can pick for the customer display. */
+var COLOR_PRESETS = [
+  { name:"Classic blue", color:"#2c5a9b" }, { name:"Navy", color:"#1f3a68" }, { name:"Teal", color:"#14707a" },
+  { name:"Forest", color:"#2e6b4f" }, { name:"Crimson", color:"#a3282f" }, { name:"Burgundy", color:"#8a2b3a" },
+  { name:"Charcoal", color:"#3c4654" }, { name:"Bronze", color:"#9a7420" }
+];
 
 /* The three presentation packages. The brand name is prefixed at runtime,
    so a Nissan store sees NISSAN PREFERRED and a Ford store sees FORD PREFERRED. */
@@ -711,7 +747,7 @@ var CUSTOMERS = [];
 var VEHICLES = [];
 
 
-window.__DCC_DATA__ = { BRANDS:BRANDS, PACKAGES:PACKAGES, DEALERSHIPS:DEALERSHIPS, USERS:USERS,
+window.__DCC_DATA__ = { COLOR_PRESETS:COLOR_PRESETS, BRANDS:BRANDS, PACKAGES:PACKAGES, DEALERSHIPS:DEALERSHIPS, USERS:USERS,
   PRODUCTS:PRODUCTS, CUSTOMERS:CUSTOMERS, VEHICLES:VEHICLES };
 })();
 /* =====================================================================
@@ -747,7 +783,8 @@ function newTransaction(fsmUserId, dealershipId){
     finance:{ tradeAllowance:0, tradePayout:0, downPayment:0, fees:[], feeAmount:0, rates:{}, terms:[], frequency:null },
     cash:{ tradeAllowance:0, tradePayout:0, downPayment:0, feeAmount:0 },
     lines:[],   /* { lineId, productId, term, km, interval, deductible, price, priceOverridden, packages{} } */
-    display:{ mode:"welcome", showPayment:true, showPrices:false, showConfig:false, selection:null }
+    display:{ mode:"welcome", showPayment:true, showPrices:false, showConfig:false, selection:null },
+    offers:{ discount:{ scope:"package", type:"percent", deal:0, packages:{ preferred:0, essential:0, basic:0 } }, gifts:[] }
   };
 }
 function primaryTerm(tx){
@@ -797,6 +834,33 @@ function packageLabel(state, suffix){
   return (brandOf(state).label + " " + suffix).toUpperCase();
 }
 
+/* -------- offers: a real discount and complimentary gifts --------
+   The discount is a genuine price reduction: it lowers the package subtotal,
+   the tax on it, the amount financed and the payments, and it flows into
+   reports. Gifts are free to the customer; their cost (if entered) comes off
+   the dealer's gross. Older deals have no offers, so read them defensively. */
+function normOffers(o){
+  o = o || {};
+  var d = o.discount || {};
+  var pk = d.packages || {};
+  return {
+    discount:{ scope: d.scope === "deal" ? "deal" : "package", type: d.type === "amount" ? "amount" : "percent",
+      deal: Number(d.deal) || 0,
+      packages:{ preferred:Number(pk.preferred)||0, essential:Number(pk.essential)||0, basic:Number(pk.basic)||0 } },
+    gifts: Array.isArray(o.gifts) ? o.gifts : []
+  };
+}
+function discountFor(o, pkgKey, base){
+  var d = o.discount, v = d.scope === "deal" ? d.deal : (d.packages[pkgKey] || 0);
+  if (!(v > 0) || !(base > 0)) return 0;
+  var amt = d.type === "percent" ? base * Math.min(v, 100) / 100 : v;
+  return Math.round(Math.min(amt, base) * 100) / 100;
+}
+function giftsFor(o, pkgKey){
+  return o.gifts.filter(function(g){ return g && g.name && g.packages && g.packages[pkgKey]; });
+}
+function giftCostOf(list){ return Math.round(list.reduce(function(a, g){ return a + (Number(g.cost) || 0); }, 0) * 100) / 100; }
+
 /* -------- the single totals engine -------- */
 function totals(state, tx){
   var taxCfg = state.config.tax, fin = state.config.finance;
@@ -839,8 +903,23 @@ function totals(state, tx){
   }
 
   var productsSub = Math.round(sub*100)/100;
+  var offers = normOffers(tx.offers);
+  var selKey = (tx.display && tx.display.selection) ? tx.display.selection.package : null;
+  var aggDisc = 0, aggGifts;
+  if (offers.discount.scope === "deal") aggDisc = discountFor(offers, null, productsSub);
+  else if (selKey){
+    var selBase = 0;
+    lines.forEach(function(L){ if ((L.cfg.packages||{})[selKey] && L.price !== null) selBase += L.price; });
+    aggDisc = Math.min(discountFor(offers, selKey, selBase), productsSub);
+  }
+  aggGifts = selKey ? giftsFor(offers, selKey)
+    : offers.gifts.filter(function(g){ return g && g.name && g.packages && g.packages.preferred && g.packages.essential && g.packages.basic; });
+  var aggGiftCost = giftCostOf(aggGifts);
+  var aggFactor = productsSub > 0 ? (productsSub - aggDisc) / productsSub : 1;
+  taxStd = taxStd * aggFactor; taxVrc = taxVrc * aggFactor;
+  var productsNet = Math.round((productsSub - aggDisc)*100)/100;
   var productsTax = Math.round((taxStd+taxVrc)*100)/100;
-  var productsTotal = Math.round((productsSub+productsTax)*100)/100;
+  var productsTotal = Math.round((productsNet+productsTax)*100)/100;
 
   var vPrice = Number(tx.vehicle.price)||0;
   /* No vehicle price yet means there's no deal to speak of — don't let the
@@ -891,19 +970,27 @@ function totals(state, tx){
       if (L.price === null) { missing = true; return; }
       s += L.price; tx1 += L.tax; c += L.cost;
     });
-    var tot = Math.round((s+tx1)*100)/100;
+    var listSub = Math.round(s*100)/100;
+    var disc = discountFor(offers, def.key, listSub);
+    var pf = listSub > 0 ? (listSub - disc) / listSub : 1;
+    var netSub = Math.round((listSub - disc)*100)/100, netTax = Math.round(tx1*pf*100)/100;
+    var pGifts = giftsFor(offers, def.key), pGiftCost = giftCostOf(pGifts);
+    var tot = Math.round((netSub+netTax)*100)/100;
     return { key:def.key, suffix:def.suffix, blurb:def.blurb, label:packageLabel(state, def.suffix),
       lines:pl, count:pl.length, hasUnpriced:missing,
-      sub:Math.round(s*100)/100, tax:Math.round(tx1*100)/100, total:tot,
-      cost:c, gross:Math.round((s-c)*100)/100, quotes:quotesFor(tot),
+      listSub:listSub, discount:disc, discountPct: listSub > 0 ? Math.round(disc/listSub*1000)/10 : 0,
+      gifts:pGifts, giftCost:pGiftCost,
+      sub:netSub, tax:netTax, total:tot,
+      cost:c, gross:Math.round((netSub-c-pGiftCost)*100)/100, quotes:quotesFor(tot),
       dueTotal: isCash ? Math.round((baseAmount+tot)*100)/100 : null };
   });
 
   return {
     lines:lines, unpricedCount:unpriced, packages:packages, packagesUsed:anyPackaged,
-    productsSub:productsSub, taxStandard:Math.round(taxStd*100)/100, taxVrc:Math.round(taxVrc*100)/100,
+    productsSub:productsSub, productsDiscount:aggDisc, productsNet:productsNet, giftCost:aggGiftCost, offers:offers,
+    taxStandard:Math.round(taxStd*100)/100, taxVrc:Math.round(taxVrc*100)/100,
     productsTax:productsTax, productsTotal:productsTotal, productCost:cost,
-    productGross:Math.round((productsSub-cost)*100)/100,
+    productGross:Math.round((productsNet-cost-aggGiftCost)*100)/100,
     vehiclePrice:vPrice, adminFee:adminFee, licensing:lic, vehicleTax:vehicleTax,
     tradeAllowance:tradeAll, tradePayout:tradePay, downPayment:down,
     baseAmount:Math.round(baseAmount*100)/100, amountFinanced:financed, isCash:isCash, cashDueTotal:cashDueTotal,
@@ -914,7 +1001,7 @@ function totals(state, tx){
 
 function validate(state, tx){
   var t = totals(state, tx), errs = [], warns = [];
-  if (!tx.fsmUserId) errs.push("Assign an FSM to this deal before completing it.");
+  if (!tx.fsmUserId) errs.push("Assign a Finance Manager to this deal before completing it.");
   if (!tx.customer.name) errs.push("Add a customer before completing the transaction.");
   if (!tx.vehicle.model || !tx.vehicle.stock) errs.push("Enter the vehicle model and stock number.");
   if (!tx.vehicle.price) errs.push("Enter the vehicle selling price.");
@@ -993,7 +1080,8 @@ function buildHistory(state){
 window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
-  totals:totals, validate:validate, buildHistory:buildHistory, brandOf:brandOf, packageLabel:packageLabel };
+  totals:totals, validate:validate, buildHistory:buildHistory, brandOf:brandOf, packageLabel:packageLabel,
+  normOffers:normOffers, discountFor:discountFor };
 })();
 /* =====================================================================
    Layer 3: STORE, SHELL, DASHBOARD, CUSTOMER DISPLAY, FSM DISPLAY
@@ -1105,7 +1193,7 @@ function setDealership(id){
     cp[state.activeDealershipId] = state.products;
   state.activeDealershipId = id;
   state.config = dealershipById(id);
-  state.products = cp[id] || (cp[id] = C.clone(D.PRODUCTS));
+  state.products = cp[id] || (cp[id] = []);
   state.tx = C.newTransaction(firstFsmFor(id), id);
   applyFinanceDefaults(state.tx);
 }
@@ -1127,6 +1215,17 @@ function userById(id){
 function currentUser(){ return userById(state.currentUserId); }
 function isMaster(){ return currentUser().role === "Master Administrator"; }
 function isAdmin(){ return isMaster() || currentUser().role === "General Manager"; }
+/* One role: Finance Manager. It is stored as "FSM" (the other Axiom modules key
+   their access rules on that value); a legacy "FSM Manager" is treated the same. */
+function isFinanceRole(r){ return r === "FSM" || r === "FSM Manager"; }
+function roleLabel(r){ return isFinanceRole(r) ? "Finance Manager" : r; }
+function isFinanceManager(){ return isFinanceRole(currentUser().role); }
+function canEditProducts(){ return isAdmin() || isFinanceManager(); }
+function ensureOffers(tx){
+  if (!tx) return;
+  var o = tx.offers;
+  if (!o || !o.discount || !o.discount.packages || !Array.isArray(o.gifts)) tx.offers = C.normOffers(o);
+}
 function storeUsers(){
   return state.users.filter(function(u){ return isMaster() ? true : u.dealershipId === state.activeDealershipId; });
 }
@@ -1159,9 +1258,8 @@ function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
   if (role === "General Manager") return ["dashboard","finance","products","reports","users","settings"];
-  if (role === "FSM Manager") return ["finance","products","reports"];
   if (role === "Salesperson") return [];
-  if (role === "FSM") return ["finance","products","reports","users"];
+  if (isFinanceRole(role)) return ["finance","products","reports","users"];
   return ["finance","products","reports"];
 }
 function navItems(){
@@ -1201,7 +1299,7 @@ function renderShell(inner){
       </div>
       <nav><div class="nav-group">Operations</div>${nav}</nav>
       <div class="rail-foot"><div class="userchip"><div class="avatar">${esc(u.initials)}</div>
-        <div><div class="nm">${esc(u.name)}</div><div class="tiny">${esc(u.role)}</div></div></div></div>
+        <div><div class="nm">${esc(u.name)}</div><div class="tiny">${esc(roleLabel(u.role))}</div></div></div></div>
     </aside>
     <div class="main">
       <header class="topbar">
@@ -1217,8 +1315,8 @@ function renderShell(inner){
           ${isMaster() ? `<label class="switch"><span class="muted small">Viewing as</span>
             <select data-act="switch-user" style="width:auto;min-width:180px">
               ${state.users.filter(function(x){ return x.active; }).map(function(x){
-                return `<option value="${x.id}" ${x.id===state.currentUserId?"selected":""}>${esc(x.name)} — ${esc(x.role)}</option>`; }).join("")}
-            </select></label>` : `<span class="tag">${esc(u.name)} · ${esc(u.role)}</span>`}
+                return `<option value="${x.id}" ${x.id===state.currentUserId?"selected":""}>${esc(x.name)} — ${esc(roleLabel(x.role))}</option>`; }).join("")}
+            </select></label>` : `<span class="tag">${esc(u.name)} · ${esc(roleLabel(u.role))}</span>`}
           <button class="btn sm" data-act="logout">Log out</button>
         </div>
       </header>
@@ -1273,7 +1371,7 @@ function viewDashboard(){
       <div class="card-b">${fsmRows.length ? `<div class="tablewrap"><table>
         <thead><tr><th>FSM</th><th class="right">Deals</th><th class="right">Products</th><th class="right">Gross</th><th style="width:130px">Share</th></tr></thead>
         <tbody>${fsmRows.map(function(r){ var u = userById(r.id); return `<tr>
-          <td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(u.role)}</div></td>
+          <td><strong>${esc(u.name)}</strong><div class="tiny muted">${esc(roleLabel(u.role))}</div></td>
           <td class="right num">${r.v.deals}</td><td class="right num">${r.v.products}</td>
           <td class="right num">${money0(r.v.gross)}</td>
           <td><div class="bar"><i style="width:${Math.max(4,Math.round(r.v.gross/maxG*100))}%"></i></div></td></tr>`; }).join("")}
@@ -1382,6 +1480,24 @@ function productIconSvg(p){
   }
   return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + PI_SVG[k] + '</svg>';
 }
+var GIFT_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3.5" y="9" width="17" height="4" rx="1"/><path d="M5 13v7h14v-7M12 9v11M12 9c-2.5 0-4-1-4-2.4A1.9 1.9 0 0111.2 5.3C11.8 6.2 12 9 12 9zM12 9c2.5 0 4-1 4-2.4a1.9 1.9 0 00-3.2-1.3C12.2 6.2 12 9 12 9z"/></svg>';
+function hexRgb(h){ h = String(h).replace("#",""); if (h.length === 3) h = h.split("").map(function(c){ return c+c; }).join(""); var n = parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+function rgbHex(a){ return "#" + a.map(function(x){ x = Math.max(0,Math.min(255,Math.round(x))); return (x<16?"0":"") + x.toString(16); }).join(""); }
+function mixHex(a, b, t){ var A = hexRgb(a), B = hexRgb(b); return rgbHex([0,1,2].map(function(i){ return A[i] + (B[i]-A[i])*t; })); }
+/* The customer display's colours come from the dealership's brand colour
+   (chosen in Dealership settings) and follow the app's light/dark mode. */
+function cdThemeStyle(){
+  var cfg = state.config || {};
+  var base = /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "") ? cfg.brandColor : (brand().color || "#2c5a9b");
+  var W = "#ffffff", K = "#0a1220", v;
+  if (state.ui.theme === "dark") v = { "surface":mixHex(K,base,.12), "surface-2":mixHex(K,base,.18), "surface-3":mixHex(K,base,.24), "border":mixHex(K,base,.36),
+    "blue":mixHex(base,W,.28), "blue-2":mixHex(base,W,.42), "blue-deep":mixHex(base,K,.72), "text":"#eaf0fb", "muted":"#a4b3cc",
+    "head-a":mixHex(base,K,.72), "head-b":mixHex(base,K,.3), "price-bg":mixHex(K,base,.16) };
+  else v = { "surface":mixHex(W,base,.07), "surface-2":mixHex(W,base,.03), "surface-3":mixHex(W,base,.12), "border":mixHex(W,base,.24),
+    "blue":base, "blue-2":mixHex(base,W,.13), "blue-deep":mixHex(base,K,.38), "text":"#1c2b40", "muted":"#5c6e88",
+    "head-a":mixHex(base,K,.38), "head-b":base, "price-bg":mixHex(W,base,.015) };
+  return Object.keys(v).map(function(k){ return "--cd-" + k + ":" + v[k]; }).join(";");
+}
 var PACKAGE_ICONS = { preferred:"★", essential:"◆", basic:"●" };
 function renderCustomerDisplay(tx){
   var b = brand(), cfg = state.config, t = C.totals(state, tx);
@@ -1406,7 +1522,7 @@ function renderCustomerDisplay(tx){
         <div class="cd-sub1">Designing What Fits You Drive</div>
         <p class="muted" style="max-width:44ch">Your finance manager will help you choose the right coverage.</p>`;
     }
-    return `<div class="cd">${head}<div class="cd-welcome">${body}</div>${noteBar}${foot}</div>`;
+    return `<div class="cd" style="${cdThemeStyle()}">${head}<div class="cd-welcome">${body}</div>${noteBar}${foot}</div>`;
   }
 
   var shown = packagesToShow(t, tx);
@@ -1417,23 +1533,21 @@ function renderCustomerDisplay(tx){
       var priceTxt = (L.price===null || !(tx.type==="Cash" || tx.display.showPrices)) ? "" : `<div class="pi-price">${money(L.price)}</div>`;
       return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div>${priceTxt}</div>`;
     }).join("");
-    /* Purely a showroom framing device — the customer's real total (below,
-       in payBox/dueTotal) never moves. "Individually" is this package's own
-       real total marked up by a fixed, cosmetic multiplier so bundling two
-       or more products visibly "saves" something. Thresholds: Preferred 4+,
-       Essential 3+, Basic 2+. Shown pre-tax with "+ HST". */
-    var pricedCount = p.lines.filter(function(L){ return L.price !== null; }).length;
-    var bundleHtml = "";
-    var bundleMin = { preferred:4, essential:3, basic:2 }[p.key];
-    if (bundleMin && pricedCount >= bundleMin && p.sub > 0 && (tx.type==="Cash" || tx.display.showPrices)){
-      var compareTotal = Math.round(p.sub*1.18*100)/100;
-      var savings = Math.round((compareTotal-p.sub)*100)/100;
-      var pct = Math.round((savings/compareTotal)*100);
-      bundleHtml = `<div class="bundle-badge">
-        <div class="bundle-top"><span class="bundle-compare">${money(compareTotal)}</span><span class="bundle-arrow">if bought one at a time →</span><span class="bundle-price">${money(p.sub)} + HST</span><span class="bundle-tag">Bundled</span></div>
-        <div class="bundle-save">You're saving ${money(savings)} (${pct}%) by bundling these together</div>
-      </div>`;
+    /* Savings and gifts are real: the discount is already inside this package's
+       price and payments, and a gift is only shown when the Finance Manager
+       attached one to this package. */
+    var saveHtml = "";
+    if (p.discount > 0){
+      var showList = tx.type==="Cash" || tx.display.showPrices;
+      var pctTxt = String(p.discountPct).replace(/\.0$/,"");
+      saveHtml = `<div class="sv"><div class="sv-top"><span class="sv-lbl">Package savings</span>
+        <span class="sv-amt">You save ${money(p.discount)} <em>(${pctTxt}%)</em></span></div>
+        ${showList ? `<div class="sv-sub"><span class="sv-was">${money(p.listSub)}</span><span>→</span><span class="sv-now">${money(p.sub)} + HST</span><span class="sv-tag">Bundled</span></div>` : ""}
+        <div class="sv-note">Savings shown before HST.</div></div>`;
     }
+    var giftHtml = (p.gifts && p.gifts.length) ? `<div class="gift"><div class="gf-tag">${GIFT_SVG}<span>Complimentary gift</span></div>
+      ${p.gifts.map(function(g){ return `<div class="gf-item"><div class="gf-name">${esc(g.name)}</div>
+        <div class="gf-sub">Included with this package at no additional charge${g.showValue && Number(g.value) > 0 ? " · valued at " + money(g.value) : ""}</div></div>`; }).join("")}</div>` : "";
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
           <div class="pt-amt">${money(p.dueTotal - t.vehicleTax - p.tax)} + HST</div></div></div>` : "")
@@ -1456,10 +1570,10 @@ function renderCustomerDisplay(tx){
         </div>`;
       }).join("")}
     </div>` : "";
-    return `<div class="pkgcard"><div class="ph">${esc(p.label)}</div>${payBox}${bundleHtml}<div class="pb">${items}${waiverHtml}</div></div>`;
+    return `<div class="pkgcard"><div class="ph">${esc(p.label)}</div>${giftHtml}${payBox}${saveHtml}<div class="pb">${items}${waiverHtml}</div></div>`;
   }).join("");
 
-  return `<div class="cd">${head}<div class="cd-body">
+  return `<div class="cd" style="${cdThemeStyle()}">${head}<div class="cd-body">
     <div class="cd-veh"><div class="v1">${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}</div>
       <div class="muted small">${tx.customer.name ? "Prepared for " + esc(tx.customer.name) : ""}</div></div>
     <div class="pkgrid">${cards}</div>
@@ -1483,11 +1597,12 @@ function selectOptions(list, current, fmt){
   return list.map(function(v){ return `<option value="${v}" ${String(current)===String(v)?"selected":""}>${esc(fmt?fmt(v):v)}</option>`; }).join("");
 }
 function viewFinance(){
+  ensureOffers(state.tx);
   var tx = state.tx, t = C.totals(state, tx), v = C.validate(state, tx);
   var steps = stepState(tx);
 
   var toolbar = `<div class="fin-toolbar">
-    ${isAdmin() ? `<label class="switch"><span class="muted small">FSM</span>
+    ${isAdmin() ? `<label class="switch"><span class="muted small">Finance Manager</span>
       <select data-bind="tx.fsmUserId" style="width:auto;min-width:150px">
         <option value="">Unassigned</option>
         ${fsmUsers().map(function(u){ return `<option value="${u.id}" ${u.id===tx.fsmUserId?"selected":""}>${esc(u.name)}</option>`; }).join("")}
@@ -1672,7 +1787,52 @@ function viewFinance(){
       ${selNote}
       <div class="divider"></div>
       <p class="muted small" style="max-width:76ch">Tick a product into any of the three columns to add it to that package — a product can sit in one, two, or all three.</p>
-      ${productRows}
+      ${state.products.length ? productRows : `<div class="emptystate"><h3>No products set up yet</h3><p class="muted small">Add this dealership's products first, then come back to build packages.</p><button class="btn primary" data-act="route" data-route="products">Set up products</button></div>`}
+    </div></div>`;
+
+  var off = tx.offers, dsc = off.discount;
+  var dscUnit = dsc.type === "percent" ? "%" : "$";
+  var pkgOf = function(k){ return t.packages.filter(function(x){ return x.key === k; })[0]; };
+  var dscInputs = dsc.scope === "deal"
+    ? `<label class="f"><span>Discount on whichever package the customer chooses</span><div class="pricebox"><span class="pfx">${dscUnit}</span>
+        <input type="number" min="0" step="any" value="${dsc.deal ? esc(dsc.deal) : ""}" data-bind="tx.offers.discount.deal" data-type="num" placeholder="0"></div></label>
+       <div class="tiny muted">${D.PACKAGES.map(function(def){ var p = pkgOf(def.key); return p && p.discount > 0 ? esc(C.packageLabel(state, def.suffix)) + ": −" + money(p.discount) + " → " + money(p.sub) : ""; }).filter(Boolean).join(" · ") || "Enter a value to show a savings badge on the customer display."}</div>`
+    : `<div class="offers-grid">${D.PACKAGES.map(function(def){ var p = pkgOf(def.key);
+        return `<label class="f"><span>${esc(C.packageLabel(state, def.suffix))}</span><div class="pricebox"><span class="pfx">${dscUnit}</span>
+          <input type="number" min="0" step="any" value="${dsc.packages[def.key] ? esc(dsc.packages[def.key]) : ""}" data-bind="tx.offers.discount.packages.${def.key}" data-type="num" placeholder="0"></div>
+          <span class="tiny muted">${p && p.discount > 0 ? "−" + money(p.discount) + " → " + money(p.sub) : "No discount"}</span></label>`; }).join("")}</div>`;
+  var presetGifts = (state.config.gifts || []).filter(function(g){ return g && g.name; });
+  var giftRows = off.gifts.map(function(g, i){
+    return `<div class="gift-row">
+      <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="tx.offers.gifts.${i}.name" placeholder="e.g. Winter tire storage"></label>
+      <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="tx.offers.gifts.${i}.value" data-type="num"></label>
+      <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="tx.offers.gifts.${i}.cost" data-type="num"></label>
+      <button type="button" class="btn sm danger" data-act="gift-remove" data-idx="${i}">Remove</button>
+      <div class="gr-2"><span class="muted small">Included with</span>
+        <div class="pkgchk-row">${D.PACKAGES.map(function(def){ var on = g.packages && g.packages[def.key];
+          return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="gift-pkg" data-idx="${i}" data-pkg="${def.key}" ${on?"checked":""}>${esc(C.packageLabel(state, def.suffix))}</label>`; }).join("")}</div>
+        <label class="switch"><input type="checkbox" data-act="gift-showval" data-idx="${i}" ${g.showValue?"checked":""}> Show value to customer</label></div>
+    </div>`; }).join("");
+  var offersCard = `<div class="card" id="step-offers"><div class="card-h"><h2>Offers · savings &amp; complimentary gift</h2></div>
+    <div class="card-b">
+      <div class="lbl" style="margin-bottom:6px">Package savings</div>
+      <p class="muted small" style="max-width:76ch">A real price reduction: it lowers the package price, the HST, the amount financed and the payments, and it shows on the customer display as a savings badge.</p>
+      <div class="chiprow" style="margin:10px 0">
+        <button type="button" class="btn sm ${dsc.scope==="package"?"on":""}" data-act="offer-scope" data-val="package">Per package</button>
+        <button type="button" class="btn sm ${dsc.scope==="deal"?"on":""}" data-act="offer-scope" data-val="deal">Whole deal</button>
+        <span style="width:14px"></span>
+        <button type="button" class="btn sm ${dsc.type==="percent"?"on":""}" data-act="offer-dtype" data-val="percent">% off</button>
+        <button type="button" class="btn sm ${dsc.type==="amount"?"on":""}" data-act="offer-dtype" data-val="amount">$ off</button>
+      </div>
+      ${dscInputs}
+      <div class="divider"></div>
+      <div class="lbl" style="margin-bottom:6px">Complimentary gift</div>
+      <p class="muted small" style="max-width:76ch">A gift is free to the customer and appears as a highlighted banner on the packages you choose. Enter a dealer cost so reports stay accurate.</p>
+      <div class="chiprow" style="margin:10px 0">
+        ${presetGifts.map(function(g, i){ return `<button type="button" class="btn sm" data-act="gift-add" data-preset="${i}">＋ ${esc(g.name)}</button>`; }).join("")}
+        <button type="button" class="btn sm" data-act="gift-add" data-preset="custom">＋ Custom gift</button>
+      </div>
+      ${giftRows || `<div class="tiny muted">No gift on this deal.</div>`}
     </div></div>`;
 
   var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Presentation</h2>
@@ -1697,12 +1857,12 @@ function viewFinance(){
     </span></div>${renderCustomerDisplay(tx)}</div>`;
 
   return toolbar + stepBar + `<div class="fin-split ${state.ui.split?"":"solo"}">
-    <div><div class="stack">${customerCard}${vehicleCard}${financeCard}${productsCard}${packageCard}</div></div>
+    <div><div class="stack">${customerCard}${vehicleCard}${financeCard}${productsCard}${offersCard}${packageCard}</div></div>
     ${state.ui.split ? `<div>${monitor}</div>` : ""}</div>`;
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, roleLabel:roleLabel, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
@@ -1733,7 +1893,7 @@ function priceRange(p){
   return { min:lo, max:hi };
 }
 function viewProducts(){
-  var canEdit = V.isAdmin();
+  var canEdit = V.canEditProducts();
   var rows = state.products.map(function(p){
     var r = priceRange(p), bits = [];
     if (p.uses.term) bits.push("Terms " + p.terms[0] + "–" + p.terms[p.terms.length-1]);
@@ -1756,7 +1916,11 @@ function viewProducts(){
     <div class="card-b">
       <p class="muted small" style="max-width:74ch">Products, terms, kilometres, deductibles, intervals, pricing and the tax rule are configuration, not code. The description and benefit wording set here is what appears in the emailed presentation; it never appears on the customer display.</p>
       <div class="tablewrap"><table><thead><tr><th>Product</th><th>Configuration rules</th><th>Tax</th><th class="right">Retail range</th><th>Status</th><th></th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div></div>`;
+      <tbody>${rows}</tbody></table></div>
+      ${state.products.length ? "" : `<div class="emptystate"><h3>No products yet</h3><p class="muted small" style="max-width:56ch;margin:0 auto 14px">This dealership starts with an empty product list. Add the products you sell for your brand and store, or start from a template and edit it.</p>
+        <button class="btn primary" data-act="product-new" ${canEdit?"":"disabled"}>Add your first product</button>
+        <button class="btn" data-act="product-template" ${canEdit?"":"disabled"}>Start from a template</button></div>`}
+    </div></div>`;
 }
 /* Generic starting wording per category, so a new product isn't left with
    blank email copy — the FSM can always edit it, this is just a head start. */
@@ -2006,7 +2170,7 @@ function viewReports(){
 
 /* ---------------- USERS ---------------- */
 function viewUsers(){
-  var isFsmOnly = V.currentUser().role === "FSM";
+  var isFsmOnly = V.isFinanceManager();
   var canEdit = V.isAdmin() || isFsmOnly;
   // Salespeople are Pulse-only accounts (delivery coordination) — they never
   // sign into Command Center, so mixing them into this list is confusing for
@@ -2018,7 +2182,7 @@ function viewUsers(){
   }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
     return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${u.username ? "@" + esc(u.username) : esc(u.email)}</div></td>
-      <td>${esc(u.role)}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
+      <td>${esc(V.roleLabel(u.role))}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
       <td>${V.isMaster() && u.role !== "Master Administrator" ? `<select data-act="assign-dealership" data-user="${u.id}" style="min-width:190px">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
         </select>` : esc(dealer)}</td>
@@ -2036,7 +2200,7 @@ function viewUsers(){
     <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
       <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. An administrator, FSM manager and FSM work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
+      <p class="muted small" style="max-width:76ch">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div></div></div>`;
 }
@@ -2056,7 +2220,7 @@ function userModal(){
       <div class="inline">
         <label class="f"><span>Temporary password</span><input type="text" data-uf="password" placeholder="At least 8 characters"></label>
         <label class="f"><span>Role</span><select data-uf="role" ${V.currentUser().role==="FSM"?"disabled":""}>
-          ${V.currentUser().role==="FSM" ? "<option>Salesperson</option>" : `<option>FSM</option><option>FSM Manager</option><option>General Manager</option><option>Salesperson</option>
+          ${V.currentUser().role==="FSM" ? "<option>Salesperson</option>" : `<option value="FSM">Finance Manager</option><option>General Manager</option><option>Salesperson</option>
           ${V.isMaster()?"<option>Master Administrator</option>":""}`}</select></label>
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
@@ -2255,6 +2419,24 @@ function viewSettings(){
       <div class="notice info">Tax changes apply immediately to the open deal, both prints, the emailed presentation and every report, because all of them call the same calculation engine.</div>
       <div class="divider"></div>
       <button class="btn danger" data-act="reset-demo">Reset the preview to demo defaults</button>
+    </div></div>
+    <div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
+      <p class="muted small" style="max-width:60ch">Pick the colour scheme customers see on the display, the full-screen view and the pop-out window. It works in both light and dark mode.</p>
+      <div class="swatch-row">${D.COLOR_PRESETS.map(function(c){ var on = (state.config.brandColor || b.color || "").toLowerCase() === c.color;
+        return `<button type="button" class="swatch ${on?"on":""}" data-act="brand-color" data-color="${c.color}" ${dis}><i style="background:${c.color}"></i>${esc(c.name)}</button>`; }).join("")}</div>
+      <div class="inline" style="align-items:end">
+        <label class="f"><span>Custom colour</span><input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(state.config.brandColor||"") ? state.config.brandColor : (b.color || "#2c5a9b"))}" data-act="brand-color-input" ${dis} style="height:40px;padding:2px"></label>
+        <button type="button" class="btn" data-act="brand-color-reset" ${dis}>Use the ${esc(b.label)} default</button>
+      </div>
+    </div></div>
+    <div class="card"><div class="card-h"><h2>Complimentary gifts</h2>
+      <div class="sp"><button type="button" class="btn sm primary" data-act="gift-preset-add" ${dis}>Add a gift</button></div></div><div class="card-b">
+      <p class="muted small" style="max-width:60ch">Gifts you list here appear as one-tap choices for the Finance Manager on each deal. Value and dealer cost are optional; cost comes off the deal's gross in reports.</p>
+      ${(state.config.gifts || []).map(function(g, i){ return `<div class="gift-row" style="grid-template-columns:2fr 1fr 1fr auto">
+        <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="config.gifts.${i}.name" placeholder="e.g. Winter tire storage" ${dis}></label>
+        <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="config.gifts.${i}.value" data-type="num" ${dis}></label>
+        <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="config.gifts.${i}.cost" data-type="num" ${dis}></label>
+        <button type="button" class="btn sm danger" data-act="gift-preset-remove" data-idx="${i}" ${dis}>Remove</button></div>`; }).join("") || `<div class="tiny muted">No gifts yet. Add one, for example an oil change or a remote starter.</div>`}
     </div></div></div>`;
 }
 
@@ -2318,6 +2500,11 @@ function internalPrintSelected(tx, t, u, pkg){
       <div><div class="lbl">CUSTOMER SELECTED PACKAGE</div><div><strong>${esc(pkg.label)}</strong></div></div>
       <div><div class="lbl">${tx.type==="Cash"?"TOTAL DUE":"PACKAGE PAYMENT"}</div><div>${tx.type==="Cash" ? money(pkg.dueTotal) : (pkgQuotes.length ? money(pkgQuotes[0].payment)+" "+C.freqLabel(pkgQuotes[0].frequency) : "—")}</div></div>
     </div>
+    ${(pkg.discount > 0 || (pkg.gifts && pkg.gifts.length)) ? `<h3>Offers on the selected package</h3>
+    <div class="cols">
+      ${pkg.discount > 0 ? `<div><div class="lbl">DISCOUNT</div><div>−${money(pkg.discount)} (${String(pkg.discountPct).replace(/\.0$/,"")}%) · list ${money(pkg.listSub)} → ${money(pkg.sub)}</div></div>` : ""}
+      ${(pkg.gifts && pkg.gifts.length) ? `<div><div class="lbl">COMPLIMENTARY GIFT</div><div>${pkg.gifts.map(function(g){ return esc(g.name) + (Number(g.cost) > 0 ? " (cost " + money(g.cost) + ")" : ""); }).join(", ")}</div></div>` : ""}
+    </div>` : ""}
     <h3>Products &amp; Dispositions</h3>
     <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th><th style="text-align:right">Gross</th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6">Nothing is assigned to this package.</td></tr>`}</tbody></table>
@@ -2343,7 +2530,7 @@ function internalPrint(tx){
       <div><div class="lbl">TRANSACTION</div><div>Type ${esc(tx.type)}</div>
         <div>${tx.type==="Cash" ? "Paid in full — no financing" : "Terms presented "+(t.terms.length?t.terms.join(", ")+" months":"—")}</div>
         ${tx.type==="Cash" ? "" : `<div>Rates ${t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—"} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>`}
-        <div>FSM ${esc(u.name)} (${esc(u.role)})</div></div>
+        <div>Finance Manager ${esc(u.name)} (${esc(V.roleLabel(u.role))})</div></div>
     </div>
     <h3>Products</h3>
     <table><thead><tr><th>Product</th><th>Term</th><th>Kilometres</th><th>Interval</th><th>Deductible</th><th>Packages</th>
@@ -2369,10 +2556,12 @@ function internalPrint(tx){
     <div class="cols" style="margin-top:16px">
       <div><div class="lbl">PRODUCT TOTALS</div>
         <div class="kv"><span class="k">Subtotal</span><span>${money(t.productsSub)}</span></div>
+        ${t.productsDiscount > 0 ? `<div class="kv"><span class="k">Discount</span><span>−${money(t.productsDiscount)}</span></div>` : ""}
         <div class="kv"><span class="k">Standard tax ${state.config.tax.standard}%</span><span>${money(t.taxStandard)}</span></div>
         <div class="kv"><span class="k">VRC tax ${state.config.tax.vrc}%</span><span>${money(t.taxVrc)}</span></div>
         <div class="kv total"><span>Products total</span><span>${money(t.productsTotal)}</span></div>
         <div class="kv"><span class="k">Product cost</span><span>${money(t.productCost)}</span></div>
+        ${t.giftCost > 0 ? `<div class="kv"><span class="k">Gift cost</span><span>${money(t.giftCost)}</span></div>` : ""}
         <div class="kv"><span class="k">Product gross</span><span>${money(t.productGross)}</span></div></div>
       <div><div class="lbl">DEAL STRUCTURE</div>
         <div class="kv"><span class="k">Selling price</span><span>${money(t.vehiclePrice)}</span></div>
@@ -2412,6 +2601,8 @@ function customerPrint(tx){
         <div style="margin-top:6px">${p.lines.map(function(L){
           var cfg = V.lineConfigText(L);
           return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
+        ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Package savings: ${money(p.discount)}</strong> (${String(p.discountPct).replace(/\.0$/,"")}%), before HST</div>` : ""}
+        ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary gift:</strong> ${p.gifts.map(function(g){ return esc(g.name) + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
         ${tx.display.showPayment && tx.type==="Cash" ? `<div style="margin-top:8px;font-size:12px"><div><strong>${money(p.dueTotal)}</strong> due in full</div></div>` : ""}
         ${(tx.display.showPayment && tx.type!=="Cash" && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
           ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
@@ -2454,6 +2645,11 @@ function buildEmail(tx){
         L.push("");
       }
     }
+    if (p.discount > 0) L.push("Package savings: " + money(p.discount) + " (" + String(p.discountPct).replace(/\.0$/,"") + "%), before HST, already reflected in the payment above.");
+    if (p.gifts && p.gifts.length){
+      L.push("Complimentary gift, included at no additional charge: " + p.gifts.map(function(g){ return g.name + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", "));
+    }
+    if ((p.discount > 0) || (p.gifts && p.gifts.length)) L.push("");
     L.push("What is included:");
     p.lines.forEach(function(line){
       var cfg = V.lineConfigText(line);
@@ -2468,7 +2664,7 @@ function buildEmail(tx){
   L.push("If you want any of this added, or want to swap between the packages, reply to this email or call me at " + c.phone + " and I will have it ready before you come in.");
   L.push("");
   L.push(u.name);
-  L.push(u.role + ", " + c.name);
+  L.push(V.roleLabel(u.role) + ", " + c.name);
   L.push(b.finLabel);
   L.push(c.phone + " · " + c.email);
   L.push("");
@@ -2485,7 +2681,7 @@ function buildEmailHtml(tx){
   var sel = state.ui.email;
   var shown = V.packagesToShow(t).filter(function(p){ return sel.pkg === "all" || sel.pkg === p.key; }).map(function(p){
     var q = sel.term === "all" ? p.quotes : p.quotes.filter(function(x){ return String(x.term) === String(sel.term); });
-    return { key:p.key, label:p.label, lines:p.lines, quotes:q, dueTotal:p.dueTotal };
+    return { key:p.key, label:p.label, lines:p.lines, quotes:q, dueTotal:p.dueTotal, discount:p.discount, discountPct:p.discountPct, gifts:p.gifts, sub:p.sub, listSub:p.listSub };
   });
   var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "there";
   var vehicle = (tx.vehicle.year + " " + tx.vehicle.make + " " + tx.vehicle.model).trim();
@@ -2512,10 +2708,12 @@ function buildEmailHtml(tx){
           <div style="font-size:10px;color:#667085">${q.payment===null?"rate pending":C.freqLabel(q.frequency)}</div>
         </div>`;
       }).join("")}</div>` : "");
+    var offerHtml = ((p.discount > 0) ? `<div style="margin-top:10px;padding:9px 12px;border-radius:8px;background:#e9f6ef;color:#0a7546;font-size:13px"><strong>You save ${money(p.discount)}</strong> (${String(p.discountPct).replace(/\.0$/,"")}%) with this package, before HST.</div>` : "")
+      + ((p.gifts && p.gifts.length) ? `<div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#fff4d6;border:1px solid #e4c26a;color:#5a3f06;font-size:13px"><div style="font-size:10px;font-weight:700;letter-spacing:.14em">COMPLIMENTARY GIFT</div>${p.gifts.map(function(g){ return `<div style="font-weight:700;font-size:14px;margin-top:3px">${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <span style="font-weight:400;font-size:12px">(valued at ${money(g.value)})</span>` : ""}</div>`; }).join("")}<div style="font-size:11.5px;margin-top:2px">Included with this package at no additional charge.</div></div>` : "");
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;border:1px solid #dde3ec;border-radius:10px;overflow:hidden">
       <tr><td style="background:${brandColor};color:#ffffff;padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</td></tr>
       <tr><td style="padding:14px 16px;background:#ffffff">
-        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>${payHtml}
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0">${rowsHtml}</table>${payHtml}${offerHtml}
       </td></tr></table>`;
   }).join("");
 
@@ -2533,7 +2731,7 @@ function buildEmailHtml(tx){
       <p style="font-size:12.5px;color:#475467;line-height:1.6">Every payment above is exactly what we reviewed together, taxes included. If you'd like any of this added, or want to swap between packages, reply to this email or call me at ${esc(c.phone)} and I'll have it ready before you come in.</p>
       <table role="presentation" cellpadding="0" cellspacing="0" style="margin-top:18px">
         <tr><td style="font-weight:700;font-size:13px">${esc(u.name)}</td></tr>
-        <tr><td style="font-size:12px;color:#475467">${esc(u.role)}, ${esc(c.name)}</td></tr>
+        <tr><td style="font-size:12px;color:#475467">${esc(V.roleLabel(u.role))}, ${esc(c.name)}</td></tr>
         <tr><td style="font-size:12px;color:#475467">${esc(b.finLabel)}</td></tr>
         <tr><td style="font-size:12px;color:#475467">${esc(c.phone)} · ${esc(c.email)}</td></tr>
       </table>
@@ -2996,7 +3194,7 @@ function cloudApply(dRows, pRows, xRows, keepTx){
                           : ((me && has(me.dealershipId)) ? me.dealershipId : state.dealerships[0].id);
   if (keepTx && has(state.activeDealershipId)){
     state.config = state.dealerships.filter(function(d){ return d.id === state.activeDealershipId; })[0];
-    state.products = byDealer[state.activeDealershipId] || (byDealer[state.activeDealershipId] = C.clone(D.PRODUCTS));
+    state.products = byDealer[state.activeDealershipId] || (byDealer[state.activeDealershipId] = []);
     return;
   }
   state.activeDealershipId = null;
@@ -3131,7 +3329,7 @@ function endSession(msg){
 }
 
 function upsertProfileUser(p){
-  var rec = { id:p.id, name:p.name, role:p.role, email:p.email, username:p.username || null, dealershipId:p.dealership_id || null,
+  var rec = { id:p.id, name:p.name, role:(p.role === "FSM Manager" ? "FSM" : p.role), email:p.email, username:p.username || null, dealershipId:p.dealership_id || null,
     active:p.active !== false, demo:p.access_type === "demo", expiresAt:p.expires_at || null,
     mustChange:!!p.must_change_password, onboarded:!!p.onboarded, accessDays:null, restrictions:[],
     initials:String(p.name||"?").split(/\s+/).map(function(w){ return w[0]; }).join("").slice(0,2).toUpperCase() };
@@ -3159,7 +3357,7 @@ function finishEnter(u){
     if (u.dealershipId && state.dealerships.some(function(d){ return d.id === u.dealershipId; })) V.setDealership(u.dealershipId);
     else V.setDealership(state.dealerships[0].id);
   }
-  state.route = (u.role === "Master Administrator" || u.role === "General Manager" || u.role === "FSM Manager") ? "dashboard" : "finance";
+  state.route = (u.role === "Master Administrator" || u.role === "General Manager") ? "dashboard" : "finance";
   if (state.tx && !V.isAdmin()) state.tx.fsmUserId = u.id;
   var isDemo = !!(state.auth && state.auth.accessType === "demo"), isFirst = !!(state.auth && !state.auth.onboarded);
   state.ui.welcome = (isDemo || isFirst) ? { demo:isDemo, first:isFirst } : null;
@@ -3482,7 +3680,7 @@ document.addEventListener("click", function(ev){
   if (!el) return;
   var act = el.getAttribute("data-act");
   if (act === "close-modal-bg" && ev.target !== el) return;
-  if (/^product-(new|edit|save|toggle|delete)$/.test(act) && !V.isAdmin()){ toast("Only a General Manager can add, edit or delete products.","err"); return; }
+  if (/^product-(new|edit|save|toggle|delete|template)$/.test(act) && !V.canEditProducts()){ toast("Only a General Manager or Finance Manager can add, edit or delete products.","err"); return; }
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
     case "toggle-rail": state.ui.railOpen = !state.ui.railOpen; commit(); break;
@@ -3505,6 +3703,24 @@ document.addEventListener("click", function(ev){
       toast("Deal " + delId + " deleted.","ok");
       commit(); break; }
     case "complete": completeDeal(); break;
+    case "product-template":
+      if (state.products.length){ toast("This dealership already has products.","err"); break; }
+      state.products = C.clone(D.PRODUCTS);
+      state.cloud.productsByDealer[state.activeDealershipId] = state.products;
+      toast("Starter template loaded. Edit the names, prices and rules to match your store.","ok"); commit(); break;
+    case "offer-scope": V.ensureOffers(state.tx); state.tx.offers.discount.scope = el.getAttribute("data-val"); commit(); break;
+    case "offer-dtype": V.ensureOffers(state.tx); state.tx.offers.discount.type = el.getAttribute("data-val"); commit(); break;
+    case "gift-add": {
+      V.ensureOffers(state.tx);
+      var gp = el.getAttribute("data-preset"), gsrc = gp === "custom" ? null : (state.config.gifts || [])[Number(gp)];
+      state.tx.offers.gifts.push({ id:C.uid("g"), name: gsrc ? gsrc.name : "", value: gsrc && gsrc.value !== undefined ? gsrc.value : null,
+        cost: gsrc && gsrc.cost !== undefined ? gsrc.cost : null, showValue:false, packages:{ preferred:true, essential:true, basic:true } });
+      commit(); break; }
+    case "gift-remove": V.ensureOffers(state.tx); state.tx.offers.gifts.splice(Number(el.getAttribute("data-idx")), 1); commit(); break;
+    case "gift-preset-add": if (!state.config.gifts) state.config.gifts = []; state.config.gifts.push({ id:C.uid("g"), name:"", value:null, cost:null }); commit(); break;
+    case "gift-preset-remove": state.config.gifts.splice(Number(el.getAttribute("data-idx")), 1); commit(); break;
+    case "brand-color": state.config.brandColor = el.getAttribute("data-color"); commit(); break;
+    case "brand-color-reset": delete state.config.brandColor; commit(); break;
     case "email":
       state.ui.modal = { kind:"email" };
       if (state.tx.display.selection){
@@ -3759,6 +3975,19 @@ document.addEventListener("change", function(ev){
     if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
     commit(); return;
   }
+  if (act === "gift-pkg"){
+    V.ensureOffers(state.tx);
+    var gg = state.tx.offers.gifts[Number(el.getAttribute("data-idx"))];
+    if (gg){ if (!gg.packages) gg.packages = {}; gg.packages[el.getAttribute("data-pkg")] = el.checked; }
+    commit(); return;
+  }
+  if (act === "gift-showval"){
+    V.ensureOffers(state.tx);
+    var gv = state.tx.offers.gifts[Number(el.getAttribute("data-idx"))];
+    if (gv) gv.showValue = el.checked;
+    commit(); return;
+  }
+  if (act === "brand-color-input"){ state.config.brandColor = el.value; commit(); return; }
   if (act === "toggle-payment"){ state.tx.display.showPayment = el.checked; commit(); return; }
   if (act === "toggle-prices"){ state.tx.display.showPrices = el.checked; commit(); return; }
   if (act === "toggle-config"){ state.tx.display.showConfig = el.checked; commit(); return; }
