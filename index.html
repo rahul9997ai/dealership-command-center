@@ -276,7 +276,21 @@ tbody tr:hover{background:var(--surface-2)}
   color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);text-transform:none}
 .cd .ph-chip svg{width:14px;height:14px;flex:0 0 auto}
 .cd .ph-chip small{font-size:11px;font-weight:500;opacity:.85}
-.cd .banners{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin:0 0 20px}
+.cd .banners{display:flex;flex-wrap:wrap;gap:12px;margin:0 0 20px;align-items:stretch}
+.cd .gbanner.gifts{flex:2 1 460px;display:block;padding:12px 22px 12px 20px}
+.cd .gbanner.slim{flex:1 1 300px}
+.cd .gg-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:8px}
+.cd .gg-inc{display:flex;align-items:center;gap:8px;font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cd-text)}
+.cd .gg-inc .gb-ic{width:30px;height:30px;box-shadow:none}
+.cd .gg-inc .gb-ic svg{width:16px;height:16px}
+.cd .gg-row{display:flex;align-items:center;gap:16px}
+.cd .gg-row + .gg-row{margin-top:8px;padding-top:8px;border-top:1px solid var(--cd-border)}
+.cd .gg-row .gb-art{width:88px;height:74px;margin-left:0}
+.cd .gg-row .gb-art svg{width:74px;height:74px}
+.cd .gbanner.multi .gg-row .gb-art{width:56px;height:48px}
+.cd .gbanner.multi .gg-row .gb-art svg{width:48px;height:48px}
+.cd .gbanner.multi .gb-name{font-size:clamp(16px,1.6vw,22px)}
+.cd .gbanner.slim .gb-txt{display:flex;flex-direction:column;justify-content:center}
 .cd .gbanner.compact{gap:14px;padding:10px 16px 10px 14px}
 .cd .gbanner.compact .gb-art{width:76px;height:64px;margin-left:4px}
 .cd .gbanner.compact .gb-art svg{width:64px;height:64px}
@@ -1668,20 +1682,19 @@ function renderCustomerDisplay(tx){
     });
     allSavings = shown.every(function(p){ return p.discount > 0; });
   }
-  var pkgNames = shown.map(function(p){ return esc(p.label); }).join("<br>");
-  /* Several offers sit side by side in one compact row instead of stacking. */
-  var bannerCount = bannerGifts.length + (allSavings ? 1 : 0), cc = bannerCount > 1 ? " compact" : "";
-  var giftBanners = bannerGifts.map(function(g){
-    return `<div class="gbanner${cc}"><div class="gb-art">${giftArtHtml(g)}</div>
-      <div class="gb-txt"><div class="gb-tag">Complimentary Gift</div><div class="gb-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gb-val">${money(g.value)} value</div>` : ""}</div>
-      <div class="gb-div"></div>
-      <div class="gb-inc"><span class="gb-ic">${GIFT_SVG}</span><div><div class="gb-lbl">Included with all packages</div>${cc ? "" : `<div class="gb-list">${pkgNames}</div>`}</div></div></div>`;
-  }).join("");
-  var saveBanner = allSavings ? `<div class="gbanner slim${cc}"><span class="gb-ic">${CHECK_SVG}</span>
-      <div class="gb-txt"><div class="gb-tag">Bundle Savings</div><div class="gb-name">Bundle savings applied</div></div>
-      <div class="gb-div"></div>
-      <div class="gb-inc"><div><div class="gb-lbl">Included with all packages</div>${cc ? "" : `<div class="gb-list">Reflected in every payment shown</div>`}</div></div></div>` : "";
-  var bannersHtml = (giftBanners || saveBanner) ? `<div class="banners">${giftBanners}${saveBanner}</div>` : "";
+  /* Every gift that is on all packages goes in ONE "Complimentary Gift" banner (stacked inside it);
+     the bundle-savings banner sits beside it, so the row stays short. */
+  var multi = bannerGifts.length > 1;
+  var giftBanner = bannerGifts.length ? `<div class="gbanner gifts${multi ? " multi" : ""}">
+    <div class="gg-head"><span class="gb-tag">Complimentary Gift${multi ? "s" : ""}</span>
+      <span class="gg-inc"><span class="gb-ic">${GIFT_SVG}</span>Included with all packages</span></div>
+    <div class="gg-list">${bannerGifts.map(function(g){
+      return `<div class="gg-row"><div class="gb-art">${giftArtHtml(g)}</div>
+        <div class="gg-txt"><div class="gb-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gb-val">${money(g.value)} value</div>` : ""}</div></div>`; }).join("")}</div></div>` : "";
+  var saveBanner = allSavings ? `<div class="gbanner slim"><span class="gb-ic">${CHECK_SVG}</span>
+      <div class="gb-txt"><div class="gb-tag">Bundle Savings</div><div class="gb-name">Bundle savings applied</div>
+        <div class="gb-list">Included with all packages</div></div></div>` : "";
+  var bannersHtml = (giftBanner || saveBanner) ? `<div class="banners">${giftBanner}${saveBanner}</div>` : "";
   var cards = shown.map(function(p){
     var items = p.lines.map(function(L){
       var cfgTxt = lineConfigText(L, true);
@@ -2399,7 +2412,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.15</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.16</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
