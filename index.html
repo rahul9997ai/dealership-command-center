@@ -273,6 +273,12 @@ tbody tr:hover{background:var(--surface-2)}
 .cd .gift-seal svg{width:100%;height:100%;display:block}
 @keyframes sealPop{0%,100%{transform:rotate(9deg) scale(1)}50%{transform:rotate(9deg) scale(1.06)}}
 @media (prefers-reduced-motion:reduce){ .cd .gift-seal{animation:none} }
+.offers-2col{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:26px}
+.offers-div{background:var(--border);align-self:stretch}
+.gift-row2{padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
+.gift-row2 .gr-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.gift-row2 .gr-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px}
+@media (max-width:1050px){ .offers-2col{grid-template-columns:1fr} .offers-div{height:1px;width:100%} .gift-row2 .gr-fields{grid-template-columns:1fr 1fr} }
 .offers-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .gift-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
 .gift-row .gr-2{grid-column:1 / -1;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -1862,38 +1868,46 @@ function viewFinance(){
           <span class="tiny muted">${p && p.discount > 0 ? "−" + money(p.discount) + " → " + money(p.sub) : "No discount"}</span></label>`; }).join("")}</div>`;
   var presetGifts = (state.config.gifts || []).filter(function(g){ return g && g.name; });
   var giftRows = off.gifts.map(function(g, i){
-    return `<div class="gift-row">
-      <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="tx.offers.gifts.${i}.name" placeholder="e.g. Winter tire storage"></label>
-      <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="tx.offers.gifts.${i}.value" data-type="num"></label>
-      <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="tx.offers.gifts.${i}.cost" data-type="num"></label>
-      <button type="button" class="btn sm danger" data-act="gift-remove" data-idx="${i}">Remove</button>
-      <div class="gr-2"><span class="muted small">Included with</span>
-        <div class="pkgchk-row">${D.PACKAGES.map(function(def){ var on = g.packages && g.packages[def.key];
-          return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="gift-pkg" data-idx="${i}" data-pkg="${def.key}" ${on?"checked":""}>${esc(C.packageLabel(state, def.suffix))}</label>`; }).join("")}</div>
-        <label class="switch"><input type="checkbox" data-act="gift-showval" data-idx="${i}" ${g.showValue?"checked":""}> Show value to customer</label></div>
+    var anyPkg = g.packages && (g.packages.preferred || g.packages.essential || g.packages.basic);
+    return `<div class="gift-row2">
+      <div class="gr-head"><span class="lbl">1 · Show this gift on</span><button type="button" class="btn sm danger" data-act="gift-remove" data-idx="${i}">Remove</button></div>
+      <div class="pkgchk-row" style="flex-wrap:wrap">${D.PACKAGES.map(function(def){ var on = g.packages && g.packages[def.key];
+        return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="gift-pkg" data-idx="${i}" data-pkg="${def.key}" ${on?"checked":""}>${esc(C.packageLabel(state, def.suffix))}</label>`; }).join("")}</div>
+      ${anyPkg ? "" : `<div class="tiny" style="color:var(--warn);margin-top:4px">Tick at least one package — until then this gift isn't shown to the customer.</div>`}
+      <div class="lbl" style="margin:12px 0 6px">2 · Gift details</div>
+      <div class="gr-fields">
+        <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="tx.offers.gifts.${i}.name" placeholder="e.g. Winter tire storage"></label>
+        <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="tx.offers.gifts.${i}.value" data-type="num"></label>
+        <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="tx.offers.gifts.${i}.cost" data-type="num"></label>
+      </div>
+      <label class="switch" style="margin-top:8px"><input type="checkbox" data-act="gift-showval" data-idx="${i}" ${g.showValue?"checked":""}> Show value to customer</label>
     </div>`; }).join("");
-  var offersCard = `<div class="card" id="step-offers"><div class="card-h"><h2>Offers · savings &amp; complimentary gift</h2></div>
-    <div class="card-b">
-      <div class="lbl" style="margin-bottom:6px">Package savings</div>
-      <p class="muted small" style="max-width:76ch">A real price reduction: it lowers the package price, the HST, the amount financed and the payments. The customer display shows a "Bundle savings applied" badge on the package, with no amounts. Switching this on or off clears any values entered.</p>
-      <label class="switch" style="margin:8px 0"><input type="checkbox" data-act="offer-toggle" ${dsc.enabled?"checked":""}> Bundle savings</label>
-      ${!dsc.enabled ? "" : `<div class="chiprow" style="margin:10px 0">
-        <button type="button" class="btn sm ${dsc.scope==="package"?"on":""}" data-act="offer-scope" data-val="package">Per package</button>
-        <button type="button" class="btn sm ${dsc.scope==="deal"?"on":""}" data-act="offer-scope" data-val="deal">Whole deal</button>
-        <span style="width:14px"></span>
-        <button type="button" class="btn sm ${dsc.type==="percent"?"on":""}" data-act="offer-dtype" data-val="percent">% off</button>
-        <button type="button" class="btn sm ${dsc.type==="amount"?"on":""}" data-act="offer-dtype" data-val="amount">$ off</button>
+  var offersCard = `<div class="card" id="step-offers"><div class="card-h"><h2>Offers</h2></div>
+    <div class="card-b"><div class="offers-2col">
+      <div>
+        <div class="lbl" style="margin-bottom:4px">Package savings</div>
+        <p class="muted small" style="margin:0 0 8px">A real price reduction on the package. The customer sees a "Bundle savings applied" badge, with no amounts. Switching it on or off clears the values.</p>
+        <label class="switch"><input type="checkbox" data-act="offer-toggle" ${dsc.enabled?"checked":""}> Bundle savings</label>
+        ${!dsc.enabled ? "" : `<div class="chiprow" style="margin:10px 0">
+          <button type="button" class="btn sm ${dsc.scope==="package"?"on":""}" data-act="offer-scope" data-val="package">Per package</button>
+          <button type="button" class="btn sm ${dsc.scope==="deal"?"on":""}" data-act="offer-scope" data-val="deal">Whole deal</button>
+          <span style="width:10px"></span>
+          <button type="button" class="btn sm ${dsc.type==="percent"?"on":""}" data-act="offer-dtype" data-val="percent">% off</button>
+          <button type="button" class="btn sm ${dsc.type==="amount"?"on":""}" data-act="offer-dtype" data-val="amount">$ off</button>
+        </div>
+        ${dscInputs}`}
       </div>
-      ${dscInputs}`}
-      <div class="divider"></div>
-      <div class="lbl" style="margin-bottom:6px">Complimentary gift</div>
-      <p class="muted small" style="max-width:76ch">A gift is free to the customer and appears as a highlighted banner on the packages you choose. Enter a dealer cost so reports stay accurate.</p>
-      <div class="chiprow" style="margin:10px 0">
-        ${presetGifts.map(function(g, i){ return `<button type="button" class="btn sm" data-act="gift-add" data-preset="${i}">＋ ${esc(g.name)}</button>`; }).join("")}
-        <button type="button" class="btn sm" data-act="gift-add" data-preset="custom">＋ Custom gift</button>
+      <div class="offers-div" aria-hidden="true"></div>
+      <div>
+        <div class="lbl" style="margin-bottom:4px">Complimentary Gift</div>
+        <p class="muted small" style="margin:0 0 8px">Free to the customer. It appears as a FREE GIFT seal only on the packages you tick. Add a dealer cost so reports stay accurate.</p>
+        <div class="chiprow" style="margin:0 0 10px">
+          ${presetGifts.map(function(g, i){ return `<button type="button" class="btn sm" data-act="gift-add" data-preset="${i}">＋ ${esc(g.name)}</button>`; }).join("")}
+          <button type="button" class="btn sm" data-act="gift-add" data-preset="custom">＋ Custom gift</button>
+        </div>
+        ${giftRows || `<div class="tiny muted">No gift on this deal.</div>`}
       </div>
-      ${giftRows || `<div class="tiny muted">No gift on this deal.</div>`}
-    </div></div>`;
+    </div></div></div>`;
 
   var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Presentation</h2>
     <div class="sp"><label class="switch"><input type="checkbox" data-act="toggle-payment" ${tx.display.showPayment?"checked":""}> Show payments to customer</label>
@@ -2271,7 +2285,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.11</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.12</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3934,7 +3948,7 @@ document.addEventListener("click", function(ev){
       V.ensureOffers(state.tx);
       var gp = el.getAttribute("data-preset"), gsrc = gp === "custom" ? null : (state.config.gifts || [])[Number(gp)];
       state.tx.offers.gifts.push({ id:C.uid("g"), name: gsrc ? gsrc.name : "", value: gsrc && gsrc.value !== undefined ? gsrc.value : null,
-        cost: gsrc && gsrc.cost !== undefined ? gsrc.cost : null, showValue:false, packages:{ preferred:true, essential:true, basic:true } });
+        cost: gsrc && gsrc.cost !== undefined ? gsrc.cost : null, showValue:false, packages:{ preferred:false, essential:false, basic:false } });
       commit(); break; }
     case "gift-remove": V.ensureOffers(state.tx); state.tx.offers.gifts.splice(Number(el.getAttribute("data-idx")), 1); commit(); break;
     case "gift-preset-add": if (!state.config.gifts) state.config.gifts = []; state.config.gifts.push({ id:C.uid("g"), name:"", value:null, cost:null }); commit(); break;
