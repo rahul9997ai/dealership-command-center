@@ -145,6 +145,21 @@ tbody tr:hover{background:var(--surface-2)}
 
 .fin-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
 .fin-toolbar .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.cdmenu-wrap{position:relative;display:inline-block}
+.cdmenu{position:absolute;top:calc(100% + 6px);left:0;z-index:45;min-width:270px;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:0 14px 40px rgba(0,0,0,.22)}
+.cdm-lbl{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:2px 4px 8px}
+.cdm-seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;padding:3px;border-radius:9px;background:var(--surface-3)}
+.cdm-seg button{border:0;background:transparent;padding:7px 4px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
+.cdm-seg button.on{background:var(--blue);color:#fff}
+.cdm-sep{height:1px;background:var(--border);margin:10px 0 6px}
+.cdm-item{display:block;width:100%;text-align:left;border:0;background:transparent;padding:9px 8px;border-radius:7px;font-size:13px;color:var(--text);cursor:pointer}
+.cdm-item:hover{background:var(--surface-3)}
+.cd-drawer{position:fixed;top:0;right:0;bottom:0;width:min(520px,94vw);z-index:70;display:flex;flex-direction:column;background:var(--surface);border-left:1px solid var(--border);box-shadow:-14px 0 40px rgba(0,0,0,.3)}
+.cd-drawer-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 12px;background:var(--rail);color:#fff;font-size:12px}
+.cd-drawer-h .live{width:7px;height:7px;border-radius:50%;background:#37d39b}
+.cd-drawer-h .sp{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.cd-drawer-b{flex:1;overflow:auto}
+.cd-drawer-b .cd{min-height:100%}
 .fin-split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:16px;align-items:start}
 .fin-split.solo{grid-template-columns:minmax(0,1fr)}
 .steps{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
@@ -1652,9 +1667,21 @@ function viewFinance(){
         ${fsmUsers().map(function(u){ return `<option value="${u.id}" ${u.id===tx.fsmUserId?"selected":""}>${esc(u.name)}</option>`; }).join("")}
       </select></label>` : ""}
     <div class="sp">
-      <button class="btn sm ${state.ui.split?"on":""}" data-act="toggle-split">Split view</button>
-      <button class="btn sm" data-act="open-customer-window">Customer display ↗</button>
-      <button class="btn sm" data-act="present">Full screen</button>
+      <div class="cdmenu-wrap">
+        <button class="btn sm ${state.ui.cdMenu||state.ui.cdPreview?"on":""}" data-act="cd-menu">Customer display · ${{welcome:"Welcome",package:"Present",thankyou:"Thank you"}[tx.display.mode]||"Welcome"} ▾</button>
+        ${state.ui.cdMenu ? `<div class="cdmenu">
+          <div class="cdm-lbl">What the customer sees</div>
+          <div class="cdm-seg">
+            <button type="button" class="${tx.display.mode==="welcome"?"on":""}" data-act="cd-mode" data-mode="welcome">Welcome</button>
+            <button type="button" class="${tx.display.mode==="package"?"on":""}" data-act="cd-mode" data-mode="package">Present</button>
+            <button type="button" class="${tx.display.mode==="thankyou"?"on":""}" data-act="cd-mode" data-mode="thankyou">Thank you</button>
+          </div>
+          <div class="cdm-sep"></div>
+          <button type="button" class="cdm-item" data-act="open-customer-window">Open on second screen ↗</button>
+          <button type="button" class="cdm-item" data-act="present">Full screen</button>
+          <button type="button" class="cdm-item" data-act="cd-preview-toggle">${state.ui.cdPreview ? "Hide preview" : "Preview here"}</button>
+        </div>` : ""}
+      </div>
       <button class="btn sm" data-act="email">Email the package</button>
       <button class="btn sm" data-act="print-internal">Internal print</button>
       <button class="btn sm" data-act="print-customer">Customer copy</button>
@@ -1923,16 +1950,8 @@ function viewFinance(){
         : `<div class="notice ok" style="margin-top:12px">Everything checks out. This deal is ready to complete.</div>`)}
     </div></div>`;
 
-  var monitor = `<div class="monitor"><div class="monitor-bar"><span class="live"></span><span>CUSTOMER DISPLAY · live</span>
-    <span class="sp">
-      <button class="btn sm ${tx.display.mode==="welcome"?"on":""}" data-act="cd-mode" data-mode="welcome">Welcome</button>
-      <button class="btn sm ${tx.display.mode==="package"?"on":""}" data-act="cd-mode" data-mode="package">Present</button>
-      <button class="btn sm ${tx.display.mode==="thankyou"?"on":""}" data-act="cd-mode" data-mode="thankyou">Thank you</button>
-    </span></div>${renderCustomerDisplay(tx)}</div>`;
-
-  return toolbar + stepBar + `<div class="fin-split ${state.ui.split?"":"solo"}">
-    <div><div class="stack">${customerCard}${vehicleCard}${financeCard}${productsCard}${offersCard}${packageCard}</div></div>
-    ${state.ui.split ? `<div>${monitor}</div>` : ""}</div>`;
+  return toolbar + stepBar + `<div class="fin-split solo">
+    <div><div class="stack">${customerCard}${vehicleCard}${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
@@ -2285,7 +2304,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.12</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.13</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2923,12 +2942,24 @@ function confirmModal(){
       <button class="btn danger" data-act="confirm-yes">${esc(c.yes)}</button>`}</div></div>
     <div class="modal-b"><p style="margin:0">${esc(c.message)}</p></div></div></div>`;
 }
+function cdDrawer(){
+  if (!state.ui.cdPreview || !state.tx || state.route !== "finance") return "";
+  var m = state.tx.display.mode;
+  return `<div class="cd-drawer" role="complementary" aria-label="Customer display preview">
+    <div class="cd-drawer-h"><span class="live"></span><strong>CUSTOMER DISPLAY · preview</strong>
+      <span class="sp">
+        <button class="btn sm ${m==="welcome"?"on":""}" data-act="cd-mode" data-mode="welcome">Welcome</button>
+        <button class="btn sm ${m==="package"?"on":""}" data-act="cd-mode" data-mode="package">Present</button>
+        <button class="btn sm ${m==="thankyou"?"on":""}" data-act="cd-mode" data-mode="thankyou">Thank you</button>
+        <button class="btn sm" data-act="cd-preview-close">Close</button></span></div>
+    <div class="cd-drawer-b">${V.renderCustomerDisplay(state.tx)}</div></div>`;
+}
 function renderOverlay(){
   if (state.ui.present){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal() + inviteModal();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal() + inviteModal() + cdDrawer();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -3903,6 +3934,12 @@ document.addEventListener("keydown", function(ev){
 });
 document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
+  /* Close the Customer display menu when clicking anywhere else or choosing an item. */
+  if (state.ui.cdMenu){
+    var inWrap = ev.target.closest && ev.target.closest(".cdmenu-wrap");
+    var a0 = el ? el.getAttribute("data-act") : null;
+    if (!inWrap || (a0 && a0 !== "cd-menu")){ state.ui.cdMenu = false; setTimeout(function(){ if (window.__DCC_RENDER__) window.__DCC_RENDER__(); }, 0); }
+  }
   if (!el) return;
   var act = el.getAttribute("data-act");
   if ((act === "close-modal-bg" || act === "confirm-bg" || act === "history-close" || act === "invite-close") && ev.target !== el && el.classList.contains("modal-bg")) return;
@@ -3916,6 +3953,9 @@ document.addEventListener("click", function(ev){
       commit(); break; }
     case "toggle-theme": state.ui.theme = state.ui.theme === "dark" ? "light" : "dark"; commit(); break;
     case "toggle-split": state.ui.split = !state.ui.split; commit(); break;
+    case "cd-menu": state.ui.cdMenu = !state.ui.cdMenu; commit(); break;
+    case "cd-preview-toggle": state.ui.cdPreview = !state.ui.cdPreview; state.ui.cdMenu = false; commit(); break;
+    case "cd-preview-close": state.ui.cdPreview = false; commit(); break;
     case "present": state.ui.present = true; commit(); break;
     case "exit-present": state.ui.present = false; commit(); break;
     case "open-customer-window": openCustomerWindow(); break;
@@ -3981,7 +4021,7 @@ document.addEventListener("click", function(ev){
       if (ln){ ln.price = null; ln.priceOverridden = false; } commit(); break; }
     case "set-frequency": state.tx.finance.frequency = el.getAttribute("data-freq"); commit(); break;
     case "set-deal-type": state.tx.type = el.getAttribute("data-deal-type"); commit(); break;
-    case "cd-mode": state.tx.display.mode = el.getAttribute("data-mode"); commit(); break;
+    case "cd-mode": state.tx.display.mode = el.getAttribute("data-mode"); state.ui.cdMenu = false; commit(); break;
     case "scroll-step": {
       var target = document.getElementById("step-" + el.getAttribute("data-step"));
       if (target && target.scrollIntoView) target.scrollIntoView({ behavior:"smooth", block:"start" }); break; }
