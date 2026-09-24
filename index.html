@@ -107,6 +107,8 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tag.warn{background:var(--warn-bg);color:var(--warn);border-color:transparent}
 .tag.danger{background:var(--danger-bg);color:var(--danger);border-color:transparent}
 .tag.info{background:var(--info-bg);color:var(--info);border-color:transparent}
+.preview-bar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:8px 18px;background:#b45309;color:#fff;font-size:13px}
+.preview-bar .btn{margin-left:auto;background:#fff;color:#7c2d12;border-color:#fff}
 .tag.demo{background:var(--warn-bg);color:var(--warn);border-color:transparent;font-weight:600;letter-spacing:.04em}
 label.f{display:block;margin-bottom:12px}
 label.f > span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
@@ -1256,7 +1258,18 @@ function userById(id){
   for (var i=0;i<state.users.length;i++) if (state.users[i].id === id) return state.users[i];
   return { name:"Unassigned", initials:"--", role:"—", dealershipId:null };
 }
-function currentUser(){ return userById(state.currentUserId); }
+/* "Preview as role" (Master only): the screens behave as that role would see them, but it is
+   read-only. Nothing is saved to the cloud while previewing, and leaving the preview reloads the
+   real data, discarding anything typed during it. */
+function realUser(){ return userById(state.currentUserId); }
+function isPreviewing(){ return !!(state.ui.previewRole && realUser().role === "Master Administrator"); }
+function currentUser(){
+  var u = realUser();
+  if (!isPreviewing()) return u;
+  var v = {}; for (var k in u) v[k] = u[k];
+  v.role = state.ui.previewRole; v.dealershipId = state.activeDealershipId;
+  return v;
+}
 function isMaster(){ return currentUser().role === "Master Administrator"; }
 function isAdmin(){ return isMaster() || currentUser().role === "General Manager"; }
 /* One role: Finance Manager. It is stored as "FSM" (the other Axiom modules key
@@ -1347,6 +1360,9 @@ function renderShell(inner){
         <div><div class="nm">${esc(u.name)}</div><div class="tiny">${esc(roleLabel(u.role))}</div></div></div></div>
     </aside>
     <div class="main">
+      ${isPreviewing() ? `<div class="preview-bar"><strong>Previewing as ${esc(roleLabel(state.ui.previewRole))}</strong>
+        <span>Read-only: nothing you change here is saved, and it's discarded when you exit.</span>
+        <button class="btn sm" data-act="preview-exit">Exit preview</button></div>` : ""}
       <header class="topbar">
         <h1>${esc(routeTitle())}</h1>
         <div class="demo">
@@ -1356,10 +1372,11 @@ function renderShell(inner){
                 return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}
             </select></label>` : ""}
           <button class="btn sm" data-act="toggle-theme">${state.ui.theme === "dark" ? "Normal" : "Dark"} mode</button>
-          ${isMaster() ? `<label class="switch"><span class="muted small">Viewing as</span>
-            <select data-act="switch-user" style="width:auto;min-width:180px">
-              ${state.users.filter(function(x){ return x.active; }).map(function(x){
-                return `<option value="${x.id}" ${x.id===state.currentUserId?"selected":""}>${esc(x.name)} — ${esc(roleLabel(x.role))}</option>`; }).join("")}
+          ${realUser().role === "Master Administrator" ? `<label class="switch"><span class="muted small">Preview as role</span>
+            <select data-act="preview-role" style="width:auto;min-width:170px">
+              <option value="" ${!state.ui.previewRole?"selected":""}>Off — Master Administrator</option>
+              <option value="General Manager" ${state.ui.previewRole==="General Manager"?"selected":""}>General Manager</option>
+              <option value="FSM" ${state.ui.previewRole==="FSM"?"selected":""}>Finance Manager</option>
             </select></label>` : `<span class="tag">${esc(u.name)} · ${esc(roleLabel(u.role))}</span>`}
           <button class="btn sm" data-act="logout">Log out</button>
         </div>
@@ -2020,7 +2037,7 @@ function viewFinance(){
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, realUser:realUser, isPreviewing:isPreviewing, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
@@ -2369,7 +2386,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.2</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.3</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3354,6 +3371,7 @@ function makeLine(p){
   return line;
 }
 function completeDeal(){
+  if (V.isPreviewing()){ toast("Preview is read-only — exit the preview to complete deals.","err"); commit(); return; }
   if (!V.isAdmin()) state.tx.fsmUserId = state.currentUserId;
   var v = C.validate(state, state.tx);
   if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
@@ -3497,6 +3515,7 @@ function cloudDiff(){
 function cloudHasWork(df){ return df.d.length || df.p.length || df.x.length || cloud.del.d.length || cloud.del.p.length || cloud.del.x.length; }
 function cloudPush(){
   if (!cloud.loaded || !state.loggedIn || !sb) return Promise.resolve(true);
+  if (V.isPreviewing() || cloud.hold) return Promise.resolve(true);
   if (cloud.running){ cloudSchedule(); return Promise.resolve(false); }
   var df = cloudDiff();
   if (!cloudHasWork(df)) return Promise.resolve(true);
@@ -3558,7 +3577,7 @@ function endSession(msg){
     var done = function(){
       if (ok && cloud.loaded) cloudWipeLocal();
       try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
-      state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.tour = null; state.ui.authChecking = false;
+      state.loggedIn = false; state.auth = null; state.ui.previewRole = null; state.ui.welcome = null; state.ui.tour = null; state.ui.authChecking = false;
       state.ui.loginError = msg || null; commit();
     };
     return sb ? sb.auth.signOut().then(done, done) : (done(), null);
@@ -3578,7 +3597,15 @@ function upsertProfileUser(p){
   var ex = state.users.filter(function(u){ return u.id === p.id; })[0];
   if (ex){ for (var k in rec) ex[k] = rec[k]; } else state.users.push(rec);
 }
+function exitPreview(){
+  state.ui.previewRole = null; cloud.hold = true;
+  state.ui.cdPreview = false; state.ui.giftEdit = null;
+  toast("Preview ended — reloading your data.","info"); commit();
+  cloudFetch().then(function(r){ cloudApply(r.d, r.p, r.x, false); cloud.hold = false; cloud.lastLoad = Date.now(); commit(); },
+    function(){ cloud.hold = false; toast("Couldn't reload — refresh the page.","err"); commit(); });
+}
 function adminCall(body){
+  if (V.isPreviewing() && body && body.action !== "list") return Promise.reject(new Error("You're previewing as another role — exit the preview to make changes."));
   return sb.auth.getSession().then(function(r){
     var sess = r.data && r.data.session;
     if (!sess) throw new Error("You're signed out — sign in again.");
@@ -4010,6 +4037,7 @@ document.addEventListener("click", function(ev){
       commit(); break; }
     case "toggle-theme": state.ui.theme = state.ui.theme === "dark" ? "light" : "dark"; commit(); break;
     case "toggle-split": state.ui.split = !state.ui.split; commit(); break;
+    case "preview-exit": exitPreview(); break;
     case "cd-menu": state.ui.cdMenu = !state.ui.cdMenu; commit(); break;
     case "cd-preview-toggle": state.ui.cdPreview = !state.ui.cdPreview; state.ui.cdMenu = false; commit(); break;
     case "cd-preview-close": state.ui.cdPreview = false; commit(); break;
@@ -4321,11 +4349,13 @@ document.addEventListener("change", function(ev){
   var el = ev.target, act = el.getAttribute("data-act");
   var ufk = el.getAttribute && el.getAttribute("data-uf");
   if (ufk === "role" || ufk === "invite"){ syncUserForm(); return; }
-  if (act === "switch-user"){
-    state.currentUserId = el.value;
-    var u = userById(el.value);
-    if (u.dealershipId && u.dealershipId !== state.activeDealershipId) V.setDealership(u.dealershipId);
-    if (!V.isMaster() && state.route === "dealerships") state.route = "dashboard";
+  if (act === "preview-role"){
+    if (!el.value){ exitPreview(); return; }
+    if (!state.dealerships.length){ toast("Create a dealership first.","err"); commit(); return; }
+    state.ui.previewRole = el.value;
+    var pr = V.allowedRouteKeys();
+    if (pr && pr.indexOf(state.route) === -1) state.route = pr[0] || "finance";
+    toast("Previewing as " + V.roleLabel(el.value) + ". Read-only.","info");
     commit(); return;
   }
   if (act === "switch-dealership"){ V.setDealership(el.value); commit(); return; }
@@ -4514,7 +4544,7 @@ document.addEventListener("change", function(ev){
 
 /* ---------------- BOOT ---------------- */
 function boot(){
-  state.ui.confirm = null; state.ui.pwReset = null; state.ui.history = null; state.ui.giftEdit = null;
+  state.ui.confirm = null; state.ui.pwReset = null; state.ui.history = null; state.ui.giftEdit = null; state.ui.previewRole = null;
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
