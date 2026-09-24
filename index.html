@@ -1779,7 +1779,8 @@ function viewFinance(){
     return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}">
       <div class="pks-name">${esc(C.packageLabel(state, def.suffix))}</div>
       <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
-      <div class="pks-total">${p.count ? money(p.total) : "—"}</div>
+      <div class="pks-total">${p.count ? money(p.sub) : "—"}</div>
+      ${p.count ? `<div class="tiny muted" style="margin-top:2px">before tax</div>` : ""}
     </button>`;
   }).join("");
 
@@ -2226,7 +2227,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.7</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.8</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
