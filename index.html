@@ -300,8 +300,11 @@ tbody tr:hover{background:var(--surface-2)}
 .cd .gp-ic.art{background:#fff;border:1px solid var(--cd-border);width:46px;height:46px;overflow:hidden}
 .cd .gp-ic.art img{width:100%;height:100%;object-fit:contain}
 .cd .gp-ic.art svg{width:40px;height:40px}
-.cd .gift-pill{display:flex;align-items:center;gap:12px;margin:2px auto 0;padding:10px 18px 10px 12px;border-radius:14px;background:var(--cd-pill-bg);color:var(--cd-pill-text);text-align:left;
+.cd .gift-pill{margin:4px auto 0;padding:10px 16px 12px;border-radius:14px;background:var(--cd-pill-bg);color:var(--cd-pill-text);text-align:center;
   box-shadow:0 6px 18px rgba(0,0,0,.28),0 0 0 3px rgba(255,255,255,.25);max-width:100%}
+.cd .gp-items{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 0;margin-top:8px}
+.cd .gp-item{display:flex;flex-direction:column;align-items:center;gap:6px;padding:0 18px;min-width:96px;max-width:190px}
+.cd .gp-item + .gp-item{border-left:1px solid var(--cd-border)}
 .cd .gp-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
 .cd .gp-ic svg{width:21px;height:21px}
 .cd .gp-tag{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cd-blue)}
@@ -314,6 +317,23 @@ tbody tr:hover{background:var(--surface-2)}
 @media (prefers-reduced-motion:reduce){ .cd .gift-seal{animation:none} }
 .gphoto{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
 .gphoto img{width:54px;height:54px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}
+.gbtn-row{display:flex;flex-wrap:wrap;gap:12px 10px}
+.gbtn-wrap{position:relative;display:inline-block}
+.gbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid var(--border-strong);border-radius:9px;background:var(--surface);color:var(--text);font-size:13px;font-weight:600;cursor:pointer}
+.gbtn svg{width:14px;height:14px}
+.gbtn:hover{background:var(--surface-3)}
+.gbtn.on{background:#1f9d63;border-color:#1f9d63;color:#fff;padding-right:20px}
+.gbtn .gsub{font-weight:500;opacity:.9}
+.gbtn-x{position:absolute;top:-7px;right:-7px;width:20px;height:20px;padding:0;border-radius:50%;border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);font-size:10px;line-height:1;cursor:pointer;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.gbtn-x:hover{background:var(--danger);border-color:var(--danger);color:#fff}
+.gpanel{margin-top:12px;padding:14px;border:1px solid var(--border);border-radius:11px;background:var(--surface-2)}
+.gpanel-t input{width:100%}
+.gpanel-t{margin-bottom:10px}
+.gpanel-l{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.gp-seg{display:inline-grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:9px;background:var(--surface-3)}
+.gp-seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
+.gp-seg button.on{background:var(--blue);color:#fff}
+.gpanel-a{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
 .offers-2col{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:26px}
 .offers-div{background:var(--border);align-self:stretch}
 .gift-row2{padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
@@ -1668,7 +1688,7 @@ function renderCustomerDisplay(tx){
   /* Gifts and bundle savings that apply to every package on screen share ONE pane above the packages. */
     var giftsCol = bannerGifts.length ? `<div><div class="op-lbl">Complimentary Gift${bannerGifts.length > 1 ? "s" : ""}</div>
       <div class="op-gifts">${bannerGifts.map(function(g){
-        return `<div class="op-row"><div class="op-tile">${giftArtHtml(g)}</div><div><div class="op-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="op-val">${money(g.value)} value</div>` : ""}</div></div>`; }).join("")}</div></div>` : "";
+        return `<div class="op-row"><div class="op-tile">${giftArtHtml(g)}</div><div><div class="op-name">${esc(g.name)}</div></div></div>`; }).join("")}</div></div>` : "";
   var saveCol = allSavings ? `<div><div class="op-lbl">Bundle Savings</div>
       <div class="op-save"><span class="op-ck">${CHECK_SVG}</span><div><div class="op-save-t">Bundle savings applied</div><div class="op-save-s">Reflected in every payment shown</div></div></div></div>` : "";
   var both = !!(giftsCol && saveCol);
@@ -1688,10 +1708,9 @@ function renderCustomerDisplay(tx){
     if (p.discount > 0 && !allSavings) badges.push(`<span class="ph-chip">${CHECK_SVG}<span>Bundle savings applied</span></span>`);
     var badgeHtml = badges.length ? `<div class="ph-badges">${badges.join("")}</div>` : "";
     var pkgGifts = (p.gifts || []).filter(function(g){ return bannerGifts.indexOf(g) === -1; });
-    var giftPills = pkgGifts.map(function(g){
-      return `<div class="gift-pill"><span class="gp-ic art">${giftArtHtml(g)}</span><div><div class="gp-tag">Complimentary Gift</div>
-        <div class="gp-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gp-val">${money(g.value)} value</div>` : ""}</div></div>`;
-    }).join("");
+    var giftPills = pkgGifts.length ? `<div class="gift-pill"><div class="gp-tag">Complimentary Gift${pkgGifts.length > 1 ? "s" : ""}</div>
+      <div class="gp-items">${pkgGifts.map(function(g){
+        return `<div class="gp-item"><span class="gp-ic art">${giftArtHtml(g)}</span><div class="gp-name">${esc(g.name)}</div></div>`; }).join("")}</div></div>` : "";
     var sealHtml = pkgGifts.length ? `<div class="gift-seal">${giftSealSvg(pkgGifts.length > 1)}</div>` : "";
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
@@ -1981,21 +2000,32 @@ function viewFinance(){
           <input type="number" min="0" step="any" value="${dsc.packages[def.key] ? esc(dsc.packages[def.key]) : ""}" data-bind="tx.offers.discount.packages.${def.key}" data-type="num" placeholder="0"></div>
           <span class="tiny muted">${p && p.discount > 0 ? "−" + money(p.discount) + " → " + money(p.sub) : "No discount"}</span></label>`; }).join("")}</div>`;
   var presetGifts = (state.config.gifts || []).filter(function(g){ return g && g.name; });
-  var giftRows = off.gifts.map(function(g, i){
-    var anyPkg = g.packages && (g.packages.preferred || g.packages.essential || g.packages.basic);
-    return `<div class="gift-row2">
-      <div class="gr-head"><span class="lbl">1 · Show this gift on</span><button type="button" class="btn sm danger" data-act="gift-remove" data-idx="${i}">Remove</button></div>
-      <div class="pkgchk-row" style="flex-wrap:wrap">${D.PACKAGES.map(function(def){ var on = g.packages && g.packages[def.key];
-        return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" data-act="gift-pkg" data-idx="${i}" data-pkg="${def.key}" ${on?"checked":""}>${esc(C.packageLabel(state, def.suffix))}</label>`; }).join("")}</div>
-      ${anyPkg ? "" : `<div class="tiny" style="color:var(--warn);margin-top:4px">Tick at least one package — until then this gift isn't shown to the customer.</div>`}
-      <div class="lbl" style="margin:12px 0 6px">2 · Gift details</div>
-      <div class="gr-fields">
-        <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="tx.offers.gifts.${i}.name" placeholder="e.g. Winter tire storage"></label>
-        <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="tx.offers.gifts.${i}.value" data-type="num"></label>
-        <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="tx.offers.gifts.${i}.cost" data-type="num"></label>
-      </div>
-      <label class="switch" style="margin-top:8px"><input type="checkbox" data-act="gift-showval" data-idx="${i}" ${g.showValue?"checked":""}> Show value to customer</label>
-    </div>`; }).join("");
+  var gEdit = state.ui.giftEdit;
+  var allPk = function(pk){ return !!(pk && pk.preferred && pk.essential && pk.basic); };
+  var cap = function(x){ return x.charAt(0) + x.slice(1).toLowerCase(); };
+  var scopeLabel = function(g){ return allPk(g.packages) ? "All packages" : D.PACKAGES.filter(function(def){ return g.packages && g.packages[def.key]; }).map(function(def){ return cap(def.suffix); }).join(", "); };
+  var gbtn = function(key, label, g){
+    return `<div class="gbtn-wrap"><button type="button" class="gbtn ${g ? "on" : ""}" data-act="gift-open" data-key="${esc(key)}">${g ? CHECK_SVG : "＋"}<span>${esc(label)}${g ? `<span class="gsub"> · ${esc(scopeLabel(g))}</span>` : ""}</span></button>
+      ${g ? `<button type="button" class="gbtn-x" data-act="gift-x" data-key="${esc(key)}" title="Remove this gift" aria-label="Remove ${esc(label)}">✕</button>` : ""}</div>`;
+  };
+  var giftButtons = presetGifts.map(function(lib){
+    return gbtn("p:" + lib.id, lib.name, off.gifts.filter(function(x){ return x.presetId === lib.id; })[0] || null);
+  }).join("")
+    + off.gifts.filter(function(x){ return !x.presetId; }).map(function(x){ return gbtn("c:" + x.id, x.name || "Custom gift", x); }).join("")
+    + gbtn("c:new", "Custom gift", null);
+  var gPanel = "";
+  if (gEdit){
+    var gValid = !!(String(gEdit.name || "").trim()) && (gEdit.mode === "all" || allPk(gEdit.pk) || D.PACKAGES.some(function(def){ return gEdit.pk[def.key]; }));
+    gPanel = `<div class="gpanel">
+      <div class="gpanel-t">${gEdit.custom ? `<input type="text" id="giftNameInput" value="${esc(gEdit.name || "")}" placeholder="Gift name, e.g. Winter tire storage" autocomplete="off">` : `<strong>${esc(gEdit.name)}</strong>`}</div>
+      <div class="gpanel-l">Show this gift on</div>
+      <div class="gp-seg"><button type="button" class="${gEdit.mode === "all" ? "on" : ""}" data-act="gift-mode" data-val="all">All packages</button>
+        <button type="button" class="${gEdit.mode === "some" ? "on" : ""}" data-act="gift-mode" data-val="some">Selected packages</button></div>
+      ${gEdit.mode === "some" ? `<div class="pkgchk-row" style="margin:10px 0 2px;flex-wrap:wrap">${D.PACKAGES.map(function(def){ var on = !!gEdit.pk[def.key];
+        return `<label class="pkgchk ${on ? "on" : ""}"><input type="checkbox" data-act="gift-dpk" data-pkg="${def.key}" ${on ? "checked" : ""}>${esc(C.packageLabel(state, def.suffix))}</label>`; }).join("")}</div>` : ""}
+      <div class="gpanel-a"><button type="button" class="btn sm" data-act="gift-cancel">Cancel</button>
+        <button type="button" class="btn sm primary" data-act="gift-done" ${gValid ? "" : "disabled"}>Done</button></div></div>`;
+  }
   var offersCard = `<div class="card" id="step-offers"><div class="card-h"><h2>Offers</h2></div>
     <div class="card-b"><div class="offers-2col">
       <div>
@@ -2014,12 +2044,9 @@ function viewFinance(){
       <div class="offers-div" aria-hidden="true"></div>
       <div>
         <div class="lbl" style="margin-bottom:4px">Complimentary Gift</div>
-        <p class="muted small" style="margin:0 0 8px">Free to the customer. It appears as a FREE GIFT seal only on the packages you tick. Add a dealer cost so reports stay accurate.</p>
-        <div class="chiprow" style="margin:0 0 10px">
-          ${presetGifts.map(function(g, i){ return `<button type="button" class="btn sm" data-act="gift-add" data-preset="${i}">＋ ${esc(g.name)}</button>`; }).join("")}
-          <button type="button" class="btn sm" data-act="gift-add" data-preset="custom">＋ Custom gift</button>
-        </div>
-        ${giftRows || `<div class="tiny muted">No gift on this deal.</div>`}
+        <p class="muted small" style="margin:0 0 10px">Free to the customer. Tap a gift to choose which packages get it; it turns green once added. Tap it again to edit, or ✕ to remove it. Dealer costs are kept in Dealership settings.</p>
+        <div class="gbtn-row">${giftButtons}</div>
+        ${gPanel}
       </div>
     </div></div></div>`;
 
@@ -2391,7 +2418,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.18</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.19</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2659,9 +2686,8 @@ function viewSettings(){
     <div class="card"><div class="card-h"><h2>Complimentary gifts</h2>
       <div class="sp"><button type="button" class="btn sm primary" data-act="gift-preset-add" ${dis}>Add a gift</button></div></div><div class="card-b">
       <p class="muted small" style="max-width:60ch">Gifts you list here appear as one-tap choices for the Finance Manager on each deal. Value and dealer cost are optional; cost comes off the deal's gross in reports.</p>
-      ${(state.config.gifts || []).map(function(g, i){ return `<div class="gift-row" style="grid-template-columns:2fr 1fr 1fr auto">
+      ${(state.config.gifts || []).map(function(g, i){ return `<div class="gift-row" style="grid-template-columns:2fr 1fr auto">
         <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="config.gifts.${i}.name" placeholder="e.g. Winter tire storage" ${dis}></label>
-        <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="config.gifts.${i}.value" data-type="num" ${dis}></label>
         <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="config.gifts.${i}.cost" data-type="num" ${dis}></label>
         <button type="button" class="btn sm danger" data-act="gift-preset-remove" data-idx="${i}" ${dis}>Remove</button>
         <div class="gphoto" style="grid-column:1 / -1">${g.image ? `<img src="${g.image}" alt="">` : ""}
@@ -2832,7 +2858,7 @@ function customerPrint(tx){
           var cfg = V.lineConfigText(L, true);
           return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
         ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Bundle savings applied</strong> — reflected in your payment.</div>` : ""}
-        ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary Gift:</strong> ${p.gifts.map(function(g){ return esc(g.name) + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
+        ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary Gift:</strong> ${p.gifts.map(function(g){ return esc(g.name); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
         ${tx.display.showPayment && tx.type==="Cash" ? `<div style="margin-top:8px;font-size:12px"><div><strong>${money(p.dueTotal)}</strong> due in full</div></div>` : ""}
         ${(tx.display.showPayment && tx.type!=="Cash" && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
           ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
@@ -2877,7 +2903,7 @@ function buildEmail(tx){
     }
     if (p.discount > 0) L.push("Bundle savings applied, already reflected in the payment above.");
     if (p.gifts && p.gifts.length){
-      L.push("Complimentary Gift, included at no additional charge: " + p.gifts.map(function(g){ return g.name + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", "));
+      L.push("Complimentary Gift, included at no additional charge: " + p.gifts.map(function(g){ return g.name; }).join(", "));
     }
     if ((p.discount > 0) || (p.gifts && p.gifts.length)) L.push("");
     L.push("What is included:");
@@ -2939,7 +2965,7 @@ function buildEmailHtml(tx){
         </div>`;
       }).join("")}</div>` : "");
     var offerHtml = ((p.discount > 0) ? `<div style="margin-top:10px;padding:9px 12px;border-radius:8px;background:#e9f6ef;color:#0a7546;font-size:13px"><strong>Bundle savings applied</strong> — already reflected in the payment above.</div>` : "")
-      + ((p.gifts && p.gifts.length) ? `<div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#fff4d6;border:1px solid #e4c26a;color:#5a3f06;font-size:13px"><div style="font-size:10px;font-weight:700;letter-spacing:.14em">COMPLIMENTARY GIFT</div>${p.gifts.map(function(g){ return `<div style="font-weight:700;font-size:14px;margin-top:3px">${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <span style="font-weight:400;font-size:12px">(valued at ${money(g.value)})</span>` : ""}</div>`; }).join("")}<div style="font-size:11.5px;margin-top:2px">Included with this package at no additional charge.</div></div>` : "");
+      + ((p.gifts && p.gifts.length) ? `<div style="margin-top:10px;padding:10px 12px;border-radius:8px;background:#fff4d6;border:1px solid #e4c26a;color:#5a3f06;font-size:13px"><div style="font-size:10px;font-weight:700;letter-spacing:.14em">COMPLIMENTARY GIFT</div>${p.gifts.map(function(g){ return `<div style="font-weight:700;font-size:14px;margin-top:3px">${esc(g.name)}</div>`; }).join("")}<div style="font-size:11.5px;margin-top:2px">Included with this package at no additional charge.</div></div>` : "");
     return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:18px;border:1px solid #dde3ec;border-radius:10px;overflow:hidden">
       <tr><td style="background:${brandColor};color:#ffffff;padding:12px 16px;font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</td></tr>
       <tr><td style="padding:14px 16px;background:#ffffff">
@@ -4012,6 +4038,11 @@ function sendEmail(){
 
 /* ---------------- EVENTS ---------------- */
 document.addEventListener("input", function(ev){
+  if (ev.target && ev.target.id === "giftNameInput" && state.ui.giftEdit){
+    state.ui.giftEdit.name = ev.target.value;
+    var gdb = document.querySelector("[data-act=gift-done]");
+    if (gdb) gdb.disabled = !ev.target.value.trim() || !(state.ui.giftEdit.mode === "all" || state.ui.giftEdit.pk.preferred || state.ui.giftEdit.pk.essential || state.ui.giftEdit.pk.basic);
+  }
   if (ev.target && ev.target.id === "pwResetVal" && state.ui.pwReset) state.ui.pwReset.value = ev.target.value;
 });
 document.addEventListener("keydown", function(ev){
@@ -4074,6 +4105,51 @@ document.addEventListener("click", function(ev){
       commit(); break; }
     case "offer-scope": V.ensureOffers(state.tx); state.tx.offers.discount.scope = el.getAttribute("data-val"); commit(); break;
     case "offer-dtype": V.ensureOffers(state.tx); state.tx.offers.discount.type = el.getAttribute("data-val"); commit(); break;
+    case "gift-open": {
+      V.ensureOffers(state.tx);
+      var gk = el.getAttribute("data-key"), goff = state.tx.offers, gdraft = null;
+      if (state.ui.giftEdit && state.ui.giftEdit.key === gk){ state.ui.giftEdit = null; commit(); break; }
+      var gAll = function(pk){ return !!(pk && pk.preferred && pk.essential && pk.basic); };
+      var gNone = { preferred:false, essential:false, basic:false };
+      if (gk === "c:new") gdraft = { key:gk, custom:true, name:"", existingId:null, mode:"all", pk:{ preferred:true, essential:true, basic:true } };
+      else if (gk.indexOf("p:") === 0){
+        var glib = (state.config.gifts || []).filter(function(x){ return x.id === gk.slice(2); })[0];
+        if (!glib) break;
+        var gex = goff.gifts.filter(function(x){ return x.presetId === glib.id; })[0];
+        gdraft = { key:gk, custom:false, presetId:glib.id, name:glib.name, existingId: gex ? gex.id : null,
+          mode: gex && !gAll(gex.packages) ? "some" : "all", pk: gex ? C.clone(gex.packages) : { preferred:true, essential:true, basic:true } };
+      } else {
+        var gcx = goff.gifts.filter(function(x){ return x.id === gk.slice(2); })[0];
+        if (!gcx) break;
+        gdraft = { key:gk, custom:true, name:gcx.name, existingId:gcx.id, mode: gAll(gcx.packages) ? "all" : "some", pk:C.clone(gcx.packages || gNone) };
+      }
+      state.ui.giftEdit = gdraft; commit(); break; }
+    case "gift-mode": {
+      var gd = state.ui.giftEdit; if (!gd) break;
+      var gm = el.getAttribute("data-val");
+      if (gm === "some" && gd.pk.preferred && gd.pk.essential && gd.pk.basic) gd.pk = { preferred:false, essential:false, basic:false };
+      gd.mode = gm; commit(); break; }
+    case "gift-cancel": state.ui.giftEdit = null; commit(); break;
+    case "gift-done": {
+      var gdn = state.ui.giftEdit; if (!gdn) break;
+      V.ensureOffers(state.tx);
+      var gnm = String(gdn.name || "").trim();
+      var gpk = gdn.mode === "all" ? { preferred:true, essential:true, basic:true } : C.clone(gdn.pk);
+      if (!gnm || !(gpk.preferred || gpk.essential || gpk.basic)){ toast("Pick at least one package.","err"); break; }
+      var gline = state.tx.offers.gifts.filter(function(x){ return x.id === gdn.existingId; })[0];
+      if (gline){ gline.packages = gpk; if (gdn.custom) gline.name = gnm; }
+      else {
+        var glb = gdn.custom ? null : (state.config.gifts || []).filter(function(x){ return x.id === gdn.presetId; })[0];
+        state.tx.offers.gifts.push({ id:C.uid("g"), presetId: gdn.custom ? null : gdn.presetId, name:gnm, value:null,
+          cost: glb && glb.cost !== undefined ? glb.cost : null, showValue:false, packages:gpk });
+      }
+      state.ui.giftEdit = null; commit(); break; }
+    case "gift-x": {
+      V.ensureOffers(state.tx);
+      var gxk = el.getAttribute("data-key");
+      state.tx.offers.gifts = state.tx.offers.gifts.filter(function(x){ return gxk.indexOf("p:") === 0 ? x.presetId !== gxk.slice(2) : x.id !== gxk.slice(2); });
+      if (state.ui.giftEdit && state.ui.giftEdit.key === gxk) state.ui.giftEdit = null;
+      commit(); break; }
     case "gift-add": {
       V.ensureOffers(state.tx);
       var gp = el.getAttribute("data-preset"), gsrc = gp === "custom" ? null : (state.config.gifts || [])[Number(gp)];
@@ -4407,6 +4483,11 @@ document.addEventListener("change", function(ev){
     if (state.tx.lines.length && state.tx.display.mode === "welcome") state.tx.display.mode = "package";
     commit(); return;
   }
+  if (act === "gift-dpk"){
+    var gdp = state.ui.giftEdit;
+    if (gdp){ gdp.pk[el.getAttribute("data-pkg")] = el.checked; commit(); }
+    return;
+  }
   if (act === "gift-pkg"){
     V.ensureOffers(state.tx);
     var gg = state.tx.offers.gifts[Number(el.getAttribute("data-idx"))];
@@ -4497,7 +4578,7 @@ document.addEventListener("change", function(ev){
 
 /* ---------------- BOOT ---------------- */
 function boot(){
-  state.ui.confirm = null; state.ui.pwReset = null; state.ui.history = null;
+  state.ui.confirm = null; state.ui.pwReset = null; state.ui.history = null; state.ui.giftEdit = null;
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
