@@ -167,6 +167,7 @@ tbody tr:hover{background:var(--surface-2)}
 .prodrow2 + .prodrow2{margin-top:10px}
 .prodrow2 .pr-icon{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:linear-gradient(140deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
 .prodrow2 .pr-name{flex:1 1 300px;min-width:220px}
+.cfg-sum{margin-top:6px;font-size:12px;color:var(--muted)}
 .cfg-inline{display:flex;gap:10px;flex-wrap:wrap;margin-top:9px}
 .cfg-f{display:flex;flex-direction:column;gap:3px;font-size:11px;color:var(--muted);min-width:118px}
 .cfg-f select{padding:6px 8px;font-size:12.5px;height:auto;border-radius:7px}
@@ -1434,12 +1435,14 @@ function viewUnderConstruction(name){
 /* ---------------- CUSTOMER DISPLAY ----------------
    Product name plus the term and kilometres chosen. No explanations,
    no internal pricing, no packages or terms the FSM did not select.    */
-function lineConfigText(L){
-  var bits = [];
-  if (L.product.uses.term && L.cfg.term) bits.push(L.cfg.term + " months");
-  if (L.product.uses.km && L.cfg.km) bits.push(km(L.cfg.km));
-  if (L.product.uses.interval && L.cfg.interval) bits.push("every " + km(L.cfg.interval));
-  if (L.product.uses.deductible && L.cfg.deductible !== null && L.cfg.deductible !== undefined && L.cfg.deductible !== "")
+function lineConfigText(L, chosenOnly){
+  /* chosenOnly = customer-facing: show a detail only once the Finance Manager has picked it. */
+  var set = (L.cfg && L.cfg.cfgSet) || {}, bits = [];
+  function ok(k){ return !chosenOnly || !!set[k]; }
+  if (ok("term") && L.product.uses.term && L.cfg.term) bits.push(L.cfg.term + " months");
+  if (ok("km") && L.product.uses.km && L.cfg.km) bits.push(km(L.cfg.km));
+  if (ok("interval") && L.product.uses.interval && L.cfg.interval) bits.push("every " + km(L.cfg.interval));
+  if (ok("deductible") && L.product.uses.deductible && L.cfg.deductible !== null && L.cfg.deductible !== undefined && L.cfg.deductible !== "")
     bits.push(Number(L.cfg.deductible) === 0 ? "no deductible" : "$" + L.cfg.deductible + " deductible");
   return bits.join(" · ");
 }
@@ -1567,7 +1570,7 @@ function renderCustomerDisplay(tx){
   var shown = packagesToShow(t, tx);
   var cards = shown.map(function(p){
     var items = p.lines.map(function(L){
-      var cfgTxt = tx.display.showConfig ? lineConfigText(L) : "";
+      var cfgTxt = lineConfigText(L, true);
       var icon = productIconSvg(L.product);
       var priceTxt = (L.price===null || !(tx.type==="Cash" || tx.display.showPrices)) ? "" : `<div class="pi-price">${money(L.price)}</div>`;
       return `<div class="pi"><span class="pi-icon">${icon}</span><div class="pi-txt"><div class="n2">${esc(L.product.name)}</div>${cfgTxt?`<div class="c2">${esc(cfgTxt)}</div>`:""}</div>${priceTxt}</div>`;
@@ -1788,7 +1791,12 @@ function viewFinance(){
     if (p.uses.km) cfgSel("Kilometres", "km", p.kms, function(x){ return km(x); });
     if (p.uses.interval) cfgSel("Service interval", "interval", p.intervals, function(x){ return "Every " + km(x); });
     if (p.uses.deductible) cfgSel("Deductible", "deductible", p.deductibles, function(x){ return Number(x)===0?"No deductible":"$"+x; });
-    var cfgInline = hasCfgFields ? `<div class="cfg-inline">${f2.join("")}</div>` : "";
+    var cfgOpen = hasCfgFields && state.ui.productConfigOpen === p.id;
+    var setF = (line && line.cfgSet) || {};
+    var chosenBits = line ? lineConfigText(L || { product:p, cfg:line }, true) : "";
+    var cfgInline = !hasCfgFields ? "" : cfgOpen ? `<div class="cfg-inline">${f2.join("")}</div>`
+      : (chosenBits ? `<div class="cfg-sum">${esc(chosenBits)}</div>` : "");
+    var gearBtn = hasCfgFields ? `<button type="button" tabindex="-1" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
     var priceVal = line && L && L.price !== null ? L.price : "";
     var hintPrice = line ? (L ? L.configuredPrice : null) : C.priceFor(p, cv);
     var pricePlaceholder = hintPrice !== null && hintPrice !== undefined ? hintPrice : "0.00";
@@ -1802,6 +1810,7 @@ function viewFinance(){
       </div>
       <div class="pr-ctrls">
         <div class="pricebox"><span class="pfx">$</span><input type="number" value="${priceVal}" data-bind="${priceBind}" data-type="num" placeholder="${pricePlaceholder}"></div>
+        ${gearBtn}
         <div class="pkgchk-row">${boxes}</div>
         ${declineBtn}
       </div>
@@ -1889,7 +1898,7 @@ function viewFinance(){
   var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Presentation</h2>
     <div class="sp"><label class="switch"><input type="checkbox" data-act="toggle-payment" ${tx.display.showPayment?"checked":""}> Show payments to customer</label>
       ${tx.type==="Cash" ? "" : `<label class="switch" style="margin-left:14px"><input type="checkbox" data-act="toggle-prices" ${tx.display.showPrices?"checked":""}> Show product prices</label>`}
-      <label class="switch" style="margin-left:14px"><input type="checkbox" data-act="toggle-config" ${tx.display.showConfig?"checked":""}> Show term &amp; mileage</label></div></div>
+</div></div>
     <div class="card-b">
       <div class="kv"><span class="k">${t.selectedPackage ? "Selected package total, with tax" : "All products total, with tax"}</span><span class="num">${money(t.productsTotal)}</span></div>
       <div class="kv total"><span>${t.selectedPackage ? "Financed with the selected package" : "Financed with every product"}</span><span class="num">${money(t.amountFinanced)}</span></div>
@@ -2262,7 +2271,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.10</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.11</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2697,7 +2706,7 @@ function customerPrint(tx){
       ${shown.length ? shown.map(function(p){ return `<div class="ccov">
         <div style="font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</div>
         <div style="margin-top:6px">${p.lines.map(function(L){
-          var cfg = V.lineConfigText(L);
+          var cfg = V.lineConfigText(L, true);
           return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
         ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Bundle savings applied</strong> — reflected in your payment.</div>` : ""}
         ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary Gift:</strong> ${p.gifts.map(function(g){ return esc(g.name) + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
@@ -2750,7 +2759,7 @@ function buildEmail(tx){
     if ((p.discount > 0) || (p.gifts && p.gifts.length)) L.push("");
     L.push("What is included:");
     p.lines.forEach(function(line){
-      var cfg = V.lineConfigText(line);
+      var cfg = V.lineConfigText(line, true);
       L.push("");
       L.push("  " + line.product.name + (cfg ? " (" + cfg + ")" : ""));
       if (line.product.desc) L.push("    " + line.product.desc);
@@ -2787,7 +2796,7 @@ function buildEmailHtml(tx){
 
   var pkgCardsHtml = shown.map(function(p){
     var rowsHtml = p.lines.map(function(L){
-      var cfgTxt = V.lineConfigText(L);
+      var cfgTxt = V.lineConfigText(L, true);
       return `<tr><td style="padding:10px 0;border-bottom:1px solid #e3e8ef">
         <div style="font-weight:700;font-size:14px;color:#0d1b2e">${esc(L.product.name)}${cfgTxt?` <span style="font-weight:400;color:#667085;font-size:12px">(${esc(cfgTxt)})</span>`:""}</div>
         ${L.product.benefit ? `<div style="color:#475467;font-size:12.5px;margin-top:4px;line-height:1.5">${esc(L.product.benefit)}</div>` : ""}
@@ -4295,6 +4304,7 @@ document.addEventListener("change", function(ev){
     var cline = state.tx.lines.filter(function(l){ return l.productId === cprod.id; })[0];
     if (!cline){ cline = makeLine(cprod); state.tx.lines.push(cline); }
     cline[cpart[2]] = Number(raw);
+    cline.cfgSet = cline.cfgSet || {}; cline.cfgSet[cpart[2]] = true;
     if (!cline.priceOverridden) cline.price = null;
     commit(); return;
   }
@@ -4302,6 +4312,9 @@ document.addEventListener("change", function(ev){
     var parts = bind.split(":"), ln2 = findLine(parts[1]), field = parts[2];
     if (!ln2) return;
     if (raw === "") ln2[field] = null; else ln2[field] = num ? Number(raw) : raw;
+    if (field === "term" || field === "km" || field === "interval" || field === "deductible"){
+      ln2.cfgSet = ln2.cfgSet || {}; ln2.cfgSet[field] = raw !== "";
+    }
     if (field === "price"){
       var prod = C.productById(state, ln2.productId), conf = C.priceFor(prod, ln2);
       ln2.priceOverridden = !(ln2.price === null || conf === null || Number(ln2.price) === Number(conf));
