@@ -266,6 +266,7 @@ tbody tr:hover{background:var(--surface-2)}
 .swatch.on{border-color:var(--blue);box-shadow:inset 0 0 0 1px var(--blue)}
 .emptystate{text-align:center;padding:34px 20px}
 .emptystate h3{margin:0 0 6px;font-size:18px}
+.acc-line{margin:3px 0}
 .axl{
   --ink:#0b1b3a;--blue:#0a6cf0;--blue2:#1a86ff;--mut:#5a6b88;--line:#d9e3f1;
   --padl:3.1vw;--padr:4vw;
@@ -2186,8 +2187,14 @@ function viewUsers(){
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
         </select>` : esc(dealer)}</td>
       <td class="small">${esc((u.restrictions||[]).join(" · ")||"—")}</td>
-      <td class="small">${u.role === "Salesperson" ? "Axiom Pulse" : `<div>Command Center: ${!u.ccOn ? "No access" : (u.demo ? "Demo until "+esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—") : "Full access")}</div>
-        <div class="muted">Axiom Pulse: ${u.pulseOn ? "Full access" : "No access"}</div>`}</td>
+      <td class="nowrap">${(function(){
+        var pulse = `<div class="acc-line"><span class="tag ${u.pulseOn ? "ok" : ""}">Pulse · ${u.pulseOn ? "Full" : "Off"}</span></div>`;
+        if (u.role === "Salesperson") return pulse;
+        var cc = !u.ccOn ? `<span class="tag">Command Center · Off</span>`
+          : u.demo ? `<span class="tag demo" title="${esc(u.expiresAt ? new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "")}">Command Center · Demo${u.expiresAt ? " until " + esc(new Date(u.expiresAt).toLocaleDateString("en-CA",{month:"short",day:"numeric"})) : ""}</span>`
+          : `<span class="tag ok">Command Center · Full</span>`;
+        return `<div class="acc-line">${cc}</div>` + pulse;
+      })()}</td>
       <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
       <td class="right nowrap">
         ${u.demo && V.isMaster() ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}">Extend demo</button>
@@ -2201,10 +2208,10 @@ function viewUsers(){
     <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
       <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
+      <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.4</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.5</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
