@@ -1525,7 +1525,7 @@ function renderCustomerDisplay(tx){
     } else {
       body = `<div class="hw">Welcome${tx.customer.name ? " " + esc(tx.customer.name) : ""}</div>
         <div class="cd-sub1">Designing What Fits You Drive</div>
-        <p class="muted" style="max-width:44ch">Your finance manager will help you choose the right coverage.</p>`;
+        <p class="muted" style="max-width:44ch">Your Finance Manager will help you choose the right coverage.</p>`;
     }
     return `<div class="cd" style="${cdThemeStyle()}">${head}<div class="cd-welcome">${body}</div>${noteBar}${foot}</div>`;
   }
