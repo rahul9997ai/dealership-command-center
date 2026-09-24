@@ -237,7 +237,8 @@ tbody tr:hover{background:var(--surface-2)}
 .cd-veh{display:flex;gap:10px;flex-wrap:wrap;align-items:baseline;justify-content:center;text-align:center;border-bottom:1px solid var(--cd-border);padding-bottom:16px;margin-bottom:24px}
 .cd-veh .v1{font-size:19px;font-weight:600}
 .pkgrid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
-.pkgcard{border:1px solid var(--cd-border);border-radius:11px;overflow:hidden;background:var(--cd-surface-2);display:flex;flex-direction:column;flex:1 1 380px;max-width:460px;min-width:300px;box-shadow:var(--cd-shadow)}
+.pkgwrap{position:relative;flex:1 1 380px;max-width:460px;min-width:300px}
+.pkgcard{border:1px solid var(--cd-border);border-radius:11px;overflow:hidden;background:var(--cd-surface-2);display:flex;flex-direction:column;width:100%;box-shadow:var(--cd-shadow)}
 .pkgcard .ph{background:linear-gradient(180deg,var(--cd-blue-2),var(--cd-blue-deep));color:#fff;padding:20px 14px;font-weight:700;font-size:28px;letter-spacing:.05em;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .pkgcard .ph-icon{opacity:.9;font-size:18px}
 .pkgcard .pb{padding:14px 16px;flex:1}
@@ -255,8 +256,19 @@ tbody tr:hover{background:var(--surface-2)}
 .cd .ph-chip{display:inline-flex;align-items:center;gap:6px;padding:4px 12px 4px 8px;border-radius:999px;font-size:11.5px;font-weight:600;letter-spacing:.02em;line-height:1.3;
   color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);text-transform:none}
 .cd .ph-chip svg{width:14px;height:14px;flex:0 0 auto}
-.cd .ph-chip.gift{background:rgba(255,255,255,.24);border-color:rgba(255,255,255,.6)}
 .cd .ph-chip small{font-size:11px;font-weight:500;opacity:.85}
+.cd .gift-pill{display:flex;align-items:center;gap:12px;margin:2px auto 0;padding:10px 18px 10px 12px;border-radius:14px;background:#ffffff;color:#0f2340;text-align:left;
+  box-shadow:0 6px 18px rgba(0,0,0,.28),0 0 0 3px rgba(255,255,255,.25);max-width:100%}
+.cd .gp-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
+.cd .gp-ic svg{width:21px;height:21px}
+.cd .gp-tag{font-size:10.5px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cd-blue)}
+.cd .gp-name{font-size:17px;font-weight:800;letter-spacing:0;line-height:1.25;text-transform:none}
+.cd .gp-val{font-size:11.5px;font-weight:600;letter-spacing:0;color:#5c6e88;text-transform:none;margin-top:1px}
+.cd .gift-seal{position:absolute;top:-34px;right:-20px;width:84px;height:84px;z-index:4;transform:rotate(9deg);pointer-events:none;
+  filter:drop-shadow(0 6px 10px rgba(0,0,0,.35));animation:sealPop 3.2s ease-in-out infinite}
+.cd .gift-seal svg{width:100%;height:100%;display:block}
+@keyframes sealPop{0%,100%{transform:rotate(9deg) scale(1)}50%{transform:rotate(9deg) scale(1.06)}}
+@media (prefers-reduced-motion:reduce){ .cd .gift-seal{animation:none} }
 .offers-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 .gift-row{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;align-items:end;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
 .gift-row .gr-2{grid-column:1 / -1;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
@@ -1513,6 +1525,15 @@ function cdThemeStyle(){
     "head-a":mixHex(base,K,.38), "head-b":base, "price-bg":mixHex(W,base,.015) };
   return Object.keys(v).map(function(k){ return "--cd-" + k + ":" + v[k]; }).join(";");
 }
+/* A scalloped "seal" (starburst) that overhangs the package card corner: FREE GIFT. Pure SVG, brand-coloured. */
+function giftSealSvg(plural){
+  var pts = [], N = 26, i, ang, rad;
+  for (i=0;i<N*2;i++){ ang = Math.PI*2*i/(N*2) - Math.PI/2; rad = (i%2===0) ? 49 : 43; pts.push((50+Math.cos(ang)*rad).toFixed(1) + "," + (50+Math.sin(ang)*rad).toFixed(1)); }
+  return '<svg viewBox="0 0 100 100" aria-hidden="true"><polygon points="' + pts.join(" ") + '" style="fill:#ffffff"/>'
+    + '<circle cx="50" cy="50" r="35" style="fill:none;stroke:var(--cd-blue);stroke-width:1.6;stroke-dasharray:2.4 3.2"/>'
+    + '<text x="50" y="49" text-anchor="middle" style="fill:var(--cd-blue);font:800 23px Inter,Arial,sans-serif;letter-spacing:.5px">FREE</text>'
+    + '<text x="50" y="65" text-anchor="middle" style="fill:var(--cd-blue-deep);font:800 12.5px Inter,Arial,sans-serif;letter-spacing:2.2px">' + (plural ? "GIFTS" : "GIFT") + '</text></svg>';
+}
 var PACKAGE_ICONS = { preferred:"★", essential:"◆", basic:"●" };
 function renderCustomerDisplay(tx){
   var b = brand(), cfg = state.config, t = C.totals(state, tx);
@@ -1553,10 +1574,12 @@ function renderCustomerDisplay(tx){
        attached one to this package. */
     var badges = [];
     if (p.discount > 0) badges.push(`<span class="ph-chip">${CHECK_SVG}<span>Bundle savings applied</span></span>`);
-    (p.gifts || []).forEach(function(g){
-      badges.push(`<span class="ph-chip gift">${GIFT_SVG}<span>Complimentary gift: ${esc(g.name)}${g.showValue && Number(g.value) > 0 ? ` <small>· ${money(g.value)} value</small>` : ""}</span></span>`);
-    });
     var badgeHtml = badges.length ? `<div class="ph-badges">${badges.join("")}</div>` : "";
+    var giftPills = (p.gifts || []).map(function(g){
+      return `<div class="gift-pill"><span class="gp-ic">${GIFT_SVG}</span><div><div class="gp-tag">Complimentary Gift</div>
+        <div class="gp-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gp-val">${money(g.value)} value</div>` : ""}</div></div>`;
+    }).join("");
+    var sealHtml = (p.gifts && p.gifts.length) ? `<div class="gift-seal">${giftSealSvg(p.gifts.length > 1)}</div>` : "";
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
           <div class="pt-amt">${money(p.dueTotal - t.vehicleTax - p.tax)} + HST</div></div></div>` : "")
@@ -1579,7 +1602,7 @@ function renderCustomerDisplay(tx){
         </div>`;
       }).join("")}
     </div>` : "";
-    return `<div class="pkgcard"><div class="ph"><div>${esc(p.label)}</div>${badgeHtml}</div>${payBox}<div class="pb">${items}${waiverHtml}</div></div>`;
+    return `<div class="pkgwrap"><div class="pkgcard"><div class="ph"><div>${esc(p.label)}</div>${badgeHtml}${giftPills}</div>${payBox}<div class="pb">${items}${waiverHtml}</div></div>${sealHtml}</div>`;
   }).join("");
 
   return `<div class="cd" style="${cdThemeStyle()}">${head}<div class="cd-body">
@@ -2227,7 +2250,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.8</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.9</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2665,7 +2688,7 @@ function customerPrint(tx){
           var cfg = V.lineConfigText(L);
           return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
         ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Bundle savings applied</strong> — reflected in your payment.</div>` : ""}
-        ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary gift:</strong> ${p.gifts.map(function(g){ return esc(g.name) + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
+        ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Complimentary Gift:</strong> ${p.gifts.map(function(g){ return esc(g.name) + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
         ${tx.display.showPayment && tx.type==="Cash" ? `<div style="margin-top:8px;font-size:12px"><div><strong>${money(p.dueTotal)}</strong> due in full</div></div>` : ""}
         ${(tx.display.showPayment && tx.type!=="Cash" && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
           ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
@@ -2710,7 +2733,7 @@ function buildEmail(tx){
     }
     if (p.discount > 0) L.push("Bundle savings applied, already reflected in the payment above.");
     if (p.gifts && p.gifts.length){
-      L.push("Complimentary gift, included at no additional charge: " + p.gifts.map(function(g){ return g.name + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", "));
+      L.push("Complimentary Gift, included at no additional charge: " + p.gifts.map(function(g){ return g.name + (g.showValue && Number(g.value) > 0 ? " (valued at " + money(g.value) + ")" : ""); }).join(", "));
     }
     if ((p.discount > 0) || (p.gifts && p.gifts.length)) L.push("");
     L.push("What is included:");
