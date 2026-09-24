@@ -2204,7 +2204,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.1</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.2</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2280,9 +2280,9 @@ function saveUser(){
   .then(function(r){
     state.ui.userForm = false;
     var first = name.split(" ")[0];
-    if (r && r.invite_sent) toast("User created — an invite with the sign-in details was emailed to " + payload.email + ".","ok");
-    else if (payload.send_invite) toast("User created, but the invite email couldn't be sent. Share the temporary password with " + first + " yourself.","err");
-    else toast("User created — share the temporary " + (role==="Salesperson"?"username and ":"") + "password with " + first + ".","ok");
+    if (role !== "Salesperson"){
+      inviteSecret = { title:"User created — share their sign-in details", first:first, email:payload.email, password:pw, url:"https://finance.rahulchamp.ca/", emailed:!!(r && r.invite_sent) };
+    } else toast("User created — share the temporary username and password with " + first + ".","ok");
     refreshUsers(); commit(); })
   .catch(function(e){ toast(e.message, "err"); });
 }
@@ -2828,7 +2828,7 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal() + inviteModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -3592,6 +3592,27 @@ function genTempPassword(){
   for (var i=0;i<12;i++) out += chars[a[i] % chars.length];
   return out;
 }
+var inviteSecret = null;
+function inviteMessage(i){
+  return ["Hi " + i.first + ",", "", "You've been given access to AXIOM Command Center.", "", "Sign in: " + i.url, "Email: " + i.email,
+    "Temporary password: " + i.password, "", "You'll choose your own password the first time you sign in."].join(String.fromCharCode(10));
+}
+function inviteModal(){
+  var i = inviteSecret;
+  if (!i) return "";
+  return `<div class="modal-bg" data-act="invite-close"><div class="modal" style="max-width:520px">
+    <div class="modal-h"><h2>${esc(i.title)}</h2><div class="sp"><button class="btn primary" data-act="invite-close">Done</button></div></div>
+    <div class="modal-b">
+      <p style="margin-top:0">${i.emailed ? `An email with these details was sent to <strong>${esc(i.email)}</strong>. Some company mail systems hold new senders in junk or quarantine, so if it doesn't show up, share the details below yourself.`
+        : `The email couldn't be sent, so share these details with ${esc(i.first)} yourself.`}</p>
+      <div class="notice info" style="display:block;line-height:1.7">
+        <div><span class="muted small">Sign in</span><br><strong>${esc(i.url)}</strong></div>
+        <div style="margin-top:6px"><span class="muted small">Email</span><br><strong>${esc(i.email)}</strong></div>
+        <div style="margin-top:6px"><span class="muted small">Temporary password</span><br><strong style="font-family:Consolas,Menlo,monospace;letter-spacing:.04em">${esc(i.password)}</strong></div></div>
+      <div style="margin-top:12px"><button class="btn" data-act="invite-copy">Copy message</button></div>
+      <p class="tiny muted" style="margin:10px 0 0">They'll be asked to choose their own password the first time they sign in.</p>
+    </div></div></div>`;
+}
 function historyModal(){
   var h = state.ui.history;
   if (!h) return "";
@@ -3781,7 +3802,7 @@ document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
   if (!el) return;
   var act = el.getAttribute("data-act");
-  if ((act === "close-modal-bg" || act === "confirm-bg" || act === "history-close") && ev.target !== el && el.classList.contains("modal-bg")) return;
+  if ((act === "close-modal-bg" || act === "confirm-bg" || act === "history-close" || act === "invite-close") && ev.target !== el && el.classList.contains("modal-bg")) return;
   if (/^product-(new|edit|save|toggle|delete|template)$/.test(act) && !V.canEditProducts()){ toast("Only a General Manager or Finance Manager can add, edit or delete products.","err"); return; }
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
@@ -3899,6 +3920,12 @@ document.addEventListener("click", function(ev){
           commit(); });
       break; }
     case "history-close": state.ui.history = null; commit(); break;
+    case "invite-copy": {
+      var im = inviteSecret ? inviteMessage(inviteSecret) : "";
+      try { navigator.clipboard.writeText(im).then(function(){ toast("Message copied — paste it into a text or email.","ok"); }, function(){ toast("Couldn't copy automatically — select the details and copy them.","err"); }); }
+      catch (e) { toast("Couldn't copy automatically — select the details and copy them.","err"); }
+      break; }
+    case "invite-close": inviteSecret = null; commit(); break;
     case "pwreset-cancel": state.ui.pwReset = null; commit(); break;
     case "pwreset-save": {
       var pr = state.ui.pwReset, pvEl = document.getElementById("pwResetVal"), pm = document.getElementById("pwResetMail");
@@ -3909,9 +3936,9 @@ document.addEventListener("click", function(ev){
       adminCall({ action:"reset_password", id:pr.id, password:pwNext, send_email:wantMail, app:"command" })
         .then(function(r){
           state.ui.pwReset = null;
-          if (wantMail && r && r.emailed) toast("Temporary password set and emailed to " + pwUser.email + ".","ok");
-          else if (wantMail) toast("Temporary password set, but the email couldn't be sent. Share it with " + pwUser.name + " yourself.","err");
-          else toast("Temporary password set for " + pwUser.name + ".","ok");
+          if (pwUser.role !== "Salesperson" && pwUser.email){
+            inviteSecret = { title:"Password reset — share the sign-in details", first:String(pwUser.name||"").split(" ")[0], email:pwUser.email, password:pwNext, url:"https://finance.rahulchamp.ca/", emailed:!!(wantMail && r && r.emailed) };
+          } else toast("Temporary password set for " + pwUser.name + ".","ok");
           refreshUsers(); commit(); })
         .catch(function(e){ toast(e.message,"err"); });
       break; }
