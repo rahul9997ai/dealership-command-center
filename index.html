@@ -276,7 +276,14 @@ tbody tr:hover{background:var(--surface-2)}
   color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);text-transform:none}
 .cd .ph-chip svg{width:14px;height:14px;flex:0 0 auto}
 .cd .ph-chip small{font-size:11px;font-weight:500;opacity:.85}
-.cd .banners{display:grid;gap:12px;margin:0 0 20px}
+.cd .banners{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:12px;margin:0 0 20px}
+.cd .gbanner.compact{gap:14px;padding:10px 16px 10px 14px}
+.cd .gbanner.compact .gb-art{width:76px;height:64px;margin-left:4px}
+.cd .gbanner.compact .gb-art svg{width:64px;height:64px}
+.cd .gbanner.compact .gb-name{font-size:clamp(17px,1.7vw,24px)}
+.cd .gbanner.compact .gb-ic{width:38px;height:38px}
+.cd .gbanner.compact .gb-ic svg{width:20px;height:20px}
+.cd .gbanner.compact .gb-lbl{font-size:10.5px;letter-spacing:.12em}
 .cd .gbanner{position:relative;overflow:hidden;display:flex;align-items:center;gap:22px;padding:12px 28px 12px 18px;border-radius:16px;
   background:linear-gradient(100deg,var(--cd-surface-2),var(--cd-surface-3) 60%,var(--cd-surface-2));border:1px solid var(--cd-border);box-shadow:0 10px 28px rgba(15,35,64,.13)}
 .cd .gbanner::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(180deg,var(--cd-blue-2),var(--cd-blue-deep))}
@@ -1662,16 +1669,18 @@ function renderCustomerDisplay(tx){
     allSavings = shown.every(function(p){ return p.discount > 0; });
   }
   var pkgNames = shown.map(function(p){ return esc(p.label); }).join("<br>");
+  /* Several offers sit side by side in one compact row instead of stacking. */
+  var bannerCount = bannerGifts.length + (allSavings ? 1 : 0), cc = bannerCount > 1 ? " compact" : "";
   var giftBanners = bannerGifts.map(function(g){
-    return `<div class="gbanner"><div class="gb-art">${giftArtHtml(g)}</div>
+    return `<div class="gbanner${cc}"><div class="gb-art">${giftArtHtml(g)}</div>
       <div class="gb-txt"><div class="gb-tag">Complimentary Gift</div><div class="gb-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gb-val">${money(g.value)} value</div>` : ""}</div>
       <div class="gb-div"></div>
-      <div class="gb-inc"><span class="gb-ic">${GIFT_SVG}</span><div><div class="gb-lbl">Included with all packages</div><div class="gb-list">${pkgNames}</div></div></div></div>`;
+      <div class="gb-inc"><span class="gb-ic">${GIFT_SVG}</span><div><div class="gb-lbl">Included with all packages</div>${cc ? "" : `<div class="gb-list">${pkgNames}</div>`}</div></div></div>`;
   }).join("");
-  var saveBanner = allSavings ? `<div class="gbanner slim"><span class="gb-ic">${CHECK_SVG}</span>
+  var saveBanner = allSavings ? `<div class="gbanner slim${cc}"><span class="gb-ic">${CHECK_SVG}</span>
       <div class="gb-txt"><div class="gb-tag">Bundle Savings</div><div class="gb-name">Bundle savings applied</div></div>
       <div class="gb-div"></div>
-      <div class="gb-inc"><div><div class="gb-lbl">Included with all packages</div><div class="gb-list">Reflected in every payment shown</div></div></div></div>` : "";
+      <div class="gb-inc"><div><div class="gb-lbl">Included with all packages</div>${cc ? "" : `<div class="gb-list">Reflected in every payment shown</div>`}</div></div></div>` : "";
   var bannersHtml = (giftBanners || saveBanner) ? `<div class="banners">${giftBanners}${saveBanner}</div>` : "";
   var cards = shown.map(function(p){
     var items = p.lines.map(function(L){
@@ -2390,7 +2399,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.14</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.15</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
