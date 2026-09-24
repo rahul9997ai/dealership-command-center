@@ -276,6 +276,30 @@ tbody tr:hover{background:var(--surface-2)}
   color:#fff;background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.42);text-transform:none}
 .cd .ph-chip svg{width:14px;height:14px;flex:0 0 auto}
 .cd .ph-chip small{font-size:11px;font-weight:500;opacity:.85}
+.cd .banners{display:grid;gap:12px;margin:0 0 20px}
+.cd .gbanner{position:relative;overflow:hidden;display:flex;align-items:center;gap:22px;padding:12px 28px 12px 18px;border-radius:16px;
+  background:linear-gradient(100deg,var(--cd-surface-2),var(--cd-surface-3) 60%,var(--cd-surface-2));border:1px solid var(--cd-border);box-shadow:0 10px 28px rgba(15,35,64,.13)}
+.cd .gbanner::before{content:"";position:absolute;inset:0 auto 0 0;width:5px;background:linear-gradient(180deg,var(--cd-blue-2),var(--cd-blue-deep))}
+.cd .gb-art{flex:0 0 auto;width:104px;height:88px;display:flex;align-items:center;justify-content:center;margin-left:6px}
+.cd .gb-art img{max-width:100%;max-height:100%;object-fit:contain;filter:drop-shadow(0 8px 10px rgba(0,0,0,.28))}
+.cd .gb-art svg{width:88px;height:88px;filter:drop-shadow(0 6px 8px rgba(0,0,0,.2))}
+.cd .gb-txt{flex:1 1 auto;min-width:0}
+.cd .gb-tag{font-size:12px;font-weight:800;letter-spacing:.22em;text-transform:uppercase;color:var(--cd-blue)}
+.cd .gb-name{font-size:clamp(22px,2.4vw,34px);font-weight:800;line-height:1.12;color:var(--cd-text);margin-top:2px}
+.cd .gb-val{font-size:13px;font-weight:600;color:var(--cd-muted);margin-top:3px}
+.cd .gb-div{flex:0 0 1px;align-self:stretch;margin:6px 0;background:var(--cd-border)}
+.cd .gb-inc{flex:0 0 auto;display:flex;align-items:center;gap:14px}
+.cd .gb-ic{flex:0 0 auto;width:48px;height:48px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 10px rgba(0,0,0,.22)}
+.cd .gb-ic svg{width:25px;height:25px}
+.cd .gb-lbl{font-size:12px;font-weight:800;letter-spacing:.16em;text-transform:uppercase;color:var(--cd-text)}
+.cd .gb-list{margin-top:3px;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--cd-muted);line-height:1.55}
+.cd .gbanner.slim{padding:10px 26px 10px 18px}
+.cd .gbanner.slim .gb-name{font-size:clamp(17px,1.8vw,24px)}
+.cd .gbanner.slim .gb-ic{width:42px;height:42px}
+@media (max-width:820px){ .cd .gbanner{flex-wrap:wrap} .cd .gb-div{display:none} .cd .gb-inc{width:100%} }
+.cd .gp-ic.art{background:#fff;border:1px solid var(--cd-border);width:46px;height:46px;overflow:hidden}
+.cd .gp-ic.art img{width:100%;height:100%;object-fit:contain}
+.cd .gp-ic.art svg{width:40px;height:40px}
 .cd .gift-pill{display:flex;align-items:center;gap:12px;margin:2px auto 0;padding:10px 18px 10px 12px;border-radius:14px;background:#ffffff;color:#0f2340;text-align:left;
   box-shadow:0 6px 18px rgba(0,0,0,.28),0 0 0 3px rgba(255,255,255,.25);max-width:100%}
 .cd .gp-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--cd-blue);color:#fff;display:flex;align-items:center;justify-content:center}
@@ -288,6 +312,8 @@ tbody tr:hover{background:var(--surface-2)}
 .cd .gift-seal svg{width:100%;height:100%;display:block}
 @keyframes sealPop{0%,100%{transform:rotate(9deg) scale(1)}50%{transform:rotate(9deg) scale(1.06)}}
 @media (prefers-reduced-motion:reduce){ .cd .gift-seal{animation:none} }
+.gphoto{display:flex;align-items:center;gap:10px;margin-top:8px;flex-wrap:wrap}
+.gphoto img{width:54px;height:54px;object-fit:contain;border:1px solid var(--border);border-radius:8px;background:#fff}
 .offers-2col{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:26px}
 .offers-div{background:var(--border);align-self:stretch}
 .gift-row2{padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
@@ -1553,6 +1579,43 @@ function cdThemeStyle(){
   return Object.keys(v).map(function(k){ return "--cd-" + k + ":" + v[k]; }).join(";");
 }
 /* A scalloped "seal" (starburst) that overhangs the package card corner: FREE GIFT. Pure SVG, brand-coloured. */
+/* Drawn product illustrations for common gifts (matched by name), used when no photo has been uploaded. */
+var GIFT_ART = {
+  tv:'<rect x="8" y="18" width="80" height="50" rx="5" style="fill:#1f2d44"/><rect x="12" y="22" width="72" height="42" rx="3" style="fill:var(--cd-blue)"/><path d="M12 54l20-14 16 10 14-9 22 14v9a3 3 0 01-3 3H15a3 3 0 01-3-3z" style="fill:#fff;opacity:.28"/><rect x="38" y="68" width="20" height="5" style="fill:#3b4d70"/><rect x="28" y="73" width="40" height="4" rx="2" style="fill:#3b4d70"/>',
+  tablet:'<rect x="22" y="10" width="52" height="76" rx="7" style="fill:#1f2d44"/><rect x="26" y="16" width="44" height="62" rx="3" style="fill:var(--cd-blue)"/><path d="M26 60l14-12 10 8 8-6 12 10v18H26z" style="fill:#fff;opacity:.25"/><circle cx="48" cy="82" r="2" style="fill:#8fa3c4"/>',
+  buds:'<rect x="26" y="40" width="44" height="42" rx="14" style="fill:#f4f7fb;stroke:#c9d3e2;stroke-width:2"/><path d="M26 58h44" style="stroke:#c9d3e2;stroke-width:2"/><circle cx="48" cy="66" r="3" style="fill:#c9d3e2"/><rect x="24" y="8" width="12" height="32" rx="6" transform="rotate(-12 30 24)" style="fill:#fff;stroke:#c9d3e2;stroke-width:2"/><rect x="60" y="8" width="12" height="32" rx="6" transform="rotate(12 66 24)" style="fill:#fff;stroke:#c9d3e2;stroke-width:2"/>',
+  tire:'<circle cx="48" cy="48" r="38" style="fill:#1f2d44"/><circle cx="48" cy="48" r="26" style="fill:#c9d3e2"/><circle cx="48" cy="48" r="9" style="fill:#3b4d70"/><path d="M48 22v16M48 58v16M22 48h16M58 48h16M30 30l11 11M55 55l11 11M66 30L55 41M41 55L30 66" style="stroke:#3b4d70;stroke-width:4;stroke-linecap:round;fill:none"/>',
+  oil:'<path d="M42 10s22 24 22 42a22 22 0 01-44 0c0-18 22-42 22-42z" style="fill:var(--cd-blue)"/><path d="M34 54a8 8 0 008 8" style="stroke:#fff;stroke-width:3;fill:none;stroke-linecap:round;opacity:.6"/><g transform="translate(66 46) rotate(38)"><rect x="-4" y="0" width="8" height="38" rx="4" style="fill:#3b4d70"/><circle cx="0" cy="0" r="9" style="fill:#3b4d70"/><rect x="-3" y="-11" width="6" height="9" style="fill:#fff"/></g>',
+  card:'<rect x="8" y="22" width="80" height="52" rx="8" style="fill:var(--cd-blue)"/><rect x="8" y="34" width="80" height="10" style="fill:#0b1b3a;opacity:.55"/><rect x="16" y="56" width="26" height="7" rx="3" style="fill:#fff;opacity:.85"/><circle cx="72" cy="60" r="8" style="fill:#fff;opacity:.9"/>',
+  key:'<circle cx="34" cy="48" r="20" style="fill:#3b4d70"/><circle cx="34" cy="48" r="8" style="fill:#f4f7fb"/><path d="M54 43h32v10h-8v-6h-8v6h-8v-6H54z" style="fill:#c9d3e2"/>',
+  sparkle:'<path d="M44 8l7 22 22 7-22 7-7 22-7-22-22-7 22-7z" style="fill:var(--cd-blue)"/><path d="M74 54l4 11 11 4-11 4-4 11-4-11-11-4 11-4z" style="fill:#c9d3e2"/><path d="M20 62l3 7 7 3-7 3-3 7-3-7-7-3 7-3z" style="fill:#e8eef7;stroke:#c9d3e2"/>',
+  cam:'<rect x="14" y="26" width="62" height="38" rx="10" style="fill:#1f2d44"/><circle cx="45" cy="45" r="13" style="fill:#3b4d70"/><circle cx="45" cy="45" r="7" style="fill:var(--cd-blue)"/><circle cx="66" cy="34" r="3" style="fill:#e05252"/><rect x="40" y="64" width="10" height="10" style="fill:#3b4d70"/><rect x="30" y="72" width="30" height="5" rx="2.5" style="fill:#3b4d70"/>',
+  box:'<rect x="12" y="38" width="72" height="44" rx="4" style="fill:var(--cd-blue)"/><rect x="8" y="28" width="80" height="14" rx="4" style="fill:var(--cd-blue);opacity:.85"/><rect x="43" y="28" width="10" height="54" style="fill:#fff;opacity:.9"/><path d="M48 28c-8-14-22-10-18-3s14 3 18 3zM48 28c8-14 22-10 18-3s-14 3-18 3z" style="fill:none;stroke:#fff;stroke-width:4"/>'
+};
+function giftArtKey(name){
+  var n = String(name || "").toLowerCase();
+  return /tv|television|oled|qled/.test(n) ? "tv"
+    : /tablet|ipad|galaxy tab/.test(n) ? "tablet"
+    : /airpod|earbud|headphone|earphone|buds|beats|speaker/.test(n) ? "buds"
+    : /tire|tyre|wheel|rim|storage/.test(n) ? "tire"
+    : /oil|maint|service|lube|inspection|wiper/.test(n) ? "oil"
+    : /gift ?card|voucher|gas|fuel|card/.test(n) ? "card"
+    : /key|fob|remote/.test(n) ? "key"
+    : /detail|wash|wax|ceramic|polish|clean|shine/.test(n) ? "sparkle"
+    : /dash|camera|cam\b|tracker|gps/.test(n) ? "cam" : "box";
+}
+function giftPhoto(g){
+  if (g.image) return g.image;
+  var lib = (state.config && state.config.gifts) || [];
+  for (var i=0;i<lib.length;i++) if (g.presetId && lib[i].id === g.presetId && lib[i].image) return lib[i].image;
+  return null;
+}
+/* Photo if one was uploaded for the gift, otherwise a drawn illustration matched by name. */
+function giftArtHtml(g){
+  var ph = giftPhoto(g);
+  return ph ? `<img src="${ph}" alt="${esc(g.name)}">`
+    : `<svg viewBox="0 0 96 96" aria-hidden="true">${GIFT_ART[giftArtKey(g.name)]}</svg>`;
+}
 function giftSealSvg(plural){
   var pts = [], N = 26, i, ang, rad;
   for (i=0;i<N*2;i++){ ang = Math.PI*2*i/(N*2) - Math.PI/2; rad = (i%2===0) ? 49 : 43; pts.push((50+Math.cos(ang)*rad).toFixed(1) + "," + (50+Math.sin(ang)*rad).toFixed(1)); }
@@ -1589,6 +1652,27 @@ function renderCustomerDisplay(tx){
   }
 
   var shown = packagesToShow(t, tx);
+  /* A gift (or the bundle savings) that applies to every package on screen is shown once, as a banner
+     across the top; anything on only some packages stays on those package cards. */
+  var bannerGifts = [], allSavings = false;
+  if (shown.length >= 2){
+    (shown[0].gifts || []).forEach(function(g){
+      if (shown.every(function(p){ return (p.gifts || []).indexOf(g) !== -1; })) bannerGifts.push(g);
+    });
+    allSavings = shown.every(function(p){ return p.discount > 0; });
+  }
+  var pkgNames = shown.map(function(p){ return esc(p.label); }).join("<br>");
+  var giftBanners = bannerGifts.map(function(g){
+    return `<div class="gbanner"><div class="gb-art">${giftArtHtml(g)}</div>
+      <div class="gb-txt"><div class="gb-tag">Complimentary Gift</div><div class="gb-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gb-val">${money(g.value)} value</div>` : ""}</div>
+      <div class="gb-div"></div>
+      <div class="gb-inc"><span class="gb-ic">${GIFT_SVG}</span><div><div class="gb-lbl">Included with all packages</div><div class="gb-list">${pkgNames}</div></div></div></div>`;
+  }).join("");
+  var saveBanner = allSavings ? `<div class="gbanner slim"><span class="gb-ic">${CHECK_SVG}</span>
+      <div class="gb-txt"><div class="gb-tag">Bundle Savings</div><div class="gb-name">Bundle savings applied</div></div>
+      <div class="gb-div"></div>
+      <div class="gb-inc"><div><div class="gb-lbl">Included with all packages</div><div class="gb-list">Reflected in every payment shown</div></div></div></div>` : "";
+  var bannersHtml = (giftBanners || saveBanner) ? `<div class="banners">${giftBanners}${saveBanner}</div>` : "";
   var cards = shown.map(function(p){
     var items = p.lines.map(function(L){
       var cfgTxt = lineConfigText(L, true);
@@ -1600,13 +1684,14 @@ function renderCustomerDisplay(tx){
        price and payments, and a gift is only shown when the Finance Manager
        attached one to this package. */
     var badges = [];
-    if (p.discount > 0) badges.push(`<span class="ph-chip">${CHECK_SVG}<span>Bundle savings applied</span></span>`);
+    if (p.discount > 0 && !allSavings) badges.push(`<span class="ph-chip">${CHECK_SVG}<span>Bundle savings applied</span></span>`);
     var badgeHtml = badges.length ? `<div class="ph-badges">${badges.join("")}</div>` : "";
-    var giftPills = (p.gifts || []).map(function(g){
-      return `<div class="gift-pill"><span class="gp-ic">${GIFT_SVG}</span><div><div class="gp-tag">Complimentary Gift</div>
+    var pkgGifts = (p.gifts || []).filter(function(g){ return bannerGifts.indexOf(g) === -1; });
+    var giftPills = pkgGifts.map(function(g){
+      return `<div class="gift-pill"><span class="gp-ic art">${giftArtHtml(g)}</span><div><div class="gp-tag">Complimentary Gift</div>
         <div class="gp-name">${esc(g.name)}</div>${g.showValue && Number(g.value) > 0 ? `<div class="gp-val">${money(g.value)} value</div>` : ""}</div></div>`;
     }).join("");
-    var sealHtml = (p.gifts && p.gifts.length) ? `<div class="gift-seal">${giftSealSvg(p.gifts.length > 1)}</div>` : "";
+    var sealHtml = pkgGifts.length ? `<div class="gift-seal">${giftSealSvg(pkgGifts.length > 1)}</div>` : "";
     var payBox = tx.type==="Cash"
       ? (tx.display.showPayment ? `<div class="paybox"><div class="payterm"><div class="pt-term">Due in full</div>
           <div class="pt-amt">${money(p.dueTotal - t.vehicleTax - p.tax)} + HST</div></div></div>` : "")
@@ -1635,6 +1720,7 @@ function renderCustomerDisplay(tx){
   return `<div class="cd" style="${cdThemeStyle()}">${head}<div class="cd-body">
     <div class="cd-veh"><div class="v1">${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}</div>
       <div class="muted small">${tx.customer.name ? "Prepared for " + esc(tx.customer.name) : ""}</div></div>
+    ${bannersHtml}
     <div class="pkgrid">${cards}</div>
   </div>${noteBar}${foot}</div>`;
 }
@@ -2304,7 +2390,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.13</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.14</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2576,7 +2662,10 @@ function viewSettings(){
         <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="config.gifts.${i}.name" placeholder="e.g. Winter tire storage" ${dis}></label>
         <label class="f"><span>Value ($)</span><input type="number" min="0" value="${g.value===null||g.value===undefined?"":esc(g.value)}" data-bind="config.gifts.${i}.value" data-type="num" ${dis}></label>
         <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="config.gifts.${i}.cost" data-type="num" ${dis}></label>
-        <button type="button" class="btn sm danger" data-act="gift-preset-remove" data-idx="${i}" ${dis}>Remove</button></div>`; }).join("") || `<div class="tiny muted">No gifts yet. Add one, for example an oil change or a remote starter.</div>`}
+        <button type="button" class="btn sm danger" data-act="gift-preset-remove" data-idx="${i}" ${dis}>Remove</button>
+        <div class="gphoto" style="grid-column:1 / -1">${g.image ? `<img src="${g.image}" alt="">` : ""}
+          <label class="btn sm" style="cursor:pointer">${g.image ? "Change photo" : "Add photo (optional)"}<input type="file" accept="image/*" data-act="gift-photo" data-idx="${i}" style="display:none" ${dis}></label>
+          ${g.image ? `<button type="button" class="btn sm" data-act="gift-photo-remove" data-idx="${i}" ${dis}>Remove photo</button>` : `<span class="tiny muted">No photo: a drawn illustration is used. Use your own photo or the maker's press image.</span>`}</div></div>`; }).join("") || `<div class="tiny muted">No gifts yet. Add one, for example an oil change or a remote starter.</div>`}
     </div></div></div>`;
 }
 
@@ -3987,11 +4076,12 @@ document.addEventListener("click", function(ev){
     case "gift-add": {
       V.ensureOffers(state.tx);
       var gp = el.getAttribute("data-preset"), gsrc = gp === "custom" ? null : (state.config.gifts || [])[Number(gp)];
-      state.tx.offers.gifts.push({ id:C.uid("g"), name: gsrc ? gsrc.name : "", value: gsrc && gsrc.value !== undefined ? gsrc.value : null,
+      state.tx.offers.gifts.push({ id:C.uid("g"), presetId: gsrc ? gsrc.id : null, name: gsrc ? gsrc.name : "", value: gsrc && gsrc.value !== undefined ? gsrc.value : null,
         cost: gsrc && gsrc.cost !== undefined ? gsrc.cost : null, showValue:false, packages:{ preferred:false, essential:false, basic:false } });
       commit(); break; }
     case "gift-remove": V.ensureOffers(state.tx); state.tx.offers.gifts.splice(Number(el.getAttribute("data-idx")), 1); commit(); break;
     case "gift-preset-add": if (!state.config.gifts) state.config.gifts = []; state.config.gifts.push({ id:C.uid("g"), name:"", value:null, cost:null }); commit(); break;
+    case "gift-photo-remove": (state.config.gifts[Number(el.getAttribute("data-idx"))] || {}).image = null; commit(); break;
     case "gift-preset-remove": state.config.gifts.splice(Number(el.getAttribute("data-idx")), 1); commit(); break;
     case "brand-color": state.config.brandColor = el.getAttribute("data-color"); commit(); break;
     case "brand-color-reset": delete state.config.brandColor; commit(); break;
@@ -4327,6 +4417,27 @@ document.addEventListener("change", function(ev){
     var gv = state.tx.offers.gifts[Number(el.getAttribute("data-idx"))];
     if (gv) gv.showValue = el.checked;
     commit(); return;
+  }
+  if (act === "gift-photo"){
+    var gidx = Number(el.getAttribute("data-idx")), gfile = el.files && el.files[0];
+    if (!gfile) return;
+    var rd = new FileReader();
+    rd.onload = function(){
+      var img = new Image();
+      img.onload = function(){
+        var max = 420, sc = Math.min(1, max / Math.max(img.width, img.height));
+        var cv = document.createElement("canvas"); cv.width = Math.round(img.width*sc); cv.height = Math.round(img.height*sc);
+        cv.getContext("2d").drawImage(img, 0, 0, cv.width, cv.height);
+        var q = 0.85, out = cv.toDataURL("image/webp", q);
+        while (out.length > 90000 && q > 0.4){ q -= 0.15; out = cv.toDataURL("image/webp", q); }
+        if (out.length > 120000){ toast("That photo is too detailed to store. Try a simpler or smaller image.","err"); return; }
+        if (state.config.gifts[gidx]){ state.config.gifts[gidx].image = out; toast("Photo added.","ok"); commit(); }
+      };
+      img.onerror = function(){ toast("That file couldn't be read as an image.","err"); };
+      img.src = rd.result;
+    };
+    rd.readAsDataURL(gfile);
+    return;
   }
   if (act === "brand-color-input"){ state.config.brandColor = el.value; commit(); return; }
   if (act === "toggle-payment"){ state.tx.display.showPayment = el.checked; commit(); return; }
