@@ -2204,44 +2204,60 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.3</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.4</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
-  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal">
+  var fsmMode = V.currentUser().role === "FSM";
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal" style="max-width:640px">
     <div class="modal-h"><h2>Invite a user</h2><div class="sp">
       <button class="btn" data-act="user-cancel">Cancel</button>
       <button class="btn primary" data-act="user-save">Create user</button></div></div>
     <div class="modal-b">
       <div class="inline">
         <label class="f"><span>Full name</span><input type="text" data-uf="name" placeholder="e.g. Alexis Nadeau"></label>
-        ${V.currentUser().role==="FSM"
-          ? `<label class="f"><span>Username</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>`
-          : `<label class="f"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca (Salesperson: leave blank)"></label>`}
+        <label class="f"><span>Role</span><select data-uf="role" ${fsmMode?"disabled":""}>
+          ${fsmMode ? "<option>Salesperson</option>" : `<option value="FSM">Finance Manager</option><option>General Manager</option><option>Salesperson</option>
+          ${V.isMaster()?"<option>Master Administrator</option>":""}`}</select></label>
       </div>
       <div class="inline">
-        <label class="f"><span>Temporary password</span><input type="text" data-uf="password" placeholder="At least 8 characters"></label>
-        <label class="f"><span>Role</span><select data-uf="role" ${V.currentUser().role==="FSM"?"disabled":""}>
-          ${V.currentUser().role==="FSM" ? "<option>Salesperson</option>" : `<option value="FSM">Finance Manager</option><option>General Manager</option><option>Salesperson</option>
-          ${V.isMaster()?"<option>Master Administrator</option>":""}`}</select></label>
+        <label class="f" id="ufEmailBox"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca" autocapitalize="off"></label>
+        <label class="f" id="ufUserBox" style="display:none"><span>Username</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
         <label class="f"><span>Dealership</span><select data-uf="dealership">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
       </div>
-      ${V.currentUser().role==="FSM" ? "" : `<div class="inline">
-        <label class="f"><span>Username (Salesperson role only)</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
-      </div>`}
-      <label class="switch" style="margin:4px 0 6px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
-      <label class="switch" style="margin:0 0 10px"><input type="checkbox" data-uf="invite" checked> Email them an invite with a link to set their own password</label>
-      <div class="f"><span>Command Center access</span>
-        <div class="chiprow">
-          <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
-          <button type="button" class="btn sm" data-act="uf-access" data-val="demo">Demo (time limited)</button>
-        </div><input type="hidden" data-uf="access" value="full"></div>
-      <div id="ufDemoBox" class="f" style="display:none"><span>Demo ends</span>
-        ${wheelPicker(state.ui.inviteSel || (state.ui.inviteSel = defaultWheelSel(Date.now() + 7*86400000)), "invite")}
+      <label class="f" id="ufPwBox" style="display:none"><span>Temporary password (at least 8 characters)</span>
+        <div class="inline" style="gap:8px"><input type="text" data-uf="password" placeholder="At least 8 characters" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" data-act="uf-genpw">Generate</button></div></label>
+      <div id="ufAccessBox">
+        <div class="divider"></div>
+        <div class="f"><span>Command Center access</span>
+          <div class="chiprow">
+            <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
+            <button type="button" class="btn sm" data-act="uf-access" data-val="demo">Demo (time limited)</button>
+          </div><input type="hidden" data-uf="access" value="full"></div>
+        <div id="ufDemoBox" class="f" style="display:none"><span>Demo ends</span>
+          ${wheelPicker(state.ui.inviteSel || (state.ui.inviteSel = defaultWheelSel(Date.now() + 7*86400000)), "invite")}
+        </div>
+        <label class="switch" style="margin:10px 0 6px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
+        <label class="switch"><input type="checkbox" data-uf="invite" checked> Email them an invite with a link to set their own password</label>
       </div>
-      <p class="small muted">No email verification is needed. Share the temporary password with the user — they'll be asked to set their own the first time they sign in. A Salesperson signs in with a Username and password in Axiom Pulse instead of an email. Demo users get the full functionality of the role you pick until the expiry.</p>
+      <p class="small muted" id="ufNote" style="margin-bottom:0"></p>
     </div></div></div>`;
+}
+/* Show only the fields that apply: a Salesperson has a username and a password you share;
+   everyone else has an email and, by default, an invite link to set their own password. */
+function syncUserForm(){
+  var root = document.querySelector(".modal");
+  if (!root) return;
+  var roleEl = root.querySelector('[data-uf="role"]'), inv = root.querySelector('[data-uf="invite"]');
+  var sp = !!roleEl && roleEl.value === "Salesperson", emailing = !sp && !!(inv && inv.checked);
+  function show(id, on){ var e = root.querySelector(id); if (e) e.style.display = on ? "" : "none"; }
+  show("#ufEmailBox", !sp); show("#ufUserBox", sp); show("#ufPwBox", !emailing); show("#ufAccessBox", !sp);
+  var note = root.querySelector("#ufNote");
+  if (note) note.textContent = sp
+    ? "A Salesperson signs in to Axiom Pulse with a username and this password. Share both with them yourself; they can't be emailed."
+    : emailing ? "They'll get an email with a button to set their own password, then sign in and get a short welcome walkthrough."
+    : "No email will be sent. Share the temporary password with them; they'll choose their own the first time they sign in.";
 }
 function saveUser(){
   var root = document.querySelector(".modal");
@@ -2249,7 +2265,10 @@ function saveUser(){
   function f(k){ var el = root.querySelector('[data-uf="'+k+'"]'); return el ? el : null; }
   var name = f("name").value.trim(), pw = f("password").value.trim();
   var role = f("role").value;
+  var wantInvite = role !== "Salesperson" && !!(f("invite") && f("invite").checked);
   if (!name){ toast("Enter the user's name.","err"); return; }
+  /* When emailing an invite the person sets their own password, so we use a random placeholder one. */
+  if (wantInvite && !pw) pw = genTempPassword() + "!9";
   if (pw.length < 8){ toast("The temporary password needs at least 8 characters.","err"); return; }
   var payload = { action:"create", password:pw, name:name, role:role,
     dealership_id: role === "Master Administrator" ? null : (f("dealership").value || null) };
@@ -2274,14 +2293,14 @@ function saveUser(){
   payload.cc_enabled = role !== "Salesperson";
   payload.app = "command";
   var inviteBox = f("invite");
-  payload.send_invite = role !== "Salesperson" && !!(inviteBox && inviteBox.checked);
+  payload.send_invite = wantInvite;
   toast("Creating user…","info");
   adminCall(payload)
   .then(function(r){
     state.ui.userForm = false;
     var first = name.split(" ")[0];
     if (role !== "Salesperson"){
-      inviteSecret = { title:"User created — share their sign-in details", first:first, email:payload.email, password:pw, url:"https://finance.rahulchamp.ca/", emailed:!!(r && r.invite_sent) };
+      inviteSecret = { title:"User created", first:first, email:payload.email, password:pw, url:"https://finance.rahulchamp.ca/", emailed:!!(r && r.invite_sent), setOwn:wantInvite };
     } else toast("User created — share the temporary username and password with " + first + ".","ok");
     refreshUsers(); commit(); })
   .catch(function(e){ toast(e.message, "err"); });
@@ -3085,6 +3104,7 @@ function render(){
       }
     }
   }
+  if (state.ui.userForm) syncUserForm();
   if (state.ui.tour) positionTour();
   if (state.ui.extendForm || state.ui.userForm) initWheels();
 }
@@ -3600,18 +3620,20 @@ function inviteMessage(i){
 function inviteModal(){
   var i = inviteSecret;
   if (!i) return "";
-  return `<div class="modal-bg" data-act="invite-close"><div class="modal" style="max-width:520px">
-    <div class="modal-h"><h2>${esc(i.title)}</h2><div class="sp"><button class="btn primary" data-act="invite-close">Done</button></div></div>
-    <div class="modal-b">
-      <p style="margin-top:0">${i.emailed ? `An email with a <strong>Set your password</strong> link was sent to <strong>${esc(i.email)}</strong>. Some company mail systems hold new senders in junk or quarantine, so if it doesn't show up, share the details below yourself.`
-        : `The email couldn't be sent, so share these details with ${esc(i.first)} yourself.`}</p>
-      <div class="notice info" style="display:block;line-height:1.7">
+  var intro = i.setOwn
+    ? (i.emailed ? `An invite was emailed to <strong>${esc(i.email)}</strong> with a button to set their own password. Some company mail systems hold new senders in junk or quarantine, so if it doesn't show up, ask them to check there. You can also use <strong>Reset password</strong> on their row to make a temporary password you can share yourself.`
+                 : `The invite email couldn't be sent. Use <strong>Reset password</strong> on ${esc(i.first)}'s row to make a temporary password you can share yourself.`)
+    : (i.emailed ? `An email with a <strong>Set your password</strong> link was sent to <strong>${esc(i.email)}</strong>. Some company mail systems hold new senders in junk or quarantine, so if it doesn't show up, share the details below yourself.`
+                 : `The email couldn't be sent, so share these details with ${esc(i.first)} yourself.`);
+  var details = i.setOwn ? "" : `<div class="notice info" style="display:block;line-height:1.7">
         <div><span class="muted small">Sign in</span><br><strong>${esc(i.url)}</strong></div>
         <div style="margin-top:6px"><span class="muted small">Email</span><br><strong>${esc(i.email)}</strong></div>
         <div style="margin-top:6px"><span class="muted small">Temporary password</span><br><strong style="font-family:Consolas,Menlo,monospace;letter-spacing:.04em">${esc(i.password)}</strong></div></div>
       <div style="margin-top:12px"><button class="btn" data-act="invite-copy">Copy message</button></div>
-      <p class="tiny muted" style="margin:10px 0 0">They'll be asked to choose their own password the first time they sign in.</p>
-    </div></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0">They'll be asked to choose their own password the first time they sign in.</p>`;
+  return `<div class="modal-bg" data-act="invite-close"><div class="modal" style="max-width:520px">
+    <div class="modal-h"><h2>${esc(i.title)}</h2><div class="sp"><button class="btn primary" data-act="invite-close">Done</button></div></div>
+    <div class="modal-b"><p style="margin-top:0">${intro}</p>${details}</div></div></div>`;
 }
 function historyModal(){
   var h = state.ui.history;
@@ -3920,6 +3942,7 @@ document.addEventListener("click", function(ev){
           commit(); });
       break; }
     case "history-close": state.ui.history = null; commit(); break;
+    case "uf-genpw": { var pwf = document.querySelector('.modal [data-uf="password"]'); if (pwf) pwf.value = genTempPassword(); break; }
     case "invite-copy": {
       var im = inviteSecret ? inviteMessage(inviteSecret) : "";
       try { navigator.clipboard.writeText(im).then(function(){ toast("Message copied — paste it into a text or email.","ok"); }, function(){ toast("Couldn't copy automatically — select the details and copy them.","err"); }); }
@@ -4072,6 +4095,8 @@ document.addEventListener("change", function(ev){
 });
 document.addEventListener("change", function(ev){
   var el = ev.target, act = el.getAttribute("data-act");
+  var ufk = el.getAttribute && el.getAttribute("data-uf");
+  if (ufk === "role" || ufk === "invite"){ syncUserForm(); return; }
   if (act === "switch-user"){
     state.currentUserId = el.value;
     var u = userById(el.value);
