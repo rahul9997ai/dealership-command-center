@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Dealership Command Center — FSM Preview</title>
+<title>AXIOM Dealership Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pinyon+Script&display=swap" rel="stylesheet">
@@ -626,7 +626,13 @@ var BRANDS = {
   kia:      { key:"kia",      label:"Kia",       mark:"KIA", color:"#8a2b3a", finLabel:"KIA FINANCE" },
   chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", color:"#9a7420", finLabel:"GM FINANCIAL" },
   mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", color:"#8a2b3a", finLabel:"MAZDA FINANCIAL SERVICES" },
-  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", color:"#1f3a68", finLabel:"BMW FINANCIAL SERVICES" }
+  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", color:"#1f3a68", finLabel:"BMW FINANCIAL SERVICES" },
+  subaru:   { key:"subaru",   label:"Subaru",    mark:"SUB", color:"#1f4a8a", finLabel:"SUBARU FINANCIAL SERVICES" },
+  volkswagen:{key:"volkswagen",label:"Volkswagen",mark:"VW", color:"#1f3a68", finLabel:"VOLKSWAGEN FINANCIAL SERVICES" },
+  acura:    { key:"acura",    label:"Acura",     mark:"ACU", color:"#3c4654", finLabel:"ACURA FINANCIAL SERVICES" },
+  lexus:    { key:"lexus",    label:"Lexus",     mark:"LEX", color:"#3c4654", finLabel:"LEXUS FINANCIAL SERVICES" },
+  genesis:  { key:"genesis",  label:"Genesis",   mark:"GEN", color:"#3c4654", finLabel:"GENESIS FINANCE" },
+  mitsubishi:{key:"mitsubishi",label:"Mitsubishi",mark:"MIT", color:"#a3282f", finLabel:"MITSUBISHI FINANCIAL SERVICES" }
 };
 /* Colour schemes a General Manager can pick for the customer display. */
 var COLOR_PRESETS = [
@@ -647,7 +653,7 @@ var PACKAGES = [
 var DEALERSHIPS = [];
 
 var USERS = [
-  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"admin", password:"admin", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
+  { id:"u0", name:"Master Administrator", initials:"MA", role:"Master Administrator", email:"", password:"", dealershipId:null, active:true, demo:false, accessDays:null, restrictions:["All dealerships"] }
 ];
 
 /* Product master. desc is used only in the emailed presentation, never on the
@@ -812,10 +818,19 @@ function payment(principal, aprPct, months, freq){
   if (r === 0) return principal / n;
   return principal * r / (1 - Math.pow(1+r,-n));
 }
-function brandOf(state){
-  var d = state.config || {};
-  return D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+/* A dealership's brand: a listed brand, or "custom" (its own name), with an optional
+   header text that overrides the default lender line on the customer display. */
+function brandOfDealer(d){
+  d = d || {};
+  var base;
+  if (d.brandKey === "custom"){
+    var nm = String(d.customBrandName || "").trim() || "Dealership";
+    base = { key:"custom", label:nm, mark:nm.slice(0,3).toUpperCase(), color:"#2c5a9b", finLabel:"FINANCIAL SERVICES" };
+  } else base = D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+  var t = String(d.headerTitle || "").trim();
+  return t ? Object.assign({}, base, { finLabel:t.toUpperCase() }) : base;
 }
+function brandOf(state){ return brandOfDealer(state.config || {}); }
 function packageLabel(state, suffix){
   return (brandOf(state).label + " " + suffix).toUpperCase();
 }
@@ -1068,7 +1083,7 @@ function buildHistory(state){
 window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
-  totals:totals, validate:validate, buildHistory:buildHistory, brandOf:brandOf, packageLabel:packageLabel,
+  totals:totals, validate:validate, buildHistory:buildHistory, brandOf:brandOf, brandOfDealer:brandOfDealer, packageLabel:packageLabel,
   normOffers:normOffers, discountFor:discountFor };
 })();
 /* =====================================================================
@@ -1498,7 +1513,7 @@ function renderCustomerDisplay(tx){
       ? "All totals shown are due in full at signing, plus "+esc(state.config.tax.standard)+"% HST."
       : "All payments shown are "+freqWord+", interest and "+esc(state.config.tax.standard)+"% HST included."}</div></div>`;
   var foot = `<div class="cd-foot"><span>${esc(cfg.name)} — ${esc(cfg.address)}, ${esc(cfg.city)}</span><span>${esc(cfg.phone)}</span>
-    <span style="margin-left:auto">Preview — demonstration only</span></div>`;
+  </div>`;
 
   if (tx.display.mode === "welcome" || tx.display.mode === "thankyou" || !tx.lines.length){
     var done = tx.display.mode === "thankyou";
@@ -2144,7 +2159,7 @@ function viewReports(){
           <td><span class="tag">${esc(d.type)}</span></td><td>${esc(userById(d.fsmUserId).name)}</td>
           <td class="right num">${t.lines.length}</td><td class="right num">${money0(t.productsSub)}</td>
           <td class="right num">${money0(t.productGross)}</td>
-          <td class="right nowrap">${editable ? `<button class="btn sm" data-act="deal-open" data-deal="${esc(d.id)}">Open</button>
+          <td class="right nowrap">${V.isAdmin() ? `<button class="btn sm" data-act="deal-history" data-deal="${esc(d.id)}">History</button> ` : ""}${editable ? `<button class="btn sm" data-act="deal-open" data-deal="${esc(d.id)}">Open</button>
             <button class="btn sm danger" data-act="deal-delete" data-deal="${esc(d.id)}">Delete</button>` : ""}</td></tr>`; }).join("")}
       </tbody></table></div>
       ${deals.length>60?`<p class="small muted" style="margin-top:10px">Showing the 60 most recent of ${deals.length}.</p>`:""}</div></div>`
@@ -2189,7 +2204,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-23.6</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.1</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2275,7 +2290,7 @@ function saveUser(){
 /* ---------------- DEALERSHIPS (master administrator) ---------------- */
 function viewDealerships(){
   var rows = state.dealerships.map(function(d){
-    var b = D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+    var b = C.brandOfDealer(d);
     var count = state.users.filter(function(u){ return u.dealershipId === d.id; }).length;
     return `<tr><td><strong>${esc(d.name)}</strong><div class="tiny muted">${esc(d.dealerCode)} · ${esc(d.city)}</div></td>
       <td>${esc(b.label)}</td><td class="small">${esc(b.finLabel)}</td>
@@ -2298,7 +2313,7 @@ function dealerModal(){
   var d = state.ui.dealerForm;
   if (!d) return "";
   var isNew = !d.id;
-  var b = D.BRANDS[d.brandKey] || D.BRANDS.nissan;
+  var b = C.brandOfDealer(d);
   return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal">
     <div class="modal-h"><h2>${isNew?"Create a dealership":"Edit "+esc(d.name)}</h2>
       <div class="sp"><button class="btn" data-act="dealer-cancel">Cancel</button>
@@ -2307,11 +2322,13 @@ function dealerModal(){
       <div class="inline">
         <label class="f"><span>Dealership name</span><input type="text" data-df="name" value="${esc(d.name||"")}" placeholder="e.g. Lakeshore Ford"></label>
         <label class="f"><span>Brand</span><select data-act="dealer-brand" data-df="brandKey">
-          ${Object.keys(D.BRANDS).map(function(k){ return `<option value="${k}" ${d.brandKey===k?"selected":""}>${esc(D.BRANDS[k].label)}</option>`; }).join("")}</select></label>
+          ${Object.keys(D.BRANDS).map(function(k){ return `<option value="${k}" ${d.brandKey===k?"selected":""}>${esc(D.BRANDS[k].label)}</option>`; }).join("")}<option value="custom" ${d.brandKey==="custom"?"selected":""}>Other brand…</option></select></label>
+        ${d.brandKey === "custom" ? `<label class="f"><span>Brand name</span><input type="text" data-df="customBrandName" value="${esc(d.customBrandName||"")}" placeholder="e.g. Jeep"></label>` : ""}
         <label class="f"><span>Logo mark</span><input type="text" maxlength="3" data-df="logoMark" value="${esc(d.logoMark||"")}"></label>
         <label class="f"><span>Dealer code</span><input type="text" data-df="dealerCode" value="${esc(d.dealerCode||"")}"></label>
       </div>
       <div class="notice info">Customer display header: <strong style="margin-left:6px">${esc(b.finLabel)}</strong></div>
+      <label class="f" style="margin-top:12px"><span>Customer display header text (optional — leave blank to use the brand's default)</span><input type="text" data-df="headerTitle" value="${esc(d.headerTitle||"")}" placeholder="e.g. FORD CREDIT CANADA"></label>
       <div class="inline" style="margin-top:12px">
         <label class="f"><span>Address</span><input type="text" data-df="address" value="${esc(d.address||"")}"></label>
         <label class="f"><span>City, province, postal</span><input type="text" data-df="city" value="${esc(d.city||"")}"></label>
@@ -2336,7 +2353,9 @@ function saveDealer(){
   if (!name){ toast("Give the dealership a name.","err"); return; }
   d.name = name;
   d.brandKey = f("brandKey").value;
-  d.logoMark = (f("logoMark").value.trim() || (D.BRANDS[d.brandKey]||D.BRANDS.nissan).mark).toUpperCase();
+  var cbn = f("customBrandName"); if (cbn) d.customBrandName = cbn.value.trim();
+  d.headerTitle = f("headerTitle") ? f("headerTitle").value.trim() : (d.headerTitle || "");
+  d.logoMark = (f("logoMark").value.trim() || C.brandOfDealer(d).mark).toUpperCase();
   d.dealerCode = f("dealerCode").value.trim() || "DLR-" + Math.floor(1000+Math.random()*8999);
   d.address = f("address").value.trim();
   d.city = f("city").value.trim();
@@ -2387,10 +2406,12 @@ function viewSettings(){
       <div class="inline">
         <label class="f"><span>Dealership name</span><input type="text" value="${esc(state.config.name)}" data-bind="config.name" ${dis}></label>
         <label class="f"><span>Brand</span><select data-bind="config.brandKey" ${dis}>
-          ${Object.keys(D.BRANDS).map(function(k){ return `<option value="${k}" ${state.config.brandKey===k?"selected":""}>${esc(D.BRANDS[k].label)}</option>`; }).join("")}</select></label>
+          ${Object.keys(D.BRANDS).map(function(k){ return `<option value="${k}" ${state.config.brandKey===k?"selected":""}>${esc(D.BRANDS[k].label)}</option>`; }).join("")}<option value="custom" ${state.config.brandKey==="custom"?"selected":""}>Other brand…</option></select></label>
+        ${state.config.brandKey === "custom" ? `<label class="f"><span>Brand name</span><input type="text" value="${esc(state.config.customBrandName||"")}" data-bind="config.customBrandName" placeholder="e.g. Jeep" ${dis}></label>` : ""}
         <label class="f"><span>Logo mark</span><input type="text" maxlength="3" value="${esc(state.config.logoMark)}" data-bind="config.logoMark" ${dis}></label>
       </div>
       <div class="notice info">Customer display header: <strong style="margin-left:6px">${esc(b.finLabel)}</strong> · packages present as ${esc(C.packageLabel(state,"PREFERRED"))}, ${esc(C.packageLabel(state,"ESSENTIAL"))} and ${esc(C.packageLabel(state,"BASIC"))}</div>
+      <label class="f" style="margin-top:12px"><span>Customer display header text (optional — leave blank to use the brand's default)</span><input type="text" value="${esc(state.config.headerTitle||"")}" data-bind="config.headerTitle" placeholder="e.g. FORD CREDIT CANADA" ${dis}></label>
       <div class="inline" style="margin-top:12px">
         <label class="f"><span>Address</span><input type="text" value="${esc(state.config.address)}" data-bind="config.address" ${dis}></label>
         <label class="f"><span>City, province, postal</span><input type="text" value="${esc(state.config.city)}" data-bind="config.city" ${dis}></label>
@@ -2418,8 +2439,7 @@ function viewSettings(){
         <label class="f"><span>Licensing</span><input type="number" value="${esc(state.config.finance.licensing)}" data-bind="config.finance.licensing" data-type="num" ${dis}></label>
       </div>
       <div class="notice info">Tax changes apply immediately to the open deal, both prints, the emailed presentation and every report, because all of them call the same calculation engine.</div>
-      <div class="divider"></div>
-      <button class="btn danger" data-act="reset-demo">Reset the preview to demo defaults</button>
+
     </div></div>
     <div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
       <p class="muted small" style="max-width:60ch">Pick the colour scheme customers see on the display, the full-screen view and the pop-out window. It works in both light and dark mode.</p>
@@ -2513,7 +2533,7 @@ function internalPrintSelected(tx, t, u, pkg){
       <div><div class="lbl">SELECTED PACKAGE TOTAL</div><div><strong>${money(pkg.total)}</strong></div></div>
       <div><div class="lbl">SELECTED PACKAGE GROSS</div><div><strong>${money(pkg.gross)}</strong></div></div>
     </div>
-    <div class="watermark">INTERNAL COPY · DEMONSTRATION DATA · NOT A CONTRACT</div></div>`;
+    <div class="watermark">INTERNAL COPY · NOT A CONTRACT</div></div>`;
 }
 function internalPrint(tx){
   var t = C.totals(state, tx), u = userById(tx.fsmUserId);
@@ -2581,7 +2601,7 @@ function internalPrint(tx){
           : (t.quotes.length ? t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months</span><span>${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("") : `<div class="kv"><span class="k">No term selected</span><span>—</span></div>`)}
         <div style="margin-top:18px;border-top:1px solid #111;padding-top:4px;font-size:10px;color:#667085">FSM signature</div></div>
     </div>
-    <div class="watermark">INTERNAL COPY · DEMONSTRATION DATA · NOT A CONTRACT</div></div>`;
+    <div class="watermark">INTERNAL COPY · NOT A CONTRACT</div></div>`;
 }
 function customerPrint(tx){
   var t = C.totals(state, tx), b = V.brand(), c = state.config;
@@ -2609,7 +2629,7 @@ function customerPrint(tx){
           ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
       </div>`; }).join("") : `<p>No protection products were presented on this agreement.</p>`}
       <p style="margin-top:16px;color:#475467;font-size:11.5px">Keep this summary with your vehicle documents. Full terms, conditions and claim instructions are in the coverage agreements signed today. Questions at any point, call us at ${esc(c.phone)}.</p>
-      <div class="watermark">CUSTOMER COPY · DEMONSTRATION DATA · NOT A CONTRACT</div>
+      <div class="watermark">CUSTOMER COPY · SUMMARY ONLY · NOT A CONTRACT</div>
     </div></div>`;
 }
 
@@ -2669,7 +2689,7 @@ function buildEmail(tx){
   L.push(b.finLabel);
   L.push(c.phone + " · " + c.email);
   L.push("");
-  L.push("[ DEMONSTRATION PREVIEW — sample wording, not a contract or a binding quote ]");
+  L.push("This summary is for information only and is not a contract or a binding quote.");
   var subjectPkg = shown.length === 1 ? shown[0].label : "protection options";
   return {
     to: tx.customer.email || "",
@@ -2736,7 +2756,7 @@ function buildEmailHtml(tx){
         <tr><td style="font-size:12px;color:#475467">${esc(b.finLabel)}</td></tr>
         <tr><td style="font-size:12px;color:#475467">${esc(c.phone)} · ${esc(c.email)}</td></tr>
       </table>
-      <p style="font-size:10.5px;color:#98a2b3;letter-spacing:.08em;margin-top:18px;text-align:center">DEMONSTRATION PREVIEW — SAMPLE WORDING, NOT A CONTRACT OR BINDING QUOTE</p>
+      <p style="font-size:10.5px;color:#98a2b3;letter-spacing:.08em;margin-top:18px;text-align:center">THIS SUMMARY IS FOR INFORMATION ONLY AND IS NOT A CONTRACT OR BINDING QUOTE.</p>
     </div>
   </div>`;
   var subjectPkg = shown.length === 1 ? shown[0].label : "protection options";
@@ -2808,7 +2828,7 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -3572,6 +3592,18 @@ function genTempPassword(){
   for (var i=0;i<12;i++) out += chars[a[i] % chars.length];
   return out;
 }
+function historyModal(){
+  var h = state.ui.history;
+  if (!h) return "";
+  var label = { INSERT:"Created", UPDATE:"Changed", DELETE:"Deleted" };
+  var body = h.loading ? `<p class="muted">Loading…</p>` : h.error ? `<div class="notice err">${esc(h.error)}</div>`
+    : !h.rows.length ? `<p class="muted">No recorded changes for this deal yet. History is kept from the moment it was turned on.</p>`
+    : `<div class="tablewrap"><table><thead><tr><th>When</th><th>Who</th><th>What</th></tr></thead><tbody>${h.rows.map(function(x){
+        return `<tr><td class="nowrap">${esc(new Date(x.changed_at).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}))}</td><td>${esc(x.actor_name || "—")}</td><td>${esc(label[x.action] || x.action)}</td></tr>`; }).join("")}</tbody></table></div>`;
+  return `<div class="modal-bg" data-act="history-close"><div class="modal" style="max-width:560px">
+    <div class="modal-h"><h2>Deal ${esc(h.id)} — history</h2><div class="sp"><button class="btn primary" data-act="history-close">Close</button></div></div>
+    <div class="modal-b">${body}</div></div></div>`;
+}
 function resetPwModal(){
   var f = state.ui.pwReset;
   if (!f) return "";
@@ -3749,7 +3781,7 @@ document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
   if (!el) return;
   var act = el.getAttribute("data-act");
-  if ((act === "close-modal-bg" || act === "confirm-bg") && ev.target !== el) return;
+  if ((act === "close-modal-bg" || act === "confirm-bg" || act === "history-close") && ev.target !== el && el.classList.contains("modal-bg")) return;
   if (/^product-(new|edit|save|toggle|delete|template)$/.test(act) && !V.canEditProducts()){ toast("Only a General Manager or Finance Manager can add, edit or delete products.","err"); return; }
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
@@ -3856,6 +3888,17 @@ document.addEventListener("click", function(ev){
     case "user-save": saveUser(); break;
     case "user-setpw": state.ui.pwReset = { id:el.getAttribute("data-user"), value:genTempPassword() }; commit(); break;
     case "pwreset-gen": { var pv = document.getElementById("pwResetVal"); if (pv){ pv.value = genTempPassword(); state.ui.pwReset.value = pv.value; } break; }
+    case "deal-history": {
+      var hid = el.getAttribute("data-deal");
+      state.ui.history = { id:hid, loading:true, rows:[] }; commit();
+      sb.from("deal_audit").select("action,actor_name,changed_at").eq("deal_id", hid).order("changed_at", { ascending:false }).limit(100)
+        .then(function(res){
+          if (!state.ui.history || state.ui.history.id !== hid) return;
+          state.ui.history.loading = false;
+          if (res.error) state.ui.history.error = "Couldn't load the history: " + res.error.message; else state.ui.history.rows = res.data || [];
+          commit(); });
+      break; }
+    case "history-close": state.ui.history = null; commit(); break;
     case "pwreset-cancel": state.ui.pwReset = null; commit(); break;
     case "pwreset-save": {
       var pr = state.ui.pwReset, pvEl = document.getElementById("pwResetVal"), pm = document.getElementById("pwResetMail");
@@ -3970,7 +4013,6 @@ document.addEventListener("click", function(ev){
     case "dealer-save": saveDealer(); maybeStartTour(); break;
     case "dealer-delete": deleteDealer(el.getAttribute("data-dealership")); break;
     case "switch-to-dealership": V.setDealership(el.getAttribute("data-dealership")); state.route = "finance"; commit(); break;
-    case "reset-demo": resetDemo(); break;
     case "do-login": doLogin(); break;
     case "logout": doLogout(); break;
     case "forgot-password": state.ui.forgot = true; state.ui.forgotMsg = null; state.ui.loginError = null; commit(); break;
@@ -4020,7 +4062,7 @@ document.addEventListener("change", function(ev){
   if (act === "dealer-brand"){
     if (state.ui.dealerForm){
       state.ui.dealerForm.brandKey = el.value;
-      state.ui.dealerForm.logoMark = (D.BRANDS[el.value]||D.BRANDS.nissan).mark;
+      state.ui.dealerForm.logoMark = C.brandOfDealer({ brandKey:el.value, customBrandName:state.ui.dealerForm.customBrandName }).mark;
     }
     commit(); return;
   }
@@ -4149,16 +4191,15 @@ document.addEventListener("change", function(ev){
   }
   var value = raw === "" ? (num ? null : "") : (num ? Number(raw) : raw);
   V.setPath(state, bind, value);
-  if (bind === "config.brandKey"){
-    var bd = D.BRANDS[value];
-    if (bd) state.config.logoMark = bd.mark;
+  if (bind === "config.brandKey" || bind === "config.customBrandName"){
+    state.config.logoMark = C.brandOfDealer(state.config).mark;
   }
   commit();
 });
 
 /* ---------------- BOOT ---------------- */
 function boot(){
-  state.ui.confirm = null; state.ui.pwReset = null;
+  state.ui.confirm = null; state.ui.pwReset = null; state.ui.history = null;
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
