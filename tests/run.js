@@ -137,6 +137,40 @@ eq("two products gross (1500 - 300 cost)", t.productGross, 1200);
   const s = build([], { finance: { tradeAllowance: 10000, tradePayout: 0, downPayment: 0, fees: [], feeAmount: 0, rates: { 72: 6.9 }, terms: [72], frequency: "monthly" } });
   eq("vehicle tax after 10000 trade", s.t.vehicleTax, 3900);
 }
+/* --- only the package the customer chose counts as sold --- */
+{
+  const mk = (sel) => {
+    const s = build([["a", { preferred: true, essential: true, basic: false }], ["b", P], ["v", { preferred: false, essential: false, basic: true }]]);
+    if (sel) s.tx.display.selection = { package: sel };
+    return C.totals(s.state, s.tx);
+  };
+  let t3 = mk(null);
+  eq("no selection: every packaged product counts (older deals)", t3.soldLines.length, 3);
+  eq("no selection: subtotal", t3.productsSub, 2500);
+  t3 = mk("preferred");
+  eq("Preferred chosen: products sold", t3.soldLines.length, 2);
+  eq("Preferred chosen: subtotal (1000 + 500)", t3.productsSub, 1500);
+  eq("Preferred chosen: tax", t3.productsTax, 195);
+  eq("Preferred chosen: gross (1500 - 300 cost)", t3.productGross, 1200);
+  t3 = mk("essential");
+  eq("Essential chosen: only product A", t3.soldLines.length, 1);
+  eq("Essential chosen: subtotal", t3.productsSub, 1000);
+  t3 = mk("basic");
+  eq("Basic chosen: VRC product taxed at 8%", t3.productsTax, 80);
+  t3 = mk("none");
+  eq("No package bought: nothing sold", t3.soldLines.length, 0);
+  eq("No package bought: no product revenue", t3.productsSub, 0);
+  eq("No package bought: financed = vehicle only", t3.amountFinanced, 45200);
+  eq("the packages themselves still price independently", mk("none").packages[0].sub, 1500);
+  const sd = build([["a", P], ["b", P]]);
+  sd.tx.lines[1].declined = true;
+  eq("declined product never counts as sold", C.totals(sd.state, sd.tx).soldLines.length, 1);
+  const v = build([["a", P]]);
+  eq("must record the chosen package before completing", C.validate(v.state, v.tx).ok, false);
+  v.tx.display.selection = { package: "preferred" };
+  eq("validation message mentions the package", C.validate(v.state, v.tx).errors.some((e) => /package the customer chose/.test(e)), false);
+}
+
 /* --- brand headers and overrides --- */
 eq("Ford header", C.brandOfDealer({ brandKey: "ford" }).finLabel, "FORD CREDIT FINANCIAL SERVICES");
 eq("unknown brand falls back", C.brandOfDealer({ brandKey: "nope" }).key, "nissan");

@@ -869,6 +869,10 @@ function giftCostOf(list){ return Math.round(list.reduce(function(a, g){ return 
 function totals(state, tx){
   var taxCfg = state.config.tax, fin = state.config.finance;
   var lines = [], sub = 0, taxStd = 0, taxVrc = 0, cost = 0, unpriced = 0, i;
+  /* Which package did the customer actually buy? Until one is recorded every packaged product counts
+     (older deals); once recorded, only that package's products are "sold". "none" = nothing bought. */
+  var selRaw = (tx.display && tx.display.selection) ? tx.display.selection.package : null;
+  var selKey = (selRaw === "preferred" || selRaw === "essential" || selRaw === "basic" || selRaw === "none") ? selRaw : null;
   var presentedTerms = sortedTerms(tx);
 
   for (i=0;i<tx.lines.length;i++){
@@ -890,7 +894,8 @@ function totals(state, tx){
        one simple optional number rather than a full cost table; that's a
        future refinement (mirroring the pricing table) if ever needed. */
     var lineCost = priced ? (Number(prod.cost) || 0) : 0;
-    if (!l.declined && anyPkg){
+    var sold = !l.declined && anyPkg && (selKey === null || (selKey !== "none" && !!l.packages[selKey]));
+    if (sold){
       if (prod.taxRule === "vrc") taxVrc += tax; else taxStd += tax;
       sub += amount; cost += lineCost;
     }
@@ -902,13 +907,12 @@ function totals(state, tx){
       return { term:tm, perDay: (priced && d > 0) ? Math.round((amount/d)*100)/100 : null };
     });
     lines.push({ lineId:l.lineId, product:prod, cfg:l, price: priced ? amount : null, configuredPrice:configured,
-      overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax, perDayByTerm:perDayByTerm,
+      sold:sold, overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax, perDayByTerm:perDayByTerm,
       total:Math.round((amount+tax)*100)/100, cost:lineCost, gross:priced?Math.round((amount-lineCost)*100)/100:null, perDay:perDay });
   }
 
   var productsSub = Math.round(sub*100)/100;
   var offers = normOffers(tx.offers);
-  var selKey = (tx.display && tx.display.selection) ? tx.display.selection.package : null;
   var aggDisc = 0, aggGifts;
   if (offers.discount.scope === "deal") aggDisc = discountFor(offers, null, productsSub);
   else if (selKey){
@@ -990,7 +994,7 @@ function totals(state, tx){
   });
 
   return {
-    lines:lines, unpricedCount:unpriced, packages:packages, packagesUsed:anyPackaged,
+    lines:lines, soldLines:lines.filter(function(L){ return L.sold; }), selectedPackage:selKey, unpricedCount:unpriced, packages:packages, packagesUsed:anyPackaged,
     productsSub:productsSub, productsDiscount:aggDisc, productsNet:productsNet, giftCost:aggGiftCost, offers:offers,
     taxStandard:Math.round(taxStd*100)/100, taxVrc:Math.round(taxVrc*100)/100,
     productsTax:productsTax, productsTotal:productsTotal, productCost:cost,
@@ -1017,6 +1021,7 @@ function validate(state, tx){
       if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
     });
   }
+  if (t.packagesUsed && !t.selectedPackage) errs.push("Select the package the customer chose, or \"Customer didn't buy a package\", before completing the deal.");
   if (!tx.lines.length) warns.push("No products are selected. The customer display will show the welcome screen only.");
   else if (!t.packagesUsed) warns.push("No product has been assigned to a package yet, so the customer display is showing every selected product as one package.");
   for (var i=0;i<t.lines.length;i++){
@@ -1342,23 +1347,26 @@ function viewDashboard(){
   var todays = deals.filter(function(d){ return d.createdAt === today; });
   var mtd = deals.filter(function(d){ return d.createdAt.slice(0,7) === month; });
   var gross = 0, prodCount = 0;
-  for (i=0;i<mtd.length;i++){ var t = C.totals(state, mtd[i]); gross += t.productGross; prodCount += t.lines.length; }
-  var withProduct = mtd.filter(function(d){ return d.lines.length > 0; }).length;
+  var withProduct = 0;
+  for (i=0;i<mtd.length;i++){ var t = C.totals(state, mtd[i]); gross += t.productGross; prodCount += t.soldLines.length; if (t.soldLines.length) withProduct++; }
   var pen = mtd.length ? Math.round(withProduct/mtd.length*100) : 0;
 
   var byFsm = {};
   for (i=0;i<mtd.length;i++){
     var d = mtd[i], t2 = C.totals(state, d);
     if (!byFsm[d.fsmUserId]) byFsm[d.fsmUserId] = { deals:0, gross:0, products:0 };
-    byFsm[d.fsmUserId].deals++; byFsm[d.fsmUserId].gross += t2.productGross; byFsm[d.fsmUserId].products += t2.lines.length;
+    byFsm[d.fsmUserId].deals++; byFsm[d.fsmUserId].gross += t2.productGross; byFsm[d.fsmUserId].products += t2.soldLines.length;
   }
   var fsmRows = Object.keys(byFsm).map(function(k){ return { id:k, v:byFsm[k] }; }).sort(function(a,b){ return b.v.gross-a.v.gross; });
   var maxG = fsmRows.length ? Math.max(1, fsmRows[0].v.gross) : 1;
 
   var prodSales = {};
-  for (i=0;i<mtd.length;i++) for (var j=0;j<mtd[i].lines.length;j++){
-    var p = C.productById(state, mtd[i].lines[j].productId); if (!p) continue;
-    prodSales[p.id] = (prodSales[p.id]||0)+1;
+  for (i=0;i<mtd.length;i++){
+    var sl = C.totals(state, mtd[i]).soldLines;
+    for (var j=0;j<sl.length;j++){
+      var p = sl[j].product; if (!p) continue;
+      prodSales[p.id] = (prodSales[p.id]||0)+1;
+    }
   }
   var psRows = Object.keys(prodSales).map(function(k){ return { p:C.productById(state,k), n:prodSales[k] }; })
     .sort(function(a,b){ return b.n-a.n; }).slice(0,6);
@@ -1397,7 +1405,7 @@ function viewDashboard(){
         <td class="nowrap">${C.fmtDate(d.createdAt)}</td><td class="nowrap">${esc(d.id)}</td>
         <td>${esc(d.customer.name||"—")}</td><td>${esc(d.vehicle.year+" "+d.vehicle.model)}</td>
         <td><span class="tag">${esc(d.type)}</span></td><td>${esc(userById(d.fsmUserId).name)}</td>
-        <td class="right num">${t.lines.length}</td><td class="right num">${money0(t.productGross)}</td></tr>`; }).join("")}
+        <td class="right num">${t.soldLines.length}</td><td class="right num">${money0(t.productGross)}</td></tr>`; }).join("")}
       </tbody></table></div></div></div>`;
 }
 function viewUnderConstruction(name){
@@ -1441,7 +1449,7 @@ function packagesToShow(t, tx){
      allow-listing fields here has silently dropped new ones more than once
      when a package gets selected on the customer display. */
   var sel = tx && tx.display && tx.display.selection;
-  if (sel && sel.package){
+  if (sel && sel.package && sel.package !== "none"){
     list = list.filter(function(p){ return p.key === sel.package; });
     list = list.map(function(p){
       var np = {}; for (var k in p) np[k] = p[k];
@@ -1775,7 +1783,11 @@ function viewFinance(){
     </button>`;
   }).join("");
 
-  var selNote = tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
+  var selNone = tx.display.selection && tx.display.selection.package === "none";
+  var noneBtn = `<div style="margin-top:8px"><button type="button" class="btn sm ${selNone?"on":""}" data-act="select-final-package" data-package="none">Customer didn't buy a package</button></div>`;
+  var selNote = selNone ? `<div class="notice ok" style="margin-top:12px">Recorded: no package purchased. Nothing from this presentation counts as sold in reports.
+      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Undo</button></div>`
+    : tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
       Presenting only <strong>${esc((t.packages.filter(function(p){ return p.key===tx.display.selection.package; })[0]||{}).label||"")}</strong> on the customer display.
       <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
 
@@ -1783,8 +1795,9 @@ function viewFinance(){
     <div class="sp"><span class="muted small">${tx.lines.length} selected</span>
       <button class="btn sm" data-act="route" data-route="products">Manage product master</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="max-width:76ch">Click the package the customer chose to narrow the customer display to it. Click it again to show every package.</p>
+      <p class="muted small" style="max-width:76ch">Click the package the customer chose. It narrows the customer display to it and records it as the package sold, so only its products count in reports. Click it again to undo.</p>
       <div class="pkgselect-row">${pkgBoxes}</div>
+      ${noneBtn}
       ${selNote}
       <div class="divider"></div>
       <p class="muted small" style="max-width:76ch">Tick a product into any of the three columns to add it to that package — a product can sit in one, two, or all three.</p>
@@ -1842,9 +1855,9 @@ function viewFinance(){
       ${tx.type==="Cash" ? "" : `<label class="switch" style="margin-left:14px"><input type="checkbox" data-act="toggle-prices" ${tx.display.showPrices?"checked":""}> Show product prices</label>`}
       <label class="switch" style="margin-left:14px"><input type="checkbox" data-act="toggle-config" ${tx.display.showConfig?"checked":""}> Show term &amp; mileage</label></div></div>
     <div class="card-b">
-      <div class="kv"><span class="k">All products total, with tax</span><span class="num">${money(t.productsTotal)}</span></div>
-      <div class="kv total"><span>Financed with every product</span><span class="num">${money(t.amountFinanced)}</span></div>
-      ${t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months, all products</span><span class="num">${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("")}
+      <div class="kv"><span class="k">${t.selectedPackage ? "Selected package total, with tax" : "All products total, with tax"}</span><span class="num">${money(t.productsTotal)}</span></div>
+      <div class="kv total"><span>${t.selectedPackage ? "Financed with the selected package" : "Financed with every product"}</span><span class="num">${money(t.amountFinanced)}</span></div>
+      ${t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months, ${t.selectedPackage ? "selected package" : "all products"}</span><span class="num">${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("")}
       ${v.errors.length ? `<div class="notice err" style="margin-top:12px"><div><strong>Finish these before completing the deal</strong>
         <ul style="margin:6px 0 0 16px;padding:0">${v.errors.map(function(e){ return "<li>"+esc(e)+"</li>"; }).join("")}</ul></div></div>`
         : (v.warnings.length ? `<div class="notice warn" style="margin-top:12px">${esc(v.warnings[0])}</div>`
@@ -2086,7 +2099,7 @@ function filteredDeals(){
     if (d.createdAt < f.from || d.createdAt > f.to) return false;
     if (fsmFilter !== "all" && d.fsmUserId !== fsmFilter) return false;
     if (f.type !== "all" && d.type !== f.type) return false;
-    if (f.product !== "all" && !d.lines.some(function(l){ return l.productId === f.product; })) return false;
+    if (f.product !== "all" && !C.totals(state, d).soldLines.some(function(L){ return L.product.id === f.product; })) return false;
     return true;
   });
 }
@@ -2095,13 +2108,13 @@ function viewReports(){
   var gross = 0, retail = 0, productCount = 0, withProduct = 0, byFsm = {}, byProduct = {};
   for (i=0;i<deals.length;i++){
     var d = deals[i], t = C.totals(state, d);
-    gross += t.productGross; retail += t.productsSub; productCount += t.lines.length;
-    if (t.lines.length) withProduct++;
+    gross += t.productGross; retail += t.productsSub; productCount += t.soldLines.length;
+    if (t.soldLines.length) withProduct++;
     if (!byFsm[d.fsmUserId]) byFsm[d.fsmUserId] = { deals:0, gross:0, retail:0, products:0 };
     byFsm[d.fsmUserId].deals++; byFsm[d.fsmUserId].gross += t.productGross;
-    byFsm[d.fsmUserId].retail += t.productsSub; byFsm[d.fsmUserId].products += t.lines.length;
-    for (j=0;j<t.lines.length;j++){
-      var L = t.lines[j];
+    byFsm[d.fsmUserId].retail += t.productsSub; byFsm[d.fsmUserId].products += t.soldLines.length;
+    for (j=0;j<t.soldLines.length;j++){
+      var L = t.soldLines[j];
       if (!byProduct[L.product.id]) byProduct[L.product.id] = { n:0, retail:0, gross:0 };
       byProduct[L.product.id].n++; byProduct[L.product.id].retail += (L.price||0); byProduct[L.product.id].gross += (L.price||0)-L.cost;
     }
@@ -2160,7 +2173,7 @@ function viewReports(){
         return `<tr><td class="nowrap">${C.fmtDate(d.createdAt)}</td><td class="nowrap">${esc(d.id)}</td>
           <td>${esc(d.customer.name||"—")}</td><td>${esc(d.vehicle.year+" "+d.vehicle.model)}</td>
           <td><span class="tag">${esc(d.type)}</span></td><td>${esc(userById(d.fsmUserId).name)}</td>
-          <td class="right num">${t.lines.length}</td><td class="right num">${money0(t.productsSub)}</td>
+          <td class="right num">${t.soldLines.length}</td><td class="right num">${money0(t.productsSub)}</td>
           <td class="right num">${money0(t.productGross)}</td>
           <td class="right nowrap">${V.isAdmin() ? `<button class="btn sm" data-act="deal-history" data-deal="${esc(d.id)}">History</button> ` : ""}${editable ? `<button class="btn sm" data-act="deal-open" data-deal="${esc(d.id)}">Open</button>
             <button class="btn sm danger" data-act="deal-delete" data-deal="${esc(d.id)}">Delete</button>` : ""}</td></tr>`; }).join("")}
@@ -2213,7 +2226,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.6</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.7</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
