@@ -38,15 +38,16 @@ ${inner}
 <tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4"><div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">AXIOM · AI eXecutive Intelligence &amp; Operations Management</div></td></tr>
 </table></td></tr></table></body></html>`;
 }
-function credentialsHtml(appName: string, appUrl: string, first: string, email: string, tempPw: string, heading: string, intro: string, extra: string) {
+async function setPasswordLink(admin: any, email: string, appUrl: string): Promise<string | null> {
+  const { data, error } = await admin.auth.admin.generateLink({ type: "recovery", email, options: { redirectTo: appUrl } });
+  return error ? null : (data?.properties?.action_link ?? null);
+}
+function setPasswordHtml(appName: string, appUrl: string, link: string, first: string, email: string, heading: string, intro: string, extra: string) {
   return mailShell(appName, `
 <tr><td style="padding:30px 30px 6px"><div style="font-size:20px;font-weight:700;margin-bottom:12px">${esc(heading)}</div>
 <div style="font-size:14.5px;line-height:1.6;color:#33456a">Hi ${esc(first)}, ${esc(intro)}</div></td></tr>
-<tr><td style="padding:14px 30px 4px"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f5f8fc;border:1px solid #dbe4f0;border-radius:10px">
-<tr><td style="padding:14px 18px;font-size:13px;color:#5a6b88">Sign-in email<div style="font-size:15px;font-weight:700;color:#0b1b3a;margin-top:3px">${esc(email)}</div></td></tr>
-<tr><td style="padding:0 18px 14px;font-size:13px;color:#5a6b88">Temporary password<div style="font-size:16px;font-weight:700;color:#0b1b3a;margin-top:3px;font-family:Consolas,Menlo,monospace;letter-spacing:.04em">${esc(tempPw)}</div></td></tr></table></td></tr>
-<tr><td style="padding:18px 30px 6px"><a href="${appUrl}" style="display:inline-block;background:#1a72e8;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:9px">Sign in</a></td></tr>
-<tr><td style="padding:14px 30px 26px"><div style="font-size:12.5px;line-height:1.6;color:#5a6b88">You'll be asked to choose your own password the first time you sign in. ${extra}Please don't forward this email — it contains your temporary password.</div></td></tr>`);
+<tr><td style="padding:18px 30px 6px"><a href="${link}" style="display:inline-block;background:#1a72e8;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:9px">Set your password</a></td></tr>
+<tr><td style="padding:14px 30px 26px"><div style="font-size:12.5px;line-height:1.6;color:#5a6b88">Your sign-in email is <strong>${esc(email)}</strong>. After you set your password, sign in any time at <a href="${appUrl}" style="color:#1a72e8">${esc(appUrl)}</a>. ${extra}This link works once and expires in 24 hours. If you weren't expecting this email, you can ignore it.</div></td></tr>`);
 }
 
 const ROLES = ["Master Administrator", "General Manager", "FSM Manager", "FSM", "Salesperson"];
@@ -138,19 +139,19 @@ Deno.serve(async (req) => {
         const first = String(name).split(" ")[0];
         const extra = (ccEnabled && pulseEnabled ? `The same email and password also work in AXIOM Pulse (${APPS.pulse.url}). ` : "")
           + (ccEnabled && ccType === "demo" && ccExp ? `Your demo access ends ${new Date(ccExp).toUTCString()}. ` : "");
-        inviteSent = await sendMail(app, email, `You're invited to ${APPS[app].name}`,
-          credentialsHtml(APPS[app].name, APPS[app].url, first, email, String(password), `Welcome to ${APPS[app].name}`, `you've been given access to ${APPS[app].name}. Here are your sign-in details.`, extra),
-          `Hi ${first},
+        const link = await setPasswordLink(admin, email, APPS[app].url);
+        if (link) {
+          inviteSent = await sendMail(app, email, `You're invited to ${APPS[app].name}`,
+            setPasswordHtml(APPS[app].name, APPS[app].url, link, first, email, `Welcome to ${APPS[app].name}`, `you've been given access to ${APPS[app].name}. Click the button below to set your password and get started.`, extra),
+            `Hi ${first},
 
-You've been invited to ${APPS[app].name}.
+You've been invited to ${APPS[app].name}. Set your password to get started:
+${link}
 
-Sign in: ${APPS[app].url}
-Email: ${email}
-Temporary password: ${password}
-
-You'll choose your own password the first time you sign in.
+Your sign-in email is ${email}. This link works once and expires in 24 hours.
 
 AXIOM`);
+        }
       }
       return json({ ok: true, id: created.user.id, invite_sent: inviteSent });
     }
@@ -196,19 +197,19 @@ AXIOM`);
       let emailed = false;
       if (body.send_email && target.role !== "Salesperson" && target.email) {
         const first = String(target.name || "there").split(" ")[0];
-        emailed = await sendMail(app, target.email, `Your ${APPS[app].name} password was reset`,
-          credentialsHtml(APPS[app].name, APPS[app].url, first, target.email, String(body.password), "Your password was reset", `an administrator reset your ${APPS[app].name} password. Use the temporary password below to sign in.`, ""),
-          `Hi ${first},
+        const rlink = await setPasswordLink(admin, target.email, APPS[app].url);
+        if (rlink) {
+          emailed = await sendMail(app, target.email, `Set a new ${APPS[app].name} password`,
+            setPasswordHtml(APPS[app].name, APPS[app].url, rlink, first, target.email, "Set your new password", `an administrator reset your ${APPS[app].name} password. Click the button below to choose a new one.`, ""),
+            `Hi ${first},
 
-An administrator reset your ${APPS[app].name} password.
+An administrator reset your ${APPS[app].name} password. Set a new one here:
+${rlink}
 
-Sign in: ${APPS[app].url}
-Email: ${target.email}
-Temporary password: ${body.password}
-
-You'll choose your own password when you sign in.
+Your sign-in email is ${target.email}. This link works once and expires in 24 hours.
 
 AXIOM`);
+        }
       }
       return json({ ok: true, emailed });
     }

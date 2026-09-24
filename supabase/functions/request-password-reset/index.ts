@@ -32,7 +32,7 @@ function emailHtml(appName: string, link: string, first: string) {
   <a href="${link}" style="display:inline-block;background:#1a72e8;color:#ffffff;text-decoration:none;font-weight:700;font-size:15px;padding:13px 26px;border-radius:9px">Reset password</a>
 </td></tr>
 <tr><td style="padding:14px 30px 26px">
-  <div style="font-size:12.5px;line-height:1.6;color:#5a6b88">This link works for 1 hour and can be used once. If you didn't ask for this, you can ignore this email — your password won't change.</div>
+  <div style="font-size:12.5px;line-height:1.6;color:#5a6b88">This link works for 24 hours and can be used once. If you didn't ask for this, you can ignore this email — your password won't change.</div>
 </td></tr>
 <tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4">
   <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">AXIOM · AI eXecutive Intelligence &amp; Operations Management</div>
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         to: [uu.user.email],
         subject: "Reset your AXIOM password",
         html: emailHtml(APPS[app].name, actionLink, first),
-        text: `Hi ${first},\n\nReset your ${APPS[app].name} password: ${actionLink}\n\nThis link works for 1 hour. If you didn't ask for this, ignore this email.\n\nAXIOM`,
+        text: `Hi ${first},\n\nReset your ${APPS[app].name} password: ${actionLink}\n\nThis link works for 24 hours. If you didn't ask for this, ignore this email.\n\nAXIOM`,
       }),
     });
     if (!res.ok) console.error("Resend rejected the email", res.status, await res.text());

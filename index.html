@@ -2204,7 +2204,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users with a temporary password — they choose their own on first sign-in. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.2</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.3</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2231,7 +2231,7 @@ function userModal(){
         <label class="f"><span>Username (Salesperson role only)</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
       </div>`}
       <label class="switch" style="margin:4px 0 6px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
-      <label class="switch" style="margin:0 0 10px"><input type="checkbox" data-uf="invite" checked> Email them an invite with their sign-in details and temporary password</label>
+      <label class="switch" style="margin:0 0 10px"><input type="checkbox" data-uf="invite" checked> Email them an invite with a link to set their own password</label>
       <div class="f"><span>Command Center access</span>
         <div class="chiprow">
           <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
@@ -3603,7 +3603,7 @@ function inviteModal(){
   return `<div class="modal-bg" data-act="invite-close"><div class="modal" style="max-width:520px">
     <div class="modal-h"><h2>${esc(i.title)}</h2><div class="sp"><button class="btn primary" data-act="invite-close">Done</button></div></div>
     <div class="modal-b">
-      <p style="margin-top:0">${i.emailed ? `An email with these details was sent to <strong>${esc(i.email)}</strong>. Some company mail systems hold new senders in junk or quarantine, so if it doesn't show up, share the details below yourself.`
+      <p style="margin-top:0">${i.emailed ? `An email with a <strong>Set your password</strong> link was sent to <strong>${esc(i.email)}</strong>. Some company mail systems hold new senders in junk or quarantine, so if it doesn't show up, share the details below yourself.`
         : `The email couldn't be sent, so share these details with ${esc(i.first)} yourself.`}</p>
       <div class="notice info" style="display:block;line-height:1.7">
         <div><span class="muted small">Sign in</span><br><strong>${esc(i.url)}</strong></div>
@@ -3637,7 +3637,7 @@ function resetPwModal(){
       <p style="margin-top:0"><strong>${esc(u.name)}</strong> will use this temporary password and choose their own the next time they sign in.</p>
       <label class="f"><span>Temporary password (at least 8 characters)</span>
         <div class="inline" style="gap:8px"><input type="text" id="pwResetVal" value="${esc(f.value || "")}" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" data-act="pwreset-gen">Generate</button></div></label>
-      <label class="switch" style="margin-top:10px"><input type="checkbox" id="pwResetMail" ${canMail ? "checked" : "disabled"}> Email it to ${canMail ? esc(u.email) : "them (not available for this account)"}</label>
+      <label class="switch" style="margin-top:10px"><input type="checkbox" id="pwResetMail" ${canMail ? "checked" : "disabled"}> Email a set-your-password link to ${canMail ? esc(u.email) : "them (not available for this account)"}</label>
     </div></div></div>`;
 }
 function extendModal(){
@@ -4050,7 +4050,7 @@ document.addEventListener("click", function(ev){
       state.ui.forgotBusy = true; commit();
       fetch(SB_URL + "/functions/v1/request-password-reset", { method:"POST", headers:{ "Content-Type":"application/json", apikey:SB_KEY },
         body:JSON.stringify({ email:rev, app:"command" }) })
-        .then(function(){ state.ui.forgotMsg = "If that email is registered, we've sent a reset link. Check your inbox (and spam folder). It expires in 1 hour."; })
+        .then(function(){ state.ui.forgotMsg = "If that email is registered, we've sent a reset link. Check your inbox (and spam folder). It expires in 24 hours."; })
         .catch(function(){ state.ui.forgotMsg = "We couldn't send that right now. Try again in a moment, or ask your administrator to reset it."; })
         .then(function(){ state.ui.forgotBusy = false; commit(); });
       break; }
