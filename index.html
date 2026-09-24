@@ -693,8 +693,8 @@ tbody tr:hover{background:var(--surface-2)}
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 /* =====================================================================
-   DEALERSHIP COMMAND CENTER — HTML PREVIEW (DEMO / MOCK DATA ONLY)
-   Layer 1: DATA — brands, dealership group, users, products, demo deals
+   AXIOM DEALERSHIP COMMAND CENTER
+   Layer 1: DATA — brands, colour presets, packages, product template
    ===================================================================== */
 (function () {
 "use strict";
@@ -1120,59 +1120,11 @@ function validate(state, tx){
   return { ok: errs.length === 0, errors:errs, warnings:warns, totals:t };
 }
 
-/* -------- demo reporting history -------- */
-function buildHistory(state){
-  var rnd = D.lcg(20260916), out = [], i, j;
-  var roster = { d1:["u2","u3","u4","u5"], d2:["u7"] };
-  var today = new Date();
-  for (i=0;i<200;i++){
-    var dealershipId = rnd() < 0.82 ? "d1" : "d2";
-    var fsms = roster[dealershipId];
-    var d = new Date(today.getTime() - Math.floor(rnd()*400)*86400000);
-    var iso = d.toISOString().slice(0,10);
-    var r = rnd(), type = r < 0.78 ? "Finance" : "Cash";
-    var tx = newTransaction(fsms[Math.floor(rnd()*fsms.length)], dealershipId);
-    tx.id = "DEMO-" + (10000+i); tx.createdAt = iso; tx.type = type; tx.status = "Completed";
-    tx.customer = { id:null, name:D.DEMO_NAMES[Math.floor(rnd()*D.DEMO_NAMES.length)], phone:"", email:"", address:"" };
-    tx.vehicle = { id:null, year:2024+Math.floor(rnd()*3), make: dealershipId === "d2" ? "INFINITI" : "Nissan",
-      model: D.DEMO_MODELS[Math.floor(rnd()*D.DEMO_MODELS.length)], stock:"N-"+(1000+Math.floor(rnd()*8999)),
-      vin:"DEMOVIN"+(100000+Math.floor(rnd()*899999)), odometer:Math.floor(rnd()*30000), condition:"New",
-      price:28000+Math.floor(rnd()*36000) };
-    var tm = type === "Cash" ? null : [48,60,72,84,96][Math.floor(rnd()*5)];
-    var histRate = type === "Cash" ? 0 : Math.round((4+rnd()*6)*100)/100;
-    var histTradeAll = rnd() < .4 ? Math.floor(rnd()*18000) : 0, histDown = Math.floor(rnd()*6)*1000;
-    if (type === "Cash"){
-      tx.cash = { tradeAllowance:histTradeAll, tradePayout:0, downPayment:histDown, feeAmount:0 };
-    } else {
-      tx.finance = { tradeAllowance:histTradeAll, tradePayout:0,
-        downPayment:histDown, rates: tm ? (function(){ var o={}; o[tm]=histRate; return o; })() : {},
-        terms: tm ? [tm] : [], frequency: rnd() < .6 ? "biweekly" : "monthly" };
-    }
-    var count = Math.floor(rnd()*4.4);
-    var pool = state.products.filter(function(p){ return p.active && p.pricing; });
-    var used = {};
-    for (j=0;j<count;j++){
-      var prod = pool[Math.floor(rnd()*pool.length)];
-      if (!prod || used[prod.id]) continue;
-      used[prod.id] = 1;
-      var line = { lineId:uid("L"), productId:prod.id, term:null, km:null, interval:null, deductible:null,
-        price:null, priceOverridden:false, packages:{ preferred:true, essential:rnd()<.5, basic:rnd()<.25 } };
-      if (prod.uses.term) line.term = prod.terms[Math.floor(rnd()*prod.terms.length)];
-      if (prod.uses.km) line.km = prod.kms[Math.floor(rnd()*prod.kms.length)];
-      if (prod.uses.interval) line.interval = prod.intervals[Math.floor(rnd()*prod.intervals.length)];
-      if (prod.uses.deductible) line.deductible = prod.deductibles[Math.floor(rnd()*prod.deductibles.length)];
-      line.price = priceFor(prod, line);
-      tx.lines.push(line);
-    }
-    out.push(tx);
-  }
-  return out;
-}
 
 window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
-  totals:totals, validate:validate, buildHistory:buildHistory, brandOf:brandOf, brandOfDealer:brandOfDealer, packageLabel:packageLabel,
+  totals:totals, validate:validate, brandOf:brandOf, brandOfDealer:brandOfDealer, packageLabel:packageLabel,
   normOffers:normOffers, discountFor:discountFor };
 })();
 /* =====================================================================
@@ -1187,7 +1139,7 @@ var STORAGE_KEY = "dcc_preview_v2";
 var state = {
   route:"dashboard",
   dealerships: C.clone(D.DEALERSHIPS),
-  activeDealershipId:"d1",
+  activeDealershipId:null,
   config:null,
   products: C.clone(D.PRODUCTS),
   users: C.clone(D.USERS),
@@ -1240,9 +1192,6 @@ if (state.activeDealershipId && !state.dealerships.some(function(d){ return d.id
 state.config = state.activeDealershipId ? state.dealerships.filter(function(d){ return d.id === state.activeDealershipId; })[0] : null;
 if (!state.tx && state.activeDealershipId){
   state.tx = C.newTransaction(firstFsmFor(state.activeDealershipId) || "u0", state.activeDealershipId);
-}
-if (!state.history.length && D.DEMO_NAMES && D.DEMO_NAMES.length){
-  state.history = C.buildHistory(state);
 }
 
 var channel = null;
@@ -1383,7 +1332,6 @@ function renderShell(inner){
     return `<button class="nav-item ${state.route===n.key?"active":""}" data-act="route" data-route="${n.key}">
       <span class="ic">${n.ic}</span><span>${esc(n.label)}</span>${n.tag?`<span class="tagx">${n.tag}</span>`:""}</button>`;
   }).join("");
-  var isDemoBuild = !!(D.DEMO_NAMES && D.DEMO_NAMES.length);
   var brandName = state.config ? esc(state.config.name) : "Dealership Command Center";
   var brandMark = state.config ? esc(state.config.logoMark||b.mark) : "DCC";
   var brandSub = state.config ? esc(b.label) + " · Command Center" : "No dealership yet";
@@ -1408,7 +1356,6 @@ function renderShell(inner){
                 return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}
             </select></label>` : ""}
           <button class="btn sm" data-act="toggle-theme">${state.ui.theme === "dark" ? "Normal" : "Dark"} mode</button>
-          ${isDemoBuild ? `<span class="tag demo">DEMO DATA</span>` : ""}
           ${isMaster() ? `<label class="switch"><span class="muted small">Viewing as</span>
             <select data-act="switch-user" style="width:auto;min-width:180px">
               ${state.users.filter(function(x){ return x.active; }).map(function(x){
@@ -2422,7 +2369,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.1</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.2</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3442,25 +3389,9 @@ function openSavedDeal(id){
   toast("Deal " + id + " reopened for editing.","ok");
   commit();
 }
-function resetDemo(){
-  state.dealerships = C.clone(D.DEALERSHIPS);
-  state.activeDealershipId = "d1";
-  state.config = state.dealerships[0];
-  state.products = C.clone(D.PRODUCTS);
-  state.users = C.clone(D.USERS);
-  state.customers = C.clone(D.CUSTOMERS);
-  state.vehicles = C.clone(D.VEHICLES);
-  state.completed = [];
-  state.history = C.buildHistory(state);
-  newDeal();
-  toast("Preview reset to demo defaults.","ok");
-}
 /* ---------------- AXIOM LOGIN / LOGOUT ----------------
-   No backend yet, so this is a client-side email+password match against
-   state.users — good enough to gate who sees what on one shared device,
-   but not real security (anyone with devtools can read it). A real backend
-   with hashed passwords is the follow-up once this needs to be trustworthy
-   for more than one FSM on one browser. */
+   Sign-in, sessions and passwords are handled by Supabase Auth; access to
+   data is enforced by row-level security in the database. */
 var SB_URL = "https://tbptlrewwxhggxxfdiks.supabase.co";
 var SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRicHRscmV3d3hoZ2d4eGZkaWtzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODk2OTYzMTksImV4cCI6MjEwNTI3MjMxOX0.lYDOQbBWj4ZEHD2VkBfKtl1mTnSXlIGmkPb2dt6B4lU";
 /* Arriving from a password-reset email: the URL carries type=recovery. Remember it before supabase-js clears the hash. */
@@ -4037,7 +3968,7 @@ function sendEmail(){
     "&body=" + encodeURIComponent(text);
   var opened = null;
   try { opened = window.open(href, "_blank"); } catch (e) { opened = null; }
-  if (!opened) toast("The browser blocked the mail app from this preview. Use Copy formatted email instead.","err");
+  if (!opened) toast("The browser blocked the mail app. Use Copy formatted email instead.","err");
   else toast("Opening your email app with the plain-text version.","ok");
 }
 
@@ -4201,7 +4132,7 @@ document.addEventListener("click", function(ev){
     case "print-customer": state.ui.modal = { kind:"customer" }; commit(); break;
     case "close-modal": case "close-modal-bg":
       state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; state.ui.extendForm = null; state.ui.pwReset = null; commit(); break;
-    case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing in this preview window.","err"); } break;
+    case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); } break;
     case "product-new": state.ui.productEdit = { id:null, name:"", code:"", category:"", active:true, taxRule:"standard",
       uses:{term:true,km:false,interval:false,deductible:false}, terms:[36,48,60,72], kms:[], intervals:[], deductibles:[],
       cost:null, desc:"", benefit:"", pricing:{ base:0, term:{} } }; commit(); break;
