@@ -1233,8 +1233,10 @@ function ensureOffers(tx){
 function storeUsers(){
   return state.users.filter(function(u){ return isMaster() ? true : u.dealershipId === state.activeDealershipId; });
 }
+/* People who can own a deal: Finance Managers and General Managers — never Salespeople (Pulse only). */
+function isDealOwnerRole(role){ return isFinanceRole(role) || role === "General Manager"; }
 function fsmUsers(){
-  return state.users.filter(function(u){ return u.active && u.dealershipId === state.activeDealershipId && u.role !== "Demo" && u.role !== "Master Administrator"; });
+  return state.users.filter(function(u){ return u.active && u.dealershipId === state.activeDealershipId && isDealOwnerRole(u.role); });
 }
 function setPath(obj, path, value){
   var parts = path.split("."), o = obj;
@@ -1862,7 +1864,7 @@ function viewFinance(){
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, roleLabel:roleLabel, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
@@ -2116,9 +2118,9 @@ function viewReports(){
     ${V.isMaster() ? `<label class="f"><span>Dealership</span><select data-bind="ui.reports.dealership">
       <option value="active" ${f.dealership==="active"?"selected":""}>${esc(state.config.name)}</option>
       <option value="all" ${f.dealership==="all"?"selected":""}>All dealerships</option></select></label>` : ""}
-    ${canSeeAllReports() ? `<label class="f"><span>FSM</span><select data-bind="ui.reports.fsm">
-      <option value="all">All FSM users</option>
-      ${state.users.filter(function(u){ return u.role !== "Demo" && u.role !== "Master Administrator"; }).map(function(u){
+    ${canSeeAllReports() ? `<label class="f"><span>Finance Manager</span><select data-bind="ui.reports.fsm">
+      <option value="all">All Finance Managers</option>
+      ${state.users.filter(function(u){ return V.isDealOwnerRole(u.role); }).map(function(u){
         return `<option value="${u.id}" ${f.fsm===u.id?"selected":""}>${esc(u.name)}</option>`; }).join("")}</select></label>`
       : `<label class="f"><span>FSM</span><input type="text" value="${esc(V.currentUser().name)} (you)" disabled></label>`}
     <label class="f"><span>Product</span><select data-bind="ui.reports.product">
@@ -2211,7 +2213,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.5</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.6</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
