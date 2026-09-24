@@ -1203,12 +1203,14 @@ var state = {
        reports:{ period:"monthly", from:"", to:"", fsm:"all", product:"all", type:"all", dealership:"active" } }
 };
 
-/* Restore everything a real user has built, from this browser's own storage.
-   There is still no backend — this is per browser/device, not shared between
-   people on different computers — but a refresh no longer wipes the data. */
+/* The cloud is the source of truth. This browser only keeps a short-lived copy
+   (sessionStorage: survives a refresh, gone when the browser closes) so customer
+   details never linger on a shared showroom computer. Only the theme is kept long-term. */
 (function restorePersisted(){
   var raw = null;
-  try { raw = localStorage.getItem(STORAGE_KEY); } catch (e) {}
+  try { localStorage.removeItem(STORAGE_KEY); } catch (e) {}
+  try { var th = localStorage.getItem("axiom_theme"); if (th === "dark" || th === "light") state.ui.theme = th; } catch (e) {}
+  try { raw = sessionStorage.getItem(STORAGE_KEY); } catch (e) {}
   if (!raw) return;
   var saved;
   try { saved = JSON.parse(raw); } catch (e) { return; }
@@ -1252,7 +1254,8 @@ function shareableState(){
     tx:state.tx, theme:state.ui.theme, version:state.version };
 }
 function persist(){
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(shareableState())); } catch (e) {}
+  try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(shareableState())); } catch (e) {}
+  try { localStorage.setItem("axiom_theme", state.ui.theme); } catch (e) {}
   try { if (channel) channel.postMessage(shareableState()); } catch (e) {}
 }
 function commit(){
@@ -1628,16 +1631,17 @@ function giftArtKey(name){
     : /detail|wash|wax|ceramic|polish|clean|shine/.test(n) ? "sparkle"
     : /dash|camera|cam\b|tracker|gps/.test(n) ? "cam" : "box";
 }
+function safeImg(u){ return (typeof u === "string" && /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(u)) ? u : null; }
 function giftPhoto(g){
-  if (g.image) return g.image;
+  if (safeImg(g.image)) return g.image;
   var lib = (state.config && state.config.gifts) || [];
-  for (var i=0;i<lib.length;i++) if (g.presetId && lib[i].id === g.presetId && lib[i].image) return lib[i].image;
+  for (var i=0;i<lib.length;i++) if (g.presetId && lib[i].id === g.presetId && safeImg(lib[i].image)) return lib[i].image;
   return null;
 }
 /* Photo if one was uploaded for the gift, otherwise a drawn illustration matched by name. */
 function giftArtHtml(g){
   var ph = giftPhoto(g);
-  return ph ? `<img src="${ph}" alt="${esc(g.name)}">`
+  return ph ? `<img src="${esc(ph)}" alt="${esc(g.name)}">`
     : `<svg viewBox="0 0 96 96" aria-hidden="true">${GIFT_ART[giftArtKey(g.name)]}</svg>`;
 }
 function giftSealSvg(plural){
@@ -2418,7 +2422,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-24.21</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.1</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2690,7 +2694,7 @@ function viewSettings(){
         <label class="f"><span>Gift</span><input type="text" value="${esc(g.name||"")}" data-bind="config.gifts.${i}.name" placeholder="e.g. Winter tire storage" ${dis}></label>
         <label class="f"><span>Dealer cost ($)</span><input type="number" min="0" value="${g.cost===null||g.cost===undefined?"":esc(g.cost)}" data-bind="config.gifts.${i}.cost" data-type="num" ${dis}></label>
         <button type="button" class="btn sm danger" data-act="gift-preset-remove" data-idx="${i}" ${dis}>Remove</button>
-        <div class="gphoto" style="grid-column:1 / -1">${g.image ? `<img src="${g.image}" alt="">` : ""}
+        <div class="gphoto" style="grid-column:1 / -1">${g.image && /^data:image\//.test(g.image) ? `<img src="${esc(g.image)}" alt="">` : ""}
           <label class="btn sm" style="cursor:pointer">${g.image ? "Change photo" : "Add photo (optional)"}<input type="file" accept="image/*" data-act="gift-photo" data-idx="${i}" style="display:none" ${dis}></label>
           ${g.image ? `<button type="button" class="btn sm" data-act="gift-photo-remove" data-idx="${i}" ${dis}>Remove photo</button>` : `<span class="tiny muted">No photo: a drawn illustration is used. Use your own photo or the maker's press image.</span>`}</div></div>`; }).join("") || `<div class="tiny muted">No gifts yet. Add one, for example an oil change or a remote starter.</div>`}
     </div></div></div>`;
@@ -3622,6 +3626,7 @@ function endSession(msg){
   return flush.then(function(ok){
     var done = function(){
       if (ok && cloud.loaded) cloudWipeLocal();
+      try { sessionStorage.removeItem(STORAGE_KEY); } catch (e) {}
       state.loggedIn = false; state.auth = null; state.ui.welcome = null; state.ui.tour = null; state.ui.authChecking = false;
       state.ui.loginError = msg || null; commit();
     };
