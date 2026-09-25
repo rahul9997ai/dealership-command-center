@@ -171,6 +171,23 @@ eq("two products gross (1500 - 300 cost)", t.productGross, 1200);
   eq("validation message mentions the package", C.validate(v.state, v.tx).errors.some((e) => /package the customer chose/.test(e)), false);
 }
 
+/* --- per-deal dealer cost when the product list has none --- */
+{
+  const prods = products.concat([{ id: "n", name: "N", uses: {}, taxRule: "standard", cost: null, pricing: { base: 800 } }]);
+  const st = { config: cfg, products: prods };
+  const tx = C.newTransaction("u1", "d1"); tx.vehicle.price = 40000; tx.finance.terms = [72]; tx.finance.rates = { 72: 6.9 }; tx.finance.frequency = "monthly";
+  tx.lines = [{ lineId: "L0", productId: "n", packages: P, price: null }, { lineId: "L1", productId: "a", packages: P, price: null, cost: 999 }];
+  let t4 = C.totals(st, tx);
+  eq("no list cost and none entered: counts as 0", t4.productCost, 200);
+  eq("flagged as missing cost", t4.lines[0].costMissing, true);
+  eq("list cost wins over a per-deal cost", t4.lines[1].cost, 200);
+  tx.lines[0].cost = 350;
+  t4 = C.totals(st, tx);
+  eq("per-deal cost used when list has none", t4.lines[0].cost, 350);
+  eq("gross uses per-deal cost (1800 - 550)", t4.productGross, 1250);
+  eq("no longer flagged", t4.lines[0].costMissing, false);
+}
+
 /* --- brand headers and overrides --- */
 eq("Ford header", C.brandOfDealer({ brandKey: "ford" }).finLabel, "FORD CREDIT FINANCIAL SERVICES");
 eq("unknown brand falls back", C.brandOfDealer({ brandKey: "nope" }).key, "nissan");

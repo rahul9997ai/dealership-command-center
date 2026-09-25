@@ -960,6 +960,8 @@ function giftsFor(o, pkgKey){
 }
 function giftCostOf(list){ return Math.round(list.reduce(function(a, g){ return a + (Number(g.cost) || 0); }, 0) * 100) / 100; }
 
+function hasListCost(prod){ return !!prod && prod.cost !== null && prod.cost !== undefined && prod.cost !== "" && !isNaN(Number(prod.cost)); }
+
 /* -------- the single totals engine -------- */
 function totals(state, tx){
   var taxCfg = state.config.tax, fin = state.config.finance;
@@ -988,7 +990,10 @@ function totals(state, tx){
        picked. Real per-tier dealer cost sheets exist, but the FSM asked for
        one simple optional number rather than a full cost table; that's a
        future refinement (mirroring the pricing table) if ever needed. */
-    var lineCost = priced ? (Number(prod.cost) || 0) : 0;
+    /* Dealer cost comes from the product list; if the list has none, the Finance Manager can
+       enter one for this deal only (line.cost). Missing cost still counts as $0. */
+    var listCost = hasListCost(prod);
+    var lineCost = priced ? (listCost ? Number(prod.cost) : (Number(l.cost) || 0)) : 0;
     var sold = !l.declined && anyPkg && (selKey === null || (selKey !== "none" && !!l.packages[selKey]));
     if (sold){
       if (prod.taxRule === "vrc") taxVrc += tax; else taxStd += tax;
@@ -1002,7 +1007,7 @@ function totals(state, tx){
       return { term:tm, perDay: (priced && d > 0) ? Math.round((amount/d)*100)/100 : null };
     });
     lines.push({ lineId:l.lineId, product:prod, cfg:l, price: priced ? amount : null, configuredPrice:configured,
-      sold:sold, overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax, perDayByTerm:perDayByTerm,
+      sold:sold, costMissing: !listCost && !(Number(l.cost) > 0), overridden: !!l.priceOverridden, rate:rate, ratePct:Math.round(rate*10000)/100, tax:tax, perDayByTerm:perDayByTerm,
       total:Math.round((amount+tax)*100)/100, cost:lineCost, gross:priced?Math.round((amount-lineCost)*100)/100:null, perDay:perDay });
   }
 
@@ -1136,7 +1141,7 @@ function validate(state, tx){
 window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
-  totals:totals, validate:validate, brandOf:brandOf, brandOfDealer:brandOfDealer, packageLabel:packageLabel,
+  totals:totals, validate:validate, brandOf:brandOf, brandOfDealer:brandOfDealer, hasListCost:hasListCost, packageLabel:packageLabel,
   normOffers:normOffers, discountFor:discountFor };
 })();
 /* =====================================================================
@@ -1873,7 +1878,8 @@ function viewFinance(){
       : (line.declined ? `<span class="tag danger">Declined</span>`
       : L.price === null ? `<span class="tag danger">Enter a retail price</span>`
       : (L.overridden ? `<span class="tag warn">Price overridden</span>` : `<span class="tag ok">Configured</span>`));
-    var hasCfgFields = p.uses.term || p.uses.km || p.uses.interval || p.uses.deductible;
+    var needsCost = !C.hasListCost(p);
+    var hasCfgFields = p.uses.term || p.uses.km || p.uses.interval || p.uses.deductible || needsCost;
     var cv = line || cfgDefaults(p);
     var bp = line ? "line:" + line.lineId + ":" : "newcfg:" + p.id + ":";
     var f2 = [];
@@ -1885,12 +1891,16 @@ function viewFinance(){
     if (p.uses.km) cfgSel("Kilometres", "km", p.kms, function(x){ return km(x); });
     if (p.uses.interval) cfgSel("Service interval", "interval", p.intervals, function(x){ return "Every " + km(x); });
     if (p.uses.deductible) cfgSel("Deductible", "deductible", p.deductibles, function(x){ return Number(x)===0?"No deductible":"$"+x; });
+    if (needsCost){
+      var costVal = line && line.cost !== null && line.cost !== undefined ? line.cost : "";
+      f2.push(`<label class="cfg-f"><span>Dealer cost ($)</span><input type="number" min="0" step="any" tabindex="-1" value="${esc(costVal)}" data-bind="${bp}cost" data-type="num" placeholder="Enter cost"></label>`);
+    }
     var cfgOpen = hasCfgFields && state.ui.productConfigOpen === p.id;
     var setF = (line && line.cfgSet) || {};
     var chosenBits = line ? lineConfigText(L || { product:p, cfg:line }, true) : "";
     var cfgInline = !hasCfgFields ? "" : cfgOpen ? `<div class="cfg-inline">${f2.join("")}</div>`
       : (chosenBits ? `<div class="cfg-sum">${esc(chosenBits)}</div>` : "");
-    var gearBtn = hasCfgFields ? `<button type="button" tabindex="-1" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Term, kilometres, deductible">⚙</button>` : "";
+    var gearBtn = hasCfgFields ? `<button type="button" tabindex="-1" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Options and dealer cost">⚙</button>` : "";
     var priceVal = line && L && L.price !== null ? L.price : "";
     var hintPrice = line ? (L ? L.configuredPrice : null) : C.priceFor(p, cv);
     var pricePlaceholder = hintPrice !== null && hintPrice !== undefined ? hintPrice : "0.00";
@@ -1898,7 +1908,7 @@ function viewFinance(){
     return `<div class="prodrow2">
       <div class="pr-icon">${icon}</div>
       <div class="pr-name">
-        <div class="nm">${esc(p.name)}${priceNote}</div>
+        <div class="nm">${esc(p.name)}${priceNote}${needsCost ? (line && Number(line.cost) > 0 ? `<span class="tag">Cost entered</span>` : `<span class="tag warn">No cost</span>`) : ""}</div>
         <div class="tiny muted">${esc(p.category)} · Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</div>
         ${cfgInline}
       </div>
@@ -2373,7 +2383,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.8</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.9</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3357,10 +3367,17 @@ function makeLine(p){
   if (p.uses.deductible) line.deductible = p.deductibles[p.deductibles.length-1];
   return line;
 }
-function completeDeal(){
+function completeDeal(skipCostCheck){
   if (!V.isAdmin()) state.tx.fsmUserId = state.currentUserId;
   var v = C.validate(state, state.tx);
   if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
+  var noCost = v.totals.soldLines.filter(function(L){ return L.costMissing && L.price !== null; });
+  if (noCost.length && !skipCostCheck){
+    askConfirm("Some products have no dealer cost", noCost.map(function(L){ return L.product.name; }).join(", ")
+      + (noCost.length > 1 ? " have" : " has") + " no cost entered, so gross in reports will be overstated. Add the cost with ⚙ on the product, or complete anyway.",
+      "Complete anyway", function(){ completeDeal(true); });
+    return;
+  }
   var done = C.clone(state.tx);
   done.status = "Completed"; done.createdAt = C.todayISO();
   state.completed = state.completed.filter(function(d){ return d.id !== done.id; });
@@ -4539,8 +4556,10 @@ document.addEventListener("change", function(ev){
     var cline = state.tx.lines.filter(function(l){ return l.productId === cprod.id; })[0];
     if (!cline){ cline = makeLine(cprod); state.tx.lines.push(cline); }
     cline[cpart[2]] = Number(raw);
-    cline.cfgSet = cline.cfgSet || {}; cline.cfgSet[cpart[2]] = true;
-    if (!cline.priceOverridden) cline.price = null;
+    if (cpart[2] !== "cost"){
+      cline.cfgSet = cline.cfgSet || {}; cline.cfgSet[cpart[2]] = true;
+      if (!cline.priceOverridden) cline.price = null;
+    }
     commit(); return;
   }
   if (bind.indexOf("line:") === 0){
@@ -4553,7 +4572,7 @@ document.addEventListener("change", function(ev){
     if (field === "price"){
       var prod = C.productById(state, ln2.productId), conf = C.priceFor(prod, ln2);
       ln2.priceOverridden = !(ln2.price === null || conf === null || Number(ln2.price) === Number(conf));
-    } else if (!ln2.priceOverridden) ln2.price = null;
+    } else if (field !== "cost" && !ln2.priceOverridden) ln2.price = null;
     commit(); return;
   }
   var value = raw === "" ? (num ? null : "") : (num ? Number(raw) : raw);
