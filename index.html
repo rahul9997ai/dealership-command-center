@@ -1966,11 +1966,14 @@ function viewFinance(){
           <span class="tiny muted">${p && p.discount > 0 ? "−" + money(p.discount) + " → " + money(p.sub) : "No discount"}</span></label>`; }).join("")}</div>`;
   var presetGifts = (state.config.gifts || []).filter(function(g){ return g && g.name; });
   var gEdit = state.ui.giftEdit;
+  var libCostOf = function(presetId){ var lb = (state.config.gifts || []).filter(function(x){ return x.id === presetId; })[0];
+    return lb && lb.cost !== null && lb.cost !== undefined && lb.cost !== "" && !isNaN(Number(lb.cost)) ? Number(lb.cost) : null; };
+  var offerNeedsCost = function(g){ return !g.presetId || libCostOf(g.presetId) === null; };
   var allPk = function(pk){ return !!(pk && pk.preferred && pk.essential && pk.basic); };
   var cap = function(x){ return x.charAt(0) + x.slice(1).toLowerCase(); };
   var scopeLabel = function(g){ return allPk(g.packages) ? "All packages" : D.PACKAGES.filter(function(def){ return g.packages && g.packages[def.key]; }).map(function(def){ return cap(def.suffix); }).join(", "); };
   var gbtn = function(key, label, g){
-    return `<div class="gbtn-wrap"><button type="button" class="gbtn ${g ? "on" : ""}" data-act="gift-open" data-key="${esc(key)}">${g ? CHECK_SVG : "＋"}<span>${esc(label)}${g ? `<span class="gsub"> · ${esc(scopeLabel(g))}</span>` : ""}</span></button>
+    return `<div class="gbtn-wrap"><button type="button" class="gbtn ${g ? "on" : ""}" data-act="gift-open" data-key="${esc(key)}">${g ? CHECK_SVG : "＋"}<span>${esc(label)}${g ? `<span class="gsub"> · ${esc(scopeLabel(g))}${offerNeedsCost(g) && !(Number(g.cost) > 0) ? " · no cost" : ""}</span>` : ""}</span></button>
       ${g ? `<button type="button" class="gbtn-x" data-act="gift-x" data-key="${esc(key)}" title="Remove this offer" aria-label="Remove ${esc(label)}">✕</button>` : ""}</div>`;
   };
   var giftButtons = presetGifts.map(function(lib){
@@ -1988,6 +1991,8 @@ function viewFinance(){
         <button type="button" class="${gEdit.mode === "some" ? "on" : ""}" data-act="gift-mode" data-val="some">Selected packages</button></div>
       ${gEdit.mode === "some" ? `<div class="pkgchk-row" style="margin:10px 0 2px;flex-wrap:wrap">${D.PACKAGES.map(function(def){ var on = !!gEdit.pk[def.key];
         return `<label class="pkgchk ${on ? "on" : ""}"><input type="checkbox" data-act="gift-dpk" data-pkg="${def.key}" ${on ? "checked" : ""}>${esc(C.packageLabel(state, def.suffix))}</label>`; }).join("")}</div>` : ""}
+      ${gEdit.needsCost ? `<label class="f" style="margin:12px 0 0;max-width:220px"><span>Dealer cost for this deal ($)</span>
+        <input type="number" min="0" step="any" id="giftCostInput" value="${gEdit.cost === null || gEdit.cost === undefined ? "" : esc(gEdit.cost)}" placeholder="Enter cost"></label>` : ""}
       <div class="gpanel-a"><button type="button" class="btn sm" data-act="gift-cancel">Cancel</button>
         <button type="button" class="btn sm primary" data-act="gift-done" ${gValid ? "" : "disabled"}>Done</button></div></div>`;
   }
@@ -2383,7 +2388,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.9</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.10</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3371,10 +3376,16 @@ function completeDeal(skipCostCheck){
   if (!V.isAdmin()) state.tx.fsmUserId = state.currentUserId;
   var v = C.validate(state, state.tx);
   if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
-  var noCost = v.totals.soldLines.filter(function(L){ return L.costMissing && L.price !== null; });
+  var noCost = v.totals.soldLines.filter(function(L){ return L.costMissing && L.price !== null; }).map(function(L){ return L.product.name; });
+  var soldPkg = v.totals.packages.filter(function(p){ return p.key === v.totals.selectedPackage; })[0];
+  (soldPkg ? soldPkg.gifts : []).forEach(function(g){
+    var lb = (state.config.gifts || []).filter(function(x){ return x.id === g.presetId; })[0];
+    var listHas = lb && lb.cost !== null && lb.cost !== undefined && lb.cost !== "" && !isNaN(Number(lb.cost));
+    if (!listHas && !(Number(g.cost) > 0)) noCost.push(g.name + " (promotional offer)");
+  });
   if (noCost.length && !skipCostCheck){
-    askConfirm("Some products have no dealer cost", noCost.map(function(L){ return L.product.name; }).join(", ")
-      + (noCost.length > 1 ? " have" : " has") + " no cost entered, so gross in reports will be overstated. Add the cost with ⚙ on the product, or complete anyway.",
+    askConfirm("Some items have no dealer cost", noCost.join(", ")
+      + (noCost.length > 1 ? " have" : " has") + " no cost entered, so gross in reports will be overstated. Add the cost (⚙ on a product, or tap the offer), or complete anyway.",
       "Complete anyway", function(){ completeDeal(true); });
     return;
   }
@@ -4035,6 +4046,7 @@ function sendEmail(){
 
 /* ---------------- EVENTS ---------------- */
 document.addEventListener("input", function(ev){
+  if (ev.target && ev.target.id === "giftCostInput" && state.ui.giftEdit){ state.ui.giftEdit.cost = ev.target.value; }
   if (ev.target && ev.target.id === "giftNameInput" && state.ui.giftEdit){
     state.ui.giftEdit.name = ev.target.value;
     var gdb = document.querySelector("[data-act=gift-done]");
@@ -4123,17 +4135,20 @@ document.addEventListener("click", function(ev){
       if (state.ui.giftEdit && state.ui.giftEdit.key === gk){ state.ui.giftEdit = null; commit(); break; }
       var gAll = function(pk){ return !!(pk && pk.preferred && pk.essential && pk.basic); };
       var gNone = { preferred:false, essential:false, basic:false };
-      if (gk === "c:new") gdraft = { key:gk, custom:true, name:"", existingId:null, mode:"all", pk:{ preferred:true, essential:true, basic:true } };
+      var gLibCost = function(id){ var lb = (state.config.gifts || []).filter(function(x){ return x.id === id; })[0];
+        return lb && lb.cost !== null && lb.cost !== undefined && lb.cost !== "" && !isNaN(Number(lb.cost)) ? Number(lb.cost) : null; };
+      if (gk === "c:new") gdraft = { key:gk, custom:true, name:"", existingId:null, mode:"all", pk:{ preferred:true, essential:true, basic:true }, needsCost:true, cost:null };
       else if (gk.indexOf("p:") === 0){
         var glib = (state.config.gifts || []).filter(function(x){ return x.id === gk.slice(2); })[0];
         if (!glib) break;
         var gex = goff.gifts.filter(function(x){ return x.presetId === glib.id; })[0];
         gdraft = { key:gk, custom:false, presetId:glib.id, name:glib.name, existingId: gex ? gex.id : null,
-          mode: gex && !gAll(gex.packages) ? "some" : "all", pk: gex ? C.clone(gex.packages) : { preferred:true, essential:true, basic:true } };
+          mode: gex && !gAll(gex.packages) ? "some" : "all", pk: gex ? C.clone(gex.packages) : { preferred:true, essential:true, basic:true },
+          needsCost: gLibCost(glib.id) === null, cost: gex ? gex.cost : null };
       } else {
         var gcx = goff.gifts.filter(function(x){ return x.id === gk.slice(2); })[0];
         if (!gcx) break;
-        gdraft = { key:gk, custom:true, name:gcx.name, existingId:gcx.id, mode: gAll(gcx.packages) ? "all" : "some", pk:C.clone(gcx.packages || gNone) };
+        gdraft = { key:gk, custom:true, name:gcx.name, existingId:gcx.id, mode: gAll(gcx.packages) ? "all" : "some", pk:C.clone(gcx.packages || gNone), needsCost:true, cost:gcx.cost };
       }
       state.ui.giftEdit = gdraft; commit(); break; }
     case "gift-mode": {
@@ -4149,11 +4164,12 @@ document.addEventListener("click", function(ev){
       var gpk = gdn.mode === "all" ? { preferred:true, essential:true, basic:true } : C.clone(gdn.pk);
       if (!gnm || !(gpk.preferred || gpk.essential || gpk.basic)){ toast("Pick at least one package.","err"); break; }
       var gline = state.tx.offers.gifts.filter(function(x){ return x.id === gdn.existingId; })[0];
-      if (gline){ gline.packages = gpk; if (gdn.custom) gline.name = gnm; }
+      var gCost = gdn.needsCost ? (gdn.cost === "" || gdn.cost === null || gdn.cost === undefined || isNaN(Number(gdn.cost)) ? null : Number(gdn.cost)) : undefined;
+      if (gline){ gline.packages = gpk; if (gdn.custom) gline.name = gnm; if (gCost !== undefined) gline.cost = gCost; }
       else {
         var glb = gdn.custom ? null : (state.config.gifts || []).filter(function(x){ return x.id === gdn.presetId; })[0];
         state.tx.offers.gifts.push({ id:C.uid("g"), presetId: gdn.custom ? null : gdn.presetId, name:gnm, value:null,
-          cost: glb && glb.cost !== undefined ? glb.cost : null, showValue:false, packages:gpk });
+          cost: gCost !== undefined ? gCost : (glb && glb.cost !== undefined ? glb.cost : null), showValue:false, packages:gpk });
       }
       state.ui.giftEdit = null; commit(); break; }
     case "gift-x": {
