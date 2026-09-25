@@ -569,6 +569,11 @@ tbody tr:hover{background:var(--surface-2)}
 .modal-b{padding:18px;max-height:calc(100vh - 160px);overflow:auto}
 .doc{background:#fff;color:#1a1f29;padding:36px 42px;border:1px solid #dfe5ee;border-radius:9px;font-size:12.5px;line-height:1.65;font-family:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .doc h1{font-size:21px;color:#0d1b2e;letter-spacing:-.01em}
+.doc .offerbox{margin:18px 0 6px;border:2px solid #15803d;border-radius:8px;overflow:hidden;break-inside:avoid;page-break-inside:avoid}
+.doc .offerbox-h{display:flex;justify-content:space-between;align-items:center;padding:7px 12px;background:#15803d;color:#fff;font-size:11.5px;font-weight:700;letter-spacing:.08em;text-transform:uppercase}
+.doc .offerbox table th{background:#f0fdf4}
+.doc .offerbox td,.doc .offerbox th{padding:7px 12px}
+.doc .offertag{display:inline-block;padding:1px 7px;border-radius:999px;background:#dcfce7;color:#166534;font-size:10px;font-weight:700;letter-spacing:.04em}
 .doc h3{font-size:13.5px;color:#0d1b2e;margin:26px 0 12px;padding-bottom:8px;border-bottom:1px solid #e3e8ef;letter-spacing:.02em;text-transform:uppercase}
 .doc table{font-size:12px;width:100%;border-collapse:collapse}
 .doc th{background:#f6f8fb;color:#4b5768;font-weight:700;font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;padding:9px 10px;border-bottom:1px solid #e3e8ef}
@@ -2388,7 +2393,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.10</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.11</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2680,6 +2685,30 @@ function packagesOfLine(L){
   var p = L.cfg.packages || {};
   return D.PACKAGES.filter(function(def){ return p[def.key]; }).map(function(def){ return def.suffix; }).join(", ") || "—";
 }
+/* Promotional offers and bundle savings, boxed so they stand out on the internal print.
+   onlyKey = the package the customer chose (or null to list every package). */
+function offersPrintBlock(t, onlyKey){
+  var pk = t.packages.filter(function(p){ return !onlyKey || p.key === onlyKey; });
+  var gifts = [], seen = {};
+  pk.forEach(function(p){ (p.gifts || []).forEach(function(g){
+    if (!seen[g.id]){ seen[g.id] = { g:g, pkgs:[] }; gifts.push(seen[g.id]); }
+    seen[g.id].pkgs.push(p.label);
+  }); });
+  var disc = pk.filter(function(p){ return p.discount > 0; });
+  if (!gifts.length && !disc.length) return "";
+  var cap = function(x){ return String(x || "").split(" ").map(function(w){ return w.charAt(0) + w.slice(1).toLowerCase(); }).join(" "); };
+  var rows = gifts.map(function(e){
+    var c = Number(e.g.cost);
+    return `<tr><td><span class="offertag">PROMO</span> <strong>${esc(e.g.name)}</strong></td><td>${esc(e.pkgs.map(cap).join(", "))}</td>
+      <td style="text-align:right">${c > 0 ? money(c) : `<span style="color:#b45309;font-weight:700">No cost entered</span>`}</td></tr>`;
+  }).concat(disc.map(function(p){
+    return `<tr><td><span class="offertag">SAVINGS</span> <strong>Bundle savings</strong> — ${String(p.discountPct).replace(/\.0$/,"")}%</td><td>${esc(cap(p.label))}</td>
+      <td style="text-align:right">−${money(p.discount)} <span style="color:#667085">(${money(p.listSub)} → ${money(p.sub)})</span></td></tr>`;
+  })).join("");
+  var totalCost = gifts.reduce(function(a, e){ return a + (Number(e.g.cost) || 0); }, 0);
+  return `<div class="offerbox"><div class="offerbox-h"><span>Promotional offers &amp; savings</span>${gifts.length ? `<span>Offer cost ${money(totalCost)}</span>` : ""}</div>
+    <table><thead><tr><th>Offer</th><th>Package</th><th style="text-align:right">Dealer cost / discount</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
 function internalPrintSelected(tx, t, u, pkg){
   var savedAt = new Date().toLocaleString("en-CA");
   var rows = pkg.lines.map(function(L){
@@ -2726,11 +2755,7 @@ function internalPrintSelected(tx, t, u, pkg){
       <div><div class="lbl">CUSTOMER SELECTED PACKAGE</div><div><strong>${esc(pkg.label)}</strong></div></div>
       <div><div class="lbl">${tx.type==="Cash"?"TOTAL DUE":"PACKAGE PAYMENT"}</div><div>${tx.type==="Cash" ? money(pkg.dueTotal) : (pkgQuotes.length ? money(pkgQuotes[0].payment)+" "+C.freqLabel(pkgQuotes[0].frequency) : "—")}</div></div>
     </div>
-    ${(pkg.discount > 0 || (pkg.gifts && pkg.gifts.length)) ? `<h3>Offers on the selected package</h3>
-    <div class="cols">
-      ${pkg.discount > 0 ? `<div><div class="lbl">DISCOUNT</div><div>−${money(pkg.discount)} (${String(pkg.discountPct).replace(/\.0$/,"")}%) · list ${money(pkg.listSub)} → ${money(pkg.sub)}</div></div>` : ""}
-      ${(pkg.gifts && pkg.gifts.length) ? `<div><div class="lbl">PROMOTIONAL OFFER</div><div>${pkg.gifts.map(function(g){ return esc(g.name) + (Number(g.cost) > 0 ? " (cost " + money(g.cost) + ")" : ""); }).join(", ")}</div></div>` : ""}
-    </div>` : ""}
+    ${offersPrintBlock(t, pkg.key)}
     <h3>Products &amp; Dispositions</h3>
     <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th><th style="text-align:right">Gross</th></tr></thead>
       <tbody>${rows || `<tr><td colspan="6">Nothing is assigned to this package.</td></tr>`}</tbody></table>
@@ -2758,6 +2783,7 @@ function internalPrint(tx){
         ${tx.type==="Cash" ? "" : `<div>Rates ${t.terms.length ? t.terms.map(function(tm){ var r=(tx.finance.rates||{})[tm]; return tm+" mo @ "+(r!==undefined&&r!==null&&r!==""?r+"%":"—"); }).join(", ") : "—"} · ${t.frequency?C.freqLabel(t.frequency):"—"}</div>`}
         <div>Finance Manager ${esc(u.name)} (${esc(V.roleLabel(u.role))})</div></div>
     </div>
+    ${offersPrintBlock(t, t.selectedPackage && t.selectedPackage !== "none" ? t.selectedPackage : null)}
     <h3>Products</h3>
     <table><thead><tr><th>Product</th><th>Term</th><th>Kilometres</th><th>Interval</th><th>Deductible</th><th>Packages</th>
       <th style="text-align:right">Retail</th><th style="text-align:right">Tax rate</th><th style="text-align:right">Tax</th><th style="text-align:right">Total</th></tr></thead>
