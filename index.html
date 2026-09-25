@@ -332,6 +332,11 @@ tbody tr:hover{background:var(--surface-2)}
 .gp-seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
 .gp-seg button.on{background:var(--blue);color:#fff}
 .gpanel-a{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.fs-row{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:22px;align-items:start}
+.fs-div{align-self:stretch;background:var(--border)}
+.fs-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.fs-grid .f{margin:0}
+@media (max-width:980px){ .fs-row{grid-template-columns:1fr} .fs-div{display:none} }
 .cv-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:stretch}
 .cv-row > .card{margin:0}
 .cv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
@@ -1785,23 +1790,24 @@ function viewFinance(){
   </div>`;
 
   var financeBody = `
-      <div class="inline">
+      <div class="fs-row"><div class="fs-left">
+      <div class="fs-grid">
         <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.finance.tradeAllowance)}" data-bind="tx.finance.tradeAllowance" data-type="num"></label>
         <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.finance.tradePayout)}" data-bind="tx.finance.tradePayout" data-type="num"></label>
         <label class="f"><span>Cash down</span><input type="number" value="${esc(tx.finance.downPayment)}" data-bind="tx.finance.downPayment" data-type="num"></label>
         <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.finance.feeAmount)}" data-bind="tx.finance.feeAmount" data-type="num" placeholder="0.00"></label>
       </div>
-      <label class="f" style="max-width:280px"><span>Payment frequency shown to the customer</span>
+      <label class="f" style="margin-top:10px"><span>Payment frequency shown to the customer</span>
         <div class="chiprow">
           <button type="button" class="btn sm ${tx.finance.frequency==="monthly"?"on":""}" data-act="set-frequency" data-freq="monthly">Monthly</button>
           <button type="button" class="btn sm ${tx.finance.frequency==="biweekly"?"on":""}" data-act="set-frequency" data-freq="biweekly">Bi-weekly</button>
         </div>
       </label>
-      <div style="margin-top:4px">
+      </div><div class="fs-div" aria-hidden="true"></div><div class="fs-right">
         <div class="small muted" style="margin-bottom:6px">Finance terms to present — tick every term you want the customer to see, then set that term's own rate</div>
         <div class="chiprow">${termChips}</div>
         ${rateInputs}
-      </div>
+      </div></div>
       <div class="divider"></div>
       ${t.baseQuotes.length ? `<div class="tablewrap"><table>
         <thead><tr><th>Term</th><th class="right">Rate</th><th class="right">Base payment, no products</th><th class="right">Payments</th></tr></thead>
@@ -2367,7 +2373,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.7</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.8</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
