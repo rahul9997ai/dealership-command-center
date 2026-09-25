@@ -595,6 +595,34 @@ tbody tr:hover{background:var(--surface-2)}
 .doc .selectbox .big{font-size:22px;font-weight:800;color:#1d4ed8;margin-top:2px}
 .doc .selectbox .unit{font-size:12px;font-weight:600;color:#475467}
 .doc.cust{padding:0;overflow:hidden}
+.doc.custb{padding:0;overflow:hidden;display:flex;flex-direction:column;min-height:1000px;line-height:1.5;color:#0f1f38}
+.custb .cb-band{color:#fff;padding:38px 52px 32px}
+.custb .cb-row{display:flex;justify-content:space-between;align-items:flex-start;gap:20px}
+.custb .cb-dn{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;opacity:.92}
+.custb .cb-fin{font-size:10.5px;letter-spacing:.16em;opacity:.8;text-align:right}
+.custb h1.cb-h{color:#fff;font-size:30px;font-weight:700;margin:26px 0 6px;letter-spacing:-.01em}
+.custb .cb-sub{opacity:.88;font-size:13.5px}
+.custb .cb-body{padding:28px 52px 20px;flex:1}
+.custb .cb-facts{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid #dfe6f0;border-radius:10px;overflow:hidden}
+.custb .cb-facts > div{padding:12px 14px;border-left:1px solid #dfe6f0}
+.custb .cb-facts > div:first-child{border-left:0}
+.custb .cb-k{font-size:9.5px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#5b6b85}
+.custb .cb-v{font-size:13px;font-weight:600;margin-top:3px}
+.custb .cb-main{display:grid;grid-template-columns:1.5fr 1fr;gap:22px;margin-top:22px;break-inside:avoid;page-break-inside:avoid}
+.custb .cb-cov h3{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;margin:0 0 8px;padding:0;border:0}
+.custb .cb-item{display:flex;gap:12px;align-items:flex-start;padding:10px 0;border-bottom:1px solid #dfe6f0}
+.custb .cb-dot{flex:0 0 auto;width:26px;height:26px;border-radius:50%;color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.custb .cb-item b{font-size:13px}
+.custb .cb-item .cb-d{font-size:11.5px;color:#5b6b85;margin-top:1px}
+.custb .cb-side{background:#f4f7fb;border-radius:12px;padding:18px;align-self:start}
+.custb .cb-pn{font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.custb .cb-amt{font-size:30px;font-weight:700;margin:8px 0 0;line-height:1.15}
+.custb .cb-amt + .cb-small{margin-bottom:6px}
+.custb .cb-small{font-size:11px;color:#5b6b85}
+.custb .cb-chip{display:inline-block;margin-top:10px;padding:4px 10px;border-radius:999px;background:#dcfce7;color:#166534;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+.custb .cb-sig{display:grid;grid-template-columns:1fr 1fr;gap:40px;margin-top:40px}
+.custb .cb-sig div{border-top:1px solid #0f1f38;padding-top:6px;font-size:10.5px;color:#5b6b85}
+.custb .cb-foot{padding:14px 52px 26px;font-size:10px;color:#5b6b85;text-align:center;line-height:1.55}
 .doc.cust .hero{background:linear-gradient(120deg,#0d2f6b,#1d61d8);color:#fff;padding:26px 30px}
 .doc.cust .hero h1{color:#fff;font-size:24px}
 .doc.cust .inner{padding:24px 30px}
@@ -677,8 +705,9 @@ tbody tr:hover{background:var(--surface-2)}
   /* Tighter than the on-screen preview so a normal deal (one package,
      under a dozen lines) fits on a single sheet instead of spilling a
      mostly-empty second page. */
-  @page{margin:10mm}
-  .doc{border:0;border-radius:0;padding:0;font-size:11px;line-height:1.4}
+  @page{margin:0}
+  .doc{border:0;border-radius:0;padding:10mm 11mm;font-size:11px;line-height:1.4}
+  .doc.custb{padding:0;min-height:100vh;font-size:12px}
   .doc h1{font-size:17px}
   .doc h3{font-size:11.5px;margin:14px 0 8px;padding-bottom:5px}
   .doc .dh{padding-bottom:10px;margin-bottom:12px}
@@ -2048,7 +2077,7 @@ function viewFinance(){
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
@@ -2397,7 +2426,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.13</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.14</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2841,31 +2870,46 @@ function internalPrint(tx){
 function customerPrint(tx){
   var t = C.totals(state, tx), b = V.brand(), c = state.config;
   var shown = V.packagesToShow(t, tx);
-  return `<div class="doc cust">
-    <div class="hero"><div style="font-size:11px;letter-spacing:.12em;opacity:.9">${esc(b.finLabel)} · ${esc(c.name)}</div>
-      <h1>Congratulations${tx.customer.name?", "+esc(tx.customer.name.split(" ")[0]):""}</h1>
-      <div style="opacity:.92">Here is the protection we reviewed for your ${esc(tx.vehicle.year+" "+tx.vehicle.make+" "+tx.vehicle.model)}.</div></div>
-    <div class="inner">
-      <div class="cols" style="margin-bottom:18px">
-        <div><div class="lbl">PREPARED FOR</div><div><strong>${esc(tx.customer.name||"—")}</strong></div><div>${esc(tx.customer.phone||"")}</div></div>
-        <div><div class="lbl">YOUR VEHICLE</div><div><strong>${esc(tx.vehicle.year+" "+tx.vehicle.model)}</strong></div><div>Stock ${esc(tx.vehicle.stock||"—")}</div></div>
-        <div><div class="lbl">TERMS SHOWN</div><div><strong>${tx.type==="Cash" ? "Paid in full" : (t.terms.length?t.terms.join(" · ")+" months":"—")}</strong></div>
-          <div>${tx.type!=="Cash" && t.frequency?C.freqLabel(t.frequency).charAt(0).toUpperCase()+C.freqLabel(t.frequency).slice(1)+" payments":""}</div></div>
+  var base = /^#[0-9a-f]{6}$/i.test(c.brandColor || "") ? c.brandColor : (b.color || "#2c5a9b");
+  var deep = V.mixHex(base, "#0a1220", .45);
+  var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "";
+  var veh = [tx.vehicle.year, tx.vehicle.make, tx.vehicle.model].filter(Boolean).join(" ");
+  var fm = userById(tx.fsmUserId);
+  var when = C.fmtDate(tx.createdAt || C.todayISO());
+  var addr = [c.name, [c.address, c.city].filter(Boolean).join(", "), c.phone].filter(Boolean).map(esc).join(" · ");
+  var blocks = shown.length ? shown.map(function(p){
+    var items = p.lines.map(function(L){
+      var cfg = V.lineConfigText(L, true);
+      return `<div class="cb-item"><span class="cb-dot" style="background:${base}">✓</span><div><b>${esc(L.product.name)}</b>${cfg ? `<div class="cb-d">${esc(cfg)}</div>` : ""}</div></div>`;
+    }).join("");
+    var pay = "";
+    if (tx.display.showPayment && tx.type === "Cash") pay = `<div class="cb-amt">${money(p.dueTotal)}</div><div class="cb-small">due in full at signing</div>`;
+    else if (tx.display.showPayment && p.quotes && p.quotes.length) pay = p.quotes.map(function(q){
+      return `<div class="cb-amt">${q.payment === null ? "—" : money(q.payment)}</div><div class="cb-small">${C.freqLabel(q.frequency)} · ${q.term} months · taxes included</div>`; }).join("");
+    var chips = (p.discount > 0 ? `<div class="cb-chip">Bundle savings applied</div><br>` : "")
+      + (p.gifts || []).map(function(g){ return `<div class="cb-chip">Promotional offer · ${esc(g.name)}</div>`; }).join("<br>");
+    return `<div class="cb-main">
+      <div class="cb-cov"><h3 style="color:${base}">Your coverage</h3>${items || `<div class="cb-small">No products in this package.</div>`}</div>
+      <div class="cb-side"><div class="cb-pn" style="color:${base}">${esc(p.label)}</div>${pay}${chips}</div></div>`;
+  }).join("") : `<p style="margin-top:22px">No protection products were selected on this deal.</p>`;
+  return `<div class="doc custb">
+    <div class="cb-band" style="background:linear-gradient(120deg,${deep},${base})">
+      <div class="cb-row"><div class="cb-dn">${esc(c.name)}</div><div class="cb-fin">${esc(b.finLabel)}</div></div>
+      <h1 class="cb-h">${first ? "Congratulations, " + esc(first) : "Your Protection Summary"}</h1>
+      <div class="cb-sub">${veh ? "Your " + esc(veh) + " is protected. " : ""}Here is a summary of what you chose today.</div>
+    </div>
+    <div class="cb-body">
+      <div class="cb-facts">
+        <div><div class="cb-k">Prepared for</div><div class="cb-v">${esc(tx.customer.name || "—")}</div></div>
+        <div><div class="cb-k">Vehicle</div><div class="cb-v">${esc(veh || "—")}</div></div>
+        <div><div class="cb-k">Date</div><div class="cb-v">${esc(when)}</div></div>
+        <div><div class="cb-k">Finance Manager</div><div class="cb-v">${esc(fm && fm.name && fm.name !== "Unassigned" ? fm.name : "—")}</div></div>
       </div>
-      ${shown.length ? shown.map(function(p){ return `<div class="ccov">
-        <div style="font-weight:700;font-size:13px;letter-spacing:.06em">${esc(p.label)}</div>
-        <div style="margin-top:6px">${p.lines.map(function(L){
-          var cfg = V.lineConfigText(L, true);
-          return `<div style="padding:3px 0"><strong>${esc(L.product.name)}</strong>${cfg?` <span style="color:#475467">— ${esc(cfg)}</span>`:""}</div>`; }).join("")}</div>
-        ${p.discount > 0 ? `<div style="margin-top:8px;font-size:12px;color:#0a7546"><strong>Bundle savings applied</strong> — reflected in your payment.</div>` : ""}
-        ${(p.gifts && p.gifts.length) ? `<div style="margin-top:8px;padding:8px 10px;border:1px solid #e4c26a;background:#fff7e0;border-radius:6px;font-size:12px"><strong>Promotional Offer:</strong> ${p.gifts.map(function(g){ return esc(g.name); }).join(", ")} — included with this package at no additional charge.</div>` : ""}
-        ${tx.display.showPayment && tx.type==="Cash" ? `<div style="margin-top:8px;font-size:12px"><div><strong>${money(p.dueTotal)}</strong> due in full</div></div>` : ""}
-        ${(tx.display.showPayment && tx.type!=="Cash" && p.quotes.length) ? `<div style="margin-top:8px;font-size:12px">
-          ${p.quotes.map(function(q){ return `<div><strong>${money(q.payment)}</strong> ${C.freqLabel(q.frequency)} over ${q.term} months</div>`; }).join("")}</div>`:""}
-      </div>`; }).join("") : `<p>No protection products were presented on this agreement.</p>`}
-      <p style="margin-top:16px;color:#475467;font-size:11.5px">Keep this summary with your vehicle documents. Full terms, conditions and claim instructions are in the coverage agreements signed today. Questions at any point, call us at ${esc(c.phone)}.</p>
-      <div class="watermark">CUSTOMER COPY · SUMMARY ONLY · NOT A CONTRACT</div>
-    </div></div>`;
+      ${blocks}
+      <div class="cb-sig"><div>Customer signature &amp; date</div><div>Finance Manager signature &amp; date</div></div>
+    </div>
+    <div class="cb-foot">${addr}<br>This summary is for your records and is not a contract. Full terms, conditions and claim instructions are in your signed coverage agreements.</div>
+  </div>`;
 }
 
 /* ---------------- EMAILED PRESENTATION ----------------
@@ -4254,7 +4298,12 @@ document.addEventListener("click", function(ev){
     case "print-customer": state.ui.modal = { kind:"customer" }; commit(); break;
     case "close-modal": case "close-modal-bg":
       state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; state.ui.extendForm = null; state.ui.pwReset = null; commit(); break;
-    case "do-print": try { window.print(); } catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); } break;
+    case "do-print": {
+      var oldTitle = document.title, pm = state.ui.modal;
+      document.title = (pm && pm.kind === "customer" ? "Protection Summary" : "Transaction Record") + (state.tx && state.tx.customer.name ? " - " + state.tx.customer.name : "");
+      try { window.print(); } catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); }
+      setTimeout(function(){ document.title = oldTitle; }, 1500);
+      break; }
     case "product-new": state.ui.productEdit = { id:null, name:"", code:"", category:"", active:true, taxRule:"standard",
       uses:{term:true,km:false,interval:false,deductible:false}, terms:[36,48,60,72], kms:[], intervals:[], deductibles:[],
       cost:null, desc:"", benefit:"", pricing:{ base:0, term:{} } }; commit(); break;
