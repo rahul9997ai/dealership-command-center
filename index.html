@@ -332,6 +332,15 @@ tbody tr:hover{background:var(--surface-2)}
 .gp-seg button{border:0;background:transparent;padding:7px 14px;border-radius:7px;font-size:12.5px;font-weight:600;color:var(--text-2);cursor:pointer}
 .gp-seg button.on{background:var(--blue);color:#fff}
 .gpanel-a{display:flex;justify-content:flex-end;gap:8px;margin-top:12px}
+.cv-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:16px;align-items:stretch}
+.cv-row > .card{margin:0}
+.cv-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px 12px}
+.cv-grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+.cv-grid .cv-wide{grid-column:1 / -1}
+.cv-grid .f{margin:0}
+@media (max-width:980px){ .cv-row{grid-template-columns:1fr} }
+@media (max-width:560px){ .cv-grid.three{grid-template-columns:1fr 1fr} }
+.saved-badge{display:inline-block;min-width:18px;padding:0 6px;margin-left:4px;border-radius:999px;background:var(--blue);color:#fff;font-size:11px;line-height:18px;text-align:center}
 .offers-2col{display:grid;grid-template-columns:minmax(0,1fr) 1px minmax(0,1fr);gap:26px}
 .offers-div{background:var(--border);align-self:stretch}
 .gift-row2{padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2);margin-top:10px}
@@ -1145,7 +1154,7 @@ var state = {
   vehicles: C.clone(D.VEHICLES),
   currentUserId:"u0",
   loggedIn:false,
-  tx:null, completed:[], history:[], version:0,
+  tx:null, completed:[], saved:[], history:[], version:0,
   cloud:{ productsByDealer:{} },
   ui:{ split:true, present:false, railOpen:false, modal:null, theme:"dark", loginError:null,
        productEdit:null, productConfigOpen:null, userForm:false, dealerForm:null, toast:null,
@@ -1165,7 +1174,7 @@ var state = {
   var saved;
   try { saved = JSON.parse(raw); } catch (e) { return; }
   if (!saved || typeof saved !== "object") return;
-  ["dealerships","products","users","customers","vehicles","completed","history",
+  ["dealerships","products","users","customers","vehicles","completed","saved","history",
    "activeDealershipId","currentUserId","loggedIn","tx"].forEach(function(k){
     if (saved[k] !== undefined) state[k] = saved[k];
   });
@@ -1196,7 +1205,7 @@ var channel = null;
 try { if (window.BroadcastChannel) channel = new BroadcastChannel("dcc_preview_v2"); } catch (e) { channel = null; }
 function shareableState(){
   return { dealerships:state.dealerships, activeDealershipId:state.activeDealershipId, products:state.products,
-    users:state.users, customers:state.customers, vehicles:state.vehicles, completed:state.completed,
+    users:state.users, customers:state.customers, vehicles:state.vehicles, completed:state.completed, saved:state.saved,
     history:state.history, currentUserId:state.currentUserId, loggedIn:state.loggedIn,
     tx:state.tx, theme:state.ui.theme, version:state.version };
 }
@@ -1286,6 +1295,12 @@ function toast(msg, kind){
   setTimeout(function(){ if (state.ui.toast && state.ui.toast.msg === msg){ state.ui.toast = null; if (window.__DCC_RENDER__) window.__DCC_RENDER__(); } }, 3800);
 }
 function allDeals(){ return state.history.concat(state.completed); }
+/* Paused deals for the current dealership. A Finance Manager sees their own; GM and Master see all. */
+function savedForMe(){
+  var me = currentUser(), all = isAdmin();
+  return (state.saved || []).filter(function(d){ return d.dealershipId === state.activeDealershipId && (all || d.fsmUserId === me.id); })
+    .sort(function(a, b){ return (b.savedAt || "") < (a.savedAt || "") ? -1 : 1; });
+}
 function dealsForStore(){
   return allDeals().filter(function(d){ return d.dealershipId === state.activeDealershipId; });
 }
@@ -1728,6 +1743,8 @@ function viewFinance(){
       <button class="btn sm" data-act="print-internal">Internal print</button>
       <button class="btn sm" data-act="print-customer">Customer copy</button>
       <button class="btn sm" data-act="new-deal">New deal</button>
+      <button class="btn sm" data-act="saved-list">Saved deals${savedForMe().length ? `<span class="saved-badge">${savedForMe().length}</span>` : ""}</button>
+      <button class="btn sm" data-act="save-deal">Save deal</button>
       <button class="btn sm primary" data-act="complete">Complete transaction</button>
     </div></div>`;
 
@@ -1736,22 +1753,18 @@ function viewFinance(){
       <span class="n">${s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
 
   var customerCard = `<div class="card" id="step-1"><div class="card-h"><h2>1 · Customer</h2></div>
-    <div class="card-b"><div class="inline">
-      <label class="f"><span>Full name</span><input type="text" value="${esc(tx.customer.name)}" data-bind="tx.customer.name"></label>
+    <div class="card-b"><div class="cv-grid">
+      <label class="f cv-wide"><span>Full name</span><input type="text" value="${esc(tx.customer.name)}" data-bind="tx.customer.name"></label>
       <label class="f"><span>Phone</span><input type="text" value="${esc(tx.customer.phone)}" data-bind="tx.customer.phone"></label>
       <label class="f"><span>Email</span><input type="text" value="${esc(tx.customer.email)}" data-bind="tx.customer.email"></label>
-    </div>
-    <label class="f"><span>Address</span><input type="text" value="${esc(tx.customer.address)}" data-bind="tx.customer.address"></label></div></div>`;
+    </div></div></div>`;
 
   var vehicleCard = `<div class="card" id="step-2"><div class="card-h"><h2>2 · Vehicle</h2></div>
-    <div class="card-b"><div class="inline">
+    <div class="card-b"><div class="cv-grid three">
       <label class="f"><span>Year</span><input type="number" value="${esc(tx.vehicle.year)}" data-bind="tx.vehicle.year" data-type="num"></label>
       <label class="f"><span>Make</span><input type="text" value="${esc(tx.vehicle.make)}" data-bind="tx.vehicle.make"></label>
       <label class="f"><span>Model</span><input type="text" value="${esc(tx.vehicle.model)}" data-bind="tx.vehicle.model"></label>
       <label class="f"><span>Stock number</span><input type="text" value="${esc(tx.vehicle.stock)}" data-bind="tx.vehicle.stock"></label>
-    </div><div class="inline">
-      <label class="f"><span>VIN</span><input type="text" value="${esc(tx.vehicle.vin)}" data-bind="tx.vehicle.vin"></label>
-      <label class="f"><span>Odometer (km)</span><input type="number" value="${esc(tx.vehicle.odometer)}" data-bind="tx.vehicle.odometer" data-type="num"></label>
       <label class="f"><span>Condition</span><select data-bind="tx.vehicle.condition">${selectOptions(["New","Certified Pre-Owned","Used"], tx.vehicle.condition)}</select></label>
       <label class="f"><span>Selling price</span><input type="number" value="${tx.vehicle.price===null?"":esc(tx.vehicle.price)}" data-bind="tx.vehicle.price" data-type="num"></label>
     </div></div></div>`;
@@ -2001,11 +2014,11 @@ function viewFinance(){
     </div></div>`;
 
   return toolbar + stepBar + `<div class="fin-split solo">
-    <div><div class="stack">${customerCard}${vehicleCard}${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
+    <div><div class="stack"><div class="cv-row">${customerCard}${vehicleCard}</div>${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
@@ -2354,7 +2367,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.6</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.7</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3011,7 +3024,7 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal() + inviteModal() + cdDrawer();
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -3345,11 +3358,49 @@ function completeDeal(){
   var done = C.clone(state.tx);
   done.status = "Completed"; done.createdAt = C.todayISO();
   state.completed = state.completed.filter(function(d){ return d.id !== done.id; });
+  state.saved = (state.saved || []).filter(function(d){ return d.id !== done.id; });
   state.completed.push(done);
   state.tx.status = "Completed";
   state.tx.display.mode = "thankyou";
   toast("Deal " + done.id + " completed and sent to reporting.","ok");
   commit();
+}
+function saveDeal(){
+  var tx = state.tx;
+  if (!tx) return;
+  if (!tx.customer.name && !tx.vehicle.model && !tx.lines.length){ toast("Add a customer, vehicle or product before saving.","err"); commit(); return; }
+  if (!V.isAdmin() || !tx.fsmUserId) tx.fsmUserId = tx.fsmUserId || state.currentUserId;
+  if (state.completed.some(function(d){ return d.id === tx.id; })){ toast("This deal is already completed — reopen it from Reports to change it.","err"); commit(); return; }
+  var copy = C.clone(tx);
+  copy.status = "Saved"; copy.savedAt = new Date().toISOString(); copy.savedBy = state.currentUserId;
+  state.saved = (state.saved || []).filter(function(d){ return d.id !== copy.id; });
+  state.saved.push(copy);
+  toast("Deal saved. Find it under Saved deals to continue later.","ok");
+  commit();
+}
+function openSaved(id){
+  var d = (state.saved || []).filter(function(x){ return x.id === id; })[0];
+  if (!d) return;
+  if (d.dealershipId && d.dealershipId !== state.activeDealershipId) V.setDealership(d.dealershipId);
+  var o = C.clone(d); o.status = "Open";
+  state.tx = o; state.route = "finance"; state.ui.savedList = false;
+  toast("Saved deal reopened.","ok"); commit();
+}
+function savedModal(){
+  if (!state.ui.savedList) return "";
+  var list = V.savedForMe();
+  var rows = list.map(function(d){
+    var when = d.savedAt ? new Date(d.savedAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—";
+    var veh = [d.vehicle.year, d.vehicle.make, d.vehicle.model].filter(Boolean).join(" ");
+    return `<tr><td class="nowrap">${esc(when)}</td><td>${esc(d.customer.name || "No name yet")}</td><td>${esc(veh || "—")}</td>
+      <td>${esc(userById(d.fsmUserId).name)}</td>
+      <td class="right nowrap"><button class="btn sm primary" data-act="saved-open" data-deal="${esc(d.id)}">Open</button>
+        <button class="btn sm danger" data-act="saved-delete" data-deal="${esc(d.id)}">Delete</button></td></tr>`;
+  }).join("");
+  return `<div class="modal-bg" data-act="saved-close"><div class="modal" style="max-width:760px">
+    <div class="modal-h"><h2>Saved deals</h2><div class="sp"><button class="btn" data-act="saved-close">Close</button></div></div>
+    <div class="modal-b">${list.length ? `<div class="tablewrap"><table><thead><tr><th>Saved</th><th>Customer</th><th>Vehicle</th><th>Finance Manager</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<p class="muted" style="margin:0">No saved deals. Use <strong>Save deal</strong> on the Finance screen to pause a deal and come back to it later.</p>`}</div></div></div>`;
 }
 function newDeal(){
   state.tx = C.newTransaction(V.isAdmin() ? (state.tx ? state.tx.fsmUserId : V.firstFsmFor(state.activeDealershipId)) : state.currentUserId, state.activeDealershipId);
@@ -3402,13 +3453,14 @@ function cloudApply(dRows, pRows, xRows, keepTx){
   Object.keys(byDealer).forEach(function(k){ byDealer[k].sort(function(a, b){ return (a._sort||0) - (b._sort||0); }); });
   state.dealerships = dRows.map(function(r){ var d = r.data; d.id = r.id; return d; });
   state.cloud.productsByDealer = byDealer;
-  state.completed = xRows.map(function(r){ return r.data; });
+  state.completed = xRows.map(function(r){ return r.data; }).filter(function(x){ return x && x.status !== "Saved"; });
+  state.saved = xRows.map(function(r){ return r.data; }).filter(function(x){ return x && x.status === "Saved"; });
   state.history = [];
   state.users = state.users.filter(function(u){ return u.id === "u0" || UUID_RE.test(u.id); });
   cloud.snap = { d:{}, p:{}, x:{} };
   state.dealerships.forEach(function(d){ cloud.snap.d[d.id] = JSON.stringify(d); });
   Object.keys(byDealer).forEach(function(k){ byDealer[k].forEach(function(pr){ cloud.snap.p[k + "|" + pr.id] = JSON.stringify(pr); }); });
-  state.completed.forEach(function(x){ cloud.snap.x[x.id] = JSON.stringify(x); });
+  state.completed.concat(state.saved).forEach(function(x){ cloud.snap.x[x.id] = JSON.stringify(x); });
   if (!state.dealerships.length){ state.activeDealershipId = null; state.config = null; state.tx = null; state.products = C.clone(D.PRODUCTS); return; }
   var me = userById(state.currentUserId), has = function(id){ return state.dealerships.some(function(d){ return d.id === id; }); };
   var want = V.isMaster() ? (has(state.activeDealershipId) ? state.activeDealershipId : state.dealerships[0].id)
@@ -3472,7 +3524,7 @@ function cloudDiff(){
       if (cloud.snap.p[key] !== j){ out.p.push({ dealership_id:k, id:pr.id, data:pr }); out.snapP[key] = j; }
     });
   });
-  state.completed.forEach(function(x){
+  state.completed.concat(state.saved || []).forEach(function(x){
     if (!x || !x.id || !known[x.dealershipId]) return;
     var j = JSON.stringify(x);
     if (cloud.snap.x[x.id] !== j){ out.x.push({ id:x.id, dealership_id:x.dealershipId, fsm_user_id:x.fsmUserId || null, data:x }); out.snapX[x.id] = j; }
@@ -3528,7 +3580,7 @@ document.addEventListener("visibilitychange", function(){
   cloudFetch().then(function(r){ cloudApply(r.d, r.p, r.x, true); cloud.lastLoad = Date.now(); commit(); }, function(){});
 });
 function cloudWipeLocal(){
-  state.dealerships = []; state.completed = []; state.history = []; state.customers = []; state.vehicles = [];
+  state.dealerships = []; state.completed = []; state.saved = []; state.history = []; state.customers = []; state.vehicles = [];
   state.products = C.clone(D.PRODUCTS); state.cloud.productsByDealer = {};
   state.users = state.users.filter(function(u){ return u.id === "u0"; });
   state.tx = null; state.config = null; state.activeDealershipId = null; state.currentUserId = "u0";
@@ -3985,7 +4037,7 @@ document.addEventListener("click", function(ev){
   }
   if (!el) return;
   var act = el.getAttribute("data-act");
-  if ((act === "close-modal-bg" || act === "confirm-bg" || act === "history-close" || act === "invite-close") && ev.target !== el && el.classList.contains("modal-bg")) return;
+  if ((act === "close-modal-bg" || act === "confirm-bg" || act === "history-close" || act === "invite-close" || act === "saved-close") && ev.target !== el && el.classList.contains("modal-bg")) return;
   if (/^product-(new|edit|save|toggle|delete|template)$/.test(act) && !V.canEditProducts()){ toast("Only a General Manager or Finance Manager can add, edit or delete products.","err"); return; }
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
@@ -4014,6 +4066,21 @@ document.addEventListener("click", function(ev){
       });
       break; }
     case "complete": completeDeal(); break;
+    case "save-deal": saveDeal(); break;
+    case "saved-list": state.ui.savedList = true; commit(); break;
+    case "saved-close": state.ui.savedList = false; commit(); break;
+    case "saved-open": {
+      var sid = el.getAttribute("data-deal"), cur = state.tx;
+      var dirty = cur && cur.id !== sid && (cur.customer.name || cur.vehicle.model || cur.lines.length) && !(state.saved || []).some(function(d){ return d.id === cur.id; }) && !state.completed.some(function(d){ return d.id === cur.id; });
+      if (dirty){ askConfirm("Open the saved deal?", "The deal on screen hasn't been saved. Opening another deal will replace it.", "Open anyway", function(){ openSaved(sid); }); break; }
+      openSaved(sid); break; }
+    case "saved-delete": {
+      var sdel = el.getAttribute("data-deal");
+      askConfirm("Delete this saved deal?", "It will be removed permanently. This can't be undone.", "Delete deal", function(){
+        state.saved = (state.saved || []).filter(function(d){ return d.id !== sdel; });
+        cloud.del.x.push(sdel); state.ui.savedList = true;
+        toast("Saved deal deleted.","ok"); commit(); });
+      break; }
     case "product-template":
       if (state.products.length){ toast("This dealership already has products.","err"); break; }
       state.products = C.clone(D.PRODUCTS);
@@ -4493,7 +4560,7 @@ document.addEventListener("change", function(ev){
 
 /* ---------------- BOOT ---------------- */
 function boot(){
-  state.ui.confirm = null; state.ui.pwReset = null; state.ui.history = null; state.ui.giftEdit = null;
+  state.ui.confirm = null; state.ui.savedList = false; state.ui.pwReset = null; state.ui.history = null; state.ui.giftEdit = null;
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;
