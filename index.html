@@ -2393,7 +2393,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.11</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.12</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2712,7 +2712,7 @@ function offersPrintBlock(t, onlyKey){
 function internalPrintSelected(tx, t, u, pkg){
   var savedAt = new Date().toLocaleString("en-CA");
   var rows = pkg.lines.map(function(L){
-    return `<tr><td>${esc(L.product.name)}</td><td style="color:#0a7546;font-weight:700">SELECTED</td>
+    return `<tr><td>${esc(L.product.name)}</td>
       <td>${esc(pkg.label)}</td><td>${esc(V.lineConfigText(L))||"—"}</td>
       <td style="text-align:right">${L.price===null?"NOT SET":money(L.price)}</td>
       <td style="text-align:right">${L.gross===null?"—":money(L.gross)}</td></tr>`;
@@ -2757,8 +2757,8 @@ function internalPrintSelected(tx, t, u, pkg){
     </div>
     ${offersPrintBlock(t, pkg.key)}
     <h3>Products &amp; Dispositions</h3>
-    <table><thead><tr><th>Product</th><th>Status</th><th>Package</th><th>Coverage</th><th style="text-align:right">Deal Price</th><th style="text-align:right">Gross</th></tr></thead>
-      <tbody>${rows || `<tr><td colspan="6">Nothing is assigned to this package.</td></tr>`}</tbody></table>
+    <table><thead><tr><th>Product</th><th>Package Selected</th><th>Coverage</th><th style="text-align:right">Deal Price</th><th style="text-align:right">Gross</th></tr></thead>
+      <tbody>${rows || `<tr><td colspan="5">Nothing is assigned to this package.</td></tr>`}</tbody></table>
     <div class="cols" style="margin-top:14px;margin-bottom:0">
       <div><div class="lbl">SELECTED PACKAGE TOTAL</div><div><strong>${money(pkg.total)}</strong></div></div>
       <div><div class="lbl">SELECTED PACKAGE GROSS</div><div><strong>${money(pkg.gross)}</strong></div></div>
