@@ -1344,6 +1344,15 @@ function toast(msg, kind){
 }
 function allDeals(){ return state.history.concat(state.completed); }
 /* Paused deals for the current dealership. A Finance Manager sees their own; GM and Master see all. */
+/* Promotional offers: GM and Master always; Finance Managers per Dealership settings.
+   config.offerAccess undefined = every Finance Manager (the original behaviour). */
+function canUseOffers(){
+  var me = currentUser();
+  if (isAdmin()) return true;
+  var acc = state.config && state.config.offerAccess;
+  if (!acc || acc.mode !== "selected") return true;
+  return (acc.users || []).indexOf(me.id) !== -1;
+}
 function savedForMe(){
   var me = currentUser(), all = isAdmin();
   return (state.saved || []).filter(function(d){ return d.dealershipId === state.activeDealershipId && (all || d.fsmUserId === me.id); })
@@ -2052,9 +2061,9 @@ function viewFinance(){
       <div class="offers-div" aria-hidden="true"></div>
       <div>
         <div class="lbl" style="margin-bottom:4px">Promotional Offer</div>
-        <p class="muted small" style="margin:0 0 10px">Included at no charge to the customer. Tap an offer to choose which packages get it; it turns green once added. Tap it again to edit, or ✕ to remove it. Dealer costs are kept in Dealership settings.</p>
-        <div class="gbtn-row">${giftButtons}</div>
-        ${gPanel}
+        <p class="muted small" style="margin:0 0 10px;${canUseOffers() ? "" : "display:none"}">Included at no charge to the customer. Tap an offer to choose which packages get it; it turns green once added. Tap it again to edit, or ✕ to remove it. Dealer costs are kept in Dealership settings.</p>
+        ${canUseOffers() ? `<div class="gbtn-row">${giftButtons}</div>${gPanel}`
+          : `<div class="notice info" style="margin:0">Promotional offers are added by your General Manager.${off.gifts.length ? " Offers on this deal: " + off.gifts.map(function(g){ return esc(g.name); }).join(", ") + "." : ""}</div>`}
       </div>
     </div></div></div>`;
 
@@ -2077,7 +2086,7 @@ function viewFinance(){
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, canUseOffers:canUseOffers, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,
@@ -2426,7 +2435,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-25.14</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-26.1</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -2693,6 +2702,19 @@ function viewSettings(){
     </div></div>
     <div class="card"><div class="card-h"><h2>Promotional offers</h2>
       <div class="sp"><button type="button" class="btn sm primary" data-act="gift-preset-add" ${dis}>Add an offer</button></div></div><div class="card-b">
+      ${(function(){
+        var acc = state.config.offerAccess || { mode:"all", users:[] };
+        var fms = state.users.filter(function(x){ return x.active && x.dealershipId === state.activeDealershipId && V.isFinanceRole(x.role); });
+        return `<div style="margin-bottom:14px;padding:12px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)">
+          <label class="f" style="margin:0;max-width:360px"><span>Who can add promotional offers to a deal</span>
+            <select data-act="offer-access-mode" ${dis}>
+              <option value="all" ${acc.mode !== "selected" ? "selected" : ""}>All Finance Managers</option>
+              <option value="selected" ${acc.mode === "selected" ? "selected" : ""}>Only the Finance Managers I choose</option>
+            </select></label>
+          ${acc.mode === "selected" ? `<div class="pkgchk-row" style="flex-wrap:wrap;margin-top:10px">${fms.length ? fms.map(function(x){ var on = (acc.users || []).indexOf(x.id) !== -1;
+            return `<label class="pkgchk ${on ? "on" : ""}"><input type="checkbox" data-act="offer-access-user" data-user="${esc(x.id)}" ${on ? "checked" : ""} ${dis}>${esc(x.name)}</label>`; }).join("") : `<span class="tiny muted">No Finance Managers in this dealership yet.</span>`}</div>` : ""}
+          <div class="tiny muted" style="margin-top:8px">The General Manager and Master Administrator can always add offers.</div></div>`;
+      })()}
       <p class="muted small" style="max-width:60ch">Offers you list here appear as one-tap choices for the Finance Manager on each deal. Dealer cost is optional; it comes off the deal's gross in reports.</p>
       ${(state.config.gifts || []).map(function(g, i){ return `<div class="gift-row" style="grid-template-columns:2fr 1fr auto">
         <label class="f"><span>Offer</span><input type="text" value="${esc(g.name||"")}" data-bind="config.gifts.${i}.name" placeholder="e.g. Winter tire storage" ${dis}></label>
@@ -4204,6 +4226,7 @@ document.addEventListener("click", function(ev){
     case "offer-scope": V.ensureOffers(state.tx); state.tx.offers.discount.scope = el.getAttribute("data-val"); commit(); break;
     case "offer-dtype": V.ensureOffers(state.tx); state.tx.offers.discount.type = el.getAttribute("data-val"); commit(); break;
     case "gift-open": {
+      if (!V.canUseOffers()){ toast("Promotional offers are added by your General Manager.","err"); break; }
       V.ensureOffers(state.tx);
       var gk = el.getAttribute("data-key"), goff = state.tx.offers, gdraft = null;
       if (state.ui.giftEdit && state.ui.giftEdit.key === gk){ state.ui.giftEdit = null; commit(); break; }
@@ -4247,6 +4270,7 @@ document.addEventListener("click", function(ev){
       }
       state.ui.giftEdit = null; commit(); break; }
     case "gift-x": {
+      if (!V.canUseOffers()) break;
       V.ensureOffers(state.tx);
       var gxk = el.getAttribute("data-key");
       state.tx.offers.gifts = state.tx.offers.gifts.filter(function(x){ return gxk.indexOf("p:") === 0 ? x.presetId !== gxk.slice(2) : x.id !== gxk.slice(2); });
@@ -4620,6 +4644,17 @@ document.addEventListener("change", function(ev){
     };
     rd.readAsDataURL(gfile);
     return;
+  }
+  if (act === "offer-access-mode"){
+    var oa = state.config.offerAccess || { mode:"all", users:[] };
+    oa.mode = el.value === "selected" ? "selected" : "all"; if (!oa.users) oa.users = [];
+    state.config.offerAccess = oa; commit(); return;
+  }
+  if (act === "offer-access-user"){
+    var ob = state.config.offerAccess || { mode:"selected", users:[] }, ouid = el.getAttribute("data-user");
+    ob.users = (ob.users || []).filter(function(x){ return x !== ouid; });
+    if (el.checked) ob.users.push(ouid);
+    state.config.offerAccess = ob; commit(); return;
   }
   if (act === "brand-color-input"){ state.config.brandColor = el.value; commit(); return; }
   if (act === "toggle-payment"){ state.tx.display.showPayment = el.checked; commit(); return; }
