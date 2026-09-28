@@ -2406,7 +2406,9 @@ function viewUsers(){
   }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
     return `<tr><td><strong>${esc(u.name)}</strong><div class="tiny muted">${u.username ? "@" + esc(u.username) : esc(u.email)}</div></td>
-      <td>${esc(V.roleLabel(u.role))}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
+      <td>${(V.isMaster() && (V.isFinanceRole(u.role) || u.role === "General Manager") && u.id !== state.currentUserId)
+        ? `<select data-act="change-role" data-user="${u.id}" style="min-width:160px"><option value="FSM" ${V.isFinanceRole(u.role)?"selected":""}>Finance Manager</option><option value="General Manager" ${u.role==="General Manager"?"selected":""}>General Manager</option></select>`
+        : esc(V.roleLabel(u.role))}${u.demo?` <span class="tag demo">DEMO</span>`:""}${u.mustChange?` <span class="tag warn">Temp password</span>`:""}</td>
       <td>${V.isMaster() && u.role !== "Master Administrator" ? `<select data-act="assign-dealership" data-user="${u.id}" style="min-width:190px">
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}
         </select>` : esc(dealer)}</td>
@@ -2435,7 +2437,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-26.1</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-28.1</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -4517,6 +4519,17 @@ document.addEventListener("change", function(ev){
   var ufk = el.getAttribute && el.getAttribute("data-uf");
   if (ufk === "role" || ufk === "invite"){ syncUserForm(); return; }
   if (act === "switch-dealership"){ V.setDealership(el.value); commit(); return; }
+  if (act === "change-role"){
+    var rt = userById(el.getAttribute("data-user")), newRole = el.value, oldRole = rt.role;
+    if (newRole === oldRole || (V.isFinanceRole(newRole) && V.isFinanceRole(oldRole))) return;
+    askConfirm("Change " + rt.name + "'s role?", rt.name + " will become a " + V.roleLabel(newRole) + ". Their access changes the next time they sign in or refresh.", "Change role", function(){
+      toast("Updating role…","info");
+      adminCall({ action:"update", id:rt.id, role:newRole, app:"command" })
+        .then(function(){ rt.role = newRole; toast(rt.name + " is now a " + V.roleLabel(newRole) + ".","ok"); refreshUsers(); commit(); })
+        .catch(function(e){ toast("Couldn't change the role: " + e.message,"err"); commit(); });
+    });
+    commit(); return;
+  }
   if (act === "assign-dealership"){
     var target = userById(el.getAttribute("data-user"));
     target.dealershipId = el.value;
