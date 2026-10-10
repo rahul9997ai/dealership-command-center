@@ -217,14 +217,43 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   eq("CA S&P percent in range", sp.aheadPct > 0 && sp.aheadPct < 100, true);
   eq("CA worst <= median <= best", sp.worst <= sp.median && sp.median <= sp.best, true);
   eq("CA dataset length", C.MARKETS.sp500.returns.length === 36 && C.MARKETS.tsx.returns.length === 36, true);
-  const lc = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 0, locRate: 5.45, shock: 1 });
+  /* the account view: advantage = earnings - interest paid - discount given up */
+  const rr = gic.run;
+  eq("CA account identity", rr.adv, rr.earnings - rr.interestPaid - rr.lost, 0.01);
+  eq("CA loan fully repaid at term", rr.owing, 0, 0.01);
+  eq("CA interest paid = loan interest", rr.interestPaid, gic.interest, 0.05);
+  eq("CA year rows", rr.years.length, 5);
+  eq("CA years chain", rr.years[1].start, rr.years[0].end, 0.001);
+  const rl = lost.run;
+  eq("CA identity with discount lost", rl.adv, rl.earnings - rl.interestPaid - 2000, 0.01);
+  const sh = C.caConst(Object.assign({}, base, { years: 2 }), 5, 24);
+  eq("CA identity mid-loan", sh.adv, sh.earnings - sh.interestPaid, 0.01);
+  eq("CA mid-loan still owes", sh.owing > 0, true);
+  eq("CA history run labelled", typeof sp.run.years[0].label, "string");
+
+  const same = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 0, locRate: 4.99 });
+  eq("LOC same rate, matched payment = same cost", same.locCheaperBy, 0, 0.5);
+  eq("LOC same rate pays off on time", same.loc.payoff, 60);
+  const lc = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 0, locRate: 5.45 });
   eq("LOC dealer payment", lc.dealer.pmt, 849.00);
-  eq("LOC payment", lc.loc.pmt, 858.51);
-  eq("LOC dealer cheaper by", Math.round(lc.locCheaperBy), -571, 1);
-  eq("LOC rate rise costs more", lc.loc.shockInterest > lc.loc.interest, true);
+  eq("LOC higher rate, same payment -> later payoff", lc.loc.payoff > 60, true);
+  eq("LOC higher rate costs more", lc.locCheaperBy < 0, true);
+  eq("LOC rate rise costs more", lc.loc.riseInterest > lc.loc.interest, true);
   eq("LOC interest-only payment", lc.loc.ioPmt, 204.38);
-  const lc2 = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 2000, locRate: 4.99, shock: 1 });
+  const io = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 5.45, payMode: "interest" });
+  eq("LOC interest-only never paid off", io.loc.payoff, null);
+  eq("LOC interest-only still owes all", io.loc.owingAtTerm, 45000, 0.01);
+  const low = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 5.45, payMode: "custom", payAmount: 150 });
+  eq("LOC payment below interest flagged", low.loc.grows, true);
+  eq("LOC unpaid interest compounds onto balance", low.loc.owingAtTerm > 45000, true);
+  const cu = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 4.99, payMode: "custom", payAmount: 600 });
+  eq("LOC smaller payment -> longer and dearer", cu.loc.payoff > 60 && cu.locCheaperBy < 0, true);
+  const dr = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 4.99, drawAmount: 5000, drawYear: 2 });
+  eq("LOC extra withdrawal adds to balance in month 13", dr.loc.path[13] > dr.loc.path[12] + 4000, true);
+  eq("LOC extra withdrawal extends payoff", dr.loc.payoff > 60, true);
+  const lc2 = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 2000, locRate: 4.99 });
   eq("LOC keeps cash discount -> smaller loan", lc2.loc.amount, 43000);
+  eq("LOC keeps cash discount -> cheaper", lc2.locCheaperBy > 0, true);
   eq("LOC no rate -> null", C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: "" }), null);
 }
 
