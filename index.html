@@ -741,6 +741,7 @@ tbody tr:hover{background:var(--surface-2)}
 .doc .ca-chart{max-width:560px;margin:6px auto 0}
 .doc .ca-legend{color:#4b5768;justify-content:center}
 .ca-seg.three{grid-template-columns:repeat(3,1fr)}
+.ca-seg.two{grid-template-columns:repeat(2,1fr)}
 .ca-seg.three .btn{white-space:normal;line-height:1.25;font-size:12.5px}
 .ca-hero.neutral{background:var(--info-bg);border-color:transparent}
 .ca-hero.neutral .ca-big{color:var(--blue)}
@@ -1271,128 +1272,138 @@ var MARKETS = {
   sp500: { label:"S&P 500", long:"S&P 500 (in Canadian dollars)", returns:[-3.14,28.7,19.28,15.01,5.78,35.22,22.04,39.44,38.79,15.32,-5.96,-8.55,-22.94,8.08,2.82,-0.11,14.78,-8.34,-21.89,7.57,9.85,3.66,12.07,42.04,23.05,20.55,8.72,16.41,0.77,28.6,14.79,28.38,-13.01,24.49,32.62,14.04] },
   tsx:   { label:"TSX", long:"S&P/TSX Composite (Canada)", returns:[-15.46,10.35,-2.11,31.48,0,14.36,28.24,15.53,-0.69,32.22,8.68,-11.44,-11.47,26.79,14.98,24.41,17.01,9.66,-32.53,33.19,16.44,-8.17,6.5,12.05,9.92,-8.59,20.01,8.53,-8.89,22.88,5.6,25.09,-5.84,11.75,21.65,31.46] }
 };
-function monthlyFromAnnual(pct){ return Math.pow(1 + pct/100, 1/12) - 1; }
-function marketMonths(key){
+function periodRate(pct, ppy){ return Math.pow(1 + pct/100, 1/ppy) - 1; }
+function monthlyFromAnnual(pct){ return periodRate(pct, 12); }
+/* One growth rate per payment period (12 or 26 a year), from the yearly returns. */
+function marketPeriods(key, ppy){
   var out = [];
-  MARKETS[key].returns.forEach(function(r){ var m = monthlyFromAnnual(r); for (var i = 0; i < 12; i++) out.push(m); });
+  MARKETS[key].returns.forEach(function(r){ var m = periodRate(r, ppy); for (var i = 0; i < ppy; i++) out.push(m); });
   return out;
 }
+function caFreq(o){ return o.freq === "biweekly" ? "biweekly" : "monthly"; }
 /* The customer's cash goes into an investment account today and every car
    payment is taken out of that account. Paying cash leaves $0 to invest, so
    what is left (less any loan still owing) is the advantage of financing:
      advantage = investment earnings − loan interest paid − cash discount given up
-   `startMonth` (months since Jan of MARKET_FIRST_YEAR) only labels the years. */
+   Everything steps one payment period at a time (monthly or bi-weekly).
+   `start` (periods since Jan of MARKET_FIRST_YEAR) only labels the years. */
 var CA_MON = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
-function caMonthLabel(s){ return CA_MON[s % 12] + " " + (MARKET_FIRST_YEAR + Math.floor(s/12)); }
-function caRun(o, rates, startMonth){
+function caPeriodLabel(s, ppy){ ppy = ppy || 12; return CA_MON[Math.floor((s % ppy) * 12 / ppy)] + " " + (MARKET_FIRST_YEAR + Math.floor(s/ppy)); }
+function caRun(o, rates, start){
+  var freq = caFreq(o), ppy = periodsPerYear(freq);
   var amount = Number(o.amount)||0, lost = Number(o.lost)||0, cash = Math.max(0, amount - lost);
-  var term = Number(o.term)||0, apr = Number(o.apr)||0, M = rates.length;
-  var pmt = payment(amount, apr, term, "monthly"), lr = apr/100/12;
+  var term = Number(o.term)||0, apr = Number(o.apr)||0, N = rates.length, n = Math.round(term/12*ppy);
+  var pmt = payment(amount, apr, term, freq), lr = apr/100/ppy;
   var acct = cash, bal = amount, earnTot = 0, intTot = 0, paidTot = 0;
   var acctPath = [acct], loanPath = [bal], years = [];
   var yr = { start:acct, earn:0, pay:0, int:0, growth:1, from:1 };
-  for (var t = 1; t <= M; t++){
+  for (var t = 1; t <= N; t++){
     var e = acct * rates[t-1];
     acct += e; earnTot += e; yr.earn += e; yr.growth *= 1 + rates[t-1];
-    if (t <= term && bal > 0){
-      var i = bal * lr, p = t === term ? bal + i : Math.min(pmt, bal + i);
+    if (t <= n && bal > 0){
+      var i = bal * lr, p = t === n ? bal + i : Math.min(pmt, bal + i);
       bal = bal + i - p; acct -= p; intTot += i; paidTot += p; yr.pay += p; yr.int += i;
     }
     acctPath.push(acct); loanPath.push(bal);
-    if (t % 12 === 0 || t === M){
-      var label = typeof startMonth === "number"
-        ? caMonthLabel(startMonth + yr.from - 1) + " – " + caMonthLabel(startMonth + t - 1) : null;
+    if (t % ppy === 0 || t === N){
+      var label = typeof start === "number"
+        ? caPeriodLabel(start + yr.from - 1, ppy) + " – " + caPeriodLabel(start + t - 1, ppy) : null;
       years.push({ n:years.length + 1, label:label, ret:(yr.growth - 1)*100, start:yr.start, earn:yr.earn,
-        pay:yr.pay, int:yr.int, end:acct, owing:bal, months:t - yr.from + 1 });
+        pay:yr.pay, int:yr.int, end:acct, owing:bal, periods:t - yr.from + 1 });
       yr = { start:acct, earn:0, pay:0, int:0, growth:1, from:t + 1 };
     }
   }
-  return { acctPath:acctPath, loanPath:loanPath, years:years, cash:cash, lost:lost, earnings:earnTot,
+  return { acctPath:acctPath, loanPath:loanPath, years:years, cash:cash, lost:lost, earnings:earnTot, ppy:ppy,
     interestPaid:intTot, paid:paidTot, acctEnd:acct, owing:bal, adv:acct - bal };
 }
-function caConst(o, annualPct, months){
-  var m = monthlyFromAnnual(annualPct), r = [];
-  for (var i = 0; i < months; i++) r.push(m);
+/* `N` is a number of payment periods. */
+function caConst(o, annualPct, N){
+  var m = periodRate(annualPct, periodsPerYear(caFreq(o))), r = [];
+  for (var i = 0; i < N; i++) r.push(m);
   return caRun(o, r);
 }
 /* The steady yearly return at which financing and paying cash finish level (null if none in range). */
-function caBreakEven(o, months){
-  var lo = -30, hi = 60, flo = caConst(o, lo, months).adv, fhi = caConst(o, hi, months).adv;
+function caBreakEven(o, N){
+  var lo = -30, hi = 60, flo = caConst(o, lo, N).adv, fhi = caConst(o, hi, N).adv;
   if (flo > 0 || fhi < 0) return null;
   for (var i = 0; i < 60; i++){
     var mid = (lo + hi)/2;
-    if (caConst(o, mid, months).adv > 0) hi = mid; else lo = mid;
+    if (caConst(o, mid, N).adv > 0) hi = mid; else lo = mid;
   }
   return (lo + hi)/2;
 }
 function cashAdvantage(o){
   var amount = Number(o.amount)||0, term = Number(o.term)||0, years = Number(o.years)||0;
   if (amount <= 0 || term <= 0 || years <= 0) return null;
-  var months = Math.round(years * 12);
-  var pmt = payment(amount, Number(o.apr)||0, term, "monthly");
-  var base = { pmt:pmt, interest:pmt*term - amount, cash:Math.max(0, amount - (Number(o.lost)||0)), months:months,
-    breakEven:caBreakEven(o, months) };
+  var freq = caFreq(o), ppy = periodsPerYear(freq);
+  var months = Math.round(years * 12), N = Math.round(years * ppy), n = Math.round(term/12*ppy);
+  var pmt = payment(amount, Number(o.apr)||0, term, freq);
+  var base = { freq:freq, ppy:ppy, N:N, nPay:n, pmt:pmt, interest:pmt*n - amount, cash:Math.max(0, amount - (Number(o.lost)||0)), months:months,
+    breakEven:caBreakEven(o, N) };
   if (o.invest === "sp500" || o.invest === "tsx"){
-    var all = marketMonths(o.invest), runs = [];
-    if (months > all.length) return null;
-    for (var s = 0; s + months <= all.length; s++) runs.push({ start:s, adv:caRun(o, all.slice(s, s + months)).adv });
+    var all = marketPeriods(o.invest, ppy), runs = [];
+    if (N > all.length) return null;
+    for (var s = 0; s + N <= all.length; s++) runs.push({ start:s, adv:caRun(o, all.slice(s, s + N)).adv });
     var sorted = runs.slice().sort(function(a, b){ return a.adv - b.adv; });
     var mid = sorted[Math.floor((sorted.length - 1)/2)];
     var ahead = runs.filter(function(r){ return r.adv > 0; }).length;
     return Object.assign(base, { kind:"history", market:o.invest, periods:runs.length, aheadPct:ahead/runs.length*100,
       median:mid.adv, worst:sorted[0].adv, best:sorted[sorted.length-1].adv,
-      worstStart:caMonthLabel(sorted[0].start), bestStart:caMonthLabel(sorted[sorted.length-1].start), medianStart:caMonthLabel(mid.start),
+      worstStart:caPeriodLabel(sorted[0].start, ppy), bestStart:caPeriodLabel(sorted[sorted.length-1].start, ppy), medianStart:caPeriodLabel(mid.start, ppy),
       firstYear:MARKET_FIRST_YEAR, lastYear:MARKET_FIRST_YEAR + MARKETS[o.invest].returns.length - 1,
-      run:caRun(o, all.slice(mid.start, mid.start + months), mid.start), adv:mid.adv });
+      run:caRun(o, all.slice(mid.start, mid.start + N), mid.start), adv:mid.adv });
   }
   var rate = Number(o.rate);
   if (isNaN(rate) || o.rate === "" || o.rate === null || o.rate === undefined) return null;
-  var r = caConst(o, rate, months);
+  var r = caConst(o, rate, N);
   return Object.assign(base, { kind:"fixed", rate:rate, run:r, adv:r.adv });
 }
-/* One line of credit, month by month. Interest is charged on the whole balance
-   each month, and any interest the payment doesn't cover is added to the
-   balance (so it is charged interest too).
-   pay: { mode:"match"|"custom"|"interest", amount }   draw: { amount, month }   rise: { points, month } */
-function locSim(start, ratePct, pay, draw, rise, maxMonths){
+/* One line of credit, one payment period at a time. Interest is charged on the
+   whole balance each period, and any interest the payment does not cover is
+   added to the balance (so it is charged interest too).
+   pay: { mode:"match"|"custom"|"interest", amount }   draw: { amount, at }   rise: { points, at } (periods) */
+function locSim(start, ratePct, pay, draw, rise, maxN, ppy){
+  ppy = ppy || 12;
   var bal = start, intTot = 0, paidTot = 0, path = [bal], payoff = null;
-  maxMonths = maxMonths || 360;
-  for (var t = 1; t <= maxMonths; t++){
-    if (draw && draw.amount > 0 && t === draw.month) bal += draw.amount;
-    var r = (ratePct + (rise && t >= rise.month ? rise.points : 0))/100/12, i = bal * r;
+  maxN = maxN || 30 * ppy;
+  for (var t = 1; t <= maxN; t++){
+    if (draw && draw.amount > 0 && t === draw.at) bal += draw.amount;
+    var r = (ratePct + (rise && t >= rise.at ? rise.points : 0))/100/ppy, i = bal * r;
     var p = pay.mode === "interest" ? i : Math.max(0, Number(pay.amount)||0);
     if (pay.mode !== "interest" && p >= bal + i - 0.005){ paidTot += bal + i; intTot += i; bal = 0; path.push(0); payoff = t; break; }
     bal = bal + i - p; intTot += i; paidTot += p; path.push(bal);
   }
   return { path:path, payoff:payoff, interest:intTot, paid:paidTot, owing:bal };
 }
-/* Same numbers up to a given month (for "after N months you'd still owe…"). */
-function locAt(sim, month){ var m = Math.min(month, sim.path.length - 1); return sim.path[m]; }
-/* Line of credit vs dealer financing. The line-of-credit buyer pays cash at the
-   dealership, so keeps any cash discount and borrows less. */
+/* Balance after a given number of periods (for "after N months you'd still owe…"). */
+function locAt(sim, t){ return sim.path[Math.min(t, sim.path.length - 1)]; }
+/* Line of credit vs dealer financing, both paid at the same frequency. The
+   line-of-credit buyer pays cash at the dealership, so keeps any cash discount
+   and borrows less. Payoff times are in payment periods (see ppy). */
 function locCompare(o){
   var amount = Number(o.amount)||0, term = Number(o.term)||0, apr = Number(o.apr)||0;
   var locRate = Number(o.locRate), shock = Number(o.shock)||1;
   if (amount <= 0 || term <= 0 || isNaN(locRate) || o.locRate === "" || o.locRate === null || o.locRate === undefined) return null;
+  var freq = caFreq(o), ppy = periodsPerYear(freq), n = Math.round(term/12*ppy);
   var lost = Number(o.lost)||0, locAmt = Math.max(0, amount - lost);
-  var dPmt = payment(amount, apr, term, "monthly"), dInt = dPmt*term - amount;
-  var dealer = locSim(amount, apr, { mode:"custom", amount:dPmt }, null, null, term + 1);
+  var dPmt = payment(amount, apr, term, freq), dInt = dPmt*n - amount;
+  var dealer = locSim(amount, apr, { mode:"custom", amount:dPmt }, null, null, n + 1, ppy);
   var mode = o.payMode === "interest" || o.payMode === "custom" ? o.payMode : "match";
   var amt = mode === "match" ? dPmt : mode === "custom" ? (Number(o.payAmount)||0) : null;
   if (mode === "custom" && !(amt > 0)) return null;
   var pay = { mode:mode, amount:amt };
   var dAmt = Number(o.drawAmount)||0, dYear = Number(o.drawYear)||0;
-  var draw = dAmt > 0 && dYear > 0 ? { amount:dAmt, month:(dYear - 1)*12 + 1 } : null;
-  var loc = locSim(locAmt, locRate, pay, draw, null);
-  var risen = locSim(locAmt, locRate, pay, draw, { points:shock, month:13 });
-  var minOnly = locSim(locAmt, locRate, { mode:"interest" }, draw, null, Math.max(term, loc.payoff || 0));
-  var firstInterest = locAmt * locRate/100/12;
-  return { term:term, lost:lost, shock:shock, payMode:mode, draw:draw,
-    dealer:{ amount:amount, pmt:dPmt, interest:dInt, total:dPmt*term, path:dealer.path, payoff:term },
+  var draw = dAmt > 0 && dYear > 0 ? { amount:dAmt, at:(dYear - 1)*ppy + 1, year:dYear } : null;
+  var loc = locSim(locAmt, locRate, pay, draw, null, null, ppy);
+  var risen = locSim(locAmt, locRate, pay, draw, { points:shock, at:ppy + 1 }, null, ppy);
+  var minOnly = locSim(locAmt, locRate, { mode:"interest" }, draw, null, Math.max(n, loc.payoff || 0), ppy);
+  var firstInterest = locAmt * locRate/100/ppy;
+  return { term:term, n:n, ppy:ppy, freq:freq, lost:lost, shock:shock, payMode:mode, draw:draw,
+    dealer:{ amount:amount, pmt:dPmt, interest:dInt, total:dPmt*n, path:dealer.path, payoff:n },
     loc:{ amount:locAmt, rate:locRate, pmt:mode === "interest" ? firstInterest : amt, payoff:loc.payoff, interest:loc.interest,
-      path:loc.path, owingAtTerm:locAt(loc, term), grows:mode !== "interest" && amt <= firstInterest,
-      riseInterest:risen.interest, risePayoff:risen.payoff, riseOwingAtTerm:locAt(risen, term),
-      ioPmt:firstInterest, ioInterestAtTerm:firstInterest*term, minPath:minOnly.path },
+      path:loc.path, owingAtTerm:locAt(loc, n), grows:mode !== "interest" && amt <= firstInterest,
+      riseInterest:risen.interest, risePayoff:risen.payoff, riseOwingAtTerm:locAt(risen, n),
+      ioPmt:firstInterest, ioInterestAtTerm:firstInterest*n, minPath:minOnly.path },
     /* Positive = the line of credit costs less in total; negative = dealer financing costs less.
        Only meaningful when the line is actually paid off. */
     locCheaperBy:loc.payoff ? (dInt + lost) - loc.interest : null };
@@ -3589,7 +3600,7 @@ function renderLogin(){
 var caState = null, caWin = null;
 function caBlank(){
   return { tab:"invest", customer:"", amount:"", apr:"", term:"60", lost:"", invest:"sp500", gicRate:"",
-    otherName:"", otherRate:"", years:"same", locRate:"", payMode:"match", payAmount:"", drawAmount:"", drawYear:"2",
+    otherName:"", otherRate:"", years:"same", locRate:"", payMode:"match", payAmount:"", drawAmount:"", drawYear:"2", freq:"monthly",
     present:false };
 }
 function caNum(v){ var n = parseFloat(String(v === null || v === undefined ? "" : v).replace(/[$,\s%]/g, "")); return isNaN(n) ? null : n; }
@@ -3600,7 +3611,7 @@ function caInputs(){
   return { amount:caNum(s.amount), apr:caNum(s.apr) || 0, term:term, lost:caNum(s.lost) || 0, years:years,
     invest:s.invest === "other" ? "custom" : s.invest, rate:rate === null ? "" : rate,
     locRate:caNum(s.locRate) === null ? "" : caNum(s.locRate), payMode:s.payMode, payAmount:caNum(s.payAmount),
-    drawAmount:caNum(s.drawAmount) || 0, drawYear:caNum(s.drawYear) || 0 };
+    drawAmount:caNum(s.drawAmount) || 0, drawYear:caNum(s.drawYear) || 0, freq:s.freq === "biweekly" ? "biweekly" : "monthly" };
 }
 function caInvestName(withThe){
   var s = caState;
@@ -3612,8 +3623,12 @@ function caSigned(n){ return (n < -0.5 ? "−" : "+") + money0(Math.abs(n)); }
 function caPct(n){ return (Math.round(n * 100)/100).toFixed(2).replace(/\.?0+$/, "") + "%"; }
 function caYears(months){ var y = months/12; return (y % 1 === 0 ? y : y.toFixed(1)) + " year" + (y === 1 ? "" : "s"); }
 function caYearsText(months){ var y = months/12; return (y % 1 === 0 ? y : y.toFixed(1)) + "-year"; }
-function caDuration(m){
-  if (!m) return "Never";
+function caFreqWord(f){ return f === "biweekly" ? "bi-weekly" : "monthly"; }
+function caPayLabel(f){ return f === "biweekly" ? "Bi-weekly payment" : "Monthly payment"; }
+/* `p` payment periods at `ppy` a year, shown in years and months. */
+function caDuration(p, ppy){
+  if (!p) return "Never";
+  var m = Math.round(p * 12 / (ppy || 12));
   var y = Math.floor(m/12), mo = m % 12;
   return (y ? y + " yr" + (y > 1 ? "s" : "") : "") + (y && mo ? " " : "") + (mo ? mo + " mo" : "");
 }
@@ -3630,8 +3645,9 @@ function caColors(print){
   return print ? { a:"#1d61d8", b:"#94a3b8", w:"#b45309", grid:"#e3e8ef", txt:"#667085" }
                : { a:"var(--blue)", b:"var(--muted)", w:"var(--warn)", grid:"var(--border)", txt:"var(--muted)" };
 }
-/* series: [{ data:[...per month], color, dash, width }] over `months` months. */
-function caLineChart(series, months, print, label){
+/* series: [{ data:[...per payment period], color, dash, width }] over `months` periods, `ppy` a year. */
+function caLineChart(series, months, print, label, ppy){
+  ppy = ppy || 12;
   var W = 640, H = 230, L = 64, R = 16, T = 14, B = 30, c = caColors(print);
   var all = [];
   series.forEach(function(s){ all = all.concat(s.data.slice(0, months + 1)); });
@@ -3646,8 +3662,8 @@ function caLineChart(series, months, print, label){
   for (var tv = lo; tv <= hi + step/2; tv += step) ticks.push(tv);
   var yl = ticks.map(function(v){ return `<line x1="${L}" x2="${W-R}" y1="${y(v).toFixed(1)}" y2="${y(v).toFixed(1)}" stroke="${Math.abs(v) < 0.5 ? c.txt : c.grid}" stroke-width="1"/>
     <text x="${L-8}" y="${(y(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="${c.txt}">${v < -0.5 ? "−" : ""}$${Math.abs(v) >= 1000 ? +(Math.abs(v)/1000).toFixed(1) + "k" : Math.round(Math.abs(v))}</text>`; }).join("");
-  var yrs = Math.floor(months/12), xl = "", every = yrs > 10 ? 2 : 1;
-  for (var yy = 0; yy <= yrs; yy += every) xl += `<text x="${x(yy*12).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="11" fill="${c.txt}">${yy === 0 ? "Today" : "Yr " + yy}</text>`;
+  var yrs = Math.floor(months/ppy), xl = "", every = yrs > 10 ? 2 : 1;
+  for (var yy = 0; yy <= yrs; yy += every) xl += `<text x="${x(yy*ppy).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="11" fill="${c.txt}">${yy === 0 ? "Today" : "Yr " + yy}</text>`;
   var lines = series.map(function(s){
     var pts = s.data.slice(0, months + 1).map(function(v, i){ return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
     var last = Math.min(months, s.data.length - 1);
@@ -3665,13 +3681,13 @@ function caInvestChart(res, print){
   return caLineChart([
     { data:run.loanPath, color:c.b, dash:true, width:2.5, dot:false },
     { data:run.acctPath, color:c.a }
-  ], res.months, print, "Investment account and car loan balance over time") +
+  ], res.N, print, "Investment account and car loan balance over time", res.ppy) +
   caLegend([{ color:c.a, text:"Investment account (pays the car loan)" }, { color:c.b, dash:true, text:"Car loan still owing" }]);
 }
 function caLocChart(lc, print){
-  var c = caColors(print), term = lc.term, payoff = lc.loc.payoff;
-  var H = payoff ? Math.max(term, payoff) : Math.max(term + 24, Math.ceil(term * 1.5 / 12) * 12);
-  H = Math.min(H, 240);
+  var c = caColors(print), n = lc.n, ppy = lc.ppy, payoff = lc.loc.payoff;
+  var H = payoff ? Math.max(n, payoff) : Math.max(n + 2*ppy, Math.ceil(n * 1.5 / ppy) * ppy);
+  H = Math.min(H, 20*ppy);
   var pad = function(arr){ var out = arr.slice(0, H + 1), last = out[out.length - 1]; while (out.length < H + 1) out.push(last); return out; };
   var series = [{ data:pad(lc.dealer.path), color:c.a }];
   if (lc.payMode !== "interest") series.push({ data:pad(lc.loc.minPath), color:c.w, dash:true, width:2, dot:false });
@@ -3679,7 +3695,7 @@ function caLocChart(lc, print){
   var leg = [{ color:c.a, text:"Dealer loan balance" },
     { color:c.w, text:"Line of credit balance" + (lc.payMode === "interest" ? " (interest only)" : "") }];
   if (lc.payMode !== "interest") leg.push({ color:c.w, dash:true, text:"Line of credit if only the minimum is paid" });
-  return caLineChart(series, H, print, "Amount owing over time: dealer loan versus line of credit") + caLegend(leg);
+  return caLineChart(series, H, print, "Amount owing over time: dealer loan versus line of credit", ppy) + caLegend(leg);
 }
 
 /* ---- Cash vs finance & invest: words and numbers ---- */
@@ -3694,14 +3710,14 @@ function caHeadline(res){
 }
 function caStory(res){
   var r = res.run, inv = caInvestName(true), term = Number(caState.term), M = res.months;
-  var txt = `Put ${money0(r.cash)} in ${esc(inv)} today instead of paying cash, and pay each ${money(res.pmt)} car payment out of that account. `;
+  var txt = `Put ${money0(r.cash)} in ${esc(inv)} today instead of paying cash, and pay each ${money(res.pmt)} ${caFreqWord(res.freq)} car payment out of that account. `;
   if (M === term) txt += `After ${caYears(M)} the car is paid off and ${r.acctEnd >= 0 ? money0(r.acctEnd) + " is left" : "the account is short by " + money0(-r.acctEnd)}.`;
   else if (M > term) txt += `The car is paid off after ${term} months and what's left keeps growing — ${money0(r.acctEnd)} by year ${M/12}.`;
   else txt += `After ${caYears(M)} the account holds ${money0(r.acctEnd)}; paying off the ${money0(r.owing)} still owed leaves ${caSigned(r.adv).replace("+", "")}.`;
   txt += ` Paying cash today leaves $0 to invest.`;
   var low = Math.min.apply(null, r.acctPath);
   if (low < -0.5){
-    var m = r.acctPath.findIndex(function(v){ return v < 0; });
+    var m = Math.ceil(r.acctPath.findIndex(function(v){ return v < 0; }) * 12 / res.ppy);
     txt += ` <strong>Note:</strong> the account runs out in month ${m}, so later payments would come from the customer's pocket.`;
   }
   return txt;
@@ -3749,7 +3765,7 @@ function caLocHeadline(lc){
       big:"Still owing " + money0(lc.loc.owingAtTerm),
       sub:`after ${term} months, when the dealer loan is already paid off` + (lc.loc.grows ? " — the payment doesn't cover the interest, so the balance keeps growing" : "") };
   }
-  var d = lc.locCheaperBy, when = `Line of credit paid off in ${caDuration(lc.loc.payoff)} · dealer loan in ${caDuration(term)}` +
+  var d = lc.locCheaperBy, when = `Line of credit paid off in ${caDuration(lc.loc.payoff, lc.ppy)} · dealer loan in ${caDuration(lc.n, lc.ppy)}` +
     (lc.draw ? `. Includes interest on the extra ${money0(lc.draw.amount)} withdrawal` : "");
   if (Math.abs(d) < 1) return { cls:"neutral", lead:"At these rates and payments, both cost the same", big:"Same cost", sub:when + ". The difference is in the risks below." };
   if (d < 0) return { cls:"good", lead:"Dealer financing costs less in total by", big:money0(-d), sub:when };
@@ -3757,19 +3773,19 @@ function caLocHeadline(lc){
 }
 function caLocRows(lc){
   var I = caInputs(), L = lc.loc, term = lc.term;
-  var drawNote = lc.draw ? ` <div class="tiny muted">+ ${money0(lc.draw.amount)} more in year ${Math.ceil(lc.draw.month/12)}</div>` : "";
+  var drawNote = lc.draw ? ` <div class="tiny muted">+ ${money0(lc.draw.amount)} more in year ${lc.draw.year}</div>` : "";
   var locPay = lc.payMode === "interest" ? `${money(L.ioPmt)} <div class="tiny muted">interest only — rises if rates rise</div>`
     : money(L.pmt) + (lc.payMode === "match" ? ` <div class="tiny muted">same as dealer payment</div>` : "");
   var locInt = L.payoff ? money0(L.interest)
     : lc.payMode === "interest" ? `${money0(L.ioInterestAtTerm)} <div class="tiny muted">in ${term} months, and still owing ${money0(L.owingAtTerm)}</div>`
     : `<span class="neg">Keeps growing</span> <div class="tiny muted">still owing ${money0(L.owingAtTerm)} after ${term} months</div>`;
-  var rise = L.risePayoff ? `${money0(L.riseInterest)} <div class="tiny muted">paid off in ${caDuration(L.risePayoff)}</div>`
+  var rise = L.risePayoff ? `${money0(L.riseInterest)} <div class="tiny muted">paid off in ${caDuration(L.risePayoff, lc.ppy)}</div>`
     : `<span class="neg">Never paid off</span> <div class="tiny muted">still owing ${money0(L.riseOwingAtTerm)} after ${term} months</div>`;
   return [
     ["Rate", `${caPct(I.apr)} <span class="tag ok">Fixed</span>`, `${caPct(L.rate)} <span class="tag warn">Variable</span>`],
     ["Amount borrowed", money0(lc.dealer.amount), money0(L.amount) + drawNote],
-    ["Monthly payment", money(lc.dealer.pmt), locPay],
-    ["Paid off in", caDuration(term), L.payoff ? caDuration(L.payoff) : `<span class="neg">Never at this payment</span>`],
+    [caPayLabel(lc.freq), money(lc.dealer.pmt), locPay],
+    ["Paid off in", caDuration(lc.n, lc.ppy), L.payoff ? caDuration(L.payoff, lc.ppy) : `<span class="neg">Never at this payment</span>`],
     ["Total interest", money0(lc.dealer.interest), locInt],
     [`If rates rise ${lc.shock}% after year 1`, `${money0(lc.dealer.interest)} <div class="tiny muted">no change</div>`, rise]
   ];
@@ -3803,6 +3819,9 @@ function viewCashAdv(){
     ${caField("Cash amount (all-in, with tax)", "amount", { pre:"$", ph:"45,000" })}
     <div class="ca-row">${caField("Dealer rate (APR)", "apr", { post:"%", ph:"1.99" })}
       <label class="f"><span>Loan term</span><select data-ca="term">${terms}</select></label></div>
+    <label class="f"><span>Payments</span><div class="ca-seg two">
+      <button class="btn ${s.freq!=="biweekly"?"on":""}" data-act="ca-freq" data-freq="monthly">Monthly</button>
+      <button class="btn ${s.freq==="biweekly"?"on":""}" data-act="ca-freq" data-freq="biweekly">Bi-weekly</button></div></label>
     ${caField("Cash discount lost by financing", "lost", { pre:"$", ph:"0", hint:"Only if the cash price is lower than the finance price." })}`;
   var left, right;
   if (s.tab === "invest"){
@@ -3829,7 +3848,7 @@ function viewCashAdv(){
         ${caReceipt(res, false)}
         ${why.length ? `<ul class="ca-why">${why.map(function(w){ return `<li>${w}</li>`; }).join("")}</ul>` : ""}
         <div class="ca-facts">
-          <div><span>Monthly payment</span><strong class="num">${money(res.pmt)}</strong></div>
+          <div><span>${caPayLabel(res.freq)}</span><strong class="num">${money(res.pmt)}</strong></div>
           <div><span>Interest over ${esc(s.term)} months</span><strong class="num">${money0(res.interest)}</strong></div>
           <div><span>Cash kept invested today</span><strong class="num">${money0(res.cash)}</strong></div></div>
         ${caInvestChart(res, false)}
@@ -3842,14 +3861,14 @@ function viewCashAdv(){
     var drawYears = [1,2,3,4,5,6,7,8].map(function(y){ return `<option value="${y}" ${String(y)===String(s.drawYear)?"selected":""}>Year ${y}</option>`; }).join("");
     left = `${common}
       ${caField("Line of credit rate", "locRate", { post:"%", ph:"5.45", hint:"Prime is 4.45% (Oct 2026); most HELOCs are prime + 0–1%. Unsecured lines are higher." })}
-      <label class="f"><span>Customer pays on the line each month</span><div class="ca-seg three">${pays}</div></label>
-      ${s.payMode === "custom" ? caField("Monthly payment on the line", "payAmount", { pre:"$", ph:"600" }) : ""}
+      <label class="f"><span>Customer pays on the line (${caFreqWord(s.freq)})</span><div class="ca-seg three">${pays}</div></label>
+      ${s.payMode === "custom" ? caField(s.freq === "biweekly" ? "Bi-weekly payment on the line" : "Monthly payment on the line", "payAmount", { pre:"$", ph:s.freq === "biweekly" ? "275" : "600" }) : ""}
       <div class="ca-row">${caField("Extra withdrawal later (optional)", "drawAmount", { pre:"$", ph:"0" })}
         <label class="f"><span>Taken in</span><select data-ca="drawYear">${drawYears}</select></label></div>
       <p class="tiny muted" style="margin:-6px 0 12px">Shows what happens if the customer borrows more on the same line, e.g. for a trip or renovation.</p>`;
     var lc = C.locCompare(caInputs());
     if (!lc){
-      right = `<div class="ca-empty"><div class="ca-empty-ic">%</div><h3>Enter the cash amount, dealer rate and line of credit rate${s.payMode==="custom"?", and the monthly payment":""}</h3>
+      right = `<div class="ca-empty"><div class="ca-empty-ic">%</div><h3>Enter the cash amount, dealer rate and line of credit rate${s.payMode==="custom"?", and the payment":""}</h3>
         <p class="muted small">The comparison appears here as you type.</p></div>`;
     } else {
       var lh = caLocHeadline(lc);
@@ -3879,8 +3898,8 @@ function viewCashAdv(){
 }
 function caDisclaimer(tab){
   return tab === "loc"
-    ? "Illustration only, not financial advice. Line of credit rates are variable and set by the customer's lender; minimum payments vary by lender. Interest is shown compounding monthly, with any unpaid interest added to the balance. Dealer financing is subject to lender approval; the credit agreement shows the APR and cost of borrowing."
-    : "Illustration only — not investment, tax or legal advice. Investment returns are not guaranteed and can be negative; past performance does not predict future results. Assumes monthly payments, investments held tax-free (e.g. a TFSA) and no fees. Historical data: S&P 500 total return (NYU Stern) converted to CAD (Federal Reserve USD/CAD); S&P/TSX Composite total return from 2018, price return plus estimated 2.5% dividends before. Financing is subject to lender approval.";
+    ? "Illustration only, not financial advice. Line of credit rates are variable and set by the customer's lender; minimum payments vary by lender. Interest is shown compounding each payment period, with any unpaid interest added to the balance. Dealer financing is subject to lender approval; the credit agreement shows the APR and cost of borrowing."
+    : "Illustration only — not investment, tax or legal advice. Investment returns are not guaranteed and can be negative; past performance does not predict future results. Assumes the payment schedule shown, investments held tax-free (e.g. a TFSA) and no fees. Historical data: S&P 500 total return (NYU Stern) converted to CAD (Federal Reserve USD/CAD); S&P/TSX Composite total return from 2018, price return plus estimated 2.5% dividends before. Financing is subject to lender approval.";
 }
 
 /* ---- customer screen (second window or full screen) ---- */
@@ -3903,7 +3922,7 @@ function caCustomerHtml(){
           ${why.length ? `<ul class="ca-why">${why.map(function(w){ return `<li>${w}</li>`; }).join("")}</ul>` : ""}
         </div><div>
           <div class="ca-facts">
-            <div><span>Monthly payment</span><strong class="num">${money(res.pmt)}</strong></div>
+            <div><span>${caPayLabel(res.freq)}</span><strong class="num">${money(res.pmt)}</strong></div>
             <div><span>Loan term</span><strong class="num">${esc(s.term)} months</strong></div>
             <div><span>Rate (APR)</span><strong class="num">${caPct(caInputs().apr)}</strong></div></div>
           ${caInvestChart(res, false)}</div></div>`;
@@ -3953,7 +3972,7 @@ function cashAdvPrint(){
   var inputs = `<div class="cols">
       <div><div class="lbl">CASH AMOUNT</div><div><strong>${money0(I.amount)}</strong></div></div>
       <div><div class="lbl">DEALER RATE</div><div><strong>${caPct(I.apr)} APR</strong></div></div>
-      <div><div class="lbl">TERM</div><div><strong>${esc(s.term)} months</strong></div></div>
+      <div><div class="lbl">TERM</div><div><strong>${esc(s.term)} months, ${caFreqWord(I.freq)}</strong></div></div>
       ${I.lost ? `<div><div class="lbl">CASH DISCOUNT</div><div><strong>${money0(I.lost)}</strong></div></div>` : ""}
     </div>`;
   if (s.tab === "loc"){
@@ -4826,6 +4845,7 @@ document.addEventListener("click", function(ev){
     case "ca-invest": caState.invest = el.getAttribute("data-inv"); render(); break;
     case "ca-clear": caState = caBlank(); render(); break;
     case "ca-paymode": caState.payMode = el.getAttribute("data-mode"); render(); break;
+    case "ca-freq": caState.freq = el.getAttribute("data-freq"); render(); break;
     case "ca-window": caOpenWindow(); break;
     case "ca-present": caState.present = true; render(); break;
     case "ca-exit-present": caState.present = false; render(); break;

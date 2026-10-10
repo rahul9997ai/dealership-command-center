@@ -251,6 +251,23 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   const dr = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 4.99, drawAmount: 5000, drawYear: 2 });
   eq("LOC extra withdrawal adds to balance in month 13", dr.loc.path[13] > dr.loc.path[12] + 4000, true);
   eq("LOC extra withdrawal extends payoff", dr.loc.payoff > 60, true);
+  /* bi-weekly: 26 payments a year, same rule as the Finance page */
+  const bw = C.cashAdvantage(Object.assign({}, base, { freq: "biweekly", invest: "gic", rate: 3.5 }));
+  eq("CA bi-weekly payment matches deal desk", bw.pmt, C.payment(45000, 1.99, 60, "biweekly"));
+  eq("CA bi-weekly 130 payments", bw.nPay, 130);
+  eq("CA bi-weekly identity", bw.run.adv, bw.run.earnings - bw.run.interestPaid, 0.01);
+  eq("CA bi-weekly loan repaid", bw.run.owing, 0, 0.01);
+  eq("CA bi-weekly interest close to monthly", Math.abs(bw.interest - gic.interest) < 60, true);
+  eq("CA bi-weekly year rows", bw.run.years.length, 5);
+  const bwsp = C.cashAdvantage(Object.assign({}, base, { freq: "biweekly", invest: "sp500" }));
+  eq("CA bi-weekly history windows", bwsp.periods, 26*36 - 130 + 1);
+  const bwl = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 4.99, freq: "biweekly" });
+  eq("LOC bi-weekly same rate = same cost", bwl.locCheaperBy, 0, 0.5);
+  eq("LOC bi-weekly pays off in 130 payments", bwl.loc.payoff, 130);
+  eq("LOC bi-weekly interest-only payment", bwl.loc.ioPmt, 45000*0.0499/26, 0.001);
+  const bwd = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 4.99, freq: "biweekly", drawAmount: 5000, drawYear: 2 });
+  eq("LOC bi-weekly draw lands at start of year 2", bwd.loc.path[27] > bwd.loc.path[26] + 4000, true);
+
   const lc2 = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 2000, locRate: 4.99 });
   eq("LOC keeps cash discount -> smaller loan", lc2.loc.amount, 43000);
   eq("LOC keeps cash discount -> cheaper", lc2.locCheaperBy > 0, true);
