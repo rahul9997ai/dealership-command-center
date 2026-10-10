@@ -195,5 +195,38 @@ eq("custom brand name", C.brandOfDealer({ brandKey: "custom", customBrandName: "
 eq("header override", C.brandOfDealer({ brandKey: "ford", headerTitle: "Ford Credit Canada" }).finLabel, "FORD CREDIT CANADA");
 eq("Subaru exists", !!D.BRANDS.subaru, true);
 
+/* --- Cash Advantage: cash vs finance & invest, line of credit --- */
+{
+  const base = { amount: 45000, apr: 1.99, term: 60, lost: 0, years: 5 };
+  const gic = C.cashAdvantage(Object.assign({}, base, { invest: "gic", rate: 3.5 }));
+  eq("CA payment 45000 @1.99% 60mo", gic.pmt, 788.55);
+  eq("CA interest", Math.round(gic.interest), 2313);
+  eq("CA GIC 3.5% advantage", Math.round(gic.adv), 1894, 1);
+  eq("CA break-even ~ APR (effective)", gic.breakEven, 2.008, 0.01);
+  eq("CA at break-even rate both paths level", C.caConst(base, gic.breakEven, 60).adv, 0, 0.5);
+  const lost = C.cashAdvantage(Object.assign({}, base, { lost: 2000, invest: "gic", rate: 3.5 }));
+  eq("CA cash discount lost flips GIC result", Math.round(lost.adv), -481, 1);
+  eq("CA no rate -> no result", C.cashAdvantage(Object.assign({}, base, { invest: "custom", rate: "" })), null);
+  eq("CA zero investment return = minus interest", C.caConst(Object.assign({}, base, { apr: 0 }), 0, 60).adv, 0, 0.01);
+  const longer = C.cashAdvantage(Object.assign({}, base, { invest: "gic", rate: 3.5, years: 10 }));
+  eq("CA longer horizon grows the gap", longer.adv > gic.adv, true);
+  const shorter = C.caConst(Object.assign({}, base, { years: 2 }), 0, 24);
+  eq("CA shorter horizon subtracts loan balance (0% return, 1.99% loan)", shorter.adv < 0, true);
+  const sp = C.cashAdvantage(Object.assign({}, base, { invest: "sp500" }));
+  eq("CA S&P windows 1990-2025 for 5 years", sp.periods, 373);
+  eq("CA S&P percent in range", sp.aheadPct > 0 && sp.aheadPct < 100, true);
+  eq("CA worst <= median <= best", sp.worst <= sp.median && sp.median <= sp.best, true);
+  eq("CA dataset length", C.MARKETS.sp500.returns.length === 36 && C.MARKETS.tsx.returns.length === 36, true);
+  const lc = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 0, locRate: 5.45, shock: 1 });
+  eq("LOC dealer payment", lc.dealer.pmt, 849.00);
+  eq("LOC payment", lc.loc.pmt, 858.51);
+  eq("LOC dealer cheaper by", Math.round(lc.locCheaperBy), -571, 1);
+  eq("LOC rate rise costs more", lc.loc.shockInterest > lc.loc.interest, true);
+  eq("LOC interest-only payment", lc.loc.ioPmt, 204.38);
+  const lc2 = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 2000, locRate: 4.99, shock: 1 });
+  eq("LOC keeps cash discount -> smaller loan", lc2.loc.amount, 43000);
+  eq("LOC no rate -> null", C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: "" }), null);
+}
+
 console.log("\n" + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
