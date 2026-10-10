@@ -748,11 +748,13 @@ tbody tr:hover{background:var(--surface-2)}
 .ca-receipt{border:1px solid var(--border);border-radius:11px;padding:12px 16px;margin-bottom:14px;background:var(--surface)}
 .ca-receipt-h{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .ca-rr{display:flex;justify-content:space-between;gap:12px;padding:5px 0;font-size:14px}
-.ca-rr strong{font-size:15px}
+.ca-rr strong{font-size:15px;white-space:nowrap}
 .ca-rr.total{border-top:2px solid var(--text);margin-top:4px;padding-top:8px;font-weight:600}
 .ca-rr.total strong{font-size:17px}
 .ca-receipt .pos{color:var(--ok)} .ca-receipt .neg,.ca-table .neg{color:var(--danger)}
 .ca-story{font-size:12.5px;color:var(--text-2);margin:8px 0 0;line-height:1.55}
+.ca-vs{font-weight:400;color:var(--muted);font-size:12.5px;white-space:nowrap}
+.ca-fmnote{font-size:12px;color:var(--warn);background:var(--warn-bg);border-radius:9px;padding:9px 12px;margin:-4px 0 14px}
 .ca-years{margin-top:14px;border-top:1px solid var(--border);padding-top:10px}
 .ca-years summary{cursor:pointer;font-weight:600;font-size:13px}
 .ca-ytable{font-size:12.5px;margin-top:8px}
@@ -1294,15 +1296,15 @@ function caRun(o, rates, start){
   var amount = Number(o.amount)||0, lost = Number(o.lost)||0, cash = Math.max(0, amount - lost);
   var term = Number(o.term)||0, apr = Number(o.apr)||0, N = rates.length, n = Math.round(term/12*ppy);
   var pmt = payment(amount, apr, term, freq), lr = apr/100/ppy;
-  var acct = cash, bal = amount, earnTot = 0, intTot = 0, paidTot = 0;
+  var acct = cash, bal = amount, earnTot = 0, intTot = 0, paidTot = 0, payCount = 0, growthAll = 1;
   var acctPath = [acct], loanPath = [bal], years = [];
   var yr = { start:acct, earn:0, pay:0, int:0, growth:1, from:1 };
   for (var t = 1; t <= N; t++){
     var e = acct * rates[t-1];
-    acct += e; earnTot += e; yr.earn += e; yr.growth *= 1 + rates[t-1];
+    acct += e; earnTot += e; yr.earn += e; yr.growth *= 1 + rates[t-1]; growthAll *= 1 + rates[t-1];
     if (t <= n && bal > 0){
       var i = bal * lr, p = t === n ? bal + i : Math.min(pmt, bal + i);
-      bal = bal + i - p; acct -= p; intTot += i; paidTot += p; yr.pay += p; yr.int += i;
+      bal = bal + i - p; acct -= p; intTot += i; paidTot += p; yr.pay += p; yr.int += i; payCount++;
     }
     acctPath.push(acct); loanPath.push(bal);
     if (t % ppy === 0 || t === N){
@@ -1314,7 +1316,8 @@ function caRun(o, rates, start){
     }
   }
   return { acctPath:acctPath, loanPath:loanPath, years:years, cash:cash, lost:lost, earnings:earnTot, ppy:ppy,
-    interestPaid:intTot, paid:paidTot, acctEnd:acct, owing:bal, adv:acct - bal };
+    interestPaid:intTot, paid:paidTot, payCount:payCount, pmt:pmt, untouchedEarnings:cash * (growthAll - 1),
+    acctEnd:acct, owing:bal, adv:acct - bal };
 }
 /* `N` is a number of payment periods. */
 function caConst(o, annualPct, N){
@@ -3723,13 +3726,15 @@ function caStory(res){
   return txt;
 }
 function caReceipt(res, print){
-  var r = res.run, rows = [
-    [`Investment earnings over ${caYears(res.months)}`, caSigned(r.earnings), r.earnings >= 0 ? "pos" : "neg"],
-    [`Car loan interest paid`, "−" + money0(r.interestPaid), "neg"]];
-  if (r.lost > 0) rows.push([`Cash discount given up by financing`, "−" + money0(r.lost), "neg"]);
+  var r = res.run, every = res.freq === "biweekly" ? "bi-weekly " : "";
+  var rows = [
+    [`Cash invested today${r.lost > 0 ? ` <span class="tiny muted">(the cash price, after the ${money0(r.lost)} cash discount)</span>` : ""}`, money0(r.cash), ""],
+    [`+ Earnings on what's left after each payment`, caSigned(r.earnings), r.earnings >= 0 ? "pos" : "neg"],
+    [`− Car payments (${r.payCount} ${every}× ${money(r.pmt)}, incl. ${money0(r.interestPaid)} interest)`, "−" + money0(r.paid), "neg"]];
+  if (r.owing > 0.5) rows.push([`− Loan still owing after ${caYears(res.months)}`, "−" + money0(r.owing), "neg"]);
   return `<div class="ca-receipt${print ? " print" : ""}"><div class="ca-receipt-h">How it's worked out</div>
     ${rows.map(function(x){ return `<div class="ca-rr"><span>${x[0]}</span><strong class="num ${x[2]}">${x[1]}</strong></div>`; }).join("")}
-    <div class="ca-rr total"><span>${res.adv >= 0 ? "Ahead" : "Behind"} compared with paying cash</span><strong class="num">${caSigned(res.adv)}</strong></div>
+    <div class="ca-rr total"><span>= Left in the account <span class="ca-vs">vs $0 if paying cash</span></span><strong class="num">${caSigned(res.adv)}</strong></div>
     <p class="ca-story">${caStory(res)}</p></div>`;
 }
 function caWhyLines(res){
@@ -3846,6 +3851,7 @@ function viewCashAdv(){
           <div class="ca-big num">${h.big} <span>${h.tail}</span></div>
           <div class="ca-sub">after ${caYears(res.months)}, compared with paying cash</div></div>
         ${caReceipt(res, false)}
+        <p class="ca-fmnote no-print"><strong>For you, not the customer:</strong> if the ${money0(res.run.cash)} had stayed untouched it would have earned ${money0(res.run.untouchedEarnings)} over this period. The comparison counts only ${money0(res.run.earnings)}, because each car payment leaves the account first.</p>
         ${why.length ? `<ul class="ca-why">${why.map(function(w){ return `<li>${w}</li>`; }).join("")}</ul>` : ""}
         <div class="ca-facts">
           <div><span>${caPayLabel(res.freq)}</span><strong class="num">${money(res.pmt)}</strong></div>
@@ -3885,6 +3891,7 @@ function viewCashAdv(){
     <dl>
       <dt>Open with</dt><dd>“Before I take your cheque, I show every customer both options — it takes one minute and the choice is yours.”</dd>
       <dt>Explaining the number</dt><dd>“Put your cash in the account instead of giving it to us. Your car payments come out of that account. When the car is paid off, this is what's still yours. Pay cash and that number is zero.”</dd>
+      <dt>“That's earnings on the whole amount, isn't it?”</dt><dd>“No — the earnings are only on what's left in the account after each payment comes out. Here's the year-by-year table.” Open the Year-by-year breakdown: the account shrinks every year, and so do the earnings.</dd>
       <dt>“I don't like debt.”</dt><dd>“Understood. You'd still own the vehicle, and the cash stays in your name. If you change your mind, you can pay the loan off at any time — Ontario's Consumer Protection Act (s. 77) gives borrowers the right to prepay the full balance without a penalty.” Confirm the lender's contract terms.</dd>
       <dt>“I want to own it outright.”</dt><dd>“You will own it either way — financing just decides where your cash sits while the car is paid off.”</dd>
       <dt>“I'll use my line of credit.”</dt><dd>Use the Line of Credit tab with their real rate. Switch to “Interest only” and add an extra withdrawal to show how a line can stay open for years. Be honest if theirs truly costs less.</dd>

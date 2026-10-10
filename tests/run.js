@@ -251,6 +251,21 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   const dr = C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: 4.99, drawAmount: 5000, drawYear: 2 });
   eq("LOC extra withdrawal adds to balance in month 13", dr.loc.path[13] > dr.loc.path[12] + 4000, true);
   eq("LOC extra withdrawal extends payoff", dr.loc.payoff > 60, true);
+  /* "How it's worked out" box: cash + earnings - payments - still owing = result */
+  const box = (r) => r.cash + r.earnings - r.paid - r.owing;
+  eq("CA box adds up", box(rr), rr.adv, 0.01);
+  eq("CA box adds up with discount lost", box(rl), rl.adv, 0.01);
+  eq("CA box adds up mid-loan", box(sh), sh.adv, 0.01);
+  eq("CA payments counted", rr.payCount, 60);
+  eq("CA payments total = principal + interest", rr.paid, 45000 + rr.interestPaid, 0.01);
+  {
+    const s30 = C.cashAdvantage({ amount: 30000, apr: 7.99, term: 60, lost: 0, years: 5, invest: "sp500" }).run;
+    eq("CA $30k example earnings", Math.round(s30.earnings), 12945, 1);
+    eq("CA $30k example result", Math.round(s30.adv), 6456, 1);
+    eq("CA earnings counted only on what is left (less than untouched)", s30.earnings < s30.untouchedEarnings, true);
+    eq("CA $30k untouched earnings", Math.round(s30.untouchedEarnings), 39556, 1);
+  }
+
   /* bi-weekly: 26 payments a year, same rule as the Finance page */
   const bw = C.cashAdvantage(Object.assign({}, base, { freq: "biweekly", invest: "gic", rate: 3.5 }));
   eq("CA bi-weekly payment matches deal desk", bw.pmt, C.payment(45000, 1.99, 60, "biweekly"));
