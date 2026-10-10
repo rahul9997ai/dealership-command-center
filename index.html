@@ -691,6 +691,81 @@ tbody tr:hover{background:var(--surface-2)}
 }
 @media (max-width:520px){ .axiom-word{font-size:42px} .axiom-slogan{font-size:24px} .axiom-page{padding:32px 18px} }
 
+/* ---- Cash Advantage: customer screen ---- */
+.cx{min-height:100vh;background:radial-gradient(1200px 600px at 85% -10%,var(--cd-surface-3),transparent 60%),var(--cd-surface);color:var(--cd-text);font-feature-settings:"tnum" 1}
+.cx .cx-ic{width:22px;height:22px;flex:0 0 22px}
+.cx-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px clamp(18px,3vw,48px);border-bottom:1px solid var(--cd-border);background:var(--cd-surface-2)}
+.cx-brand{display:flex;align-items:center;gap:14px}
+.cx-mark{width:46px;height:46px;border-radius:12px;background:linear-gradient(140deg,var(--cd-head-a),var(--cd-head-b));color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;letter-spacing:.04em;box-shadow:0 6px 18px rgba(10,20,40,.18)}
+.cx-dealer{font-size:clamp(16px,1.3vw,20px);font-weight:700;letter-spacing:-.01em}
+.cx-lender{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--cd-muted);margin-top:2px}
+.cx-meta{text-align:right;font-size:13px;color:var(--cd-muted)}
+.cx-meta strong{color:var(--cd-text)}
+.cx-main{flex:1;width:100%;max-width:1400px;margin:0 auto;padding:clamp(18px,2.4vw,36px) clamp(18px,3vw,48px);display:flex;flex-direction:column;gap:clamp(14px,1.6vw,22px)}
+.cx-eyebrow{font-size:12px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--cd-muted)}
+.cx-eyebrow.light{color:rgba(255,255,255,.72)}
+.cx-hero{position:relative;overflow:hidden;border-radius:22px;padding:clamp(22px,2.6vw,40px);color:#fff;
+  background:linear-gradient(125deg,var(--cd-head-a) 0%,var(--cd-head-b) 100%);box-shadow:0 18px 50px rgba(10,20,40,.22);
+  display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:clamp(18px,2.4vw,36px);align-items:center}
+.cx-hero::after{content:"";position:absolute;right:-120px;top:-160px;width:420px;height:420px;border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,.16),transparent 65%);pointer-events:none}
+.cx-hero:not(:has(.cx-paths)){grid-template-columns:1fr}
+.cx-big{font-size:clamp(56px,6.4vw,104px);font-weight:800;letter-spacing:-.045em;line-height:1;margin:10px 0 8px;text-shadow:0 2px 24px rgba(0,0,0,.18)}
+.cx-hero.up .cx-big{color:#fff}
+.cx-lead{font-size:clamp(15px,1.2vw,19px);opacity:.9;margin-top:8px}
+.cx-hero-sub{font-size:clamp(14px,1.15vw,18px);opacity:.92;max-width:46ch}
+.cx-basis{display:inline-block;margin-top:14px;font-size:12.5px;padding:5px 12px;border-radius:999px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2)}
+.cx-paths{display:grid;gap:12px;position:relative;z-index:1}
+.cx-path{display:flex;gap:14px;align-items:center;padding:16px 18px;border-radius:16px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(6px);opacity:.8}
+.cx-path span{display:block;font-size:12px;letter-spacing:.12em;text-transform:uppercase;opacity:.8}
+.cx-path strong{display:block;font-size:clamp(26px,2.4vw,38px);font-weight:800;letter-spacing:-.03em;line-height:1.1}
+.cx-path em{font-style:normal;font-size:13px;opacity:.8}
+.cx-path.win{opacity:1;background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.42);box-shadow:0 10px 30px rgba(0,0,0,.18)}
+.cx-path.win .cx-ic{color:var(--cd-green)}
+.cx-row{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.35fr);gap:clamp(14px,1.6vw,22px);align-items:stretch}
+.cx-card{background:var(--cd-surface-2);border:1px solid var(--cd-border);border-radius:18px;padding:clamp(16px,1.6vw,24px);box-shadow:0 8px 28px rgba(10,20,40,.08)}
+.cx-card-h{font-size:12px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--cd-muted);margin-bottom:12px}
+.cx-line{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:11px 0;border-bottom:1px solid var(--cd-border);font-size:clamp(14px,1.1vw,16.5px)}
+.cx-line:last-child{border-bottom:0}
+.cx-line small{display:block;font-size:12px;color:var(--cd-muted);margin-top:2px}
+.cx-line strong{white-space:nowrap;font-size:clamp(15px,1.2vw,18px)}
+.cx-line .pos{color:#16a34a}
+.cx-line.total{border-top:2px solid var(--cd-text);border-bottom:0;margin-top:2px;padding-top:14px;font-weight:700}
+.cx-line.total strong{font-size:clamp(20px,1.7vw,26px);color:var(--cd-blue)}
+.cx-note{font-size:12.5px;color:var(--cd-muted);margin:10px 0 0;line-height:1.5}
+.cx-chart .ca-chart{margin-top:4px}
+.cx-chart .ca-legend{color:var(--cd-muted);font-size:13px}
+.cx-tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.6fr);gap:clamp(12px,1.4vw,18px)}
+.cx-tile{background:var(--cd-surface-2);border:1px solid var(--cd-border);border-radius:16px;padding:16px 18px;display:flex;flex-direction:column;justify-content:center}
+.cx-tile span{font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--cd-muted)}
+.cx-tile strong{font-size:clamp(18px,1.6vw,24px);font-weight:700;letter-spacing:-.02em;margin-top:4px}
+.cx-tile.cx-win{flex-direction:row;align-items:center;gap:16px}
+.cx-tile.cx-win > div{display:flex;flex-direction:column;gap:2px}
+.cx-tile.cx-win strong{font-size:clamp(14px,1.15vw,17px);line-height:1.35;letter-spacing:0}
+.cx-tile em{font-style:normal;font-size:12px;color:var(--cd-muted)}
+.cx-donut{width:76px;height:76px;flex:0 0 76px}
+.cx-plans{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.4vw,18px)}
+.cx-plan{background:var(--cd-surface-2);border:1px solid var(--cd-border);border-radius:18px;padding:18px 20px;box-shadow:0 8px 28px rgba(10,20,40,.08)}
+.cx-plan.win{border:2px solid var(--cd-blue);box-shadow:0 14px 36px rgba(10,20,40,.16)}
+.cx-plan-h{display:flex;flex-direction:column;align-items:flex-start;gap:6px;margin-bottom:6px;font-size:clamp(16px,1.3vw,19px)}
+.cx-row.loc{grid-template-columns:minmax(0,1.25fr) minmax(0,1fr)}
+.cx-chip{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:999px}
+.cx-chip.ok{background:var(--ok-bg);color:var(--ok)} .cx-chip.warn{background:var(--warn-bg);color:var(--warn)}
+.cx-reasons{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(12px,1.4vw,18px)}
+.cx-reason{display:flex;gap:12px;align-items:flex-start;background:var(--cd-surface-2);border:1px solid var(--cd-border);border-radius:16px;padding:16px}
+.cx-reason .cx-ic{color:var(--cd-blue);margin-top:2px}
+.cx-reason p{margin:0;font-size:13.5px;line-height:1.5;color:var(--cd-text)}
+.cx-wait{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12vh 20px;gap:10px}
+.cx-welcome{font-size:clamp(40px,5vw,76px);font-weight:800;letter-spacing:-.04em;line-height:1.05}
+.cx-wait p{color:var(--cd-muted);font-size:clamp(15px,1.3vw,19px);margin:0}
+.cx-dots{display:flex;gap:8px;margin-top:10px}
+.cx-dots i{width:9px;height:9px;border-radius:50%;background:var(--cd-blue);opacity:.3;animation:cxdot 1.4s infinite}
+.cx-dots i:nth-child(2){animation-delay:.2s} .cx-dots i:nth-child(3){animation-delay:.4s}
+@keyframes cxdot{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){ .cx-dots i{animation:none;opacity:.6} }
+.cx-foot{padding:14px clamp(18px,3vw,48px) 18px;border-top:1px solid var(--cd-border);font-size:11px;color:var(--cd-muted);display:flex;flex-direction:column;gap:6px}
+.cx-foot p{margin:0;line-height:1.5;max-width:1400px}
+@media (max-width:1000px){ .cx-hero,.cx-row,.cx-row.loc{grid-template-columns:minmax(0,1fr)} .cx-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} .cx-tile.cx-win{grid-column:1 / -1} .cx-reasons{grid-template-columns:repeat(2,minmax(0,1fr))} }
+@media (max-width:600px){ .cx-plans,.cx-reasons{grid-template-columns:minmax(0,1fr)} .cx-head{flex-direction:column;align-items:flex-start} .cx-meta{text-align:left} }
 /* ---- Cash Advantage ---- */
 .ca-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .ca-tabs .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
@@ -3644,9 +3719,10 @@ function caField(label, key, opts){
 }
 
 /* ---- charts ---- */
-function caColors(print){
-  return print ? { a:"#1d61d8", b:"#94a3b8", w:"#b45309", grid:"#e3e8ef", txt:"#667085" }
-               : { a:"var(--blue)", b:"var(--muted)", w:"var(--warn)", grid:"var(--border)", txt:"var(--muted)" };
+function caColors(mode){
+  if (mode === "cd") return { a:"var(--cd-blue)", b:"var(--cd-muted)", w:"var(--warn)", grid:"var(--cd-border)", txt:"var(--cd-muted)" };
+  return mode ? { a:"#1d61d8", b:"#94a3b8", w:"#b45309", grid:"#e3e8ef", txt:"#667085" }
+              : { a:"var(--blue)", b:"var(--muted)", w:"var(--warn)", grid:"var(--border)", txt:"var(--muted)" };
 }
 /* series: [{ data:[...per payment period], color, dash, width }] over `months` periods, `ppy` a year. */
 function caLineChart(series, months, print, label, ppy){
@@ -3667,13 +3743,19 @@ function caLineChart(series, months, print, label, ppy){
     <text x="${L-8}" y="${(y(v)+4).toFixed(1)}" text-anchor="end" font-size="11" fill="${c.txt}">${v < -0.5 ? "−" : ""}$${Math.abs(v) >= 1000 ? +(Math.abs(v)/1000).toFixed(1) + "k" : Math.round(Math.abs(v))}</text>`; }).join("");
   var yrs = Math.floor(months/ppy), xl = "", every = yrs > 10 ? 2 : 1;
   for (var yy = 0; yy <= yrs; yy += every) xl += `<text x="${x(yy*ppy).toFixed(1)}" y="${H-8}" text-anchor="middle" font-size="11" fill="${c.txt}">${yy === 0 ? "Today" : "Yr " + yy}</text>`;
+  var gid = "cag" + Math.random().toString(36).slice(2, 8), defs = "";
   var lines = series.map(function(s){
     var pts = s.data.slice(0, months + 1).map(function(v, i){ return x(i).toFixed(1) + "," + y(v).toFixed(1); }).join(" ");
-    var last = Math.min(months, s.data.length - 1);
-    return `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.width || 3}" stroke-linejoin="round" ${s.dash ? `stroke-dasharray="6 5"` : ""}/>
+    var last = Math.min(months, s.data.length - 1), area = "";
+    if (s.fill){
+      var base = y(Math.max(lo, 0)).toFixed(1);
+      defs = `<defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${s.color}" stop-opacity=".28"/><stop offset="1" stop-color="${s.color}" stop-opacity="0"/></linearGradient></defs>`;
+      area = `<polygon points="${x(0).toFixed(1)},${base} ${pts} ${x(last).toFixed(1)},${base}" fill="url(#${gid})" stroke="none"/>`;
+    }
+    return area + `<polyline points="${pts}" fill="none" stroke="${s.color}" stroke-width="${s.width || 3}" stroke-linejoin="round" ${s.dash ? `stroke-dasharray="6 5"` : ""}/>
       ${s.dot === false ? "" : `<circle cx="${x(last).toFixed(1)}" cy="${y(s.data[last]).toFixed(1)}" r="4.5" fill="${s.color}"/>`}`;
   }).join("");
-  return `<svg viewBox="0 0 ${W} ${H}" class="ca-chart" role="img" aria-label="${esc(label)}">${yl}${xl}${lines}</svg>`;
+  return `<svg viewBox="0 0 ${W} ${H}" class="ca-chart" role="img" aria-label="${esc(label)}">${defs}${yl}${xl}${lines}</svg>`;
 }
 function caLegend(items){
   return `<div class="ca-legend">${items.map(function(it){
@@ -3683,7 +3765,7 @@ function caInvestChart(res, print){
   var c = caColors(print), run = res.run;
   return caLineChart([
     { data:run.loanPath, color:c.b, dash:true, width:2.5, dot:false },
-    { data:run.acctPath, color:c.a }
+    { data:run.acctPath, color:c.a, fill:print === "cd" }
   ], res.N, print, "Investment account and car loan balance over time", res.ppy) +
   caLegend([{ color:c.a, text:"Investment account (pays the car loan)" }, { color:c.b, dash:true, text:"Car loan still owing" }]);
 }
@@ -3692,7 +3774,7 @@ function caLocChart(lc, print){
   var H = payoff ? Math.max(n, payoff) : Math.max(n + 2*ppy, Math.ceil(n * 1.5 / ppy) * ppy);
   H = Math.min(H, 20*ppy);
   var pad = function(arr){ var out = arr.slice(0, H + 1), last = out[out.length - 1]; while (out.length < H + 1) out.push(last); return out; };
-  var series = [{ data:pad(lc.dealer.path), color:c.a }];
+  var series = [{ data:pad(lc.dealer.path), color:c.a, fill:print === "cd" }];
   if (lc.payMode !== "interest") series.push({ data:pad(lc.loc.minPath), color:c.w, dash:true, width:2, dot:false });
   series.push({ data:pad(lc.loc.path), color:c.w });
   var leg = [{ color:c.a, text:"Dealer loan balance" },
@@ -3909,43 +3991,123 @@ function caDisclaimer(tab){
     : "Illustration only — not investment, tax or legal advice. Investment returns are not guaranteed and can be negative; past performance does not predict future results. Assumes the payment schedule shown, investments held tax-free (e.g. a TFSA) and no fees. Historical data: S&P 500 total return (NYU Stern) converted to CAD (Federal Reserve USD/CAD); S&P/TSX Composite total return from 2018, price return plus estimated 2.5% dividends before. Financing is subject to lender approval.";
 }
 
-/* ---- customer screen (second window or full screen) ---- */
+/* ---- customer screen (second window or full screen) ----
+   A presentation view: dealership header, one hero result, the "two paths"
+   side by side, the worked-out statement, chart and key figures. Colours come
+   from the dealership's brand (--cd-* variables), in light or dark mode. */
+function caIcon(name){
+  var p = {
+    lock:'<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    flag:'<path d="M5 21V4"/><path d="M5 4h11l-2 4 2 4H5"/>',
+    trend:'<path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/>',
+    shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+    check:'<path d="M5 12l5 5 9-10"/>',
+    cash:'<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/>',
+    grow:'<path d="M4 20h16"/><path d="M7 16v-4M12 16V8M17 16v-7"/>'
+  }[name] || "";
+  return `<svg class="cx-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>`;
+}
+function caDonut(pct){
+  var r = 30, c = 2*Math.PI*r, f = Math.max(0, Math.min(100, pct))/100;
+  return `<svg class="cx-donut" viewBox="0 0 76 76" aria-hidden="true">
+    <circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--cd-border)" stroke-width="8"/>
+    <circle cx="38" cy="38" r="${r}" fill="none" stroke="var(--cd-blue)" stroke-width="8" stroke-linecap="round"
+      stroke-dasharray="${(c*f).toFixed(1)} ${c.toFixed(1)}" transform="rotate(-90 38 38)"/>
+    <text x="38" y="43" text-anchor="middle" font-size="16" font-weight="700" fill="currentColor">${Math.round(pct)}%</text></svg>`;
+}
 function caCustomerHtml(){
-  var s = caState || caBlank(), b = V.brand(), cfg = state.config;
-  var head = `<div class="cd-head"><div class="fs">${esc(b.finLabel)}</div>
-    <div class="cd-tagline">${s.tab === "loc" ? "Line of credit or dealer financing — side by side." : "Keep your cash working while you drive."}</div></div>`;
-  var foot = `<div class="cd-foot"><span>${esc(cfg.name)} — ${esc(cfg.address)}, ${esc(cfg.city)}</span><span>${esc(cfg.phone)}</span></div>`;
-  var hello = s.customer.trim() ? `<div class="cax-hello">${esc(s.customer.trim())}, here's how your options compare</div>` : "";
+  var s = caState || caBlank(), b = V.brand(), cfg = state.config, I = caInputs();
+  var name = s.customer.trim(), first = name.split(" ")[0];
+  var head = `<header class="cx-head">
+      <div class="cx-brand"><div class="cx-mark">${esc(cfg.logoMark || b.mark)}</div>
+        <div><div class="cx-dealer">${esc(cfg.name)}</div><div class="cx-lender">${esc(b.finLabel)}</div></div></div>
+      <div class="cx-meta">${name ? `<div class="cx-for">Prepared for <strong>${esc(name)}</strong></div>` : ""}<div>${C.fmtDate(C.todayISO())}</div></div>
+    </header>`;
+  var foot = `<footer class="cx-foot"><p>${caDisclaimer(s.tab)}</p><span>${esc(cfg.name)} · ${esc(cfg.address)}, ${esc(cfg.city)} · ${esc(cfg.phone)}</span></footer>`;
+  var wait = `<div class="cx-wait"><div class="cx-eyebrow">${esc(cfg.name)}</div>
+      <div class="cx-welcome">Welcome${first ? ", " + esc(first) : ""}</div>
+      <p>Your Finance Manager is preparing your personal comparison.</p><div class="cx-dots"><i></i><i></i><i></i></div></div>`;
   var body;
   if (s.tab === "invest"){
-    var res = C.cashAdvantage(caInputs());
-    if (!res) body = `<div class="cax-wait"><div class="hw">Welcome${s.customer.trim() ? " " + esc(s.customer.trim()) : ""}</div><p class="muted">Your Finance Manager is preparing your comparison.</p></div>`;
+    var res = C.cashAdvantage(I);
+    if (!res) body = wait;
     else {
-      var h = caHeadline(res), why = caWhyLines(res);
-      body = `${hello}<div class="cax-grid"><div>
-          <div class="ca-hero ${h.good?"good":"bad"}"><div class="ca-lead">${h.lead}</div>
-            <div class="ca-big num">${h.big} <span>${h.tail}</span></div><div class="ca-sub">after ${caYears(res.months)}, compared with paying cash</div></div>
-          ${caReceipt(res, false)}
-          ${why.length ? `<ul class="ca-why">${why.map(function(w){ return `<li>${w}</li>`; }).join("")}</ul>` : ""}
-        </div><div>
-          <div class="ca-facts">
-            <div><span>${caPayLabel(res.freq)}</span><strong class="num">${money(res.pmt)}</strong></div>
-            <div><span>Loan term</span><strong class="num">${esc(s.term)} months</strong></div>
-            <div><span>Rate (APR)</span><strong class="num">${caPct(caInputs().apr)}</strong></div></div>
-          ${caInvestChart(res, false)}</div></div>`;
+      var good = res.adv >= 0, r = res.run, inv = caInvestName(true);
+      var basis = res.kind === "history" ? `Based on a typical past ${caYearsText(res.months)} period of ${esc(inv)}`
+        : caState.invest === "gic" ? `Based on a GIC at ${caPct(res.rate)}, guaranteed` : `If ${esc(inv)} earns ${caPct(res.rate)} a year`;
+      var stmt = [
+        ["Cash invested today", money0(r.cash), ""],
+        ["Earnings on what's left after each payment", caSigned(r.earnings), r.earnings >= 0 ? "pos" : "neg"],
+        [`Car payments · ${r.payCount} × ${money(r.pmt)}<small>includes ${money0(r.interestPaid)} interest</small>`, "−" + money0(r.paid), ""]];
+      if (r.owing > 0.5) stmt.push([`Loan still owing after ${caYears(res.months)}`, "−" + money0(r.owing), ""]);
+      var tiles = [
+        [caPayLabel(res.freq), money(res.pmt)],
+        ["Term", esc(s.term) + " months"],
+        ["Rate", caPct(I.apr) + " APR"]];
+      body = `<section class="cx-hero ${good ? "up" : "down"}">
+          <div class="cx-hero-l">
+            <div class="cx-eyebrow light">${good ? "Your financing advantage" : "Your comparison"}</div>
+            <div class="cx-big num">${caSigned(res.adv)}</div>
+            <div class="cx-hero-sub">${good ? "left in your account" : "behind paying cash"} after ${caYears(res.months)} — compared with $0 if you pay cash today</div>
+            <div class="cx-basis">${basis}</div>
+          </div>
+          <div class="cx-paths">
+            <div class="cx-path ${good ? "" : "win"}">${caIcon("cash")}<div><span>Pay cash today</span><strong class="num">$0</strong><em>left to invest</em></div></div>
+            <div class="cx-path ${good ? "win" : ""}">${caIcon("grow")}<div><span>Finance &amp; invest</span><strong class="num">${caSigned(res.adv)}</strong><em>yours after ${caYears(res.months)}</em></div></div>
+          </div>
+        </section>
+        <section class="cx-row">
+          <div class="cx-card cx-stmt"><div class="cx-card-h">How it's worked out</div>
+            ${stmt.map(function(x){ return `<div class="cx-line"><span>${x[0]}</span><strong class="num ${x[2]}">${x[1]}</strong></div>`; }).join("")}
+            <div class="cx-line total"><span>Left in your account</span><strong class="num">${caSigned(res.adv)}</strong></div>
+            <p class="cx-note">Your cash goes into the account and every car payment comes out of it. Earnings are only on what's left.</p></div>
+          <div class="cx-card cx-chart"><div class="cx-card-h">Your investment account over ${caYears(res.months)}</div>
+            ${caInvestChart(res, "cd")}</div>
+        </section>
+        <section class="cx-tiles">
+          ${tiles.map(function(t){ return `<div class="cx-tile"><span>${t[0]}</span><strong class="num">${t[1]}</strong></div>`; }).join("")}
+          ${res.kind === "history"
+            ? `<div class="cx-tile cx-win">${caDonut(res.aheadPct)}<div><span>History check</span><strong>Beat this loan in ${Math.round(res.aheadPct)}% of past ${caYearsText(res.months)} periods</strong><em>${res.firstYear}–${res.lastYear}</em></div></div>`
+            : res.breakEven !== null ? `<div class="cx-tile"><span>Break-even return</span><strong class="num">${caPct(res.breakEven)} a year</strong></div>` : ""}
+        </section>`;
     }
   } else {
-    var lc = C.locCompare(caInputs());
-    if (!lc) body = `<div class="cax-wait"><div class="hw">Welcome${s.customer.trim() ? " " + esc(s.customer.trim()) : ""}</div><p class="muted">Your Finance Manager is preparing your comparison.</p></div>`;
+    var lc = C.locCompare(I);
+    if (!lc) body = wait;
     else {
-      var lh = caLocHeadline(lc);
-      body = `${hello}<div class="cax-grid"><div>
-          <div class="ca-hero ${lh.cls}"><div class="ca-lead">${lh.lead}</div><div class="ca-big num">${lh.big}</div><div class="ca-sub">${lh.sub}</div></div>
-          ${caLocTable(lc)}</div>
-        <div>${caLocChart(lc, false)}<ul class="ca-why" style="margin-top:14px">${caLocReasons().map(function(w){ return `<li>${w}</li>`; }).join("")}</ul></div></div>`;
+      var lh = caLocHeadline(lc), L = lc.loc;
+      var plan = function(title, chip, chipCls, rows, win){
+        return `<div class="cx-plan ${win ? "win" : ""}"><div class="cx-plan-h"><strong>${title}</strong><span class="cx-chip ${chipCls}">${chip}</span></div>
+          ${rows.map(function(x){ return `<div class="cx-line"><span>${x[0]}</span><strong class="num">${x[1]}</strong></div>`; }).join("")}</div>`;
+      };
+      var dealerWins = lh.cls !== "bad";
+      var reasons = caLocReasons(), icons = ["lock","flag","trend","shield"];
+      body = `<section class="cx-hero ${lh.cls === "bad" ? "down" : "up"}">
+          <div class="cx-hero-l">
+            <div class="cx-eyebrow light">Line of credit vs dealer financing</div>
+            <div class="cx-lead">${lh.lead}</div>
+            <div class="cx-big num">${lh.big}</div>
+            <div class="cx-hero-sub">${lh.sub}</div>
+          </div>
+        </section>
+        <section class="cx-row loc">
+          <div class="cx-plans">
+            ${plan("Dealer financing", "Fixed rate", "ok", [
+              ["Rate", caPct(I.apr)], [caPayLabel(lc.freq), money(lc.dealer.pmt)],
+              ["Paid off in", caDuration(lc.n, lc.ppy)], ["Total interest", money0(lc.dealer.interest)],
+              [`If rates rise ${lc.shock}%`, "No change"]], dealerWins)}
+            ${plan("Line of credit", "Variable rate", "warn", [
+              ["Rate", caPct(L.rate)], [caPayLabel(lc.freq), lc.payMode === "interest" ? money(L.ioPmt) + " <small>interest only</small>" : money(L.pmt)],
+              ["Paid off in", L.payoff ? caDuration(L.payoff, lc.ppy) : "Never at this payment"],
+              ["Total interest", L.payoff ? money0(L.interest) : "Still owing " + money0(L.owingAtTerm)],
+              [`If rates rise ${lc.shock}%`, L.risePayoff ? money0(L.riseInterest) + " interest" : "Never paid off"]], !dealerWins)}
+          </div>
+          <div class="cx-card cx-chart"><div class="cx-card-h">What you owe over time</div>${caLocChart(lc, "cd")}</div>
+        </section>
+        <section class="cx-reasons">${reasons.map(function(t, i){ return `<div class="cx-reason">${caIcon(icons[i])}<p>${t}</p></div>`; }).join("")}</section>`;
     }
   }
-  return `<div class="cd" style="${V.cdThemeStyle()}">${head}<div class="cax">${body}<p class="cax-disc">${caDisclaimer(s.tab)}</p></div>${foot}</div>`;
+  return `<div class="cd cx" style="${V.cdThemeStyle()}">${head}<main class="cx-main">${body}</main>${foot}</div>`;
 }
 function caWindowDoc(){
   var css = "";
@@ -3953,7 +4115,7 @@ function caWindowDoc(){
   return '<!DOCTYPE html><html data-theme="' + state.ui.theme + '"><head><meta charset="utf-8">' +
     '<meta name="viewport" content="width=device-width, initial-scale=1">' +
     '<title>Your Options — ' + esc(state.config.name) + '</title><style>' + css +
-    ' html,body{height:100%} body{margin:0;background:var(--bg)} .cd{min-height:100vh;display:flex;flex-direction:column} .cax{flex:1}</style></head><body>' +
+    ' html,body{height:100%} body{margin:0;background:var(--bg)} .cd{min-height:100vh;display:flex;flex-direction:column}</style></head><body>' +
     caCustomerHtml() + '</body></html>';
 }
 function caPushWindow(){
