@@ -229,7 +229,17 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   const sh = C.caConst(Object.assign({}, base, { years: 2 }), 5, 24);
   eq("CA identity mid-loan", sh.adv, sh.earnings - sh.interestPaid, 0.01);
   eq("CA mid-loan still owes", sh.owing > 0, true);
-  eq("CA history run labelled", typeof sp.run.years[0].label, "string");
+  /* markets: headline uses the compound average since 1990 (default), last 10 or last 5 years */
+  eq("CA S&P average since 1990", C.marketAverage("sp500", 0).rate, 11.23, 0.01);
+  eq("CA S&P average last 10 years", C.marketAverage("sp500", 10).rate, 14.75, 0.01);
+  eq("CA S&P average last 5 years", C.marketAverage("sp500", 5).rate, 16.03, 0.01);
+  eq("CA TSX average since 1990", C.marketAverage("tsx", 0).rate, 8.64, 0.01);
+  eq("CA last 5 years = 2021-2025", C.marketAverage("sp500", 5).from, 2021);
+  eq("CA market default = since 1990", sp.rate, C.marketAverage("sp500", 0).rate, 1e-9);
+  eq("CA market result = steady average", sp.adv, C.caConst(base, sp.rate, 60).adv, 0.01);
+  const sp5 = C.cashAdvantage(Object.assign({}, base, { invest: "sp500", avgOver: "5" }));
+  eq("CA last-5 option uses 2021-2025 average", sp5.rate, C.marketAverage("sp500", 5).rate, 1e-9);
+  eq("CA history facts unchanged by average choice", sp5.aheadPct, sp.aheadPct, 1e-9);
 
   const same = C.locCompare({ amount: 45000, apr: 4.99, term: 60, lost: 0, locRate: 4.99 });
   eq("LOC same rate, matched payment = same cost", same.locCheaperBy, 0, 0.5);
@@ -260,10 +270,23 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   eq("CA payments total = principal + interest", rr.paid, 45000 + rr.interestPaid, 0.01);
   {
     const s30 = C.cashAdvantage({ amount: 30000, apr: 7.99, term: 60, lost: 0, years: 5, invest: "sp500" }).run;
-    eq("CA $30k example earnings", Math.round(s30.earnings), 12945, 1);
-    eq("CA $30k example result", Math.round(s30.adv), 6456, 1);
+    eq("CA $30k example result at 11.23% average", Math.round(s30.adv), 3114, 1);
+    eq("CA $30k example identity", s30.adv, s30.earnings - s30.interestPaid, 0.01);
     eq("CA earnings counted only on what is left (less than untouched)", s30.earnings < s30.untouchedEarnings, true);
-    eq("CA $30k untouched earnings", Math.round(s30.untouchedEarnings), 39556, 1);
+    eq("CA $30k untouched earnings at 11.23%", s30.untouchedEarnings, 30000 * (Math.pow(1.1123, 5) - 1), 15);
+  }
+
+  /* "Keep it invested" view: untouched cash − loan owing − payments invested instead = same result */
+  const keep = (r) => r.untEnd - r.owing - r.portEnd;
+  eq("CA keep-invested view = same result", keep(rr), rr.adv, 0.01);
+  eq("CA keep-invested view with discount lost", keep(rl), rl.adv, 0.01);
+  eq("CA keep-invested view mid-loan", keep(sh), sh.adv, 0.01);
+  {
+    const ex = C.cashAdvantage({ amount: 30000, apr: 4.99, term: 60, lost: 0, years: 5, invest: "gic", rate: 3.25 }).run;
+    eq("CA Excel example: untouched $30k at 3.25%", ex.untEnd, 30000 * Math.pow(1.0325, 5), 0.01);
+    eq("CA Excel example: payments invested beat untouched cash", ex.portEnd > ex.untEnd, true);
+    eq("CA Excel example: both views agree", keep(ex), ex.adv, 0.01);
+    eq("CA Excel example: borrowing 4.99% to earn 3.25% loses", ex.adv < 0, true);
   }
 
   /* bi-weekly: 26 payments a year, same rule as the Finance page */
