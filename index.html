@@ -1125,7 +1125,10 @@ function money0(n){ if (n === null || n === undefined || isNaN(n)) return "—";
 function km(n){ return Number(n).toLocaleString("en-CA") + " km"; }
 function esc(s){ return String(s === null || s === undefined ? "" : s)
   .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
-function todayISO(){ return new Date().toISOString().slice(0,10); }
+/* The local calendar date (YYYY-MM-DD). toISOString() would give the UTC date,
+   which in Ontario is already tomorrow from 8 PM (7 PM in winter). */
+function localISO(d){ return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+function todayISO(){ return localISO(new Date()); }
 function fmtDate(iso){ if(!iso) return "—";
   var d = new Date(iso + (iso.length === 10 ? "T12:00:00" : ""));
   return d.toLocaleDateString("en-CA",{year:"numeric",month:"short",day:"2-digit"}); }
@@ -1574,7 +1577,7 @@ function locCompare(o){
     locCheaperBy:loc.payoff ? (dInt + lost) - loc.interest : null };
 }
 
-window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO,
+window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
@@ -2689,7 +2692,7 @@ function saveProduct(){
 function presetRange(period){
   var now = new Date(), to = C.todayISO(), from;
   if (period === "daily") from = to;
-  else if (period === "weekly") from = new Date(now.getTime()-6*86400000).toISOString().slice(0,10);
+  else if (period === "weekly"){ var wk = new Date(now); wk.setDate(wk.getDate() - 6); from = C.localISO(wk); }
   else if (period === "monthly") from = to.slice(0,7) + "-01";
   else from = to.slice(0,4) + "-01-01";
   return { from:from, to:to };

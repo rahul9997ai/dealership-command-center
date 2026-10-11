@@ -312,5 +312,10 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   eq("LOC no rate -> null", C.locCompare({ amount: 45000, apr: 4.99, term: 60, locRate: "" }), null);
 }
 
+/* --- dates are the local calendar day, not UTC (8 PM in Ontario is already tomorrow in UTC) --- */
+eq("localISO uses local date", C.localISO(new Date(2026, 9, 10, 23, 30)), "2026-10-10");
+eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-01-05");
+{ const d = new Date(); eq("todayISO = local today", C.todayISO(), C.localISO(d)); }
+
 console.log("\n" + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
