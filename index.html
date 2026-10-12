@@ -251,6 +251,7 @@ tbody tr:hover{background:var(--surface-2)}
 .paygrid tr.base td{color:var(--muted)}
 .paygrid tr.chosen td{background:var(--info-bg)}
 .close-box,.choice-box{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)}
+.choice-box{margin:0 0 18px}
 .close-box > :first-child{margin-top:0}
 .close-box .kv.total:first-child{border-top:0;padding-top:0;margin-top:0}
 .choice-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(150px,190px);gap:10px;align-items:stretch}
@@ -2520,7 +2521,7 @@ function viewFinance(){
     </div>`;
   }).join("");
 
-  /* The customer's package choice sits right under the product list. */
+  /* The customer's package choice sits at the top of Products & packages, right under its heading. */
   var chosenKey = tx.display.selection ? tx.display.selection.package : null;
   var choiceBtns = D.PACKAGES.map(function(def){
     var p = pkgOf(def.key), isSel = chosenKey === def.key;
@@ -2548,12 +2549,12 @@ function viewFinance(){
     <div class="sp"><span class="muted small">${tx.lines.length} selected</span>
       <button class="btn sm" data-act="route" data-route="products">Manage product master</button></div></div>
     <div class="card-b">
-      ${state.products.length ? `<div class="mg-head">
+      ${state.products.length ? `${choiceBox}<div class="mg-head">
           <div class="mg-h-prod muted small">${headNote}</div>
           <div class="mg-h-price tiny muted">Retail price</div>
           ${pkgHead}
           <div class="mg-h-dec"></div>
-        </div>${productRows}${choiceBox}`
+        </div>${productRows}`
         : `<div class="emptystate"><h3>No products set up yet</h3><p class="muted small">Add this dealership's products first, then come back to build packages.</p><button class="btn primary" data-act="route" data-route="products">Set up products</button></div>`}
     </div></div>`;
 
@@ -5403,7 +5404,7 @@ var TOUR_STEPS = [
   { sel:"#step-1", title:"1 · Customer", text:"Start with who you're helping. Name, phone and email feed the customer display, the printed copy and the emailed package." },
   { sel:"#step-2", title:"2 · Vehicle", text:"Enter the vehicle and its selling price. That price drives every payment and total the customer sees." },
   { sel:"#step-3", title:"3 · Finance or Cash setup", text:"Flip between Finance and Cash. Finance: pick the terms to present, set each rate and the payment frequency. Cash: enter any trade and deposit and it shows one total due." },
-  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick it into the Preferred, Essential or Basic column to place it in that package, or Decline to show the customer what they're waiving. Each column shows its running total. Tab jumps straight to the next price box. Under the list, record the package the customer chose." },
+  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick it into the Preferred, Essential or Basic column to place it in that package, or Decline to show the customer what they're waiving. Each column shows its running total. Tab jumps straight to the next price box. At the top of this card, record the package the customer chose." },
   { sel:"#step-5", title:"5 · Present & close", text:"Compare every package at every term, choose whether the customer sees payments and prices, check what's left, then complete the deal." },
   { sel:".fin-toolbar", title:"Your action bar", text:"This bar stays pinned while you scroll: the customer display, Print & send (email, internal print, customer copy), Deal (new, save, saved deals), what's left to finish, and Complete transaction." },
   { sel:null, title:"You're all set", text:"That's the core flow. Reports (left menu) lists your completed deals, and you can reopen or edit any of them. Enjoy AXIOM." }
