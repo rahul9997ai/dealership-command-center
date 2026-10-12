@@ -212,9 +212,11 @@ tbody tr:hover{background:var(--surface-2)}
 .prodrow2 .pr-ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Products menu grid: one row per product, one column per package */
 .mg-head,.mg-row{display:grid;grid-template-columns:minmax(220px,1fr) 140px repeat(3,minmax(96px,124px)) 80px;column-gap:8px;align-items:center}
-.mg-head{padding:0 14px 10px;align-items:end}
-.mg-pk{text-align:center;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 6px;min-width:0}
-.mg-pk-n{font-weight:800;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;line-height:1.25;overflow-wrap:anywhere}
+/* header boxes: same height, and every name gets the same two-line space so totals and payments line up across */
+.mg-head{padding:0 14px 10px;align-items:stretch}
+.mg-h-prod,.mg-h-price{align-self:end}
+.mg-pk{text-align:center;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 6px;min-width:0;display:flex;flex-direction:column;align-items:center}
+.mg-pk-n{font-weight:800;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;line-height:1.25;overflow-wrap:anywhere;min-height:2.5em;display:flex;align-items:center;justify-content:center}
 .mg-pk-t{font-size:18px;font-weight:700;margin:3px 0 1px}
 .mg-pk-add{color:var(--blue);font-weight:600}
 .mg-row{border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--surface-2)}
