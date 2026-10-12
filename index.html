@@ -182,6 +182,16 @@ tbody tr:hover{background:var(--surface-2)}
 .need{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-bg) !important}
 .choice-row.need,.mg-row.need,.chiprow.need{border-radius:12px}
 .confirm-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+/* Dealership settings: Brand colours / Colour of choice */
+.color-mode{display:inline-grid;grid-template-columns:1fr 1fr;gap:4px;padding:3px;border-radius:10px;background:var(--surface-3);margin-top:4px}
+.color-mode button{border:0;background:transparent;padding:8px 14px;border-radius:8px;font:inherit;font-size:13px;font-weight:600;color:var(--text-2);cursor:pointer}
+.color-mode button.on{background:var(--blue);color:#fff}
+.color-mode button:disabled{cursor:not-allowed;opacity:.6}
+.pal-row{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+.pal-chip{display:inline-flex;gap:10px;align-items:center;border:1px solid var(--border);border-radius:10px;padding:8px 12px 8px 8px;background:var(--surface-2)}
+.pal-chip i{width:30px;height:30px;border-radius:8px;border:1px solid rgba(0,0,0,.12);flex:0 0 auto}
+.pal-chip b{display:block;font-size:13px}
+.pal-chip small{display:block;font-size:11.5px;color:var(--muted)}
 .ca-cta{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
 .deal-banner{align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .deal-banner .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
@@ -1064,27 +1074,28 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 "use strict";
 
 /* Brand registry. finLabel is the customer-facing financial services name. */
-/* pal = the brand's own two-colour look for the customer display: main (header band, package
-   titles) and accent (icons, prices, highlights). Toyota red EB0A1E is from Toyota's published
-   brand guidelines; the Nissan, Ford and Hyundai values are the commonly cited ones and are to be
-   checked against each brand's official kit. Brands without pal use their single colour. */
+/* pal = the brand's own two-colour look for the customer display, prints and email: main (header
+   band, package titles) and accent (icons, prices, highlights). From published brand guidelines:
+   Toyota red EB0A1E; Kia Midnight Black 05141F and Kia Gold 85754E. The others are the commonly
+   cited values (no official figure found) — swap in a brand kit's exact values when available.
+   color = the older single colour, still used for a custom ("Other") brand. */
 var BRANDS = {
-  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", color:"#2c5a9b", finLabel:"NISSAN FINANCIAL SERVICES", pal:{ main:"#111111", accent:"#C3002F" } },
-  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", color:"#3c4654", finLabel:"INFINITI FINANCIAL SERVICES" },
-  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", color:"#a3282f", finLabel:"TOYOTA FINANCIAL SERVICES", pal:{ main:"#EB0A1E", accent:"#1A1A1A" } },
-  honda:    { key:"honda",    label:"Honda",     mark:"HON", color:"#a3282f", finLabel:"HONDA FINANCIAL SERVICES" },
-  ford:     { key:"ford",     label:"Ford",      mark:"FRD", color:"#1f4a8a", finLabel:"FORD CREDIT FINANCIAL SERVICES", pal:{ main:"#003478", accent:"#2D6CC0" } },
-  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", color:"#1f3a68", finLabel:"HYUNDAI MOTOR FINANCE", pal:{ main:"#002C5F", accent:"#00AAD2" } },
-  kia:      { key:"kia",      label:"Kia",       mark:"KIA", color:"#8a2b3a", finLabel:"KIA FINANCE" },
-  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", color:"#9a7420", finLabel:"GM FINANCIAL" },
-  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", color:"#8a2b3a", finLabel:"MAZDA FINANCIAL SERVICES" },
-  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", color:"#1f3a68", finLabel:"BMW FINANCIAL SERVICES" },
-  subaru:   { key:"subaru",   label:"Subaru",    mark:"SUB", color:"#1f4a8a", finLabel:"SUBARU FINANCIAL SERVICES" },
-  volkswagen:{key:"volkswagen",label:"Volkswagen",mark:"VW", color:"#1f3a68", finLabel:"VOLKSWAGEN FINANCIAL SERVICES" },
-  acura:    { key:"acura",    label:"Acura",     mark:"ACU", color:"#3c4654", finLabel:"ACURA FINANCIAL SERVICES" },
-  lexus:    { key:"lexus",    label:"Lexus",     mark:"LEX", color:"#3c4654", finLabel:"LEXUS FINANCIAL SERVICES" },
-  genesis:  { key:"genesis",  label:"Genesis",   mark:"GEN", color:"#3c4654", finLabel:"GENESIS FINANCE" },
-  mitsubishi:{key:"mitsubishi",label:"Mitsubishi",mark:"MIT", color:"#a3282f", finLabel:"MITSUBISHI FINANCIAL SERVICES" }
+  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", color:"#2c5a9b", finLabel:"NISSAN FINANCIAL SERVICES", pal:{ main:"#111111", accent:"#C3002F", names:["Black","Nissan red"] } },
+  infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", color:"#3c4654", finLabel:"INFINITI FINANCIAL SERVICES", pal:{ main:"#111111", accent:"#A5A5A5", names:["Black","Silver"] } },
+  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", color:"#a3282f", finLabel:"TOYOTA FINANCIAL SERVICES", pal:{ main:"#EB0A1E", accent:"#1A1A1A", names:["Toyota red","Black"] } },
+  honda:    { key:"honda",    label:"Honda",     mark:"HON", color:"#a3282f", finLabel:"HONDA FINANCIAL SERVICES", pal:{ main:"#CC0000", accent:"#1A1A1A", names:["Honda red","Black"] } },
+  ford:     { key:"ford",     label:"Ford",      mark:"FRD", color:"#1f4a8a", finLabel:"FORD CREDIT FINANCIAL SERVICES", pal:{ main:"#003478", accent:"#2D6CC0", names:["Ford blue","Bright blue"] } },
+  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", color:"#1f3a68", finLabel:"HYUNDAI MOTOR FINANCE", pal:{ main:"#002C5F", accent:"#00AAD2", names:["Hyundai blue","Sky blue"] } },
+  kia:      { key:"kia",      label:"Kia",       mark:"KIA", color:"#8a2b3a", finLabel:"KIA FINANCE", pal:{ main:"#05141F", accent:"#85754E", names:["Midnight black","Kia gold"] } },
+  chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", color:"#9a7420", finLabel:"GM FINANCIAL", pal:{ main:"#1A1A1A", accent:"#D4AF37", names:["Black","Bowtie gold"] } },
+  mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", color:"#8a2b3a", finLabel:"MAZDA FINANCIAL SERVICES", pal:{ main:"#101010", accent:"#910A1C", names:["Black","Mazda red"] } },
+  bmw:      { key:"bmw",      label:"BMW",       mark:"BMW", color:"#1f3a68", finLabel:"BMW FINANCIAL SERVICES", pal:{ main:"#0066B1", accent:"#262626", names:["BMW blue","Black"] } },
+  subaru:   { key:"subaru",   label:"Subaru",    mark:"SUB", color:"#1f4a8a", finLabel:"SUBARU FINANCIAL SERVICES", pal:{ main:"#013C74", accent:"#1971D4", names:["Subaru blue","Pleiades blue"] } },
+  volkswagen:{key:"volkswagen",label:"Volkswagen",mark:"VW", color:"#1f3a68", finLabel:"VOLKSWAGEN FINANCIAL SERVICES", pal:{ main:"#001E50", accent:"#00B0F0", names:["VW blue","Light blue"] } },
+  acura:    { key:"acura",    label:"Acura",     mark:"ACU", color:"#3c4654", finLabel:"ACURA FINANCIAL SERVICES", pal:{ main:"#111111", accent:"#E40521", names:["Black","Acura red"] } },
+  lexus:    { key:"lexus",    label:"Lexus",     mark:"LEX", color:"#3c4654", finLabel:"LEXUS FINANCIAL SERVICES", pal:{ main:"#111111", accent:"#99877D", names:["Black","Lexus grey"] } },
+  genesis:  { key:"genesis",  label:"Genesis",   mark:"GEN", color:"#3c4654", finLabel:"GENESIS FINANCE", pal:{ main:"#111111", accent:"#A36B4F", names:["Black","Genesis copper"] } },
+  mitsubishi:{key:"mitsubishi",label:"Mitsubishi",mark:"MIT", color:"#a3282f", finLabel:"MITSUBISHI FINANCIAL SERVICES", pal:{ main:"#E60012", accent:"#1A1A1A", names:["Mitsubishi red","Black"] } }
 };
 /* Colour schemes a General Manager can pick for the customer display. */
 var COLOR_PRESETS = [
@@ -2128,11 +2139,33 @@ function contrastHex(a, b){ var x = hexLum(a), y = hexLum(b); return (Math.max(x
 function readableOn(c, bg, ratio, toward){ for (var i = 0; i < 12 && contrastHex(c, bg) < ratio; i++) c = mixHex(c, toward, .12); return c; }
 /* The customer display's colours come from the dealership's brand colour
    (chosen in Dealership settings) and follow the app's light/dark mode. */
+/* "brand" = the brand's own colours, "custom" = the colour a General Manager picked in Dealership
+   settings. Dealerships that picked a colour before this switch existed count as "custom". */
+function colorMode(cfg){
+  cfg = cfg || state.config || {};
+  if (cfg.colorMode === "brand" || cfg.colorMode === "custom") return cfg.colorMode;
+  return /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "") ? "custom" : "brand";
+}
+function customColor(){ var c = (state.config || {}).brandColor; return colorMode() === "custom" && /^#[0-9a-f]{6}$/i.test(c || "") ? c : null; }
+/* Colours for the printed customer copy, the email and the Cash Advantage printout: a band
+   (header gradient, white text on it) and a hue for headings and ticks that reads on white. */
+function brandInk(){
+  var W = "#ffffff", K = "#0a1220", cc = customColor(), pal = cc ? null : brand().pal;
+  var chroma = function(h){ var r = hexRgb(h); return (Math.max.apply(null, r) - Math.min.apply(null, r)) / 255; };
+  if (!pal){
+    var base = cc || brand().color || "#2c5a9b";
+    return { main:base, accent:base, hue:readableOn(base, W, 4.5, K), bandA:mixHex(base, K, .45), bandB:base };
+  }
+  var M = pal.main, A = pal.accent, inky = hexLum(M) < .02;
+  var vivid = chroma(M) >= chroma(A) ? M : A;
+  return { main:M, accent:A, hue:readableOn(vivid, W, 4.5, K),
+    bandA:inky ? M : readableOn(mixHex(M, K, .22), W, 3, K), bandB:inky ? mixHex(M, W, .16) : readableOn(M, W, 3, K) };
+}
 function cdThemeStyle(){
   var cfg = state.config || {};
-  var custom = /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "");
+  var custom = !!customColor();
   if (!custom && brand().pal) return cdPaletteStyle(brand().pal);
-  var base = custom ? cfg.brandColor : (brand().color || "#2c5a9b");
+  var base = custom ? customColor() : (brand().color || "#2c5a9b");
   var W = "#ffffff", K = "#0a1220", v;
   if (state.ui.theme === "dark") v = { "surface":mixHex(K,base,.12), "surface-2":mixHex(K,base,.18), "surface-3":mixHex(K,base,.24), "border":mixHex(K,base,.36),
     "blue":mixHex(base,W,.28), "blue-2":mixHex(base,W,.42), "blue-deep":mixHex(base,K,.72), "text":"#eaf0fb", "muted":"#a4b3cc",
@@ -2155,7 +2188,7 @@ function cdPaletteStyle(pal){
   var inky = hexLum(M) < .02, tint = inky ? "#5b6170" : mixHex("#5b6170", M, .35);
   if (state.ui.theme === "dark"){
     var D = inky ? M : tint, sf = mixHex(K, D, inky ? .06 : .12);
-    var ac = readableOn(hexLum(A) < .05 ? mixHex(M, W, .35) : mixHex(A, W, .12), sf, 4.5, W);
+    var ac = readableOn(hexLum(A) < .05 ? mixHex(M, W, .35) : mixHex(A, W, .12), mixHex(K, D, inky ? .14 : .24), 4.5, W);   /* readable on the lightest dark surface */
     v = { "surface":sf, "surface-2":mixHex(K, D, inky ? .1 : .18), "surface-3":mixHex(K, D, inky ? .14 : .24), "border":mixHex(K, inky ? "#8a8f98" : D, .3),
       "blue":ac, "blue-2":mixHex(ac, W, .14), "blue-deep":mixHex(M, K, .5), "text":"#eef1f6", "muted":"#a9b1bf",
       "head-a":inky ? mixHex(M, K, .3) : mixHex(M, K, .5), "head-b":inky ? mixHex(M, W, .12) : mixHex(M, K, .12),
@@ -2163,7 +2196,7 @@ function cdPaletteStyle(pal){
       "pane":mixHex(K, M, inky ? .3 : .46), "pane-2":mixHex(K, M, inky ? .2 : .34), "pane-text":"#eef1f6", "pane-muted":"#b4bccb", "green":"#86efac", "tile":"#eef1f6",
       "pill-bg":mixHex(K, M, .2), "pill-text":"#eef1f6" };
   } else {
-    var ac2 = readableOn(A, W, 4.5, K);
+    var ac2 = readableOn(A, mixHex(W, tint, .1), 4.5, K);   /* readable on the darkest light surface */
     v = { "surface":mixHex(W, tint, .06), "surface-2":mixHex(W, tint, .025), "surface-3":mixHex(W, tint, .1), "border":mixHex(W, tint, .22),
       "blue":ac2, "blue-2":mixHex(A, W, .14), "blue-deep":mixHex(M, K, .3), "text":"#1b1f27", "muted":"#5d6573",
       "head-a":inky ? M : mixHex(M, K, .22), "head-b":inky ? mixHex(M, W, .16) : M,
@@ -2733,7 +2766,7 @@ function viewFinance(){
     <div><div class="stack"><div class="cv-row">${customerCard}${vehicleCard}</div>${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
 }
 
-window.__DCC_VIEW1__ = { state:state, brand:brand, cdThemeStyle:cdThemeStyle, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
+window.__DCC_VIEW1__ = { state:state, brand:brand, cdThemeStyle:cdThemeStyle, brandInk:brandInk, colorMode:colorMode, hexLum:hexLum, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
   isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, canUseOffers:canUseOffers, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
@@ -3085,7 +3118,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-12.3</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-12.4</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3342,13 +3375,26 @@ function viewSettings(){
 
     </div></div>
     <div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
-      <p class="muted small" style="max-width:60ch">Pick the colour scheme customers see on the display, the full-screen view and the pop-out window. It works in both light and dark mode.</p>
-      <div class="swatch-row">${D.COLOR_PRESETS.map(function(c){ var on = (state.config.brandColor || b.color || "").toLowerCase() === c.color;
-        return `<button type="button" class="swatch ${on?"on":""}" data-act="brand-color" data-color="${c.color}" ${dis}><i style="background:${c.color}"></i>${esc(c.name)}</button>`; }).join("")}</div>
-      <div class="inline" style="align-items:end">
-        <label class="f"><span>Custom colour</span><input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(state.config.brandColor||"") ? state.config.brandColor : (b.color || "#2c5a9b"))}" data-act="brand-color-input" ${dis} style="height:40px;padding:2px"></label>
-        <button type="button" class="btn" data-act="brand-color-reset" ${dis}>Use the ${esc(b.label)} default</button>
-      </div>
+      <p class="muted small" style="max-width:66ch">Used on the customer display, the full-screen view, the pop-out window, the printed customer copy, the Cash Advantage printout and the emailed package. Works in light and dark mode.</p>
+      ${(function(){
+        var mode = V.colorMode(), pal = b.pal;
+        var seg = `<div class="color-mode" role="group" aria-label="Colour scheme">
+          <button type="button" class="${mode==="brand"?"on":""}" data-act="color-mode" data-mode="brand" ${dis}>${esc(b.label)} colours</button>
+          <button type="button" class="${mode==="custom"?"on":""}" data-act="color-mode" data-mode="custom" ${dis}>Colour of choice</button></div>`;
+        if (mode === "brand"){
+          var chip = function(c, n, role){ return `<span class="pal-chip"><i style="background:${c}"></i><span><b>${esc(n)}</b><small>${role} · ${c}</small></span></span>`; };
+          return seg + (pal
+            ? `<div class="pal-row">${chip(pal.main, pal.names[0], "Header and package titles")}${chip(pal.accent, pal.names[1], "Icons and highlights")}</div>`
+            : `<div class="pal-row">${chip(b.color || "#2c5a9b", esc(b.label) + " colour", "Header, titles and highlights")}</div>
+               <p class="muted small" style="margin:8px 0 0">There's no preset palette for this brand. Choose <strong>Colour of choice</strong> to pick your own.</p>`);
+        }
+        var cur = (state.config.brandColor || "").toLowerCase();
+        return seg + `<div class="swatch-row" style="margin-top:12px">${D.COLOR_PRESETS.map(function(c){ var on = cur === c.color.toLowerCase();
+            return `<button type="button" class="swatch ${on?"on":""}" data-act="brand-color" data-color="${c.color}" ${dis}><i style="background:${c.color}"></i>${esc(c.name)}</button>`; }).join("")}</div>
+          <div class="inline" style="align-items:end">
+            <label class="f"><span>Custom colour</span><input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(state.config.brandColor||"") ? state.config.brandColor : (b.color || "#2c5a9b"))}" data-act="brand-color-input" ${dis} style="height:40px;padding:2px"></label>
+          </div>`;
+      })()}
     </div></div>
     <div class="card"><div class="card-h"><h2>Promotional offers</h2>
       <div class="sp"><button type="button" class="btn sm primary" data-act="gift-preset-add" ${dis}>Add an offer</button></div></div><div class="card-b">
@@ -3542,8 +3588,7 @@ function internalPrint(tx){
 function customerPrint(tx){
   var t = C.totals(state, tx), b = V.brand(), c = state.config;
   var shown = V.packagesToShow(t, tx);
-  var base = /^#[0-9a-f]{6}$/i.test(c.brandColor || "") ? c.brandColor : (b.color || "#2c5a9b");
-  var deep = V.mixHex(base, "#0a1220", .45);
+  var ink = V.brandInk(), base = ink.hue, deep = ink.bandA, band = ink.bandB;
   var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "";
   var veh = [tx.vehicle.year, tx.vehicle.make, tx.vehicle.model].filter(Boolean).join(" ");
   var fm = userById(tx.fsmUserId);
@@ -3565,7 +3610,7 @@ function customerPrint(tx){
       <div class="cb-side"><div class="cb-pn" style="color:${base}">${esc(p.label)}</div>${pay}${chips}</div></div>`;
   }).join("") : `<p style="margin-top:22px">No protection products were selected on this deal.</p>`;
   return `<div class="doc custb">
-    <div class="cb-band" style="background:linear-gradient(120deg,${deep},${base})">
+    <div class="cb-band" style="background:linear-gradient(120deg,${deep},${band})">
       <div class="cb-row"><div class="cb-dn">${esc(c.name)}</div><div class="cb-fin">${esc(b.finLabel)}</div></div>
       <h1 class="cb-h">${first ? "Congratulations, " + esc(first) : "Your Protection Summary"}</h1>
       <div class="cb-sub">${veh ? "Your " + esc(veh) + " is protected. " : ""}Here is a summary of what you chose today.</div>
@@ -3657,7 +3702,7 @@ function buildEmailHtml(tx){
   });
   var first = tx.customer.name ? tx.customer.name.split(" ")[0] : "there";
   var vehicle = (tx.vehicle.year + " " + tx.vehicle.make + " " + tx.vehicle.model).trim();
-  var brandColor = "#0d2f6b";
+  var ink = V.brandInk(), brandColor = ink.bandA;
 
   var pkgCardsHtml = shown.map(function(p){
     var rowsHtml = p.lines.map(function(L){
@@ -4573,8 +4618,7 @@ function caHexMix(a, b, t){
   return "#" + x.map(function(v, i){ return ("0" + Math.round(v + (y[i] - v)*t).toString(16)).slice(-2); }).join("");
 }
 function caPrintBrand(){
-  var cfg = state.config || {}, b = V.brand();
-  var base = /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "") ? cfg.brandColor : (/^#[0-9a-f]{6}$/i.test(b.color || "") ? b.color : "#2c5a9b");
+  var base = V.brandInk().hue;
   return { base:base, deep:caHexMix(base, "#0a1220", .45), soft:caHexMix(base, "#ffffff", .92), line:caHexMix(base, "#ffffff", .75) };
 }
 function cashAdvPrint(){
@@ -5772,8 +5816,17 @@ document.addEventListener("click", function(ev){
     case "gift-preset-add": if (!state.config.gifts) state.config.gifts = []; state.config.gifts.push({ id:C.uid("g"), name:"", value:null, cost:null }); commit(); break;
     case "gift-photo-remove": (state.config.gifts[Number(el.getAttribute("data-idx"))] || {}).image = null; commit(); break;
     case "gift-preset-remove": state.config.gifts.splice(Number(el.getAttribute("data-idx")), 1); commit(); break;
-    case "brand-color": state.config.brandColor = el.getAttribute("data-color"); commit(); break;
-    case "brand-color-reset": delete state.config.brandColor; commit(); break;
+    case "brand-color": state.config.brandColor = el.getAttribute("data-color"); state.config.colorMode = "custom"; commit(); break;
+    case "brand-color-reset": state.config.colorMode = "brand"; commit(); break;
+    case "color-mode": {
+      var cmode = el.getAttribute("data-mode") === "custom" ? "custom" : "brand";
+      state.config.colorMode = cmode;
+      /* first time on "Colour of choice": start from the brand's own colour (its accent when the main colour is black) */
+      if (cmode === "custom" && !/^#[0-9a-f]{6}$/i.test(state.config.brandColor || "")){
+        var cb = V.brand(), cpal = cb.pal;
+        state.config.brandColor = cpal ? (V.hexLum(cpal.main) < .02 ? cpal.accent : cpal.main).toLowerCase() : (cb.color || "#2c5a9b");
+      }
+      commit(); break; }
     case "email":
       state.ui.modal = { kind:"email" };
       if (state.tx.display.selection){
@@ -6162,7 +6215,7 @@ document.addEventListener("change", function(ev){
     if (el.checked) ob.users.push(ouid);
     state.config.offerAccess = ob; commit(); return;
   }
-  if (act === "brand-color-input"){ state.config.brandColor = el.value; commit(); return; }
+  if (act === "brand-color-input"){ state.config.brandColor = el.value; state.config.colorMode = "custom"; commit(); return; }
   if (act === "toggle-payment"){ state.tx.display.showPayment = el.checked; commit(); return; }
   if (act === "toggle-prices"){ state.tx.display.showPrices = el.checked; commit(); return; }
   if (act === "toggle-config"){ state.tx.display.showConfig = el.checked; commit(); return; }
