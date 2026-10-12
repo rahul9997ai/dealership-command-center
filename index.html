@@ -250,7 +250,9 @@ tbody tr:hover{background:var(--surface-2)}
 .paygrid i{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px}
 .paygrid tr.base td{color:var(--muted)}
 .paygrid tr.chosen td{background:var(--info-bg)}
-.close-box{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)}
+.close-box,.choice-box{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)}
+.close-box > :first-child{margin-top:0}
+.close-box .kv.total:first-child{border-top:0;padding-top:0;margin-top:0}
 .choice-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(150px,190px);gap:10px;align-items:stretch}
 .choice-none{white-space:normal;justify-content:center;text-align:center}
 .pkgselect:disabled{opacity:.45;cursor:not-allowed}
@@ -2518,6 +2520,30 @@ function viewFinance(){
     </div>`;
   }).join("");
 
+  /* The customer's package choice sits right under the product list. */
+  var chosenKey = tx.display.selection ? tx.display.selection.package : null;
+  var choiceBtns = D.PACKAGES.map(function(def){
+    var p = pkgOf(def.key), isSel = chosenKey === def.key;
+    return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}" ${p.count || isSel ? "" : "disabled"}>
+      <div class="pks-name">${esc(p.label)}</div>
+      <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
+      <div class="pks-total">${p.count ? money(p.sub) : "—"}</div>
+      ${p.count ? `<div class="tiny muted">before tax</div>` : ""}
+    </button>`;
+  }).join("");
+  var selNone = chosenKey === "none";
+  var selNote = selNone ? `<div class="notice ok" style="margin-top:12px">Recorded: no package purchased. Nothing from this presentation counts as sold in reports.
+      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Undo</button></div>`
+    : tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
+      Presenting only <strong>${esc((pkgOf(chosenKey)||{}).label||"")}</strong> on the customer display.
+      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
+  var choiceBox = `<div class="choice-box">
+      <div class="lbl">Which package did the customer choose?</div>
+      <p class="muted small" style="margin:2px 0 10px;max-width:80ch">It narrows the customer display to that package and records it as sold, so only its products count in reports. Click it again to undo.</p>
+      <div class="choice-row" id="step-choice">${choiceBtns}<button type="button" class="btn choice-none ${selNone?"on":""}" data-act="select-final-package" data-package="none">Customer didn't buy a package</button></div>
+      ${selNote}
+    </div>`;
+
   var productsCard = `<div class="card" id="step-4"><div class="card-h"><h2>4 · Products &amp; packages</h2>
     <div class="sp"><span class="muted small">${tx.lines.length} selected</span>
       <button class="btn sm" data-act="route" data-route="products">Manage product master</button></div></div>
@@ -2527,7 +2553,7 @@ function viewFinance(){
           <div class="mg-h-price tiny muted">Retail price</div>
           ${pkgHead}
           <div class="mg-h-dec"></div>
-        </div>${productRows}`
+        </div>${productRows}${choiceBox}`
         : `<div class="emptystate"><h3>No products set up yet</h3><p class="muted small">Add this dealership's products first, then come back to build packages.</p><button class="btn primary" data-act="route" data-route="products">Set up products</button></div>`}
     </div></div>`;
 
@@ -2598,8 +2624,7 @@ function viewFinance(){
     </div></div></div>`;
 
   /* 5 · Present & close: every package at every term (what the Finance Manager quotes from),
-     then the customer's choice, the checklist and Complete — the last things done in the box. */
-  var chosenKey = tx.display.selection ? tx.display.selection.package : null;
+     then the amount financed, the checklist and Complete — the last things done in the box. */
   var activePk = t.packages.filter(function(p){ return p.count > 0; });
   var pkgCell = function(p){
     return `<strong>${esc(p.label)}</strong> <span class="tiny muted">${p.count} product${p.count===1?"":"s"}</span>`
@@ -2629,21 +2654,6 @@ function viewFinance(){
   }
   if (!activePk.length) payGrid += `<div class="tiny muted" style="margin-top:8px">Tick products into packages above to compare them here.</div>`;
 
-  var choiceBtns = D.PACKAGES.map(function(def){
-    var p = pkgOf(def.key), isSel = chosenKey === def.key;
-    return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}" ${p.count || isSel ? "" : "disabled"}>
-      <div class="pks-name">${esc(p.label)}</div>
-      <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
-      <div class="pks-total">${p.count ? money(p.sub) : "—"}</div>
-      ${p.count ? `<div class="tiny muted">before tax</div>` : ""}
-    </button>`;
-  }).join("");
-  var selNone = chosenKey === "none";
-  var selNote = selNone ? `<div class="notice ok" style="margin-top:12px">Recorded: no package purchased. Nothing from this presentation counts as sold in reports.
-      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Undo</button></div>`
-    : tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
-      Presenting only <strong>${esc((pkgOf(chosenKey)||{}).label||"")}</strong> on the customer display.
-      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
   var chosenPkg = t.selectedPackage && t.selectedPackage !== "none" ? pkgOf(t.selectedPackage) : null;
   var closeSum = !t.selectedPackage ? "" : `<div class="kv total"><span>${tx.type === "Cash" ? "Total due at signing" : "Amount financed"}${chosenPkg ? " with " + esc(brand().label + " " + capWord(chosenPkg.suffix)) : ", vehicle only"}</span>
     <span class="num">${money(tx.type === "Cash" ? t.cashDueTotal : t.amountFinanced)}</span></div>`;
@@ -2659,10 +2669,6 @@ function viewFinance(){
     <div class="card-b">
       ${payGrid}
       <div class="close-box">
-        <div class="lbl">Which package did the customer choose?</div>
-        <p class="muted small" style="margin:2px 0 10px;max-width:80ch">It narrows the customer display to that package and records it as sold, so only its products count in reports. Click it again to undo.</p>
-        <div class="choice-row" id="step-choice">${choiceBtns}<button type="button" class="btn choice-none ${selNone?"on":""}" data-act="select-final-package" data-package="none">Customer didn't buy a package</button></div>
-        ${selNote}
         ${closeSum}
         <div class="close-finish">${checkNote}<button class="btn primary close-go" data-act="complete">${doneRec ? "Update completed deal" : "Complete transaction"}</button></div>
       </div>
@@ -5397,8 +5403,8 @@ var TOUR_STEPS = [
   { sel:"#step-1", title:"1 · Customer", text:"Start with who you're helping. Name, phone and email feed the customer display, the printed copy and the emailed package." },
   { sel:"#step-2", title:"2 · Vehicle", text:"Enter the vehicle and its selling price. That price drives every payment and total the customer sees." },
   { sel:"#step-3", title:"3 · Finance or Cash setup", text:"Flip between Finance and Cash. Finance: pick the terms to present, set each rate and the payment frequency. Cash: enter any trade and deposit and it shows one total due." },
-  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick it into the Preferred, Essential or Basic column to place it in that package, or Decline to show the customer what they're waiving. Each column shows its running total. Tab jumps straight to the next price box." },
-  { sel:"#step-5", title:"5 · Present & close", text:"Compare every package at every term, choose whether the customer sees payments and prices, then record the package they chose and complete the deal." },
+  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick it into the Preferred, Essential or Basic column to place it in that package, or Decline to show the customer what they're waiving. Each column shows its running total. Tab jumps straight to the next price box. Under the list, record the package the customer chose." },
+  { sel:"#step-5", title:"5 · Present & close", text:"Compare every package at every term, choose whether the customer sees payments and prices, check what's left, then complete the deal." },
   { sel:".fin-toolbar", title:"Your action bar", text:"This bar stays pinned while you scroll: the customer display, Print & send (email, internal print, customer copy), Deal (new, save, saved deals), what's left to finish, and Complete transaction." },
   { sel:null, title:"You're all set", text:"That's the core flow. Reports (left menu) lists your completed deals, and you can reopen or edit any of them. Enjoy AXIOM." }
 ];
