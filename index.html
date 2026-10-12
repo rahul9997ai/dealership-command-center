@@ -212,13 +212,11 @@ tbody tr:hover{background:var(--surface-2)}
 .prodrow2 .pr-ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
 /* Products menu grid: one row per product, one column per package */
 .mg-head,.mg-row{display:grid;grid-template-columns:minmax(220px,1fr) 140px repeat(3,minmax(96px,124px)) 80px;column-gap:8px;align-items:center}
-/* header boxes: same height, and every name gets the same two-line space so totals and payments line up across */
+/* header boxes: same height, and every name gets the same two-line space so they line up across */
 .mg-head{padding:0 14px 10px;align-items:stretch}
 .mg-h-prod,.mg-h-price{align-self:end}
-.mg-pk{text-align:center;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 6px;min-width:0;display:flex;flex-direction:column;align-items:center}
+.mg-pk{text-align:center;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:8px 6px;min-width:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
 .mg-pk-n{font-weight:800;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;line-height:1.25;overflow-wrap:anywhere;min-height:2.5em;display:flex;align-items:center;justify-content:center}
-.mg-pk-t{font-size:18px;font-weight:700;margin:3px 0 1px}
-.mg-pk-add{color:var(--blue);font-weight:600}
 .mg-row{border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--surface-2)}
 .mg-row + .mg-row{margin-top:8px}
 .mg-row.declined .mg-prod,.mg-row.declined .mg-price{opacity:.7}
@@ -237,8 +235,7 @@ tbody tr:hover{background:var(--surface-2)}
 .mg-dec{text-align:right}
 .mg-cfg{grid-column:1 / -1;margin-top:10px;padding-left:46px}
 @media (max-width:1100px){
-  .mg-head{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 0 10px}
-  .mg-h-prod,.mg-h-price,.mg-h-dec{display:none}
+  .mg-head{display:none}
   .mg-row{display:flex;flex-wrap:wrap;gap:10px 14px}
   .mg-prod{flex:1 1 100%}
   .mg-cell{justify-content:flex-start}
@@ -289,6 +286,7 @@ tbody tr:hover{background:var(--surface-2)}
 .pkgselect .pks-count{font-size:11.5px;color:var(--muted)}
 .pkgselect .pks-total{font-size:20px;font-weight:700;margin-top:2px}
 .pkgselect.on .pks-total{color:var(--blue)}
+.pkgselect .pks-add{color:var(--blue);font-weight:600;font-size:12.5px;margin-top:3px}
 .cd-waiver{margin-top:12px;padding-top:12px;border-top:1px dashed var(--border)}
 .wv-lbl{font-size:10.5px;font-weight:800;letter-spacing:.1em;color:var(--warn);margin-bottom:8px}
 .wv-card{display:flex;align-items:center;gap:10px;border:1px solid var(--warn);background:var(--warn-bg);border-radius:9px;padding:9px 12px}
@@ -2436,7 +2434,6 @@ function viewFinance(){
 
   var pkgOf = function(k){ return t.packages.filter(function(x){ return x.key === k; })[0]; };
   var capWord = function(x){ x = String(x || ""); return x.charAt(0).toUpperCase() + x.slice(1).toLowerCase(); };
-  var whole = function(n){ return Math.round(n) === n ? money0(n) : money(n); };
   /* What a brand-new line for this product would start with, so the selectors can show real
      values (and a price hint) before the product has been ticked into any package. */
   function cfgDefaults(p){
@@ -2451,21 +2448,12 @@ function viewFinance(){
     if (p.uses.deductible) d.deductible = p.deductibles[p.deductibles.length-1];
     return d;
   }
-  /* Products as a menu grid: one row per product, one column per package. Each column head
-     carries that package's running total and what it adds to the payment at the shortest
-     presented term. */
-  var colTerm = C.primaryTerm(tx);
+  /* Products as a menu grid: one row per product, one column per package. The column heads
+     carry just the package names; totals and payment differences are in the choice boxes above. */
   var pkgHead = D.PACKAGES.map(function(def){
-    var p = pkgOf(def.key);
-    var q = (p.quotes || []).filter(function(x){ return x.term === colTerm; })[0];
-    var add = tx.type === "Cash" || !p.count || !q || q.difference === null ? "" : "+" + money(q.difference) + " " + C.freqLabel(q.frequency);
-    return `<div class="mg-pk"><div class="mg-pk-n">${esc(p.label)}</div>
-      <div class="mg-pk-t num">${p.count ? whole(p.sub) : "—"}</div>
-      <div class="tiny muted">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced ? " · price missing" : ""}</div>
-      ${add ? `<div class="tiny mg-pk-add">${add}</div>` : ""}</div>`;
+    return `<div class="mg-pk"><div class="mg-pk-n">${esc(pkgOf(def.key).label)}</div></div>`;
   }).join("");
-  var headNote = "Tick each product into one, two or all three packages. Column totals are before tax"
-    + (tx.type === "Cash" || !colTerm ? "." : "; the payment is what the package adds at " + colTerm + " months.");
+  var headNote = "Tick each product into one, two or all three packages.";
   var productRows = state.products.filter(function(p){ return p.active; }).map(function(p){
     var line = tx.lines.filter(function(l){ return l.productId === p.id; })[0];
     var L = line ? t.lines.filter(function(x){ return x.cfg.lineId === line.lineId; })[0] : null;
@@ -2525,13 +2513,17 @@ function viewFinance(){
 
   /* The customer's package choice sits at the top of Products & packages, right under its heading. */
   var chosenKey = tx.display.selection ? tx.display.selection.package : null;
+  var addTerm = tx.type === "Cash" ? null : C.primaryTerm(tx);
   var choiceBtns = D.PACKAGES.map(function(def){
     var p = pkgOf(def.key), isSel = chosenKey === def.key;
+    var q = addTerm ? (p.quotes || []).filter(function(x){ return x.term === addTerm; })[0] : null;
+    var add = p.count && q && q.difference !== null ? "+" + money(q.difference) + " " + C.freqLabel(q.frequency) : "";
     return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}" ${p.count || isSel ? "" : "disabled"}>
       <div class="pks-name">${esc(p.label)}</div>
       <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
       <div class="pks-total">${p.count ? money(p.sub) : "—"}</div>
       ${p.count ? `<div class="tiny muted">before tax</div>` : ""}
+      ${add ? `<div class="pks-add">${add}</div>` : ""}
     </button>`;
   }).join("");
   var selNone = chosenKey === "none";
@@ -2542,7 +2534,7 @@ function viewFinance(){
       <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
   var choiceBox = `<div class="choice-box">
       <div class="lbl">Which package did the customer choose?</div>
-      <p class="muted small" style="margin:2px 0 10px;max-width:80ch">It narrows the customer display to that package and records it as sold, so only its products count in reports. Click it again to undo.</p>
+      <p class="muted small" style="margin:2px 0 10px;max-width:80ch">It narrows the customer display to that package and records it as sold, so only its products count in reports. Click it again to undo.${addTerm ? ` The blue figure is what each package adds to the ${esc(C.freqLabel(tx.finance.frequency))} payment at ${addTerm} months.` : ""}</p>
       <div class="choice-row" id="step-choice">${choiceBtns}<button type="button" class="btn choice-none ${selNone?"on":""}" data-act="select-final-package" data-package="none">Customer didn't buy a package</button></div>
       ${selNote}
     </div>`;
