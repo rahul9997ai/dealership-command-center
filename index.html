@@ -341,7 +341,7 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 .pkgrid{display:flex;flex-wrap:wrap;gap:26px;justify-content:center;align-items:flex-start}
 .pkgwrap{position:relative;flex:1 1 380px;max-width:460px;min-width:300px}
 .pkgcard{border:1px solid var(--cd-border);border-radius:11px;overflow:hidden;background:var(--cd-surface-2);display:flex;flex-direction:column;width:100%;box-shadow:var(--cd-shadow)}
-.pkgcard .ph{background:linear-gradient(180deg,var(--cd-blue-2),var(--cd-blue-deep));color:#fff;padding:20px 14px;font-weight:700;font-size:28px;letter-spacing:.05em;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+.pkgcard .ph{background:linear-gradient(180deg,var(--cd-ph-a,var(--cd-blue-2)),var(--cd-ph-b,var(--cd-blue-deep)));color:#fff;padding:20px 14px;font-weight:700;font-size:28px;letter-spacing:.05em;text-align:center;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
 .pkgcard .ph-icon{opacity:.9;font-size:18px}
 .pkgcard .pb{padding:14px 16px;flex:1}
 .pkgcard .pi{padding:8px 0;border-bottom:1px solid var(--cd-border);font-size:13px;display:flex;align-items:flex-start;gap:9px}
@@ -1064,13 +1064,17 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 "use strict";
 
 /* Brand registry. finLabel is the customer-facing financial services name. */
+/* pal = the brand's own two-colour look for the customer display: main (header band, package
+   titles) and accent (icons, prices, highlights). Toyota red EB0A1E is from Toyota's published
+   brand guidelines; the Nissan, Ford and Hyundai values are the commonly cited ones and are to be
+   checked against each brand's official kit. Brands without pal use their single colour. */
 var BRANDS = {
-  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", color:"#2c5a9b", finLabel:"NISSAN FINANCIAL SERVICES" },
+  nissan:   { key:"nissan",   label:"Nissan",    mark:"NIS", color:"#2c5a9b", finLabel:"NISSAN FINANCIAL SERVICES", pal:{ main:"#111111", accent:"#C3002F" } },
   infiniti: { key:"infiniti", label:"INFINITI",  mark:"INF", color:"#3c4654", finLabel:"INFINITI FINANCIAL SERVICES" },
-  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", color:"#a3282f", finLabel:"TOYOTA FINANCIAL SERVICES" },
+  toyota:   { key:"toyota",   label:"Toyota",    mark:"TOY", color:"#a3282f", finLabel:"TOYOTA FINANCIAL SERVICES", pal:{ main:"#EB0A1E", accent:"#1A1A1A" } },
   honda:    { key:"honda",    label:"Honda",     mark:"HON", color:"#a3282f", finLabel:"HONDA FINANCIAL SERVICES" },
-  ford:     { key:"ford",     label:"Ford",      mark:"FRD", color:"#1f4a8a", finLabel:"FORD CREDIT FINANCIAL SERVICES" },
-  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", color:"#1f3a68", finLabel:"HYUNDAI MOTOR FINANCE" },
+  ford:     { key:"ford",     label:"Ford",      mark:"FRD", color:"#1f4a8a", finLabel:"FORD CREDIT FINANCIAL SERVICES", pal:{ main:"#003478", accent:"#2D6CC0" } },
+  hyundai:  { key:"hyundai",  label:"Hyundai",   mark:"HYU", color:"#1f3a68", finLabel:"HYUNDAI MOTOR FINANCE", pal:{ main:"#002C5F", accent:"#00AAD2" } },
   kia:      { key:"kia",      label:"Kia",       mark:"KIA", color:"#8a2b3a", finLabel:"KIA FINANCE" },
   chevrolet:{ key:"chevrolet",label:"Chevrolet", mark:"CHV", color:"#9a7420", finLabel:"GM FINANCIAL" },
   mazda:    { key:"mazda",    label:"Mazda",     mark:"MZD", color:"#8a2b3a", finLabel:"MAZDA FINANCIAL SERVICES" },
@@ -2118,11 +2122,17 @@ var CHECK_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stro
 function hexRgb(h){ h = String(h).replace("#",""); if (h.length === 3) h = h.split("").map(function(c){ return c+c; }).join(""); var n = parseInt(h,16); return [(n>>16)&255,(n>>8)&255,n&255]; }
 function rgbHex(a){ return "#" + a.map(function(x){ x = Math.max(0,Math.min(255,Math.round(x))); return (x<16?"0":"") + x.toString(16); }).join(""); }
 function mixHex(a, b, t){ var A = hexRgb(a), B = hexRgb(b); return rgbHex([0,1,2].map(function(i){ return A[i] + (B[i]-A[i])*t; })); }
+function hexLum(h){ var c = hexRgb(h).map(function(v){ v /= 255; return v <= .03928 ? v/12.92 : Math.pow((v+.055)/1.055, 2.4); }); return .2126*c[0] + .7152*c[1] + .0722*c[2]; }
+function contrastHex(a, b){ var x = hexLum(a), y = hexLum(b); return (Math.max(x, y) + .05) / (Math.min(x, y) + .05); }
+/* Nudge a colour toward `toward` (ink or white) until it reads on `bg` at the given contrast. */
+function readableOn(c, bg, ratio, toward){ for (var i = 0; i < 12 && contrastHex(c, bg) < ratio; i++) c = mixHex(c, toward, .12); return c; }
 /* The customer display's colours come from the dealership's brand colour
    (chosen in Dealership settings) and follow the app's light/dark mode. */
 function cdThemeStyle(){
   var cfg = state.config || {};
-  var base = /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "") ? cfg.brandColor : (brand().color || "#2c5a9b");
+  var custom = /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "");
+  if (!custom && brand().pal) return cdPaletteStyle(brand().pal);
+  var base = custom ? cfg.brandColor : (brand().color || "#2c5a9b");
   var W = "#ffffff", K = "#0a1220", v;
   if (state.ui.theme === "dark") v = { "surface":mixHex(K,base,.12), "surface-2":mixHex(K,base,.18), "surface-3":mixHex(K,base,.24), "border":mixHex(K,base,.36),
     "blue":mixHex(base,W,.28), "blue-2":mixHex(base,W,.42), "blue-deep":mixHex(base,K,.72), "text":"#eaf0fb", "muted":"#a4b3cc",
@@ -2134,6 +2144,33 @@ function cdThemeStyle(){
     "head-a":mixHex(base,K,.38), "head-b":base, "price-bg":mixHex(W,base,.015),
     "pane":mixHex(base,K,.4), "pane-2":mixHex(base,K,.22), "pane-text":"#e9f0fb", "pane-muted":"#b3c4dd", "green":"#86efac", "tile":"#ffffff",
     "pill-bg":"#ffffff", "pill-text":"#0f2340" };
+  return Object.keys(v).map(function(k){ return "--cd-" + k + ":" + v[k]; }).join(";");
+}
+/* The brand's own two colours: main for the header band and package titles, accent for icons,
+   prices and highlights. Near-black mains (e.g. Nissan) get a soft charcoal sheen so the header
+   isn't a flat slab, and the accent is nudged only as far as needed to stay readable as text. */
+function cdPaletteStyle(pal){
+  var M = pal.main, A = pal.accent, W = "#ffffff", K = "#0a0d12", v;
+  /* page tints stay near-neutral with just a hint of the brand, so a bright red brand doesn't turn the screen pink */
+  var inky = hexLum(M) < .02, tint = inky ? "#5b6170" : mixHex("#5b6170", M, .35);
+  if (state.ui.theme === "dark"){
+    var D = inky ? M : tint, sf = mixHex(K, D, inky ? .06 : .12);
+    var ac = readableOn(hexLum(A) < .05 ? mixHex(M, W, .35) : mixHex(A, W, .12), sf, 4.5, W);
+    v = { "surface":sf, "surface-2":mixHex(K, D, inky ? .1 : .18), "surface-3":mixHex(K, D, inky ? .14 : .24), "border":mixHex(K, inky ? "#8a8f98" : D, .3),
+      "blue":ac, "blue-2":mixHex(ac, W, .14), "blue-deep":mixHex(M, K, .5), "text":"#eef1f6", "muted":"#a9b1bf",
+      "head-a":inky ? mixHex(M, K, .3) : mixHex(M, K, .5), "head-b":inky ? mixHex(M, W, .12) : mixHex(M, K, .12),
+      "ph-a":inky ? mixHex(M, W, .14) : mixHex(M, K, .08), "ph-b":inky ? M : mixHex(M, K, .45), "price-bg":mixHex(K, D, .1),
+      "pane":mixHex(K, M, inky ? .3 : .46), "pane-2":mixHex(K, M, inky ? .2 : .34), "pane-text":"#eef1f6", "pane-muted":"#b4bccb", "green":"#86efac", "tile":"#eef1f6",
+      "pill-bg":mixHex(K, M, .2), "pill-text":"#eef1f6" };
+  } else {
+    var ac2 = readableOn(A, W, 4.5, K);
+    v = { "surface":mixHex(W, tint, .06), "surface-2":mixHex(W, tint, .025), "surface-3":mixHex(W, tint, .1), "border":mixHex(W, tint, .22),
+      "blue":ac2, "blue-2":mixHex(A, W, .14), "blue-deep":mixHex(M, K, .3), "text":"#1b1f27", "muted":"#5d6573",
+      "head-a":inky ? M : mixHex(M, K, .22), "head-b":inky ? mixHex(M, W, .16) : M,
+      "ph-a":inky ? mixHex(M, W, .16) : M, "ph-b":inky ? M : mixHex(M, K, .28), "price-bg":mixHex(W, M, .015),
+      "pane":inky ? mixHex(M, W, .06) : mixHex(M, K, .4), "pane-2":inky ? mixHex(M, W, .16) : mixHex(M, K, .2), "pane-text":"#f2f4f8", "pane-muted":"#c3c9d4", "green":"#86efac", "tile":"#ffffff",
+      "pill-bg":"#ffffff", "pill-text":"#151a22" };
+  }
   return Object.keys(v).map(function(k){ return "--cd-" + k + ":" + v[k]; }).join(";");
 }
 /* Drawn product illustrations for common gifts (matched by name), used when no photo has been uploaded. */
