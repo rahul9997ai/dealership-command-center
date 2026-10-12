@@ -182,6 +182,7 @@ tbody tr:hover{background:var(--surface-2)}
 .need{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-bg) !important}
 .choice-row.need,.mg-row.need,.chiprow.need{border-radius:12px}
 .confirm-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.ca-cta{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:14px;padding:12px 14px;border:1px solid var(--border);border-radius:10px;background:var(--surface-2)}
 .deal-banner{align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .deal-banner .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 .issue-list{margin:6px 0 0;padding:0;list-style:none}
@@ -234,15 +235,21 @@ tbody tr:hover{background:var(--surface-2)}
 .mg-lbl{display:none;font-size:12.5px;color:var(--text-2)}
 .mg-dec{text-align:right}
 .mg-cfg{grid-column:1 / -1;margin-top:10px;padding-left:46px}
-@media (max-width:1100px){
-  .mg-head{display:none}
-  .mg-row{display:flex;flex-wrap:wrap;gap:10px 14px}
-  .mg-prod{flex:1 1 100%}
-  .mg-cell{justify-content:flex-start}
-  .mg-lbl{display:inline}
-  .mg-dec{margin-left:auto}
-  .mg-cfg{flex:1 1 100%;margin-top:0;padding-left:0}
-}
+/* Narrow layout, chosen by the room the Finance view really has (measureBars sets .mg-narrow),
+   so it also kicks in when the customer display preview is docked beside the form. */
+.mg-narrow .mg-head{display:none}
+.mg-narrow .mg-row{display:flex;flex-wrap:wrap;gap:10px 14px}
+.mg-narrow .mg-prod{flex:1 1 100%}
+.mg-narrow .mg-cell{justify-content:flex-start}
+.mg-narrow .mg-lbl{display:inline}
+.mg-narrow .mg-dec{margin-left:auto}
+.mg-narrow .mg-cfg{flex:1 1 100%;margin-top:0;padding-left:0}
+/* Compact Finance layout when the view is narrow (e.g. preview docked on a laptop) */
+.fin-compact .cv-row,.fin-compact .fs-row,.fin-compact .offers-2col{grid-template-columns:minmax(0,1fr)}
+.fin-compact .fs-div{display:none}
+.fin-compact .offers-div{height:1px;width:100%}
+/* Customer display preview docked beside the form instead of covering it (wide screens only) */
+html.cd-docked .main{padding-right:min(520px,94vw)}
 /* 5 · Present & close */
 .paygrid th,.paygrid td{white-space:nowrap}
 .paygrid td:first-child{white-space:normal}
@@ -2284,6 +2291,15 @@ function stepState(tx, v){
 function selectOptions(list, current, fmt){
   return list.map(function(v){ return `<option value="${v}" ${String(current)===String(v)?"selected":""}>${esc(fmt?fmt(v):v)}</option>`; }).join("");
 }
+/* Money fields on the Finance screen are text boxes showing "$42,995.00" (or "1,885.00" beside a
+   "$" prefix). Focusing one swaps in the plain number to edit, from data-raw (see the focusin
+   handler); the change handler strips "$" and commas before saving. */
+function moneyInput(v, sign){
+  var has = v !== null && v !== undefined && v !== "" && !isNaN(Number(v));
+  var shown = has ? (sign ? money(Number(v)) : money(Number(v)).replace("$", "")) : "";
+  return `type="text" inputmode="decimal" autocomplete="off" data-money="${sign ? "sign" : "plain"}" data-raw="${has ? esc(String(Number(v))) : ""}" value="${esc(shown)}"`;
+}
+function moneyHint(v){ return v === null || v === undefined || v === "" || isNaN(Number(v)) ? "0.00" : money(Number(v)).replace("$", ""); }
 function viewFinance(){
   ensureOffers(state.tx);
   var tx = state.tx, v = C.validate(state, tx), t = v.totals;
@@ -2366,7 +2382,7 @@ function viewFinance(){
       <label class="f"><span>Model</span><input type="text" value="${esc(tx.vehicle.model)}" data-bind="tx.vehicle.model"></label>
       <label class="f"><span>Stock number</span><input type="text" value="${esc(tx.vehicle.stock)}" data-bind="tx.vehicle.stock"></label>
       <label class="f"><span>Condition</span><select data-bind="tx.vehicle.condition">${selectOptions(["New","Certified Pre-Owned","Used"], tx.vehicle.condition)}</select></label>
-      <label class="f"><span>Selling price</span><input type="number" value="${tx.vehicle.price===null?"":esc(tx.vehicle.price)}" data-bind="tx.vehicle.price" data-type="num"></label>
+      <label class="f"><span>Selling price</span><input ${moneyInput(tx.vehicle.price, true)} data-bind="tx.vehicle.price" data-type="num"></label>
     </div></div></div>`;
 
   var termChoices = [24,36,48,60,72,84,96];
@@ -2387,10 +2403,10 @@ function viewFinance(){
   var financeBody = `
       <div class="fs-row"><div class="fs-left">
       <div class="fs-grid">
-        <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.finance.tradeAllowance)}" data-bind="tx.finance.tradeAllowance" data-type="num"></label>
-        <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.finance.tradePayout)}" data-bind="tx.finance.tradePayout" data-type="num"></label>
-        <label class="f"><span>Cash down</span><input type="number" value="${esc(tx.finance.downPayment)}" data-bind="tx.finance.downPayment" data-type="num"></label>
-        <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.finance.feeAmount)}" data-bind="tx.finance.feeAmount" data-type="num" placeholder="0.00"></label>
+        <label class="f"><span>Trade allowance</span><input ${moneyInput(tx.finance.tradeAllowance, true)} data-bind="tx.finance.tradeAllowance" data-type="num"></label>
+        <label class="f"><span>Trade payout</span><input ${moneyInput(tx.finance.tradePayout, true)} data-bind="tx.finance.tradePayout" data-type="num"></label>
+        <label class="f"><span>Cash down</span><input ${moneyInput(tx.finance.downPayment, true)} data-bind="tx.finance.downPayment" data-type="num"></label>
+        <label class="f"><span>Fees (non-taxable)</span><input ${moneyInput(tx.finance.feeAmount, true)} data-bind="tx.finance.feeAmount" data-type="num" placeholder="$0.00"></label>
       </div>
       <label class="f" style="margin-top:10px"><span>Payment frequency shown to the customer</span>
         <div class="chiprow" id="freq-chips">
@@ -2414,10 +2430,10 @@ function viewFinance(){
 
   var cashBody = `
       <div class="inline">
-        <label class="f"><span>Trade allowance</span><input type="number" value="${esc(tx.cash.tradeAllowance)}" data-bind="tx.cash.tradeAllowance" data-type="num"></label>
-        <label class="f"><span>Trade payout</span><input type="number" value="${esc(tx.cash.tradePayout)}" data-bind="tx.cash.tradePayout" data-type="num"></label>
-        <label class="f"><span>Deposit</span><input type="number" value="${esc(tx.cash.downPayment)}" data-bind="tx.cash.downPayment" data-type="num"></label>
-        <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.cash.feeAmount)}" data-bind="tx.cash.feeAmount" data-type="num" placeholder="0.00"></label>
+        <label class="f"><span>Trade allowance</span><input ${moneyInput(tx.cash.tradeAllowance, true)} data-bind="tx.cash.tradeAllowance" data-type="num"></label>
+        <label class="f"><span>Trade payout</span><input ${moneyInput(tx.cash.tradePayout, true)} data-bind="tx.cash.tradePayout" data-type="num"></label>
+        <label class="f"><span>Deposit</span><input ${moneyInput(tx.cash.downPayment, true)} data-bind="tx.cash.downPayment" data-type="num"></label>
+        <label class="f"><span>Fees (non-taxable)</span><input ${moneyInput(tx.cash.feeAmount, true)} data-bind="tx.cash.feeAmount" data-type="num" placeholder="$0.00"></label>
       </div>
       <div class="divider"></div>
       <div class="tablewrap"><table>
@@ -2425,7 +2441,9 @@ function viewFinance(){
         <tbody><tr><td>${money(t.baseAmount)}</td>
           <td class="right num">${money(t.productsTotal)}</td>
           <td class="right num"><strong>${money(t.baseAmount+t.productsTotal)}</strong></td></tr></tbody></table></div>
-      <div class="small muted" style="margin-top:6px">No financing, no payment schedule — the customer pays this in full. The per-package total below updates as products are added.</div>`;
+      <div class="small muted" style="margin-top:6px">No financing, no payment schedule — the customer pays this in full. The per-package total below updates as products are added.</div>
+      ${allowedRouteKeys() === null || allowedRouteKeys().indexOf("cashadv") !== -1 ? `<div class="ca-cta"><div><strong>Paying cash?</strong> <span class="muted small">Show the customer what financing and investing the cash would do, filled in from this deal.</span></div>
+        <button type="button" class="btn sm primary" data-act="ca-from-deal" data-go="1">Compare with financing →</button></div>` : ""}`;
 
   var financeCard = `<div class="card" id="step-3"><div class="card-h"><h2>3 · ${tx.type==="Cash"?"Cash":"Finance"} setup</h2>
     <div class="sp"><span class="tag">${tx.type==="Cash" ? "Paid in full" : (t.terms.length ? t.terms.length + " term" + (t.terms.length>1?"s":"") + " presented" : "No term selected")}</span></div></div>
@@ -2490,7 +2508,7 @@ function viewFinance(){
     if (p.uses.deductible) cfgSel("Deductible", "deductible", p.deductibles, function(x){ return Number(x)===0?"No deductible":"$"+x; });
     if (needsCost){
       var costVal = line && line.cost !== null && line.cost !== undefined ? line.cost : "";
-      f2.push(`<label class="cfg-f"><span>Dealer cost ($)</span><input type="number" min="0" step="any" tabindex="-1" value="${esc(costVal)}" data-bind="${bp}cost" data-type="num" placeholder="Enter cost"></label>`);
+      f2.push(`<label class="cfg-f"><span>Dealer cost ($)</span><input ${moneyInput(costVal, false)} tabindex="-1" data-bind="${bp}cost" data-type="num" placeholder="Enter cost"></label>`);
     }
     var cfgOpen = hasCfgFields && state.ui.productConfigOpen === p.id;
     var chosenBits = line ? lineConfigText(L || { product:p, cfg:line }, true) : "";
@@ -2506,7 +2524,7 @@ function viewFinance(){
         <div class="tiny muted">${esc(p.category)} · Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</div>
         ${cfgSum}
       </div></div>
-      <div class="mg-price"><div class="pricebox"><span class="pfx">$</span><input type="number" value="${priceVal}" data-bind="${priceBind}" data-type="num" placeholder="${pricePlaceholder}"></div>${gearBtn}</div>
+      <div class="mg-price"><div class="pricebox"><span class="pfx">$</span><input ${moneyInput(priceVal, false)} data-bind="${priceBind}" data-type="num" placeholder="${moneyHint(pricePlaceholder === "0.00" ? null : pricePlaceholder)}"></div>${gearBtn}</div>
       ${cells}
       <div class="mg-dec">${declineBtn}</div>
       ${cfgOpen ? `<div class="mg-cfg cfg-inline">${f2.join("")}</div>` : ""}
@@ -3030,7 +3048,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-12.2</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-12.3</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3976,6 +3994,31 @@ function caBlank(){
     otherName:"", otherRate:"", years:"same", locRate:"", payMode:"match", payAmount:"", drawAmount:"", drawYear:"2", freq:"monthly", view:"account", avgOver:"all",
     present:false };
 }
+/* Fill the comparison from the deal on screen: the customer's name, the cash it would take
+   (with the chosen package, or the vehicle alone when no package is chosen yet), and the
+   deal's own term, rate and payment frequency. Returns what it filled, for the message. */
+function caFromDeal(){
+  var tx = state.tx;
+  if (!tx || !state.config) return null;
+  var t = C.totals(state, tx), fin = state.config.finance || {};
+  var withPkg = !!t.selectedPackage && t.selectedPackage !== "none";
+  var amt = withPkg ? (tx.type === "Cash" ? t.cashDueTotal : t.amountFinanced) : t.baseAmount;
+  var term = C.primaryTerm(tx) || Number(fin.defaultTerm) || 60;
+  var rates = tx.finance.rates || {}, rate = rates[term];
+  if (rate === undefined || rate === null || rate === "") rate = fin.defaultApr;
+  if (!caState) caState = caBlank();
+  caState.customer = tx.customer.name || "";
+  caState.amount = amt > 0 ? Number(amt).toLocaleString("en-CA", { minimumFractionDigits:2, maximumFractionDigits:2 }) : "";
+  caState.apr = rate === undefined || rate === null || rate === "" ? "" : String(rate);
+  if ([24,36,48,60,72,84,96].indexOf(Number(term)) !== -1) caState.term = String(term);
+  caState.freq = (tx.finance.frequency || fin.defaultFrequency) === "biweekly" ? "biweekly" : "monthly";
+  return { name: caState.customer, withPkg: withPkg, amount: amt };
+}
+function caFromDealToast(r){
+  if (!r) return;
+  toast((r.name ? "Filled from " + r.name + "'s deal" : "Filled from the deal on screen")
+    + (r.withPkg ? "" : " — vehicle only, since no package is chosen yet") + ". Check the amount and rate.", "ok");
+}
 function caNum(v){ var n = parseFloat(String(v === null || v === undefined ? "" : v).replace(/[$,\s%]/g, "")); return isNaN(n) ? null : n; }
 function caInputs(){
   var s = caState, term = caNum(s.term);
@@ -4239,7 +4282,8 @@ function viewCashAdv(){
   var s = caState, tabs = `<div class="ca-tabs no-print">
       <button class="btn ${s.tab==="invest"?"on":""}" data-act="ca-tab" data-tab="invest">Cash vs Finance &amp; Invest</button>
       <button class="btn ${s.tab==="loc"?"on":""}" data-act="ca-tab" data-tab="loc">Line of Credit vs Dealer</button>
-      <span class="sp"><button class="btn" data-act="ca-clear">Clear</button>
+      <span class="sp">${state.tx && (state.tx.customer.name || Number(state.tx.vehicle.price) > 0) ? `<button class="btn" data-act="ca-from-deal" title="Fill in the customer, amount, rate and term from the deal on the Finance screen">Use deal on screen</button>` : ""}
+      <button class="btn" data-act="ca-clear">Clear</button>
       <button class="btn" data-act="ca-window">Second screen ↗</button>
       <button class="btn" data-act="ca-present">Full screen</button>
       <button class="btn primary" data-act="ca-print">Print for customer</button></span></div>`;
@@ -4640,8 +4684,14 @@ function render(){
 window.__DCC_RENDER__ = render;
 /* The Finance bar pins itself just under the header, and jumping to a step must land below
    both, so their real heights (which change with wrapping) are kept in CSS variables. */
+/* It also docks the customer display preview beside the form on wide screens, and picks the
+   Finance view's compact layouts from the width it is really given. */
 function measureBars(){
-  var de = document.documentElement, tb = document.querySelector(".topbar"), fb = document.querySelector(".fin-toolbar");
+  var de = document.documentElement;
+  de.classList.toggle("cd-docked", !!(state.loggedIn && state.route === "finance" && state.ui.cdPreview && !state.ui.present && window.innerWidth >= 1200));
+  var fs = document.querySelector(".fin-split");
+  if (fs){ var w = fs.clientWidth; fs.classList.toggle("mg-narrow", w < 840); fs.classList.toggle("fin-compact", w < 720); }
+  var tb = document.querySelector(".topbar"), fb = document.querySelector(".fin-toolbar");
   if (tb) de.style.setProperty("--topbar-h", tb.offsetHeight + "px");
   if (fb) de.style.setProperty("--finbar-h", fb.offsetHeight + "px");
 }
@@ -5556,6 +5606,10 @@ document.addEventListener("click", function(ev){
     case "ca-tab": caState.tab = el.getAttribute("data-tab"); render(); break;
     case "ca-invest": caState.invest = el.getAttribute("data-inv"); render(); break;
     case "ca-clear": caState = caBlank(); render(); break;
+    case "ca-from-deal": {
+      var caR = caFromDeal();
+      if (el.getAttribute("data-go")){ state.route = "cashadv"; window.scrollTo(0, 0); }
+      caFromDealToast(caR); commit(); break; }
     case "ca-paymode": caState.payMode = el.getAttribute("data-mode"); render(); break;
     case "ca-freq": caState.freq = el.getAttribute("data-freq"); render(); break;
     case "ca-view": caState.view = el.getAttribute("data-view"); render(); break;
@@ -6085,6 +6139,10 @@ document.addEventListener("change", function(ev){
   if (!bind) return;
   var raw = el.type === "checkbox" ? el.checked : el.value;
   var num = el.getAttribute("data-type") === "num";
+  if (el.hasAttribute("data-money")){
+    raw = String(raw).replace(/[$,\s]/g, "");
+    if (raw !== "" && isNaN(Number(raw))){ toast("That isn't a dollar amount — try again, e.g. 42995.","err"); commit(); return; }
+  }
   if (bind.indexOf("newline:") === 0){
     var nparts = bind.split(":"), nprod = C.productById(state, nparts[1]);
     if (!nprod || raw === "") return;
@@ -6126,6 +6184,21 @@ document.addEventListener("change", function(ev){
     state.config.logoMark = C.brandOfDealer(state.config).mark;
   }
   commit();
+});
+
+/* Money fields: the plain number while editing, "$42,995.00" otherwise (see moneyInput). */
+function moneyShown(el, n){ var t = C.money(n); return el.getAttribute("data-money") === "sign" ? t : t.replace("$", ""); }
+document.addEventListener("focusin", function(ev){
+  var el = ev.target;
+  if (!el || !el.hasAttribute || !el.hasAttribute("data-money")) return;
+  var raw = el.getAttribute("data-raw") || "";
+  if (el.value !== raw){ el.value = raw; try { el.select(); } catch (e) {} }
+});
+document.addEventListener("focusout", function(ev){
+  var el = ev.target;
+  if (!el || !el.hasAttribute || !el.hasAttribute("data-money")) return;
+  var v = String(el.value).replace(/[$,\s]/g, "");
+  if (v !== "" && !isNaN(Number(v))) el.value = moneyShown(el, Number(v));
 });
 
 /* ---------------- BOOT ---------------- */
