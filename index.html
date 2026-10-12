@@ -143,8 +143,17 @@ tbody tr:hover{background:var(--surface-2)}
 .uc{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:70px 20px;text-align:center;gap:10px}
 .uc .bigtag{font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--warn);background:var(--warn-bg);padding:8px 16px;border-radius:6px}
 
-.fin-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
-.fin-toolbar .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+/* Finance action bar + step bar, pinned under the header while the page scrolls */
+.fin-toolbar{position:sticky;top:var(--topbar-h,57px);z-index:15;background:var(--bg);margin:-20px -22px 16px;padding:12px 22px 0;border-bottom:1px solid var(--border)}
+.fin-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}
+.fin-bar-sp{flex:1}
+.fin-toolbar .steps{margin-bottom:12px}
+.cdmenu.bar-menu{min-width:210px;padding:6px}
+.ready-pill{border:1px solid;border-radius:999px;padding:5px 12px;font-size:12.5px;font-weight:600;font-family:inherit;line-height:1.3}
+.ready-pill.ok{border-color:var(--ok);background:var(--ok-bg);color:var(--ok)}
+.ready-pill.todo{border-color:var(--warn);background:var(--warn-bg);color:var(--warn);cursor:pointer}
+[id^="step-"]{scroll-margin-top:calc(var(--topbar-h,57px) + var(--finbar-h,110px) + 12px)}
+@media (max-width:900px){ .fin-toolbar{position:static;margin:-14px -14px 14px;padding:10px 14px 0} [id^="step-"]{scroll-margin-top:12px} }
 .cdmenu-wrap{position:relative;display:inline-block}
 .cdmenu{position:absolute;top:calc(100% + 6px);left:0;z-index:45;min-width:270px;padding:10px;border:1px solid var(--border);border-radius:12px;background:var(--surface);box-shadow:0 14px 40px rgba(0,0,0,.22)}
 .cdm-lbl{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin:2px 4px 8px}
@@ -171,7 +180,7 @@ tbody tr:hover{background:var(--surface-2)}
 .step.bad{border-color:var(--danger);color:var(--danger)}
 /* Fields still blocking Complete, marked once Complete has been pressed */
 .need{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-bg) !important}
-.pkgselect-row.need,.prodrow2.need,.chiprow.need{border-radius:12px}
+.choice-row.need,.mg-row.need,.chiprow.need{border-radius:12px}
 .confirm-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
 .deal-banner{align-items:center;margin-bottom:14px;flex-wrap:wrap}
 .deal-banner .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
@@ -201,6 +210,55 @@ tbody tr:hover{background:var(--surface-2)}
 .cfg-f select{padding:6px 8px;font-size:12.5px;height:auto;border-radius:7px}
 .prodrow2 .pr-name .nm{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .prodrow2 .pr-ctrls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+/* Products menu grid: one row per product, one column per package */
+.mg-head,.mg-row{display:grid;grid-template-columns:minmax(220px,1fr) 140px repeat(3,minmax(96px,124px)) 80px;column-gap:8px;align-items:center}
+.mg-head{padding:0 14px 10px;align-items:end}
+.mg-pk{text-align:center;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:9px 6px;min-width:0}
+.mg-pk-n{font-weight:800;font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;line-height:1.25;overflow-wrap:anywhere}
+.mg-pk-t{font-size:18px;font-weight:700;margin:3px 0 1px}
+.mg-pk-add{color:var(--blue);font-weight:600}
+.mg-row{border:1px solid var(--border);border-radius:10px;padding:10px 14px;background:var(--surface-2)}
+.mg-row + .mg-row{margin-top:8px}
+.mg-row.declined .mg-prod,.mg-row.declined .mg-price{opacity:.7}
+.mg-prod{display:flex;gap:12px;align-items:center;min-width:0}
+.mg-prod .pr-icon{flex:0 0 auto;width:34px;height:34px;border-radius:9px;background:linear-gradient(140deg,var(--blue),var(--blue-2));color:#fff;display:flex;align-items:center;justify-content:center;font-size:15px}
+.mg-name{min-width:0}
+.mg-name .nm{font-weight:600;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.mg-price{display:flex;gap:8px;align-items:center}
+.mg-cell{display:flex;justify-content:center;align-items:center;gap:7px;min-height:34px;cursor:pointer;user-select:none}
+.mg-cell input{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.mg-box{width:26px;height:26px;border-radius:7px;border:1.5px solid var(--border-strong);background:var(--surface);color:#fff;display:inline-flex;align-items:center;justify-content:center;transition:background .12s,border-color .12s}
+.mg-box svg{width:15px;height:15px}
+.mg-cell:hover .mg-box{border-color:var(--blue)}
+.mg-cell.on .mg-box{background:var(--blue);border-color:var(--blue)}
+.mg-lbl{display:none;font-size:12.5px;color:var(--text-2)}
+.mg-dec{text-align:right}
+.mg-cfg{grid-column:1 / -1;margin-top:10px;padding-left:46px}
+@media (max-width:1100px){
+  .mg-head{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:0 0 10px}
+  .mg-h-prod,.mg-h-price,.mg-h-dec{display:none}
+  .mg-row{display:flex;flex-wrap:wrap;gap:10px 14px}
+  .mg-prod{flex:1 1 100%}
+  .mg-cell{justify-content:flex-start}
+  .mg-lbl{display:inline}
+  .mg-dec{margin-left:auto}
+  .mg-cfg{flex:1 1 100%;margin-top:0;padding-left:0}
+}
+/* 5 · Present & close */
+.paygrid th,.paygrid td{white-space:nowrap}
+.paygrid td:first-child{white-space:normal}
+.paygrid i{font-style:normal;color:var(--muted);font-size:12px;margin-left:6px}
+.paygrid tr.base td{color:var(--muted)}
+.paygrid tr.chosen td{background:var(--info-bg)}
+.close-box{margin-top:16px;border:1px solid var(--border);border-radius:12px;padding:16px;background:var(--surface-2)}
+.choice-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(150px,190px);gap:10px;align-items:stretch}
+.choice-none{white-space:normal;justify-content:center;text-align:center}
+.pkgselect:disabled{opacity:.45;cursor:not-allowed}
+.close-box .kv.total{margin-top:14px}
+.close-finish{display:flex;gap:12px;align-items:center;margin-top:14px;flex-wrap:wrap}
+.close-finish .notice{flex:1 1 320px;margin:0}
+.close-go{padding:11px 22px;font-size:14px}
+@media (max-width:760px){ .choice-row{grid-template-columns:minmax(0,1fr)} .close-go{width:100%} }
 .pricebox{position:relative;width:112px}
 .pricebox .pfx{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:13px;pointer-events:none}
 .pricebox input{padding-left:22px}
@@ -1423,7 +1481,7 @@ function validate(state, tx){
     var L = t.lines[i], p = L.product, c = L.cfg;
     if (c.declined) continue;
     if (!(c.packages && (c.packages.preferred || c.packages.essential || c.packages.basic))) continue;
-    var row = '.prodrow2[data-pid="' + p.id + '"]', at = function(f){ return '[data-bind="line:' + c.lineId + ':' + f + '"]'; };
+    var row = '.mg-row[data-pid="' + p.id + '"]', at = function(f){ return '[data-bind="line:' + c.lineId + ':' + f + '"]'; };
     var opt = { product:p.id, row:row, cfg:true };
     if (p.uses.term && !c.term) fail(p.name + ": select a term.", 4, at("term"), opt);
     if (p.uses.km && !c.km) fail(p.name + ": select kilometres.", 4, at("km"), opt);
@@ -2215,7 +2273,7 @@ function stepState(tx, v){
     { n:2, label:"Vehicle", done: !has(2), bad: check && has(2) },
     { n:3, label:tx.type==="Cash"?"Cash setup":"Finance setup", done: priced && !has(3), bad: check && has(3) },
     { n:4, label:"Products & packages", done: tx.lines.length > 0 && !has(4), bad: check && has(4) },
-    { n:5, label:"Presentation", done: chosen, bad: check && has(5), target: !chosen && t.packagesUsed ? "step-choice" : "step-5" }
+    { n:5, label:"Present & close", done: chosen, bad: check && has(5), target: !chosen && t.packagesUsed ? "step-choice" : "step-5" }
   ];
 }
 function selectOptions(list, current, fmt){
@@ -2235,40 +2293,59 @@ function viewFinance(){
     : `<div class="notice ok deal-banner"><div><strong>✓ Deal completed.</strong> ${esc(tx.id)} is in Reports${doneRec.createdAt ? ", dated " + esc(C.fmtDate(doneRec.createdAt)) : ""}.</div>
         <div class="sp"><button class="btn sm primary" data-act="new-deal">Start next deal</button></div></div>`;
 
-  var toolbar = `<div class="fin-toolbar">
+  var stepBar = `<div class="steps">${steps.map(function(s){
+    return `<div class="step ${s.bad?"bad":s.done?"done":""}" data-act="scroll-step" data-step="${s.n}" data-target="${s.target || "step-" + s.n}">
+      <span class="n">${s.bad?"!":s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
+
+  /* One bar, pinned under the header while the page scrolls: the customer display, Print & send,
+     Deal, how close the deal is to done, and Complete — with the step bar underneath. */
+  var savedN = savedForMe().length, menu = state.ui.barMenu;
+  var savedBadge = savedN ? `<span class="saved-badge">${savedN}</span>` : "";
+  var leftN = v.errors.length;
+  var readyPill = doneRec ? "" : leftN
+    ? `<button type="button" class="ready-pill todo" data-act="jump-issue" data-idx="0" title="Go to the first thing left to finish">${leftN} thing${leftN===1?"":"s"} left</button>`
+    : `<span class="ready-pill ok">✓ Ready to complete</span>`;
+  var toolbar = `<div class="fin-toolbar"><div class="fin-bar">
     ${isAdmin() ? `<label class="switch"><span class="muted small">Finance Manager</span>
       <select data-bind="tx.fsmUserId" style="width:auto;min-width:150px">
         <option value="">Unassigned</option>
         ${fsmUsers().map(function(u){ return `<option value="${u.id}" ${u.id===tx.fsmUserId?"selected":""}>${esc(u.name)}</option>`; }).join("")}
       </select></label>` : ""}
-    <div class="sp">
-      <div class="cdmenu-wrap">
-        <button class="btn sm ${state.ui.cdMenu||state.ui.cdPreview?"on":""}" data-act="cd-menu">Customer display · ${{welcome:"Welcome",package:"Present",thankyou:"Thank you"}[tx.display.mode]||"Welcome"} ▾</button>
-        ${state.ui.cdMenu ? `<div class="cdmenu">
-          <div class="cdm-lbl">What the customer sees</div>
-          <div class="cdm-seg">
-            <button type="button" class="${tx.display.mode==="welcome"?"on":""}" data-act="cd-mode" data-mode="welcome">Welcome</button>
-            <button type="button" class="${tx.display.mode==="package"?"on":""}" data-act="cd-mode" data-mode="package">Present</button>
-            <button type="button" class="${tx.display.mode==="thankyou"?"on":""}" data-act="cd-mode" data-mode="thankyou">Thank you</button>
-          </div>
-          <div class="cdm-sep"></div>
-          <button type="button" class="cdm-item" data-act="open-customer-window">Open on second screen ↗</button>
-          <button type="button" class="cdm-item" data-act="present">Full screen</button>
-          <button type="button" class="cdm-item" data-act="cd-preview-toggle">${state.ui.cdPreview ? "Hide preview" : "Preview here"}</button>
-        </div>` : ""}
-      </div>
-      <button class="btn sm" data-act="email">Email the package</button>
-      <button class="btn sm" data-act="print-internal">Internal print</button>
-      <button class="btn sm" data-act="print-customer">Customer copy</button>
-      <button class="btn sm" data-act="new-deal">New deal</button>
-      <button class="btn sm" data-act="saved-list">Saved deals${savedForMe().length ? `<span class="saved-badge">${savedForMe().length}</span>` : ""}</button>
-      <button class="btn sm" data-act="save-deal">Save deal</button>
-      <button class="btn sm primary" data-act="complete">${doneRec ? "Update completed deal" : "Complete transaction"}</button>
-    </div></div>`;
-
-  var stepBar = `<div class="steps">${steps.map(function(s){
-    return `<div class="step ${s.bad?"bad":s.done?"done":""}" data-act="scroll-step" data-step="${s.n}" data-target="${s.target || "step-" + s.n}">
-      <span class="n">${s.bad?"!":s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
+    <div class="cdmenu-wrap">
+      <button class="btn sm ${state.ui.cdMenu||state.ui.cdPreview?"on":""}" data-act="cd-menu">Customer display · ${{welcome:"Welcome",package:"Present",thankyou:"Thank you"}[tx.display.mode]||"Welcome"} ▾</button>
+      ${state.ui.cdMenu ? `<div class="cdmenu">
+        <div class="cdm-lbl">What the customer sees</div>
+        <div class="cdm-seg">
+          <button type="button" class="${tx.display.mode==="welcome"?"on":""}" data-act="cd-mode" data-mode="welcome">Welcome</button>
+          <button type="button" class="${tx.display.mode==="package"?"on":""}" data-act="cd-mode" data-mode="package">Present</button>
+          <button type="button" class="${tx.display.mode==="thankyou"?"on":""}" data-act="cd-mode" data-mode="thankyou">Thank you</button>
+        </div>
+        <div class="cdm-sep"></div>
+        <button type="button" class="cdm-item" data-act="open-customer-window">Open on second screen ↗</button>
+        <button type="button" class="cdm-item" data-act="present">Full screen</button>
+        <button type="button" class="cdm-item" data-act="cd-preview-toggle">${state.ui.cdPreview ? "Hide preview" : "Preview here"}</button>
+      </div>` : ""}
+    </div>
+    <div class="cdmenu-wrap">
+      <button class="btn sm ${menu==="print"?"on":""}" data-act="bar-menu" data-menu="print">Print &amp; send ▾</button>
+      ${menu==="print" ? `<div class="cdmenu bar-menu">
+        <button type="button" class="cdm-item" data-act="email">Email the package</button>
+        <button type="button" class="cdm-item" data-act="print-internal">Internal print</button>
+        <button type="button" class="cdm-item" data-act="print-customer">Customer copy</button>
+      </div>` : ""}
+    </div>
+    <div class="cdmenu-wrap">
+      <button class="btn sm ${menu==="deal"?"on":""}" data-act="bar-menu" data-menu="deal">Deal ▾${savedBadge}</button>
+      ${menu==="deal" ? `<div class="cdmenu bar-menu">
+        <button type="button" class="cdm-item" data-act="new-deal">New deal</button>
+        <button type="button" class="cdm-item" data-act="save-deal">Save deal</button>
+        <button type="button" class="cdm-item" data-act="saved-list">Saved deals${savedBadge}</button>
+      </div>` : ""}
+    </div>
+    <span class="fin-bar-sp"></span>
+    ${readyPill}
+    <button class="btn sm primary" data-act="complete">${doneRec ? "Update completed deal" : "Complete transaction"}</button>
+  </div>${stepBar}</div>`;
 
   var customerCard = `<div class="card" id="step-1"><div class="card-h"><h2>1 · Customer</h2></div>
     <div class="card-b"><div class="cv-grid">
@@ -2352,7 +2429,9 @@ function viewFinance(){
       ${tx.type==="Cash" ? cashBody : financeBody}
     </div></div>`;
 
-  var PKG_SHORT = { preferred:"Pref", essential:"Esse", basic:"Basi" };
+  var pkgOf = function(k){ return t.packages.filter(function(x){ return x.key === k; })[0]; };
+  var capWord = function(x){ x = String(x || ""); return x.charAt(0).toUpperCase() + x.slice(1).toLowerCase(); };
+  var whole = function(n){ return Math.round(n) === n ? money0(n) : money(n); };
   /* What a brand-new line for this product would start with, so the selectors can show real
      values (and a price hint) before the product has been ticked into any package. */
   function cfgDefaults(p){
@@ -2367,7 +2446,22 @@ function viewFinance(){
     if (p.uses.deductible) d.deductible = p.deductibles[p.deductibles.length-1];
     return d;
   }
-  var productRows = state.products.filter(function(p){ return p.active; }).map(function(p, rowIdx){
+  /* Products as a menu grid: one row per product, one column per package. Each column head
+     carries that package's running total and what it adds to the payment at the shortest
+     presented term. */
+  var colTerm = C.primaryTerm(tx);
+  var pkgHead = D.PACKAGES.map(function(def){
+    var p = pkgOf(def.key);
+    var q = (p.quotes || []).filter(function(x){ return x.term === colTerm; })[0];
+    var add = tx.type === "Cash" || !p.count || !q || q.difference === null ? "" : "+" + money(q.difference) + " " + C.freqLabel(q.frequency);
+    return `<div class="mg-pk"><div class="mg-pk-n">${esc(p.label)}</div>
+      <div class="mg-pk-t num">${p.count ? whole(p.sub) : "—"}</div>
+      <div class="tiny muted">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced ? " · price missing" : ""}</div>
+      ${add ? `<div class="tiny mg-pk-add">${add}</div>` : ""}</div>`;
+  }).join("");
+  var headNote = "Tick each product into one, two or all three packages. Column totals are before tax"
+    + (tx.type === "Cash" || !colTerm ? "." : "; the payment is what the package adds at " + colTerm + " months.");
+  var productRows = state.products.filter(function(p){ return p.active; }).map(function(p){
     var line = tx.lines.filter(function(l){ return l.productId === p.id; })[0];
     var L = line ? t.lines.filter(function(x){ return x.cfg.lineId === line.lineId; })[0] : null;
     var pkgs = line ? (line.packages || {}) : {};
@@ -2376,9 +2470,9 @@ function viewFinance(){
        every gear/package/decline control in between — those stay reachable
        by click but drop out of the keyboard tab order (tabindex="-1"), so
        DOM order alone carries Tab from one price box to the next. */
-    var boxes = D.PACKAGES.map(function(def){
-      var on = !!pkgs[def.key];
-      return `<label class="pkgchk ${on?"on":""}"><input type="checkbox" tabindex="-1" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""}>${PKG_SHORT[def.key]}</label>`;
+    var cells = D.PACKAGES.map(function(def){
+      var on = !!pkgs[def.key], lbl = C.packageLabel(state, def.suffix);
+      return `<label class="mg-cell ${on?"on":""}" title="${esc(p.name)} — ${esc(lbl)}"><input type="checkbox" tabindex="-1" data-act="toggle-package-list" data-product="${p.id}" data-package="${def.key}" ${on?"checked":""} aria-label="${esc(p.name)} in ${esc(lbl)}"><span class="mg-box">${on ? CHECK_SVG : ""}</span><span class="mg-lbl">${esc(capWord(def.suffix))}</span></label>`;
     }).join("");
     var declineOn = !!(line && line.declined);
     var declineBtn = `<label class="declinebtn ${declineOn?"on":""}"><input type="checkbox" tabindex="-1" data-act="toggle-decline" data-product="${p.id}" ${declineOn?"checked":""}>${declineOn?"Undo":"Decline"}</label>`;
@@ -2404,66 +2498,41 @@ function viewFinance(){
       f2.push(`<label class="cfg-f"><span>Dealer cost ($)</span><input type="number" min="0" step="any" tabindex="-1" value="${esc(costVal)}" data-bind="${bp}cost" data-type="num" placeholder="Enter cost"></label>`);
     }
     var cfgOpen = hasCfgFields && state.ui.productConfigOpen === p.id;
-    var setF = (line && line.cfgSet) || {};
     var chosenBits = line ? lineConfigText(L || { product:p, cfg:line }, true) : "";
-    var cfgInline = !hasCfgFields ? "" : cfgOpen ? `<div class="cfg-inline">${f2.join("")}</div>`
-      : (chosenBits ? `<div class="cfg-sum">${esc(chosenBits)}</div>` : "");
+    var cfgSum = hasCfgFields && !cfgOpen && chosenBits ? `<div class="cfg-sum">${esc(chosenBits)}</div>` : "";
     var gearBtn = hasCfgFields ? `<button type="button" tabindex="-1" class="gearbtn ${cfgOpen?"on":""}" data-act="toggle-product-config" data-product="${p.id}" title="Options and dealer cost">⚙</button>` : "";
     var priceVal = line && L && L.price !== null ? L.price : "";
     var hintPrice = line ? (L ? L.configuredPrice : null) : C.priceFor(p, cv);
     var pricePlaceholder = hintPrice !== null && hintPrice !== undefined ? hintPrice : "0.00";
     var priceBind = line ? `line:${line.lineId}:price` : `newline:${p.id}:price`;
-    return `<div class="prodrow2" data-pid="${esc(p.id)}">
-      <div class="pr-icon">${icon}</div>
-      <div class="pr-name">
+    return `<div class="mg-row ${declineOn?"declined":""}" data-pid="${esc(p.id)}">
+      <div class="mg-prod"><div class="pr-icon">${icon}</div><div class="mg-name">
         <div class="nm">${esc(p.name)}${priceNote}${needsCost ? (line && Number(line.cost) > 0 ? `<span class="tag">Cost entered</span>` : `<span class="tag warn">No cost</span>`) : ""}</div>
         <div class="tiny muted">${esc(p.category)} · Tax ${p.taxRule==="vrc"?state.config.tax.vrc:state.config.tax.standard}%</div>
-        ${cfgInline}
-      </div>
-      <div class="pr-ctrls">
-        <div class="pricebox"><span class="pfx">$</span><input type="number" value="${priceVal}" data-bind="${priceBind}" data-type="num" placeholder="${pricePlaceholder}"></div>
-        ${gearBtn}
-        <div class="pkgchk-row">${boxes}</div>
-        ${declineBtn}
-      </div>
+        ${cfgSum}
+      </div></div>
+      <div class="mg-price"><div class="pricebox"><span class="pfx">$</span><input type="number" value="${priceVal}" data-bind="${priceBind}" data-type="num" placeholder="${pricePlaceholder}"></div>${gearBtn}</div>
+      ${cells}
+      <div class="mg-dec">${declineBtn}</div>
+      ${cfgOpen ? `<div class="mg-cfg cfg-inline">${f2.join("")}</div>` : ""}
     </div>`;
   }).join("");
-
-  var pkgBoxes = D.PACKAGES.map(function(def){
-    var p = t.packages.filter(function(x){ return x.key === def.key; })[0];
-    var isSel = tx.display.selection && tx.display.selection.package === def.key;
-    return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}">
-      <div class="pks-name">${esc(C.packageLabel(state, def.suffix))}</div>
-      <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
-      <div class="pks-total">${p.count ? money(p.sub) : "—"}</div>
-      ${p.count ? `<div class="tiny muted" style="margin-top:2px">before tax</div>` : ""}
-    </button>`;
-  }).join("");
-
-  var selNone = tx.display.selection && tx.display.selection.package === "none";
-  var noneBtn = `<div style="margin-top:8px"><button type="button" class="btn sm ${selNone?"on":""}" data-act="select-final-package" data-package="none">Customer didn't buy a package</button></div>`;
-  var selNote = selNone ? `<div class="notice ok" style="margin-top:12px">Recorded: no package purchased. Nothing from this presentation counts as sold in reports.
-      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Undo</button></div>`
-    : tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
-      Presenting only <strong>${esc((t.packages.filter(function(p){ return p.key===tx.display.selection.package; })[0]||{}).label||"")}</strong> on the customer display.
-      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
 
   var productsCard = `<div class="card" id="step-4"><div class="card-h"><h2>4 · Products &amp; packages</h2>
     <div class="sp"><span class="muted small">${tx.lines.length} selected</span>
       <button class="btn sm" data-act="route" data-route="products">Manage product master</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="max-width:76ch">Click the package the customer chose. It narrows the customer display to it and records it as the package sold, so only its products count in reports. Click it again to undo.</p>
-      <div class="pkgselect-row" id="step-choice">${pkgBoxes}</div>
-      ${noneBtn}
-      ${selNote}
-      <div class="divider"></div>
-      <p class="muted small" style="max-width:76ch">Tick a product into any of the three columns to add it to that package — a product can sit in one, two, or all three.</p>
-      ${state.products.length ? productRows : `<div class="emptystate"><h3>No products set up yet</h3><p class="muted small">Add this dealership's products first, then come back to build packages.</p><button class="btn primary" data-act="route" data-route="products">Set up products</button></div>`}
+      ${state.products.length ? `<div class="mg-head">
+          <div class="mg-h-prod muted small">${headNote}</div>
+          <div class="mg-h-price tiny muted">Retail price</div>
+          ${pkgHead}
+          <div class="mg-h-dec"></div>
+        </div>${productRows}`
+        : `<div class="emptystate"><h3>No products set up yet</h3><p class="muted small">Add this dealership's products first, then come back to build packages.</p><button class="btn primary" data-act="route" data-route="products">Set up products</button></div>`}
     </div></div>`;
 
   var off = tx.offers, dsc = off.discount;
   var dscUnit = dsc.type === "percent" ? "%" : "$";
-  var pkgOf = function(k){ return t.packages.filter(function(x){ return x.key === k; })[0]; };
   var dscInputs = dsc.scope === "deal"
     ? `<label class="f"><span>Discount on whichever package the customer chooses</span><div class="pricebox"><span class="pfx">${dscUnit}</span>
         <input type="number" min="0" step="any" value="${dsc.deal ? esc(dsc.deal) : ""}" data-bind="tx.offers.discount.deal" data-type="num" placeholder="0"></div></label>
@@ -2528,21 +2597,78 @@ function viewFinance(){
       </div>
     </div></div></div>`;
 
-  var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Presentation</h2>
+  /* 5 · Present & close: every package at every term (what the Finance Manager quotes from),
+     then the customer's choice, the checklist and Complete — the last things done in the box. */
+  var chosenKey = tx.display.selection ? tx.display.selection.package : null;
+  var activePk = t.packages.filter(function(p){ return p.count > 0; });
+  var pkgCell = function(p){
+    return `<strong>${esc(p.label)}</strong> <span class="tiny muted">${p.count} product${p.count===1?"":"s"}</span>`
+      + (p.key === chosenKey ? ` <span class="tag ok">Chosen</span>` : "")
+      + (p.hasUnpriced ? ` <span class="tag warn">Price missing</span>` : "")
+      + (p.discount > 0 ? `<div class="tiny muted">includes −${money(p.discount)} bundle savings</div>` : "");
+  };
+  var payGrid;
+  if (tx.type === "Cash"){
+    payGrid = `<div class="tablewrap"><table class="paygrid">
+      <thead><tr><th>Paid in full</th><th class="right">Products, before tax</th><th class="right">Products, with tax</th><th class="right">Total due at signing</th></tr></thead>
+      <tbody><tr class="base"><td>Vehicle only, no products</td><td class="right num">—</td><td class="right num">—</td><td class="right num">${money(t.baseAmount)}</td></tr>
+      ${activePk.map(function(p){ return `<tr class="${p.key===chosenKey?"chosen":""}"><td>${pkgCell(p)}</td><td class="right num">${money(p.sub)}</td>
+        <td class="right num">${money(p.total)}</td><td class="right num"><strong>${money(p.dueTotal)}</strong></td></tr>`; }).join("")}
+      </tbody></table></div>`;
+  } else if (!t.baseQuotes.length){
+    payGrid = `<div class="notice warn">Pick at least one term and a payment frequency in Finance setup to compare payments.</div>`;
+  } else {
+    payGrid = `<div class="tablewrap"><table class="paygrid">
+      <thead><tr><th>${t.frequency === "biweekly" ? "Bi-weekly" : "Monthly"} payment, with tax</th>${t.baseQuotes.map(function(q){
+        return `<th class="right">${q.term} months${q.rate !== null ? " · " + q.rate + "%" : ""}</th>`; }).join("")}</tr></thead>
+      <tbody><tr class="base"><td>Vehicle only, no products</td>${t.baseQuotes.map(function(q){
+        return `<td class="right num">${q.basePayment === null ? `<span class="tag warn">Enter rate</span>` : money(q.basePayment)}</td>`; }).join("")}</tr>
+      ${activePk.map(function(p){ return `<tr class="${p.key===chosenKey?"chosen":""}"><td>${pkgCell(p)}</td>${p.quotes.map(function(q){
+        return `<td class="right num">${q.payment === null ? "—" : money(q.payment) + `<i>+${money(q.difference)}</i>`}</td>`; }).join("")}</tr>`; }).join("")}
+      </tbody></table></div>`;
+  }
+  if (!activePk.length) payGrid += `<div class="tiny muted" style="margin-top:8px">Tick products into packages above to compare them here.</div>`;
+
+  var choiceBtns = D.PACKAGES.map(function(def){
+    var p = pkgOf(def.key), isSel = chosenKey === def.key;
+    return `<button type="button" class="pkgselect ${isSel?"on":""}" data-act="select-final-package" data-package="${def.key}" ${p.count || isSel ? "" : "disabled"}>
+      <div class="pks-name">${esc(p.label)}</div>
+      <div class="pks-count">${p.count} product${p.count===1?"":"s"}${p.hasUnpriced?" · price missing":""}</div>
+      <div class="pks-total">${p.count ? money(p.sub) : "—"}</div>
+      ${p.count ? `<div class="tiny muted">before tax</div>` : ""}
+    </button>`;
+  }).join("");
+  var selNone = chosenKey === "none";
+  var selNote = selNone ? `<div class="notice ok" style="margin-top:12px">Recorded: no package purchased. Nothing from this presentation counts as sold in reports.
+      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Undo</button></div>`
+    : tx.display.selection ? `<div class="notice ok" style="margin-top:12px">
+      Presenting only <strong>${esc((pkgOf(chosenKey)||{}).label||"")}</strong> on the customer display.
+      <button class="btn sm" data-act="clear-selection" style="margin-left:10px">Show all packages again</button></div>` : "";
+  var chosenPkg = t.selectedPackage && t.selectedPackage !== "none" ? pkgOf(t.selectedPackage) : null;
+  var closeSum = !t.selectedPackage ? "" : `<div class="kv total"><span>${tx.type === "Cash" ? "Total due at signing" : "Amount financed"}${chosenPkg ? " with " + esc(brand().label + " " + capWord(chosenPkg.suffix)) : ", vehicle only"}</span>
+    <span class="num">${money(tx.type === "Cash" ? t.cashDueTotal : t.amountFinanced)}</span></div>`;
+  var checkNote = v.errors.length ? `<div class="notice err"><div><strong>Finish these before completing the deal</strong> <span class="tiny">· tap one to go to it</span>
+        <ul class="issue-list">${v.issues.map(function(e, i){ return `<li><button type="button" data-act="jump-issue" data-idx="${i}">${esc(e.msg)}</button></li>`; }).join("")}</ul></div></div>`
+    : (v.warnings.length ? `<div class="notice warn">${esc(v.warnings[0])}</div>`
+    : `<div class="notice ok">Everything checks out. This deal is ready to complete.</div>`);
+
+  var packageCard = `<div class="card" id="step-5"><div class="card-h"><h2>5 · Present &amp; close</h2>
     <div class="sp"><label class="switch"><input type="checkbox" data-act="toggle-payment" ${tx.display.showPayment?"checked":""}> Show payments to customer</label>
       ${tx.type==="Cash" ? "" : `<label class="switch" style="margin-left:14px"><input type="checkbox" data-act="toggle-prices" ${tx.display.showPrices?"checked":""}> Show product prices</label>`}
 </div></div>
     <div class="card-b">
-      <div class="kv"><span class="k">${t.selectedPackage ? "Selected package total, with tax" : "All products total, with tax"}</span><span class="num">${money(t.productsTotal)}</span></div>
-      <div class="kv total"><span>${t.selectedPackage ? "Financed with the selected package" : "Financed with every product"}</span><span class="num">${money(t.amountFinanced)}</span></div>
-      ${t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months, ${t.selectedPackage ? "selected package" : "all products"}</span><span class="num">${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("")}
-      ${v.errors.length ? `<div class="notice err" style="margin-top:12px"><div><strong>Finish these before completing the deal</strong> <span class="tiny">· tap one to go to it</span>
-        <ul class="issue-list">${v.issues.map(function(e, i){ return `<li><button type="button" data-act="jump-issue" data-idx="${i}">${esc(e.msg)}</button></li>`; }).join("")}</ul></div></div>`
-        : (v.warnings.length ? `<div class="notice warn" style="margin-top:12px">${esc(v.warnings[0])}</div>`
-        : `<div class="notice ok" style="margin-top:12px">Everything checks out. This deal is ready to complete.</div>`)}
+      ${payGrid}
+      <div class="close-box">
+        <div class="lbl">Which package did the customer choose?</div>
+        <p class="muted small" style="margin:2px 0 10px;max-width:80ch">It narrows the customer display to that package and records it as sold, so only its products count in reports. Click it again to undo.</p>
+        <div class="choice-row" id="step-choice">${choiceBtns}<button type="button" class="btn choice-none ${selNone?"on":""}" data-act="select-final-package" data-package="none">Customer didn't buy a package</button></div>
+        ${selNote}
+        ${closeSum}
+        <div class="close-finish">${checkNote}<button class="btn primary close-go" data-act="complete">${doneRec ? "Update completed deal" : "Complete transaction"}</button></div>
+      </div>
     </div></div>`;
 
-  return toolbar + doneBanner + stepBar + `<div class="fin-split solo">
+  return toolbar + doneBanner + `<div class="fin-split solo">
     <div><div class="stack"><div class="cv-row">${customerCard}${vehicleCard}</div>${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
 }
 
@@ -4500,11 +4626,20 @@ function render(){
     }
   }
   if (state.ui.userForm) syncUserForm();
+  measureBars();
   markIssues();
   if (state.ui.tour) positionTour();
   if (state.ui.extendForm || state.ui.userForm) initWheels();
 }
 window.__DCC_RENDER__ = render;
+/* The Finance bar pins itself just under the header, and jumping to a step must land below
+   both, so their real heights (which change with wrapping) are kept in CSS variables. */
+function measureBars(){
+  var de = document.documentElement, tb = document.querySelector(".topbar"), fb = document.querySelector(".fin-toolbar");
+  if (tb) de.style.setProperty("--topbar-h", tb.offsetHeight + "px");
+  if (fb) de.style.setProperty("--finbar-h", fb.offsetHeight + "px");
+}
+window.addEventListener("resize", measureBars);
 
 /* ---------------- SECOND CUSTOMER WINDOW ----------------
    The preview runs inside a sandboxed frame, so a second window cannot load
@@ -5262,9 +5397,9 @@ var TOUR_STEPS = [
   { sel:"#step-1", title:"1 · Customer", text:"Start with who you're helping. Name, phone and email feed the customer display, the printed copy and the emailed package." },
   { sel:"#step-2", title:"2 · Vehicle", text:"Enter the vehicle and its selling price. That price drives every payment and total the customer sees." },
   { sel:"#step-3", title:"3 · Finance or Cash setup", text:"Flip between Finance and Cash. Finance: pick the terms to present, set each rate and the payment frequency. Cash: enter any trade and deposit and it shows one total due." },
-  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick Pref, Esse or Basi to place it in a package, or Decline to show the customer what they're waiving. Tab jumps straight to the next price box." },
-  { sel:"#step-5", title:"5 · Presentation", text:"Control what the customer sees: show or hide payments and product prices, pick the package they chose, and use Split view to preview their screen live." },
-  { sel:".fin-toolbar", title:"Present, send & finish", text:"Open the customer display on their monitor, go full screen, email the package, print an internal or customer copy — then Complete transaction to send the deal to Reports." },
+  { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick it into the Preferred, Essential or Basic column to place it in that package, or Decline to show the customer what they're waiving. Each column shows its running total. Tab jumps straight to the next price box." },
+  { sel:"#step-5", title:"5 · Present & close", text:"Compare every package at every term, choose whether the customer sees payments and prices, then record the package they chose and complete the deal." },
+  { sel:".fin-toolbar", title:"Your action bar", text:"This bar stays pinned while you scroll: the customer display, Print & send (email, internal print, customer copy), Deal (new, save, saved deals), what's left to finish, and Complete transaction." },
   { sel:null, title:"You're all set", text:"That's the core flow. Reports (left menu) lists your completed deals, and you can reopen or edit any of them. Enjoy AXIOM." }
 ];
 function maybeStartTour(){
@@ -5399,11 +5534,11 @@ document.addEventListener("keydown", function(ev){
 });
 document.addEventListener("click", function(ev){
   var el = ev.target.closest ? ev.target.closest("[data-act]") : null;
-  /* Close the Customer display menu when clicking anywhere else or choosing an item. */
-  if (state.ui.cdMenu){
+  /* Close the bar's menus (Customer display, Print & send, Deal) when clicking anywhere else or choosing an item. */
+  if (state.ui.cdMenu || state.ui.barMenu){
     var inWrap = ev.target.closest && ev.target.closest(".cdmenu-wrap");
     var a0 = el ? el.getAttribute("data-act") : null;
-    if (!inWrap || (a0 && a0 !== "cd-menu")){ state.ui.cdMenu = false; setTimeout(function(){ if (window.__DCC_RENDER__) window.__DCC_RENDER__(); }, 0); }
+    if (!inWrap || (a0 && a0 !== "cd-menu" && a0 !== "bar-menu")){ state.ui.cdMenu = false; state.ui.barMenu = null; setTimeout(function(){ if (window.__DCC_RENDER__) window.__DCC_RENDER__(); }, 0); }
   }
   if (!el) return;
   var act = el.getAttribute("data-act");
@@ -5429,7 +5564,9 @@ document.addEventListener("click", function(ev){
       commit(); break; }
     case "toggle-theme": state.ui.theme = state.ui.theme === "dark" ? "light" : "dark"; commit(); break;
     case "toggle-split": state.ui.split = !state.ui.split; commit(); break;
-    case "cd-menu": state.ui.cdMenu = !state.ui.cdMenu; commit(); break;
+    case "cd-menu": state.ui.cdMenu = !state.ui.cdMenu; state.ui.barMenu = null; commit(); break;
+    case "bar-menu": { var bm = el.getAttribute("data-menu");
+      state.ui.barMenu = state.ui.barMenu === bm ? null : bm; state.ui.cdMenu = false; commit(); break; }
     case "cd-preview-toggle": state.ui.cdPreview = !state.ui.cdPreview; state.ui.cdMenu = false; commit(); break;
     case "cd-preview-close": state.ui.cdPreview = false; commit(); break;
     case "present": state.ui.present = true; commit(); break;
