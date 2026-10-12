@@ -167,6 +167,19 @@ tbody tr:hover{background:var(--surface-2)}
 .step .n{width:19px;height:19px;border-radius:50%;background:var(--surface-3);color:var(--text-2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600}
 .step.done .n{background:var(--ok);color:#fff}
 .step.done{border-color:var(--ok)}
+.step.bad .n{background:var(--danger);color:#fff}
+.step.bad{border-color:var(--danger);color:var(--danger)}
+/* Fields still blocking Complete, marked once Complete has been pressed */
+.need{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-bg) !important}
+.pkgselect-row.need,.prodrow2.need,.chiprow.need{border-radius:12px}
+.confirm-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+.deal-banner{align-items:center;margin-bottom:14px;flex-wrap:wrap}
+.deal-banner .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
+.issue-list{margin:6px 0 0;padding:0;list-style:none}
+.issue-list li + li{margin-top:2px}
+.issue-list button{all:unset;cursor:pointer;color:inherit;text-decoration:underline;text-underline-offset:2px}
+.issue-list button:hover,.issue-list button:focus-visible{text-decoration-thickness:2px}
+.issue-list li::before{content:"• ";}
 .stack{display:flex;flex-direction:column;gap:14px}
 .prodrow{border:1px solid var(--border);border-radius:10px;padding:11px 12px;background:var(--surface-2)}
 .prodrow + .prodrow{margin-top:10px}
@@ -1379,34 +1392,65 @@ function totals(state, tx){
   };
 }
 
+/* Each error also comes back as an "issue" saying which step it belongs to and which field
+   to jump to, so the Finance screen can mark the problem fields and scroll to the first one.
+   step "fm" is the Finance Manager picker in the toolbar; 5 is the customer's package choice. */
 function validate(state, tx){
-  var t = totals(state, tx), errs = [], warns = [];
-  if (!tx.fsmUserId) errs.push("Assign a Finance Manager to this deal before completing it.");
-  if (!tx.customer.name) errs.push("Add a customer before completing the transaction.");
-  if (!tx.vehicle.model || !tx.vehicle.stock) errs.push("Enter the vehicle model and stock number.");
-  if (!tx.vehicle.price) errs.push("Enter the vehicle selling price.");
+  var t = totals(state, tx), errs = [], warns = [], issues = [];
+  function fail(msg, step, target, more){
+    errs.push(msg);
+    var it = { msg:msg, step:step, target:target };
+    for (var k in (more || {})) it[k] = more[k];
+    issues.push(it);
+  }
+  if (!tx.fsmUserId) fail("Assign a Finance Manager to this deal before completing it.", "fm", '[data-bind="tx.fsmUserId"]');
+  if (!tx.customer.name) fail("Add a customer before completing the transaction.", 1, '[data-bind="tx.customer.name"]');
+  if (!tx.vehicle.model || !tx.vehicle.stock) fail("Enter the vehicle model and stock number.", 2,
+    !tx.vehicle.model ? '[data-bind="tx.vehicle.model"]' : '[data-bind="tx.vehicle.stock"]');
+  if (!tx.vehicle.price) fail("Enter the vehicle selling price.", 2, '[data-bind="tx.vehicle.price"]');
   if (tx.type !== "Cash"){
-    if (!t.terms.length) errs.push("Select at least one finance term to present.");
-    if (!tx.finance.frequency) errs.push("Select a payment frequency.");
+    if (!t.terms.length) fail("Select at least one finance term to present.", 3, "#term-chips");
+    if (!tx.finance.frequency) fail("Select a payment frequency.", 3, "#freq-chips");
     t.terms.forEach(function(tm){
       var r = (tx.finance.rates || {})[tm];
-      if (r === undefined || r === null || r === "") errs.push("Enter the interest rate for " + tm + " months.");
+      if (r === undefined || r === null || r === "") fail("Enter the interest rate for " + tm + " months.", 3, '[data-act="term-rate"][data-term="' + tm + '"]');
     });
   }
-  if (t.packagesUsed && !t.selectedPackage) errs.push("Select the package the customer chose, or \"Customer didn't buy a package\", before completing the deal.");
+  if (t.packagesUsed && !t.selectedPackage) fail("Select the package the customer chose, or \"Customer didn't buy a package\", before completing the deal.", 5, "#step-choice");
   if (!tx.lines.length) warns.push("No products are selected. The customer display will show the welcome screen only.");
   else if (!t.packagesUsed) warns.push("No product has been assigned to a package yet, so the customer display is showing every selected product as one package.");
   for (var i=0;i<t.lines.length;i++){
     var L = t.lines[i], p = L.product, c = L.cfg;
     if (c.declined) continue;
     if (!(c.packages && (c.packages.preferred || c.packages.essential || c.packages.basic))) continue;
-    if (p.uses.term && !c.term) errs.push(p.name + ": select a term.");
-    if (p.uses.km && !c.km) errs.push(p.name + ": select kilometres.");
-    if (p.uses.interval && !c.interval) errs.push(p.name + ": select a maintenance interval.");
-    if (p.uses.deductible && (c.deductible === null || c.deductible === undefined || c.deductible === "")) errs.push(p.name + ": select a deductible.");
-    if (L.price === null) errs.push(p.name + ": price is not configured — enter a price to continue.");
+    var row = '.prodrow2[data-pid="' + p.id + '"]', at = function(f){ return '[data-bind="line:' + c.lineId + ':' + f + '"]'; };
+    var opt = { product:p.id, row:row, cfg:true };
+    if (p.uses.term && !c.term) fail(p.name + ": select a term.", 4, at("term"), opt);
+    if (p.uses.km && !c.km) fail(p.name + ": select kilometres.", 4, at("km"), opt);
+    if (p.uses.interval && !c.interval) fail(p.name + ": select a maintenance interval.", 4, at("interval"), opt);
+    if (p.uses.deductible && (c.deductible === null || c.deductible === undefined || c.deductible === "")) fail(p.name + ": select a deductible.", 4, at("deductible"), opt);
+    if (L.price === null) fail(p.name + ": price is not configured — enter a price to continue.", 4, at("price"), { product:p.id, row:row });
   }
-  return { ok: errs.length === 0, errors:errs, warnings:warns, totals:t };
+  return { ok: errs.length === 0, errors:errs, issues:issues, warnings:warns, totals:t };
+}
+
+/* Key-order-independent JSON: a deal that has been through the database (which reorders
+   keys) must still compare equal to the same deal on screen. */
+function stableJSON(v){
+  if (v === null || v === undefined || typeof v !== "object") return JSON.stringify(v === undefined ? null : v);
+  if (Array.isArray(v)) return "[" + v.map(stableJSON).join(",") + "]";
+  return "{" + Object.keys(v).filter(function(k){ return v[k] !== undefined; }).sort()
+    .map(function(k){ return JSON.stringify(k) + ":" + stableJSON(v[k]); }).join(",") + "}";
+}
+/* What a deal "says", ignoring bookkeeping (status, dates, who saved it) and which screen the
+   customer display is on. Two deals with the same signature need no saving. */
+function dealSig(d){
+  if (!d) return "";
+  var c = clone(d);
+  delete c.status; delete c.createdAt; delete c.savedAt; delete c.savedBy;
+  if (c.display) delete c.display.mode;
+  c.offers = normOffers(c.offers);
+  return stableJSON(c);
 }
 
 
@@ -1582,7 +1626,7 @@ window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
   totals:totals, validate:validate, brandOf:brandOf, brandOfDealer:brandOfDealer, hasListCost:hasListCost, packageLabel:packageLabel,
-  normOffers:normOffers, discountFor:discountFor };
+  normOffers:normOffers, discountFor:discountFor, dealSig:dealSig };
 })();
 /* =====================================================================
    Layer 3: STORE, SHELL, DASHBOARD, CUSTOMER DISPLAY, FSM DISPLAY
@@ -1625,7 +1669,7 @@ var state = {
   try { saved = JSON.parse(raw); } catch (e) { return; }
   if (!saved || typeof saved !== "object") return;
   ["dealerships","products","users","customers","vehicles","completed","saved","history",
-   "activeDealershipId","currentUserId","loggedIn","tx"].forEach(function(k){
+   "activeDealershipId","currentUserId","loggedIn","tx","route"].forEach(function(k){
     if (saved[k] !== undefined) state[k] = saved[k];
   });
   if (saved.theme) state.ui.theme = saved.theme;
@@ -1657,7 +1701,7 @@ function shareableState(){
   return { dealerships:state.dealerships, activeDealershipId:state.activeDealershipId, products:state.products,
     users:state.users, customers:state.customers, vehicles:state.vehicles, completed:state.completed, saved:state.saved,
     history:state.history, currentUserId:state.currentUserId, loggedIn:state.loggedIn,
-    tx:state.tx, theme:state.ui.theme, version:state.version };
+    tx:state.tx, route:state.route, theme:state.ui.theme, version:state.version };
 }
 function persist(){
   try { sessionStorage.setItem(STORAGE_KEY, JSON.stringify(shareableState())); } catch (e) {}
@@ -1666,6 +1710,7 @@ function persist(){
 }
 function commit(){
   state.version++;
+  if (window.__DCC_AUTOSAVE__) window.__DCC_AUTOSAVE__();
   persist();
   if (window.__DCC_CLOUD_PUSH__) window.__DCC_CLOUD_PUSH__();
   /* Deferred one tick: commit() usually runs inside a "change" handler fired
@@ -2157,16 +2202,20 @@ function renderCustomerDisplay(tx){
 }
 
 /* ---------------- FSM DISPLAY ---------------- */
-function stepState(tx){
-  var t = C.totals(state, tx);
+/* A step ticks only when that part of the deal is really finished: finance setup needs a
+   selling price to work from (its term and rate are pre-filled, so they alone prove nothing),
+   and Presentation needs the customer's package choice recorded. "bad" marks the steps
+   holding a problem once Complete has been pressed (state.ui.finCheck). */
+function stepState(tx, v){
+  var t = v.totals, has = function(n){ return v.issues.some(function(i){ return i.step === n; }); };
+  var priced = Number(tx.vehicle.price) > 0, check = !!state.ui.finCheck;
+  var chosen = t.selectedPackage !== null || (!t.packagesUsed && tx.lines.length > 0);
   return [
-    { n:1, label:"Customer", done: !!tx.customer.name },
-    { n:2, label:"Vehicle", done: !!(tx.vehicle.model && tx.vehicle.stock && tx.vehicle.price) },
-    { n:3, label:tx.type==="Cash"?"Cash setup":"Finance setup", done: tx.type==="Cash" ? true
-        : !!(t.terms.length && tx.finance.frequency && t.terms.every(function(tm){
-        var r = (tx.finance.rates||{})[tm]; return r !== undefined && r !== null && r !== ""; })) },
-    { n:4, label:"Products & packages", done: tx.lines.length > 0 && t.unpricedCount === 0 },
-    { n:5, label:"Presentation", done: tx.lines.length > 0 && t.unpricedCount === 0 && tx.display.mode === "package" }
+    { n:1, label:"Customer", done: !has(1), bad: check && has(1) },
+    { n:2, label:"Vehicle", done: !has(2), bad: check && has(2) },
+    { n:3, label:tx.type==="Cash"?"Cash setup":"Finance setup", done: priced && !has(3), bad: check && has(3) },
+    { n:4, label:"Products & packages", done: tx.lines.length > 0 && !has(4), bad: check && has(4) },
+    { n:5, label:"Presentation", done: chosen, bad: check && has(5), target: !chosen && t.packagesUsed ? "step-choice" : "step-5" }
   ];
 }
 function selectOptions(list, current, fmt){
@@ -2174,8 +2223,17 @@ function selectOptions(list, current, fmt){
 }
 function viewFinance(){
   ensureOffers(state.tx);
-  var tx = state.tx, t = C.totals(state, tx), v = C.validate(state, tx);
-  var steps = stepState(tx);
+  var tx = state.tx, v = C.validate(state, tx), t = v.totals;
+  var steps = stepState(tx, v);
+  /* Already in Reports (just completed, or reopened from Reports)? Then say so, and say
+     plainly whether it has been changed since. */
+  var doneRec = state.completed.filter(function(d){ return d.id === tx.id; })[0] || null;
+  var changedSince = !!doneRec && C.dealSig(doneRec) !== C.dealSig(tx);
+  var doneBanner = !doneRec ? "" : changedSince
+    ? `<div class="notice warn deal-banner"><div><strong>Changed since it was completed.</strong> Reports still show the earlier version of deal ${esc(tx.id)}.</div>
+        <div class="sp"><button class="btn sm primary" data-act="complete">Update completed deal</button><button class="btn sm" data-act="new-deal">Start next deal</button></div></div>`
+    : `<div class="notice ok deal-banner"><div><strong>✓ Deal completed.</strong> ${esc(tx.id)} is in Reports${doneRec.createdAt ? ", dated " + esc(C.fmtDate(doneRec.createdAt)) : ""}.</div>
+        <div class="sp"><button class="btn sm primary" data-act="new-deal">Start next deal</button></div></div>`;
 
   var toolbar = `<div class="fin-toolbar">
     ${isAdmin() ? `<label class="switch"><span class="muted small">Finance Manager</span>
@@ -2205,12 +2263,12 @@ function viewFinance(){
       <button class="btn sm" data-act="new-deal">New deal</button>
       <button class="btn sm" data-act="saved-list">Saved deals${savedForMe().length ? `<span class="saved-badge">${savedForMe().length}</span>` : ""}</button>
       <button class="btn sm" data-act="save-deal">Save deal</button>
-      <button class="btn sm primary" data-act="complete">Complete transaction</button>
+      <button class="btn sm primary" data-act="complete">${doneRec ? "Update completed deal" : "Complete transaction"}</button>
     </div></div>`;
 
   var stepBar = `<div class="steps">${steps.map(function(s){
-    return `<div class="step ${s.done?"done":""}" data-act="scroll-step" data-step="${s.n}">
-      <span class="n">${s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
+    return `<div class="step ${s.bad?"bad":s.done?"done":""}" data-act="scroll-step" data-step="${s.n}" data-target="${s.target || "step-" + s.n}">
+      <span class="n">${s.bad?"!":s.done?"✓":s.n}</span><span>${esc(s.label)}</span></div>`; }).join("")}</div>`;
 
   var customerCard = `<div class="card" id="step-1"><div class="card-h"><h2>1 · Customer</h2></div>
     <div class="card-b"><div class="cv-grid">
@@ -2253,14 +2311,14 @@ function viewFinance(){
         <label class="f"><span>Fees (non-taxable)</span><input type="number" value="${esc(tx.finance.feeAmount)}" data-bind="tx.finance.feeAmount" data-type="num" placeholder="0.00"></label>
       </div>
       <label class="f" style="margin-top:10px"><span>Payment frequency shown to the customer</span>
-        <div class="chiprow">
+        <div class="chiprow" id="freq-chips">
           <button type="button" class="btn sm ${tx.finance.frequency==="monthly"?"on":""}" data-act="set-frequency" data-freq="monthly">Monthly</button>
           <button type="button" class="btn sm ${tx.finance.frequency==="biweekly"?"on":""}" data-act="set-frequency" data-freq="biweekly">Bi-weekly</button>
         </div>
       </label>
       </div><div class="fs-div" aria-hidden="true"></div><div class="fs-right">
         <div class="small muted" style="margin-bottom:6px">Finance terms to present — tick every term you want the customer to see, then set that term's own rate</div>
-        <div class="chiprow">${termChips}</div>
+        <div class="chiprow" id="term-chips">${termChips}</div>
         ${rateInputs}
       </div></div>
       <div class="divider"></div>
@@ -2355,7 +2413,7 @@ function viewFinance(){
     var hintPrice = line ? (L ? L.configuredPrice : null) : C.priceFor(p, cv);
     var pricePlaceholder = hintPrice !== null && hintPrice !== undefined ? hintPrice : "0.00";
     var priceBind = line ? `line:${line.lineId}:price` : `newline:${p.id}:price`;
-    return `<div class="prodrow2">
+    return `<div class="prodrow2" data-pid="${esc(p.id)}">
       <div class="pr-icon">${icon}</div>
       <div class="pr-name">
         <div class="nm">${esc(p.name)}${priceNote}${needsCost ? (line && Number(line.cost) > 0 ? `<span class="tag">Cost entered</span>` : `<span class="tag warn">No cost</span>`) : ""}</div>
@@ -2395,7 +2453,7 @@ function viewFinance(){
       <button class="btn sm" data-act="route" data-route="products">Manage product master</button></div></div>
     <div class="card-b">
       <p class="muted small" style="max-width:76ch">Click the package the customer chose. It narrows the customer display to it and records it as the package sold, so only its products count in reports. Click it again to undo.</p>
-      <div class="pkgselect-row">${pkgBoxes}</div>
+      <div class="pkgselect-row" id="step-choice">${pkgBoxes}</div>
       ${noneBtn}
       ${selNote}
       <div class="divider"></div>
@@ -2478,13 +2536,13 @@ function viewFinance(){
       <div class="kv"><span class="k">${t.selectedPackage ? "Selected package total, with tax" : "All products total, with tax"}</span><span class="num">${money(t.productsTotal)}</span></div>
       <div class="kv total"><span>${t.selectedPackage ? "Financed with the selected package" : "Financed with every product"}</span><span class="num">${money(t.amountFinanced)}</span></div>
       ${t.quotes.map(function(q){ return `<div class="kv"><span class="k">${q.term} months, ${t.selectedPackage ? "selected package" : "all products"}</span><span class="num">${money(q.payment)} ${C.freqLabel(q.frequency)}</span></div>`; }).join("")}
-      ${v.errors.length ? `<div class="notice err" style="margin-top:12px"><div><strong>Finish these before completing the deal</strong>
-        <ul style="margin:6px 0 0 16px;padding:0">${v.errors.map(function(e){ return "<li>"+esc(e)+"</li>"; }).join("")}</ul></div></div>`
+      ${v.errors.length ? `<div class="notice err" style="margin-top:12px"><div><strong>Finish these before completing the deal</strong> <span class="tiny">· tap one to go to it</span>
+        <ul class="issue-list">${v.issues.map(function(e, i){ return `<li><button type="button" data-act="jump-issue" data-idx="${i}">${esc(e.msg)}</button></li>`; }).join("")}</ul></div></div>`
         : (v.warnings.length ? `<div class="notice warn" style="margin-top:12px">${esc(v.warnings[0])}</div>`
         : `<div class="notice ok" style="margin-top:12px">Everything checks out. This deal is ready to complete.</div>`)}
     </div></div>`;
 
-  return toolbar + stepBar + `<div class="fin-split solo">
+  return toolbar + doneBanner + stepBar + `<div class="fin-split solo">
     <div><div class="stack"><div class="cv-row">${customerCard}${vehicleCard}</div>${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
 }
 
@@ -2840,7 +2898,7 @@ function viewUsers(){
       <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <div class="tablewrap"><table><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Access restrictions</th><th>Access window</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-09-28.1</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-12.1</p></div></div>`;
 }
 function userModal(){
   if (!state.ui.userForm) return "";
@@ -3525,9 +3583,23 @@ function showNotice(title, message){
   state.ui.confirm = { title:title, message:message, notice:true };
   commit();
 }
+/* Several ways forward plus Cancel: choices = [{ label, kind:"primary"|"danger"|"", go:fn }]. */
+var pendingChoices = null;
+function askChoice(title, message, choices){
+  pendingConfirm = null; pendingChoices = choices;
+  state.ui.confirm = { title:title, message:message, choices:choices.map(function(c){ return { label:c.label, kind:c.kind || "" }; }) };
+  commit();
+}
 function confirmModal(){
   var c = state.ui.confirm;
   if (!c) return "";
+  if (c.choices){
+    return `<div class="modal-bg" data-act="confirm-bg"><div class="modal" style="max-width:540px">
+      <div class="modal-h"><h2>${esc(c.title)}</h2></div>
+      <div class="modal-b"><p style="margin:0">${esc(c.message)}</p>
+        <div class="confirm-a"><button class="btn" data-act="confirm-no">Cancel</button>${c.choices.map(function(ch, i){
+          return `<button class="btn ${esc(ch.kind)}" data-act="confirm-choice" data-idx="${i}">${esc(ch.label)}</button>`; }).join("")}</div></div></div></div>`;
+  }
   return `<div class="modal-bg" data-act="confirm-bg"><div class="modal" style="max-width:460px">
     <div class="modal-h"><h2>${esc(c.title)}</h2><div class="sp">
       ${c.notice ? `<button class="btn primary" data-act="confirm-no">OK</button>` : `<button class="btn" data-act="confirm-no">Cancel</button>
@@ -3555,7 +3627,8 @@ function renderOverlay(){
     return `<div class="present-mode">${V.renderCustomerDisplay(state.tx)}</div>
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
-  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + confirmModal() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer();
+  /* The confirm dialog goes last so it always sits on top of whatever opened it (e.g. Saved deals). */
+  return printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer() + confirmModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -4427,6 +4500,7 @@ function render(){
     }
   }
   if (state.ui.userForm) syncUserForm();
+  markIssues();
   if (state.ui.tour) positionTour();
   if (state.ui.extendForm || state.ui.userForm) initWheels();
 }
@@ -4496,10 +4570,41 @@ function makeLine(p){
   if (p.uses.deductible) line.deductible = p.deductibles[p.deductibles.length-1];
   return line;
 }
+/* Take the Finance Manager to a problem: open the product's options if the field lives there,
+   switch on the red markers, then scroll the field into the middle of the screen. */
+function jumpToIssue(iss){
+  if (!iss) return;
+  state.ui.finCheck = true;
+  if (iss.cfg && iss.product) state.ui.productConfigOpen = iss.product;
+  commit();
+  setTimeout(function(){
+    var el = document.querySelector(iss.target) || (iss.row ? document.querySelector(iss.row) : null);
+    if (!el) return;
+    /* instant, not smooth: a re-render mid-animation (e.g. a toast closing) would stop it halfway */
+    if (el.scrollIntoView) el.scrollIntoView({ block:"center" });
+    if (el.focus) { try { el.focus({ preventScroll:true }); } catch (e) {} }
+  }, 30);
+}
+/* After every render on the Finance screen, outline the fields that still block Complete. */
+function markIssues(){
+  if (!state.ui.finCheck || state.route !== "finance" || !state.tx || !state.loggedIn) return;
+  C.validate(state, state.tx).issues.forEach(function(iss){
+    var el = null;
+    try { el = document.querySelector(iss.target) || (iss.row ? document.querySelector(iss.row) : null); } catch (e) {}
+    if (el) el.classList.add("need");
+  });
+}
 function completeDeal(skipCostCheck){
   if (!V.isAdmin()) state.tx.fsmUserId = state.currentUserId;
+  /* Already in Reports? Then this is an update: keep its original date, and skip it if nothing changed. */
+  var prev = state.completed.filter(function(d){ return d.id === state.tx.id; })[0];
+  if (prev && C.dealSig(prev) === C.dealSig(state.tx)){ toast("Nothing has changed since this deal was completed.","info"); commit(); return; }
   var v = C.validate(state, state.tx);
-  if (!v.ok){ toast("This deal is not ready: " + v.errors[0], "err"); commit(); return; }
+  if (!v.ok){
+    toast(v.errors.length === 1 ? "One thing to finish: " + v.errors[0] : v.errors.length + " things to finish before completing — they're marked in red.", "err");
+    jumpToIssue(v.issues[0]);
+    return;
+  }
   var noCost = v.totals.soldLines.filter(function(L){ return L.costMissing && L.price !== null; }).map(function(L){ return L.product.name; });
   var soldPkg = v.totals.packages.filter(function(p){ return p.key === v.totals.selectedPackage; })[0];
   (soldPkg ? soldPkg.gifts : []).forEach(function(g){
@@ -4514,21 +4619,94 @@ function completeDeal(skipCostCheck){
     return;
   }
   var done = C.clone(state.tx);
-  done.status = "Completed"; done.createdAt = C.todayISO();
+  done.status = "Completed"; done.createdAt = prev && prev.createdAt ? prev.createdAt : C.todayISO();
   state.completed = state.completed.filter(function(d){ return d.id !== done.id; });
   state.saved = (state.saved || []).filter(function(d){ return d.id !== done.id; });
   state.completed.push(done);
   state.tx.status = "Completed";
-  state.tx.display.mode = "thankyou";
-  toast("Deal " + done.id + " completed and sent to reporting.","ok");
+  if (!prev) state.tx.display.mode = "thankyou";
+  state.ui.finCheck = false;
+  toast(prev ? "Deal " + done.id + " updated in Reports." : "Deal " + done.id + " completed and sent to reporting.","ok");
   commit();
 }
+
+/* ---------------- KEEPING THE DEAL ON SCREEN SAFE ----------------
+   Auto-save: once the deal has a customer name it is copied into Saved deals, so a closed tab
+   or a crash can't lose it. It runs at most every 30 seconds while the Finance Manager works
+   (each save is a cloud write and an audit-log row) and straight away when the deal is about
+   to leave the screen or the tab is hidden. Completed deals are never auto-saved. */
+var DRAFT_EVERY_MS = 30000, draftTimer = null;
+function dealHasContent(tx){
+  return !!(tx && (String(tx.customer.name || "").trim() || tx.vehicle.model || tx.vehicle.stock || tx.vehicle.price || tx.lines.length));
+}
+function isCompletedId(id){ return state.completed.some(function(d){ return d.id === id; }); }
+function storeDraft(force){
+  clearTimeout(draftTimer); draftTimer = null;
+  var tx = state.tx;
+  if (!state.loggedIn || !tx || !tx.dealershipId || tx.status === "Completed" || isCompletedId(tx.id)) return false;
+  if (!(force ? dealHasContent(tx) : String(tx.customer.name || "").trim())) return false;
+  var list = state.saved || (state.saved = []);
+  var prev = list.filter(function(d){ return d.id === tx.id; })[0];
+  if (prev && C.dealSig(prev) === C.dealSig(tx)) return false;
+  var copy = C.clone(tx);
+  copy.status = "Saved"; copy.savedAt = new Date().toISOString(); copy.savedBy = state.currentUserId;
+  if (!copy.fsmUserId && !V.isAdmin()) copy.fsmUserId = state.currentUserId;
+  state.saved = list.filter(function(d){ return d.id !== copy.id; });
+  state.saved.push(copy);
+  return true;
+}
+/* Called on every commit: start the 30-second clock if the deal needs saving. It deliberately
+   doesn't re-render, so a field being typed in is never disturbed. */
+window.__DCC_AUTOSAVE__ = function(){
+  var tx = state.tx;
+  if (draftTimer || !state.loggedIn || !tx || !String(tx.customer.name || "").trim() || tx.status === "Completed" || isCompletedId(tx.id)) return;
+  draftTimer = setTimeout(function(){ draftTimer = null; if (storeDraft(false)){ V.persist(); cloudSchedule(); } }, DRAFT_EVERY_MS);
+};
+function flushDraft(){ if (storeDraft(false)){ V.persist(); cloudPush(); } }
+document.addEventListener("visibilitychange", function(){ if (document.visibilityState === "hidden") flushDraft(); });
+window.addEventListener("pagehide", flushDraft);
+
+/* Before anything replaces the deal on screen (New deal, opening another deal, switching
+   dealership): nothing in progress is ever thrown away without asking. */
+function leaveDeal(go, kind){
+  var tx = state.tx;
+  if (!tx || !dealHasContent(tx)) return go();
+  var title = kind === "switch" ? "Switch dealership?" : kind === "open" ? "Open the other deal?" : "Start a new deal?";
+  var done = state.completed.filter(function(d){ return d.id === tx.id; })[0];
+  if (done){
+    if (C.dealSig(done) === C.dealSig(tx)) return go();
+    askChoice(title, "You changed deal " + tx.id + " after it was completed. Reports still show the earlier version.", [
+      { label:"Discard changes", kind:"danger", go:go },
+      /* carry on only if the update really went through (it may stop to ask about a missing cost or a problem) */
+      { label:"Update and continue", kind:"primary", go:function(){
+          completeDeal();
+          var now = state.completed.filter(function(d){ return d.id === tx.id; })[0];
+          if (!state.ui.confirm && now && C.dealSig(now) === C.dealSig(tx)) go(); } }
+    ]);
+    return;
+  }
+  var saved = (state.saved || []).filter(function(d){ return d.id === tx.id; })[0];
+  var name = String(tx.customer.name || "").trim();
+  if (saved && C.dealSig(saved) === C.dealSig(tx)){
+    if (name) toast(name + "'s deal is in Saved deals.","ok");
+    return go();
+  }
+  askChoice(title, (name ? name + "'s deal isn't finished. " : "This deal isn't finished. ") + "Keep it in Saved deals to pick it up later, or discard it.", [
+    { label:"Discard it", kind:"danger", go:function(){
+        if (saved){ state.saved = state.saved.filter(function(d){ return d.id !== tx.id; }); cloud.del.x.push(tx.id); }
+        go(); } },
+    { label:"Keep it in Saved deals", kind:"primary", go:function(){
+        storeDraft(true); toast((name ? name + "'s deal is" : "The deal is") + " in Saved deals.","ok"); go(); } }
+  ]);
+}
+function resetDealUi(){ state.ui.finCheck = false; state.ui.productConfigOpen = null; state.ui.giftEdit = null; }
+
 function saveDeal(){
   var tx = state.tx;
   if (!tx) return;
   if (!tx.customer.name && !tx.vehicle.model && !tx.lines.length){ toast("Add a customer, vehicle or product before saving.","err"); commit(); return; }
   if (!V.isAdmin() || !tx.fsmUserId) tx.fsmUserId = tx.fsmUserId || state.currentUserId;
-  if (state.completed.some(function(d){ return d.id === tx.id; })){ toast("This deal is already completed — reopen it from Reports to change it.","err"); commit(); return; }
+  if (isCompletedId(tx.id)){ toast("This deal is already completed — use Update completed deal to save changes to it.","err"); commit(); return; }
   var copy = C.clone(tx);
   copy.status = "Saved"; copy.savedAt = new Date().toISOString(); copy.savedBy = state.currentUserId;
   state.saved = (state.saved || []).filter(function(d){ return d.id !== copy.id; });
@@ -4541,29 +4719,31 @@ function openSaved(id){
   if (!d) return;
   if (d.dealershipId && d.dealershipId !== state.activeDealershipId) V.setDealership(d.dealershipId);
   var o = C.clone(d); o.status = "Open";
-  state.tx = o; state.route = "finance"; state.ui.savedList = false;
+  state.tx = o; state.route = "finance"; state.ui.savedList = false; resetDealUi();
   toast("Saved deal reopened.","ok"); commit();
 }
 function savedModal(){
   if (!state.ui.savedList) return "";
-  var list = V.savedForMe();
+  var list = V.savedForMe(), onScreen = state.tx ? state.tx.id : null;
   var rows = list.map(function(d){
     var when = d.savedAt ? new Date(d.savedAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}) : "—";
     var veh = [d.vehicle.year, d.vehicle.make, d.vehicle.model].filter(Boolean).join(" ");
     return `<tr><td class="nowrap">${esc(when)}</td><td>${esc(d.customer.name || "No name yet")}</td><td>${esc(veh || "—")}</td>
       <td>${esc(userById(d.fsmUserId).name)}</td>
-      <td class="right nowrap"><button class="btn sm primary" data-act="saved-open" data-deal="${esc(d.id)}">Open</button>
-        <button class="btn sm danger" data-act="saved-delete" data-deal="${esc(d.id)}">Delete</button></td></tr>`;
+      <td class="right nowrap">${d.id === onScreen ? `<span class="tag ok">On screen now</span>`
+        : `<button class="btn sm primary" data-act="saved-open" data-deal="${esc(d.id)}">Open</button>
+        <button class="btn sm danger" data-act="saved-delete" data-deal="${esc(d.id)}">Delete</button>`}</td></tr>`;
   }).join("");
   return `<div class="modal-bg" data-act="saved-close"><div class="modal" style="max-width:760px">
     <div class="modal-h"><h2>Saved deals</h2><div class="sp"><button class="btn" data-act="saved-close">Close</button></div></div>
-    <div class="modal-b">${list.length ? `<div class="tablewrap"><table><thead><tr><th>Saved</th><th>Customer</th><th>Vehicle</th><th>Finance Manager</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
-      : `<p class="muted" style="margin:0">No saved deals. Use <strong>Save deal</strong> on the Finance screen to pause a deal and come back to it later.</p>`}</div></div></div>`;
+    <div class="modal-b">${list.length ? `<p class="muted small" style="margin:0 0 10px">Deals are saved here automatically once they have a customer name, and leave this list when they're completed.</p>
+      <div class="tablewrap"><table><thead><tr><th>Saved</th><th>Customer</th><th>Vehicle</th><th>Finance Manager</th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`
+      : `<p class="muted" style="margin:0">No saved deals. Deals are saved here automatically once they have a customer name, or use <strong>Save deal</strong> to pause one and come back to it later.</p>`}</div></div></div>`;
 }
 function newDeal(){
   state.tx = C.newTransaction(V.isAdmin() ? (state.tx ? state.tx.fsmUserId : V.firstFsmFor(state.activeDealershipId)) : state.currentUserId, state.activeDealershipId);
   V.applyFinanceDefaults(state.tx);
-  state.route = "finance";
+  state.route = "finance"; resetDealUi();
   commit();
 }
 /* Reopening a saved deal loads a copy as the live transaction but leaves the
@@ -4574,14 +4754,31 @@ function openSavedDeal(id){
   if (!deal){ toast("That deal couldn't be found.","err"); return; }
   var opened = C.clone(deal);
   opened.status = "Open";
-  if (opened.dealershipId && opened.dealershipId !== state.activeDealershipId){
-    state.activeDealershipId = opened.dealershipId;
-    state.config = V.dealershipById(opened.dealershipId);
-  }
+  /* setDealership also brings in that dealership's own product list */
+  if (opened.dealershipId && opened.dealershipId !== state.activeDealershipId) V.setDealership(opened.dealershipId);
   state.tx = opened;
-  state.route = "finance";
+  state.route = "finance"; resetDealUi();
   toast("Deal " + id + " reopened for editing.","ok");
   commit();
+}
+
+/* A refresh, or signing back in after the session timed out, used to start over on a blank
+   deal. Put back the deal and the screen that were open — only for the same person, and only
+   in a dealership they can still open. `resume` is captured in boot(). */
+var resume = null;
+function resumeSession(u){
+  var r = resume; resume = null;
+  if (!r || r.user !== u.id) return false;
+  if (r.route) state.route = r.route;
+  var tx = r.tx;
+  if (!dealHasContent(tx) || !state.dealerships.some(function(d){ return d.id === tx.dealershipId; })) return false;
+  if (tx.dealershipId !== state.activeDealershipId){
+    if (!V.isMaster()) return false;
+    V.setDealership(tx.dealershipId);
+  }
+  if (!V.isAdmin()) tx.fsmUserId = u.id;
+  state.tx = tx;
+  return true;
 }
 /* ---------------- AXIOM LOGIN / LOGOUT ----------------
    Sign-in, sessions and passwords are handled by Supabase Auth; access to
@@ -4749,6 +4946,7 @@ function cloudWipeLocal(){
    the cache is kept so nothing is lost. */
 function endSession(msg){
   clearTimeout(cloud.timer); cloud.timer = null;
+  storeDraft(false); resume = null;   /* a named deal in progress goes to Saved deals before the local copy is cleared */
   var flush = cloud.loaded ? cloudPush() : Promise.resolve(true);
   return flush.then(function(ok){
     var done = function(){
@@ -4797,9 +4995,11 @@ function finishEnter(u){
   }
   state.route = (u.role === "Master Administrator" || u.role === "General Manager") ? "dashboard" : "finance";
   if (state.tx && !V.isAdmin()) state.tx.fsmUserId = u.id;
+  var resumed = resumeSession(u), who = String(state.tx && state.tx.customer.name || "").trim();
   var isDemo = !!(state.auth && state.auth.accessType === "demo"), isFirst = !!(state.auth && !state.auth.onboarded);
   state.ui.welcome = (isDemo || isFirst) ? { demo:isDemo, first:isFirst } : null;
-  toast("Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
+  toast(resumed ? "Welcome back. " + (who ? who + "'s deal is" : "Your open deal is") + " back on screen."
+    : "Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
   refreshUsers();
   if (!state.ui.welcome) maybeStartTour();
   commit();
@@ -5235,8 +5435,11 @@ document.addEventListener("click", function(ev){
     case "present": state.ui.present = true; commit(); break;
     case "exit-present": state.ui.present = false; commit(); break;
     case "open-customer-window": openCustomerWindow(); break;
-    case "new-deal": newDeal(); break;
-    case "deal-open": openSavedDeal(el.getAttribute("data-deal")); break;
+    case "new-deal": leaveDeal(newDeal, "new"); break;
+    case "deal-open": { var oid = el.getAttribute("data-deal");
+      if (state.tx && state.tx.id === oid){ state.route = "finance"; commit(); break; }
+      leaveDeal(function(){ openSavedDeal(oid); }, "open"); break; }
+    case "jump-issue": jumpToIssue(C.validate(state, state.tx).issues[Number(el.getAttribute("data-idx"))]); break;
     case "deal-delete": {
       var delId = el.getAttribute("data-deal");
       askConfirm("Delete this deal?", "Deal " + delId + " will be permanently deleted. This can't be undone.", "Delete deal", function(){
@@ -5248,13 +5451,12 @@ document.addEventListener("click", function(ev){
       break; }
     case "complete": completeDeal(); break;
     case "save-deal": saveDeal(); break;
-    case "saved-list": state.ui.savedList = true; commit(); break;
+    case "saved-list": storeDraft(false); state.ui.savedList = true; commit(); break;
     case "saved-close": state.ui.savedList = false; commit(); break;
     case "saved-open": {
-      var sid = el.getAttribute("data-deal"), cur = state.tx;
-      var dirty = cur && cur.id !== sid && (cur.customer.name || cur.vehicle.model || cur.lines.length) && !(state.saved || []).some(function(d){ return d.id === cur.id; }) && !state.completed.some(function(d){ return d.id === cur.id; });
-      if (dirty){ askConfirm("Open the saved deal?", "The deal on screen hasn't been saved. Opening another deal will replace it.", "Open anyway", function(){ openSaved(sid); }); break; }
-      openSaved(sid); break; }
+      var sid = el.getAttribute("data-deal");
+      if (state.tx && state.tx.id === sid){ state.ui.savedList = false; commit(); break; }
+      leaveDeal(function(){ openSaved(sid); }, "open"); break; }
     case "saved-delete": {
       var sdel = el.getAttribute("data-deal");
       askConfirm("Delete this saved deal?", "It will be removed permanently. This can't be undone.", "Delete deal", function(){
@@ -5366,7 +5568,7 @@ document.addEventListener("click", function(ev){
     case "set-deal-type": state.tx.type = el.getAttribute("data-deal-type"); commit(); break;
     case "cd-mode": state.tx.display.mode = el.getAttribute("data-mode"); state.ui.cdMenu = false; commit(); break;
     case "scroll-step": {
-      var target = document.getElementById("step-" + el.getAttribute("data-step"));
+      var target = document.getElementById(el.getAttribute("data-target") || "step-" + el.getAttribute("data-step"));
       if (target && target.scrollIntoView) target.scrollIntoView({ behavior:"smooth", block:"start" }); break; }
     case "print-internal": state.ui.modal = { kind:"internal" }; commit(); break;
     case "print-customer": state.ui.modal = { kind:"customer" }; commit(); break;
@@ -5486,7 +5688,10 @@ document.addEventListener("click", function(ev){
       });
       break; }
     case "confirm-yes": { var cf = pendingConfirm; pendingConfirm = null; state.ui.confirm = null; commit(); if (cf) cf(); break; }
-    case "confirm-no": case "confirm-bg": pendingConfirm = null; state.ui.confirm = null; commit(); break;
+    case "confirm-choice": {
+      var chs = pendingChoices, ch = chs ? chs[Number(el.getAttribute("data-idx"))] : null;
+      pendingChoices = null; state.ui.confirm = null; commit(); if (ch && ch.go) ch.go(); break; }
+    case "confirm-no": case "confirm-bg": pendingConfirm = null; pendingChoices = null; state.ui.confirm = null; commit(); break;
     case "uf-access": {
       var mr = document.querySelector(".modal"); if (!mr) break;
       var av = el.getAttribute("data-val");
@@ -5567,7 +5772,12 @@ document.addEventListener("change", function(ev){
   var el = ev.target, act = el.getAttribute("data-act");
   var ufk = el.getAttribute && el.getAttribute("data-uf");
   if (ufk === "role" || ufk === "invite"){ syncUserForm(); return; }
-  if (act === "switch-dealership"){ V.setDealership(el.value); commit(); return; }
+  if (act === "switch-dealership"){
+    var toDealer = el.value;
+    /* If it asks first, its re-render puts the picker back on the current dealership until they choose. */
+    leaveDeal(function(){ V.setDealership(toDealer); resetDealUi(); commit(); }, "switch");
+    return;
+  }
   if (act === "change-role"){
     var rt = userById(el.getAttribute("data-user")), newRole = el.value, oldRole = rt.role;
     if (newRole === oldRole || (V.isFinanceRole(newRole) && V.isFinanceRole(oldRole))) return;
@@ -5778,6 +5988,9 @@ document.addEventListener("change", function(ev){
 /* ---------------- BOOT ---------------- */
 function boot(){
   state.ui.confirm = null; state.ui.savedList = false; state.ui.pwReset = null; state.ui.history = null; state.ui.giftEdit = null;
+  /* What was on screen before this page load (a refresh keeps the browser-tab copy); signing in
+     puts it back for the same person — see resumeSession(). */
+  resume = { user:state.currentUserId, route:state.route, tx: state.tx ? C.clone(state.tx) : null };
   if (state.tx) V.applyFinanceDefaults(state.tx);
   var r = presetRange("monthly");
   state.ui.reports.from = r.from; state.ui.reports.to = r.to;

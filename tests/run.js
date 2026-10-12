@@ -317,5 +317,42 @@ eq("localISO uses local date", C.localISO(new Date(2026, 9, 10, 23, 30)), "2026-
 eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-01-05");
 { const d = new Date(); eq("todayISO = local today", C.todayISO(), C.localISO(d)); }
 
+/* --- validation issues point at the right step and field --- */
+{
+  const v = build([["a", P]]);
+  v.tx.customer.name = ""; v.tx.vehicle.model = ""; v.tx.finance.rates = {};
+  const r = C.validate(v.state, v.tx);
+  eq("one issue per error", r.issues.length, r.errors.length);
+  eq("issues carry the same messages", r.issues.every((x, i) => x.msg === r.errors[i]), true);
+  const step = (re) => (r.issues.find((x) => re.test(x.msg)) || {}).step;
+  eq("missing customer -> step 1", step(/Add a customer/), 1);
+  eq("missing model -> step 2", step(/model and stock/), 2);
+  eq("missing rate -> step 3", step(/interest rate for 72/), 3);
+  eq("missing package choice -> step 5", step(/package the customer chose/), 5);
+  eq("rate issue targets that term's rate box", r.issues.find((x) => /interest rate/.test(x.msg)).target, '[data-act="term-rate"][data-term="72"]');
+  const t = build([["a", P]]);
+  t.tx.lines[0].price = null; t.state = { config: cfg, products: [{ id: "a", name: "A", uses: { term: true }, terms: [36, 60], taxRule: "standard", cost: 1, pricing: null }] };
+  const r2 = C.validate(t.state, t.tx);
+  const term = r2.issues.find((x) => /select a term/.test(x.msg));
+  eq("product option issue opens that product's options", term && term.cfg && term.product, "a");
+  eq("product option issue targets its select", term && term.target, '[data-bind="line:L0:term"]');
+}
+
+/* --- deal signature: ignores bookkeeping and key order, sees real changes --- */
+{
+  const a = build([["a", P]]).tx;
+  const b = JSON.parse(JSON.stringify(a));
+  b.status = "Completed"; b.createdAt = "2020-01-01"; b.savedAt = "x"; b.savedBy = "u9"; b.display.mode = "thankyou";
+  eq("bookkeeping fields don't count as a change", C.dealSig(a), C.dealSig(b));
+  const reordered = {}; Object.keys(a).reverse().forEach((k) => { reordered[k] = a[k]; });
+  eq("key order doesn't count as a change", C.dealSig(a), C.dealSig(reordered));
+  const c = JSON.parse(JSON.stringify(a)); c.vehicle.price = 40001;
+  eq("a price change is a change", C.dealSig(a) === C.dealSig(c), false);
+  const d = JSON.parse(JSON.stringify(a)); d.display.selection = { package: "preferred" };
+  eq("recording the package choice is a change", C.dealSig(a) === C.dealSig(d), false);
+  const e = JSON.parse(JSON.stringify(a)); delete e.offers;
+  eq("an older deal without offers matches its normalised self", C.dealSig(e), C.dealSig(Object.assign({}, e, { offers: C.normOffers(undefined) })));
+}
+
 console.log("\n" + pass + " passed, " + fail + " failed");
 process.exit(fail ? 1 : 0);
