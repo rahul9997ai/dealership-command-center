@@ -229,6 +229,23 @@ eq("Subaru exists", !!D.BRANDS.subaru, true);
   const ev = C.amortSchedule(Object.assign({}, o, { every: 50 }));
   eq("AM extra on every payment shortens the loan", ev.count < 182 && ev.interest < base.interest, true);
 }
+/* --- Payoff calculator: customer's goal (paid off in X months) --- */
+{
+  const o = { amount: 31790.13, apr: 7.99, months: 84, freq: "biweekly", first: "2026-10-28" };
+  const g = C.amortGoal(o, 36);
+  eq("GOAL 36 months bi-weekly = 78 payments", g.nt, 78);
+  eq("GOAL lump sum ends the loan within 78 payments", g.lump.sched.count <= 78, true);
+  eq("GOAL one cent less is not enough", C.amortSchedule(Object.assign({}, o, { lumps: [{ at: 1, amount: g.lump.amount - 0.01 }] })).count > 78, true);
+  eq("GOAL top-up ends the loan within 78 payments", g.every.sched.count <= 78, true);
+  eq("GOAL one cent less top-up is not enough", C.amortSchedule(Object.assign({}, o, { every: g.every.amount - 0.01 })).count > 78, true);
+  eq("GOAL lump saves interest", g.lump.saved > 0 && g.every.saved > 0, true);
+  /* closed form check: the lump leaves exactly what 77 more payments of 228.31 repay */
+  const r = 0.0799 / 26, b1 = 31790.13 - (228.31 - 97.69), pv = 228.31 * (1 - Math.pow(1 + r, -77)) / r;
+  eq("GOAL lump close to the annuity formula", Math.abs(g.lump.amount - (b1 - pv)) < 2, true);
+  eq("GOAL longer than the term needs nothing", C.amortGoal(o, 96).reached, true);
+  const m = C.amortGoal({ amount: 40000, apr: 6.49, months: 72, freq: "monthly", first: "2026-11-01" }, 24);
+  eq("GOAL monthly 24 months", m.lump.sched.count, 24);
+}
 /* --- Cash Conversion: early payoff, extra payment, tax on earnings --- */
 {
   const po = C.loanPayoff(45000, 1.99, 60, "monthly", 12);
