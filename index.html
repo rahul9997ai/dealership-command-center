@@ -258,7 +258,14 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
 .ws-fg{display:grid;grid-template-columns:repeat(4,1fr);gap:4pt 10pt}
 .ws-fg div b{height:17pt;border-bottom-width:.8pt}
 .ws-ch{font-size:7.4pt;margin-top:7pt;color:#3a4252}
-@media print{ .modal-b:has(.ws-doc){padding:0 !important} .ws-sheet{box-shadow:none !important;border-radius:0 !important} }
+@media print{
+  /* Only the two sheets print: nothing before or after them may start a third page. A sheet is a hair
+     shorter than the paper because Chrome on a scaled Windows display can round 11in up by a pixel. */
+  #overlay:has(.ws-doc) > :not(.modal-bg:has(.ws-doc)){display:none !important}
+  .modal-bg:has(.ws-doc),.modal-bg:has(.ws-doc) .modal,.modal-b:has(.ws-doc){page:ws;padding:0 !important;margin:0 !important;border:0 !important;min-height:0 !important;height:auto !important;overflow:visible !important}
+  .ws-sheet{height:10.95in;box-shadow:none !important;border-radius:0 !important}
+  .ws-sig{margin-top:12pt}
+}
 /* Dealership settings: logo */
 .logo-up{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .logo-prev{width:200px;height:72px;border:1px dashed var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;padding:8px}
@@ -3526,7 +3533,7 @@ function viewUsers(){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.4</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.5</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
