@@ -304,13 +304,20 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
 .cx-tbl .pos{color:var(--cd-blue);font-weight:700}
 .cx-tbl tr.cur td{background:var(--cd-surface-3);font-weight:700}
 .cx-one{margin-top:clamp(14px,1.6vw,22px)}
+.am-cx-sched{max-height:520px;overflow:auto}
+.cx-tbl tr.ex td{background:var(--cd-surface-3);font-weight:700}
+.cx-tbl tr.tot td{font-weight:700;border-top:2px solid var(--cd-border)}
+.cx .am-note{color:var(--cd-muted)}
 .cx-tiles.am{grid-template-columns:repeat(4,minmax(0,1fr))}
 .doc .pv-cmp{width:100%;font-size:11px;border-collapse:collapse}
 .doc .pv-cmp th,.doc .pv-cmp td{padding:4px 6px;border-bottom:1px solid #e3e8ef;text-align:right}
 .doc .pv-cmp th:first-child,.doc .pv-cmp td:first-child{text-align:left}
-.pv-sched{page-break-before:always;break-before:page}
+.pv-sched thead{display:table-header-group}
+.am-note{font-size:11.5px;color:var(--muted);margin:6px 0 0}
+.doc .am-note{font-size:10px;color:#6b7383}
 .pv-sched tr{page-break-inside:avoid;break-inside:avoid}
 @media (max-width:640px){ .am-goal-grid{grid-template-columns:minmax(0,1fr)} .cx-tiles.am{grid-template-columns:repeat(2,minmax(0,1fr))} .am-lump{grid-template-columns:minmax(0,1fr) 32px} .am-lump input[type=date]{grid-column:1;grid-row:2} }
+.ca-tabdesc{font-size:13px;color:var(--text-2);margin:-6px 0 14px;padding:9px 12px;background:var(--info-bg);border-radius:9px}
 .ca-tabnote{font-size:13px;color:var(--text-2);margin:2px 0 0;max-width:72ch}
 .ca-tabs > .btn{white-space:nowrap}
 .ca-in input::placeholder{color:var(--muted);opacity:.6;font-style:italic}
@@ -3741,7 +3748,7 @@ function viewUsers(){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.7</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.8</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -5084,14 +5091,16 @@ function amCompareRows(cmp){
 function amYearTable(cmp, cls){
   var yrs = C.amortYears(cmp.plan), base = C.amortYears(cmp.base);
   return `<table class="${cls}"><thead><tr><th>Year</th><th>To</th><th class="right">Paid</th>${cmp.hasExtra ? `<th class="right">Extra</th>` : ""}<th class="right">Interest</th><th class="right">Principal</th><th class="right">Balance</th>${cmp.hasExtra ? `<th class="right">If no extra</th>` : ""}</tr></thead><tbody>
-    ${base.map(function(by, i){ var y = yrs[i];
-      return `<tr><td>${by.year}</td><td>${C.fmtDate(y ? y.to : by.to)}</td><td class="right num">${y ? money(y.paid) : "—"}</td>${cmp.hasExtra ? `<td class="right num">${y && y.extra ? money(y.extra) : "—"}</td>` : ""}<td class="right num">${y ? money(y.interest) : "—"}</td><td class="right num">${y ? money(y.principal) : "—"}</td><td class="right num">${money(y ? y.balance : 0)}</td>${cmp.hasExtra ? `<td class="right num muted">${money(by.balance)}</td>` : ""}</tr>`; }).join("")}
-    </tbody></table>`;
+    ${yrs.map(function(y, i){ var by = base[i];
+      return `<tr><td>${y.year}</td><td>${C.fmtDate(y.to)}</td><td class="right num">${money(y.paid)}</td>${cmp.hasExtra ? `<td class="right num">${y.extra ? money(y.extra) : "—"}</td>` : ""}<td class="right num">${money(y.interest)}</td><td class="right num">${money(r2(y.principal - y.extra))}</td><td class="right num">${money(y.balance)}</td>${cmp.hasExtra ? `<td class="right num muted">${by ? money(by.balance) : ""}</td>` : ""}</tr>`; }).join("")}
+    </tbody></table>
+    ${cmp.hasExtra && yrs.length < base.length ? `<p class="am-note">Paid off in year ${yrs.length} instead of year ${base.length}. “If no extra” is what would still be owed without the extra payments.</p>` : ""}`;
 }
 function amScheduleTable(sch, cls){
   return `<table class="${cls}"><thead><tr><th>No.</th><th>Due date</th><th class="right">Payment</th><th class="right">Extra</th><th class="right">Interest</th><th class="right">Principal</th><th class="right">Balance</th></tr></thead><tbody>
-    ${sch.rows.map(function(x){ return `<tr class="${x.extra ? "ex" : ""}"><td>${x.k}</td><td>${C.fmtDate(x.date)}</td><td class="right num">${money(x.pay)}</td><td class="right num">${x.extra ? money(x.extra) : ""}</td><td class="right num">${money(x.interest)}</td><td class="right num">${money(x.principal)}</td><td class="right num">${money(x.balance)}</td></tr>`; }).join("")}
-    <tr class="tot"><td colspan="2">Total</td><td class="right num">${money(r2(sch.paid - sch.extra))}</td><td class="right num">${sch.extra ? money(sch.extra) : ""}</td><td class="right num">${money(sch.interest)}</td><td class="right num">${money(sch.amount)}</td><td></td></tr></tbody></table>`;
+    ${sch.rows.map(function(x){ return `<tr class="${x.extra ? "ex" : ""}"><td>${x.k}</td><td>${C.fmtDate(x.date)}</td><td class="right num">${money(x.pay)}</td><td class="right num">${x.extra ? money(x.extra) : ""}</td><td class="right num">${money(x.interest)}</td><td class="right num">${money(r2(x.principal - x.extra))}</td><td class="right num">${money(x.balance)}</td></tr>`; }).join("")}
+    <tr class="tot"><td colspan="2">Total</td><td class="right num">${money(r2(sch.paid - sch.extra))}</td><td class="right num">${sch.extra ? money(sch.extra) : ""}</td><td class="right num">${money(sch.interest)}</td><td class="right num">${money(r2(sch.amount - sch.extra))}</td><td class="right num">${money(0)}</td></tr></tbody></table>
+    <p class="am-note">Each payment = interest + principal. Extra payments go straight off the balance.</p>`;
 }
 var r2 = C.r2;
 /* The customer's goal ("paid off in X months"), on the loan alone. */
@@ -5116,6 +5125,29 @@ function amGoalCard(g, cx){
       ${box("Option B · Or add to every payment", "+" + money(E.amount), [`${f} payment becomes ${money(r2(b.pmt + E.amount))} instead of ${money(b.pmt)}`, `last payment ${C.fmtDate(E.sched.last)} · saves ${money0(E.saved)} interest`], "ca-goal-every", "Use this top-up")}
     </div>
     ${cx ? "" : `<p class="tiny muted" style="margin:8px 0 0">Worked out on the loan alone. “Use” puts it into the extra payments on the left (replacing what's there), so the comparison, customer screen, printout and email all show it.</p>`}</div>`;
+}
+/* What each tab is for, shown under the tab row. */
+var CA_TAB_DESC = {
+  invest:"<strong>Cash buyer.</strong> What financing and investing the cash would leave them, compared with paying cash.",
+  amort:"<strong>Financed customer.</strong> Cost of borrowing, and how a lump sum, a top-up or a payoff goal shortens the loan. No investment involved.",
+  payoff:"<strong>Cash buyer who doesn't want to be locked in.</strong> What it costs to finance today and pay the loan off after 3, 6, 12 or 24 months, or with one extra payment.",
+  split:"<strong>Cash buyer who won't finance it all.</strong> Put some cash down, finance the rest, and keep the difference invested.",
+  terms:"<strong>Same deal, different terms.</strong> Payment, total interest and the result for 36 to 84 months, side by side.",
+  loc:"<strong>Customer planning to use a line of credit.</strong> Their line of credit against dealer financing."
+};
+/* The cash tabs and the payoff calculator keep their own boxes; when switching, fill whichever side is still empty. */
+function caSyncTabs(to){
+  var s = caState, cashSide = to !== "amort";
+  if (cashSide && !caNum(s.amount) && caNum(s.la)){
+    s.amount = s.la;
+    if (caNum(s.apr) === null && caNum(s.lapr) !== null) s.apr = s.lapr;
+    if ([24,36,48,60,72,84,96].indexOf(Number(s.lterm)) !== -1) s.term = String(s.lterm);
+    if (s.lfreq === "monthly" || s.lfreq === "biweekly") s.freq = s.lfreq;
+  } else if (!cashSide && !caNum(s.la) && caNum(s.amount)){
+    s.la = s.amount;
+    if (caNum(s.lapr) === null && caNum(s.apr) !== null) s.lapr = s.apr;
+    s.lterm = String(s.term || s.lterm); s.lfreq = s.freq || s.lfreq; s.lfirst = "";
+  }
 }
 function caAmortLeft(){
   var s = caState, freq = C.AMORT_PPY[s.lfreq] ? s.lfreq : "biweekly", ppy = C.AMORT_PPY[freq];
@@ -5149,7 +5181,8 @@ function caAmortLeft(){
       <small class="muted tiny">Pick any date: the lump sum is paid with the first ${amFreqWord(freq)} payment on or after it, straight off the balance.</small></div>
     ${caField("Extra on every payment (optional)", "levery", { pre:"$", ph:"0", hint:"A fixed top-up added to each regular payment." })}
     <div class="am-sec"><b>4</b> Printout</div>
-    <label class="ca-check"><input type="checkbox" data-act="ca-lfull" ${s.lfull ? "checked" : ""}> Include the full payment schedule when printing</label>`;
+    <label class="ca-check"><input type="checkbox" data-act="ca-lfull" ${s.lfull ? "checked" : ""}> Include the full payment schedule when printing</label>
+    <small class="muted tiny">With a lump sum or top-up, the schedule to the last payment always prints.</small>`;
 }
 function caAmortRight(){
   var cmp = amCompare();
@@ -5169,7 +5202,7 @@ function caAmortRight(){
       ${amCompareRows(cmp).map(function(r){ return `<tr><td>${r[0]}</td><td class="right num">${r[1]}</td><td class="right num ${cmp.hasExtra ? "strong" : "muted"}">${r[2]}</td></tr>`; }).join("")}</tbody></table></div></div>
     <div class="ca-card"><div class="ca-card-h"><h3>Loan balance over time</h3></div>${amChart(cmp, false)}</div>
     <div class="ca-card"><div class="ca-card-h"><h3>Year by year</h3></div><div class="tablewrap">${amYearTable(cmp, "ca-tbl")}</div></div>
-    <details class="ca-years"><summary>Full payment schedule (${p.count} payments)</summary><div class="tablewrap am-sched">${amScheduleTable(p, "ca-tbl")}</div></details>`;
+    <details class="ca-years" ${cmp.hasExtra ? "open" : ""}><summary>${cmp.hasExtra ? "Payment schedule to the last payment" : "Full payment schedule"} (${p.count} payments)</summary><div class="tablewrap am-sched">${amScheduleTable(p, "ca-tbl")}</div></details>`;
 }
 function caAmortCustomer(){
   var cmp = amCompare();
@@ -5191,6 +5224,7 @@ function caAmortCustomer(){
       <div class="cx-card"><div class="cx-card-h">Year by year</div><div class="cx-tblwrap">${amYearTable(cmp, "cx-tbl")}</div></div>
       <div class="cx-card cx-chart"><div class="cx-card-h">Your loan balance</div>${amChart(cmp, "cd")}</div>
     </section>
+    ${cmp.hasExtra ? `<section class="cx-one"><div class="cx-card"><div class="cx-card-h">Your payment schedule to the last payment · ${p.count} payments</div><div class="cx-tblwrap am-cx-sched">${amScheduleTable(p, "cx-tbl")}</div></div></section>` : ""}
     ${amGoal() ? `<section class="cx-one">${amGoalCard(amGoal(), true)}</section>` : ""}
     <section class="cx-tiles am">
       <div class="cx-tile"><span>${amFreqWord(b.freq)} payment</span><strong class="num">${money(b.pmt)}</strong></div>
@@ -5227,7 +5261,7 @@ function caAmortPrint(pb){
         <tr><td>Option A · One lump sum with the first payment (${C.fmtDate(g.base.first)})</td><td>${money(g.lump.amount)}</td><td>saves ${money0(g.lump.saved)} interest</td></tr>
         <tr><td>Option B · Or add to every ${amFreqWord(g.base.freq)} payment</td><td>+${money(g.every.amount)}</td><td>saves ${money0(g.every.saved)} interest</td></tr></tbody></table></div>`; })()}
     <div class="pv-try"><div class="pv-card-h">Year by year</div>${amYearTable(cmp, "")}</div>
-    ${caState.lfull ? `<div class="pv-try pv-sched"><div class="pv-card-h">Payment schedule${cmp.hasExtra ? " (with extra payments)" : ""}</div>${amScheduleTable(cmp.plan, "")}</div>` : ""}`;
+    ${caState.lfull || cmp.hasExtra ? `<div class="pv-try pv-sched"><div class="pv-card-h">${cmp.hasExtra ? "Payment schedule with the extra payments, to the last payment" : "Payment schedule"} · ${cmp.plan.count} payments</div>${amScheduleTable(cmp.plan, "")}</div>` : ""}`;
 }
 function caAmortEmail(){
   var cmp = amCompare(); if (!cmp) return null;
@@ -5531,7 +5565,8 @@ function viewCashAdv(){
       <button class="btn" data-act="ca-window">Second screen ↗</button>
       <button class="btn" data-act="ca-present">Full screen</button>
       <button class="btn" data-act="ca-email">Email</button>
-      <button class="btn primary" data-act="ca-print">Print for customer</button></span></div>`;
+      <button class="btn primary" data-act="ca-print">Print for customer</button></span></div>
+    <p class="ca-tabdesc no-print">${CA_TAB_DESC[s.tab] || ""}</p>`;
   var terms = [24,36,48,60,72,84,96].map(function(t){ return `<option value="${t}" ${String(t)===String(s.term)?"selected":""}>${t} months</option>`; }).join("");
   var common = `${caField("Customer name (optional)", "customer", { ph:"For the printout" })}
     ${caField("Cash amount (all-in, with tax)", "amount", { pre:"$", ph:"45,000" })}
@@ -5572,8 +5607,11 @@ function viewCashAdv(){
         <small class="muted tiny">Same result either way — pick the picture that fits how this customer thinks.</small></label>`;
     var I = caInputs(), res = C.cashAdvantage(I);
     if (!res){
-      right = `<div class="ca-empty"><div class="ca-empty-ic">$</div><h3>Enter the cash amount${s.invest==="gic"?", GIC rate":s.invest==="other"?", expected return":""} and dealer rate</h3>
-        <p class="muted small">The comparison appears here as you type.</p></div>`;
+      var need = [caNum(s.amount) ? "" : "the cash amount", caNum(s.apr) === null ? "the dealer rate" : "",
+        s.invest === "gic" && caNum(s.gicRate) === null ? "a GIC rate" : s.invest === "other" && caNum(s.otherRate) === null ? "the expected return" : ""].filter(Boolean);
+      var what = { payoff:"what it costs to pay the loan off early", split:"the down-payment options", terms:"the payment for each term" }[s.tab] || "the comparison";
+      right = `<div class="ca-empty"><div class="ca-empty-ic">$</div><h3>Enter ${need.length ? need.join(need.length > 2 ? ", " : " and ").replace(/, ([^,]*)$/, " and $1") : "the details"} on the left</h3>
+        <p class="muted small">${what.replace(/^./, function(c){ return c.toUpperCase(); })} appears here as you type.${s.tab !== "invest" ? " This tab uses the same boxes as “Cash vs Finance &amp; Invest”." : ""}</p></div>`;
     } else {
       var h = caHeadline(res), why = caWhyLines(res);
       if (s.tab === "payoff") right = `${caSummary(res, I)}
@@ -6928,7 +6966,7 @@ document.addEventListener("click", function(ev){
   switch (act){
     case "route": state.route = el.getAttribute("data-route"); state.ui.railOpen = false; commit(); break;
     case "toggle-rail": state.ui.railOpen = !state.ui.railOpen; commit(); break;
-    case "ca-tab": caState.tab = el.getAttribute("data-tab"); render(); break;
+    case "ca-tab": { var cnt = el.getAttribute("data-tab"); caSyncTabs(cnt); caState.tab = cnt; render(); break; }
     case "ca-invest": caState.invest = el.getAttribute("data-inv"); render(); break;
     case "ca-clear": caState = caBlank(); render(); break;
     case "cp-add": couponAddProduct(); break;
