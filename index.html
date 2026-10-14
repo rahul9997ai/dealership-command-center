@@ -267,6 +267,8 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
   .ws-sig{margin-top:12pt}
 }
 /* Cash Conversion: summary strip, extra cards, presets */
+.ca-tabnote{font-size:13px;color:var(--text-2);margin:2px 0 0;max-width:72ch}
+.ca-tabs > .btn{white-space:nowrap}
 .ca-in input::placeholder{color:var(--muted);opacity:.6;font-style:italic}
 .ca-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .ca-sum > div{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
@@ -4667,7 +4669,7 @@ function caInputs(){
   var years = s.years === "same" ? (term ? term/12 : null) : caNum(s.years);
   var rate = s.invest === "gic" ? caNum(s.gicRate) : s.invest === "other" ? caNum(s.otherRate) : null;
   /* A down payment is paid today either way, so only the rest is compared. */
-  var total = caNum(s.amount), down = s.tab === "invest" ? Math.min(Math.max(0, caNum(s.down) || 0), Math.max(0, total || 0)) : 0;
+  var total = caNum(s.amount), down = s.tab !== "loc" ? Math.min(Math.max(0, caNum(s.down) || 0), Math.max(0, total || 0)) : 0;
   return { amount:total === null ? null : total - down, total:total, down:down, tax:caTaxPct(), apr:caNum(s.apr) || 0, term:term, lost:caNum(s.lost) || 0, years:years,
     invest:s.invest === "other" ? "custom" : s.invest, rate:rate === null ? "" : rate,
     locRate:caNum(s.locRate) === null ? "" : caNum(s.locRate), payMode:s.payMode, payAmount:caNum(s.payAmount),
@@ -5137,8 +5139,8 @@ function viewCashAdv(){
   caSavePrefs();
   setTimeout(caPushWindow, 0);
   var s = caState, tabs = `<div class="ca-tabs no-print">
-      <button class="btn ${s.tab==="invest"?"on":""}" data-act="ca-tab" data-tab="invest">Cash vs Finance &amp; Invest</button>
-      <button class="btn ${s.tab==="loc"?"on":""}" data-act="ca-tab" data-tab="loc">Line of Credit vs Dealer</button>
+      ${[["invest","Cash vs Finance &amp; Invest"],["payoff","Pay it off any time"],["split","Keep some cash"],["terms","Compare terms"],["loc","Line of Credit vs Dealer"]].map(function(t){
+        return `<button class="btn ${s.tab===t[0]?"on":""}" data-act="ca-tab" data-tab="${t[0]}">${t[1]}</button>`; }).join("")}
       <span class="sp">${state.tx && (state.tx.customer.name || Number(state.tx.vehicle.price) > 0) ? `<button class="btn" data-act="ca-from-deal" title="Fill in the customer, amount, rate and term from the deal on the Finance screen">Use deal on screen</button>` : ""}
       <button class="btn" data-act="ca-clear">Clear</button>
       <button class="btn" data-act="ca-window">Second screen ↗</button>
@@ -5155,7 +5157,7 @@ function viewCashAdv(){
       <button class="btn ${s.freq==="biweekly"?"on":""}" data-act="ca-freq" data-freq="biweekly">Bi-weekly</button></div></label>
     ${caField("Cash discount lost by financing", "lost", { pre:"$", ph:"0", hint:"Only if the cash price is lower than the finance price." })}`;
   var left, right;
-  if (s.tab === "invest"){
+  if (s.tab !== "loc"){
     var yearOpts = `<option value="same" ${s.years==="same"?"selected":""}>Same as loan</option>` +
       [1,2,3,4,5,6,7,8,10,12,15].map(function(y){ return `<option value="${y}" ${String(y)===String(s.years)?"selected":""}>${y} year${y>1?"s":""}</option>`; }).join("");
     var inv = [["gic","GIC"],["sp500","S&P 500"],["tsx","TSX"],["other","Other"]].map(function(o){
@@ -5188,7 +5190,16 @@ function viewCashAdv(){
         <p class="muted small">The comparison appears here as you type.</p></div>`;
     } else {
       var h = caHeadline(res), why = caWhyLines(res);
-      right = `${caSummary(res, I)}<div class="ca-hero ${h.good?"good":"bad"}">
+      if (s.tab === "payoff") right = `${caSummary(res, I)}
+        <p class="ca-tabnote">For the customer who doesn't want to be locked in: finance today, and see what it costs to pay the loan off after a few months, or with one extra payment.</p>
+        ${caPayoffCard(res, I)}`;
+      else if (s.tab === "split") right = `${caSummary(res, I)}
+        <p class="ca-tabnote">For the customer who won't finance all of it: put some cash down, finance the rest, and keep the difference invested. Tap “Use” to show that row everywhere, including the customer screen and printout.</p>
+        ${caSplitCard(I)}`;
+      else if (s.tab === "terms") right = `${caSummary(res, I)}
+        <p class="ca-tabnote">Let the customer pick a term instead of deciding yes or no. Tap “Use” to switch the comparison to that term.</p>
+        ${caTermCard(I)}`;
+      else right = `${caSummary(res, I)}<div class="ca-hero ${h.good?"good":"bad"}">
           <div class="ca-lead">${h.lead}</div>
           <div class="ca-big num">${h.big} <span>${h.tail}</span></div>
           <div class="ca-sub">after ${caYears(res.months)}, compared with paying cash${caTaxNote()}</div></div>
@@ -5197,7 +5208,6 @@ function viewCashAdv(){
         ${why.length ? `<ul class="ca-why">${why.map(function(w){ return `<li>${w}</li>`; }).join("")}</ul>` : ""}
         ${caInvestChart(res, false)}
         ${res.kind === "history" ? `<p class="tiny muted" style="margin:6px 0 0">Uses ${esc(caInvestName())}'s compound average return, ${res.avgFrom}–${res.avgTo}. Real years go up and down; past returns are not a guarantee.</p>` : ""}
-        ${caPayoffCard(res, I)}${caSplitCard(I)}${caTermCard(I)}
         ${caYearTable(res, false)}`;
     }
   } else {
@@ -5287,7 +5297,7 @@ function caCustomerHtml(){
       <div class="cx-welcome">Welcome${first ? ", " + esc(first) : ""}</div>
       <p>Your Finance Manager is preparing your personal comparison.</p><div class="cx-dots"><i></i><i></i><i></i></div></div>`;
   var body;
-  if (s.tab === "invest"){
+  if (s.tab !== "loc"){
     var res = C.cashAdvantage(I);
     if (!res) body = wait;
     else {
