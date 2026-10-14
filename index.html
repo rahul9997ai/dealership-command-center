@@ -266,6 +266,37 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
   .ws-sheet{height:10.95in;box-shadow:none !important;border-radius:0 !important}
   .ws-sig{margin-top:12pt}
 }
+/* Cash Conversion: summary strip, extra cards, presets */
+.ca-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
+.ca-sum > div{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+.ca-sum span{display:block;font-size:11.5px;color:var(--muted)}
+.ca-sum strong{display:block;font-size:20px;line-height:1.25}
+.ca-sum small{display:block;font-size:11.5px;color:var(--muted)}
+.ca-sum .good{background:var(--ok-bg);border-color:transparent}
+.ca-sum .good strong{color:var(--ok)}
+.ca-card{margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px 14px}
+.ca-card-h{display:flex;justify-content:space-between;align-items:baseline;gap:4px 10px;flex-wrap:wrap;margin-bottom:8px}
+.ca-card-h h3{margin:0;font-size:14.5px}
+.ca-tbl{font-size:13px;width:100%}
+.ca-tbl th,.ca-tbl td{padding:6px 8px;white-space:nowrap}
+.ca-tbl tr.cur td{background:var(--info-bg)}
+.ca-tbl .pos{color:var(--ok);font-weight:600}
+.ca-tbl .neg{color:var(--danger);font-weight:600}
+.ca-extra{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px dashed var(--border);font-size:13px}
+.ca-extra .ca-in{width:150px}
+.ca-extra select{width:auto}
+.ca-extra-out{flex-basis:100%}
+.ca-presets{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:-4px 0 12px}
+.ca-presets > span{font-size:12px;color:var(--muted);margin-right:2px}
+.ca-preset-tip{display:block;margin:-6px 0 12px}
+.cx-try{margin-top:clamp(12px,1.4vw,18px)}
+.cx-try-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:clamp(12px,1.4vw,18px)}
+.cx-reasons.three{grid-template-columns:repeat(3,minmax(0,1fr));margin-top:clamp(12px,1.4vw,18px)}
+.pv-try{margin:14px 28px 0}
+.pv-try table{width:100%;font-size:11px;border-collapse:collapse}
+.pv-try th,.pv-try td{padding:4px 8px;border-bottom:1px solid #e3e8ef;text-align:right}
+.pv-try th:first-child,.pv-try td:first-child{text-align:left}
+@media (max-width:640px){ .ca-sum,.cx-try-row,.cx-reasons.three{grid-template-columns:minmax(0,1fr)} }
 /* Dealership settings: logo */
 .logo-up{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .logo-prev{width:200px;height:72px;border:1px dashed var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;padding:8px}
@@ -1759,12 +1790,14 @@ function caRun(o, rates, start){
   /* Budget view: the cash stays invested untouched (unt) and payments come from income;
      the cash buyer invests those same payments instead (port). unt − loan owing − port = advantage. */
   var unt = cash, port = 0;
+  /* Taxable account: earnings are taxed as they are earned (0 = TFSA / RRSP). */
+  var keep = 1 - Math.min(60, Math.max(0, Number(o.tax)||0))/100;
   var acctPath = [acct], loanPath = [bal], untPath = [unt], portPath = [0], years = [];
   var yr = { start:acct, earn:0, pay:0, int:0, growth:1, from:1 };
   for (var t = 1; t <= N; t++){
-    var e = acct * rates[t-1];
-    acct += e; earnTot += e; yr.earn += e; yr.growth *= 1 + rates[t-1]; growthAll *= 1 + rates[t-1];
-    unt *= 1 + rates[t-1]; port *= 1 + rates[t-1];
+    var g = rates[t-1] * keep, e = acct * g;
+    acct += e; earnTot += e; yr.earn += e; yr.growth *= 1 + g; growthAll *= 1 + g;
+    unt *= 1 + g; port *= 1 + g;
     if (t <= n && bal > 0){
       var i = bal * lr, p = t === n ? bal + i : Math.min(pmt, bal + i);
       bal = bal + i - p; acct -= p; intTot += i; paidTot += p; yr.pay += p; yr.int += i; payCount++; port += p;
@@ -1781,6 +1814,27 @@ function caRun(o, rates, start){
   return { acctPath:acctPath, loanPath:loanPath, years:years, cash:cash, lost:lost, earnings:earnTot, ppy:ppy,
     interestPaid:intTot, paid:paidTot, payCount:payCount, pmt:pmt, untouchedEarnings:cash * (growthAll - 1),
     untPath:untPath, portPath:portPath, untEnd:unt, portEnd:port, acctEnd:acct, owing:bal, adv:acct - bal };
+}
+/* The dealer loan paid as scheduled for `months`, then paid off in full: interest paid so far,
+   the balance still to pay, and the number of payment periods made. */
+function loanPayoff(amount, apr, term, freq, months){
+  var ppy = periodsPerYear(freq), n = Math.round(term/12*ppy), k = Math.min(n, Math.round(months/12*ppy));
+  var pmt = payment(amount, apr, term, freq), r = (Number(apr)||0)/100/ppy, bal = amount, intTot = 0, paid = 0;
+  for (var t = 1; t <= k && bal > 0.005; t++){ var i = bal*r, p = Math.min(pmt, bal + i); bal = bal + i - p; intTot += i; paid += p; }
+  return { months:months, periods:k, interest:intTot, balance:Math.max(0, bal), paid:paid };
+}
+/* The same loan with one extra lump-sum payment in month `atMonth`: the interest it saves and
+   how many payment periods sooner the loan ends. */
+function loanExtra(amount, apr, term, freq, extra, atMonth){
+  var ppy = periodsPerYear(freq), n = Math.round(term/12*ppy), at = Math.max(1, Math.min(n, Math.round(atMonth/12*ppy)));
+  var pmt = payment(amount, apr, term, freq), r = (Number(apr)||0)/100/ppy, bal = amount, intTot = 0, last = n;
+  for (var t = 1; t <= n; t++){
+    var i = bal*r, p = Math.min(pmt, bal + i); bal = bal + i - p; intTot += i;
+    if (t === at) bal = Math.max(0, bal - (Number(extra)||0));
+    if (bal <= 0.005){ last = t; break; }
+  }
+  var base = pmt*n - amount;
+  return { interest:intTot, baseInterest:base, saved:Math.max(0, base - intTot), periods:last, n:n, sooner:n - last, ppy:ppy };
 }
 /* `N` is a number of payment periods. */
 function caConst(o, annualPct, N){
@@ -1890,7 +1944,7 @@ function locCompare(o){
 }
 
 window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
-  MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare,
+  MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, loanPayoff:loanPayoff, loanExtra:loanExtra,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
   totals:totals, validate:validate, brandOf:brandOf, brandOfDealer:brandOfDealer, hasListCost:hasListCost, packageLabel:packageLabel,
@@ -3870,8 +3924,13 @@ function viewSettings(){
       <div class="notice info">Tax changes apply immediately to the open deal, both prints, the emailed presentation and every report, because all of them call the same calculation engine.</div>
 
     </div></div>
+    <div class="card"><div class="card-h"><h2>Cash Conversion rates</h2></div><div class="card-b">
+      <p class="muted small" style="max-width:66ch">Today's rates, offered to Finance Managers as one-tap choices in Cash Conversion. Update them when the banks change their rates; leave a box empty to hide it.</p>
+      <div class="inline">${CA_PRESETS.map(function(cp){ var cr = (state.config.caRates || {})[cp[0]];
+        return `<label class="f"><span>${esc(cp[1])} (%)</span><input type="number" step="0.01" min="0" value="${esc(cr === undefined || cr === null ? "" : cr)}" data-carate="${cp[0]}" ${dis}></label>`; }).join("")}</div>
+    </div></div>
     <div class="card"><div class="card-h"><h2>Dealership logo</h2></div><div class="card-b">
-      <p class="muted small" style="max-width:66ch">Shown in the top-left corner of every coupon. Use the dealership's own logo (a PNG with a transparent background looks best). Without one, the coupon shows the dealership name there instead.</p>
+      <p class="muted small" style="max-width:66ch">Shown on every coupon and on the printed worksheet. Use the dealership's own logo (a PNG with a transparent background looks best). Without one, the coupon shows the dealership name there instead.</p>
       <div class="logo-up">${state.config.logo && /^data:image\//.test(state.config.logo) ? `<div class="logo-prev"><img src="${esc(state.config.logo)}" alt="Dealership logo"></div>` : `<div class="logo-prev empty">No logo yet</div>`}
         <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn ${canEdit ? "" : "disabled"}" style="cursor:${canEdit ? "pointer" : "not-allowed"}">${state.config.logo ? "Replace logo" : "Upload logo"}<input type="file" accept="image/png,image/jpeg,image/webp" data-act="dealer-logo" style="display:none" ${dis}></label>
         ${state.config.logo ? `<button type="button" class="btn danger" data-act="dealer-logo-remove" ${dis}>Remove</button>` : ""}</div></div>
@@ -4360,7 +4419,7 @@ function renderOverlay(){
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
   /* The confirm dialog goes last so it always sits on top of whatever opened it (e.g. Saved deals). */
-  return userCardModal() + printModal() + emailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer() + confirmModal();
+  return userCardModal() + printModal() + emailModal() + caEmailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer() + confirmModal();
 }
 
 /* ---------------- ONBOARDING (no dealership yet) ---------------- */
@@ -4572,9 +4631,9 @@ function renderLogin(){
    saved or synced and starts blank every time the app loads. */
 var caState = null, caWin = null;
 function caBlank(){
-  return { tab:"invest", customer:"", amount:"", apr:"", term:"60", lost:"", invest:"sp500", gicRate:"",
+  return caLoadPrefs({ tab:"invest", customer:"", amount:"", apr:"", term:"60", lost:"", invest:"sp500", gicRate:"",
     otherName:"", otherRate:"", years:"same", locRate:"", payMode:"match", payAmount:"", drawAmount:"", drawYear:"2", freq:"monthly", view:"account", avgOver:"all",
-    present:false };
+    present:false, down:"", acct:"tfsa", taxRate:"", extraAmt:"", extraMonth:"12", email:"" });
 }
 /* Fill the comparison from the deal on screen: the customer's name, the cash it would take
    (with the chosen package, or the vehicle alone when no package is chosen yet), and the
@@ -4606,11 +4665,224 @@ function caInputs(){
   var s = caState, term = caNum(s.term);
   var years = s.years === "same" ? (term ? term/12 : null) : caNum(s.years);
   var rate = s.invest === "gic" ? caNum(s.gicRate) : s.invest === "other" ? caNum(s.otherRate) : null;
-  return { amount:caNum(s.amount), apr:caNum(s.apr) || 0, term:term, lost:caNum(s.lost) || 0, years:years,
+  /* A down payment is paid today either way, so only the rest is compared. */
+  var total = caNum(s.amount), down = s.tab === "invest" ? Math.min(Math.max(0, caNum(s.down) || 0), Math.max(0, total || 0)) : 0;
+  return { amount:total === null ? null : total - down, total:total, down:down, tax:caTaxPct(), apr:caNum(s.apr) || 0, term:term, lost:caNum(s.lost) || 0, years:years,
     invest:s.invest === "other" ? "custom" : s.invest, rate:rate === null ? "" : rate,
     locRate:caNum(s.locRate) === null ? "" : caNum(s.locRate), payMode:s.payMode, payAmount:caNum(s.payAmount),
     drawAmount:caNum(s.drawAmount) || 0, drawYear:caNum(s.drawYear) || 0, freq:s.freq === "biweekly" ? "biweekly" : "monthly",
     avgOver:s.avgOver || "all" };
+}
+/* ---- Cash Conversion extras ----
+   Each Finance Manager's investment choices are remembered in this browser (not the deal details). */
+var CA_PREF_KEYS = ["invest","gicRate","otherName","otherRate","avgOver","view","years","acct","taxRate"];
+function caPrefKey(){ return "dcc.ca.prefs." + (state.currentUserId || "anon"); }
+function caLoadPrefs(o){
+  try {
+    var p = JSON.parse(localStorage.getItem(caPrefKey()) || "null");
+    if (p) CA_PREF_KEYS.forEach(function(k){ if (typeof p[k] === "string") o[k] = p[k]; });
+  } catch (e) {}
+  return o;
+}
+function caSavePrefs(){
+  if (!caState) return;
+  try {
+    var p = {}; CA_PREF_KEYS.forEach(function(k){ p[k] = String(caState[k] === null || caState[k] === undefined ? "" : caState[k]); });
+    localStorage.setItem(caPrefKey(), JSON.stringify(p));
+  } catch (e) {}
+}
+/* Today's rates, set by the GM in Dealership settings, as one-tap choices. */
+var CA_PRESETS = [["gic1","1-year GIC","gic"],["gic5","5-year GIC","gic"],["hisa","High-interest savings","other"]];
+function caPresetChips(){
+  var r = (state.config && state.config.caRates) || {}, s = caState;
+  var list = CA_PRESETS.filter(function(p){ return caNum(r[p[0]]) !== null; });
+  if (!list.length) return V.isAdmin()
+    ? `<small class="muted tiny ca-preset-tip">Tip: add today's GIC and savings rates in <a href="#" data-act="route" data-route="settings">Dealership settings</a> to pick them in one tap.</small>` : "";
+  return `<div class="ca-presets"><span>Today's rates</span>${list.map(function(p){
+    var rate = caNum(r[p[0]]);
+    var on = p[2] === "gic" ? s.invest === "gic" && caNum(s.gicRate) === rate
+      : s.invest === "other" && s.otherName === p[1] && caNum(s.otherRate) === rate;
+    return `<button type="button" class="btn sm ${on ? "on" : ""}" data-act="ca-preset" data-key="${p[0]}">${esc(p[1])} <b>${caPct(rate)}</b></button>`; }).join("")}</div>`;
+}
+function caTaxPct(){ return caState && caState.acct === "taxable" ? Math.min(60, Math.max(0, caNum(caState.taxRate) || 0)) : 0; }
+function caTaxNote(){ var t = caTaxPct(); return t ? ` · after ${caPct(t)} tax on earnings` : ""; }
+/* Keep some cash, finance the rest: the same comparison at 0, 25, 50 and 75% down. */
+function caSplits(I){
+  var total = I.total;
+  if (!(total > 0)) return [];
+  var seen = {}, rows = [];
+  [0, .25, .5, .75].concat(I.down > 0 ? [I.down/total] : []).forEach(function(f){
+    var d = f === I.down/total ? I.down : Math.round(total*f/100)*100;
+    if (seen[d]) return; seen[d] = 1;
+    var res = C.cashAdvantage(Object.assign({}, I, { amount: total - d }));
+    if (res) rows.push({ down:d, financed:total - d, pmt:res.pmt, kept:res.cash, adv:res.adv, months:res.months, cur:Math.abs(d - (I.down||0)) < 0.5 });
+  });
+  return rows.sort(function(a, b){ return a.down - b.down; });
+}
+/* The same deal over different terms, at the same dealer rate. */
+function caTerms(I){
+  return [36,48,60,72,84].map(function(t){
+    var res = C.cashAdvantage(Object.assign({}, I, { term:t, years: caState.years === "same" ? t/12 : I.years }));
+    return res ? { term:t, pmt:res.pmt, interest:res.interest, adv:res.adv, months:res.months } : { term:t, none:true };
+  });
+}
+/* "Try it": finance, then pay the loan off after a few months. Result is against paying cash on day one. */
+function caPayoffRows(res, I){
+  var r = res.run, out = [];
+  [3,6,12,24].forEach(function(m){
+    if (m >= I.term || m > res.months) return;
+    var po = C.loanPayoff(I.amount, I.apr, I.term, I.freq, m), k = po.periods;
+    var acct = r.acctPath[Math.min(k, r.acctPath.length - 1)];
+    out.push({ m:m, interest:po.interest, balance:po.balance, result:acct - po.balance });
+  });
+  return out;
+}
+function caExtra(I){
+  var amt = caNum(caState.extraAmt), m = caNum(caState.extraMonth) || 12;
+  if (!(amt > 0) || !(I.amount > 0) || !(I.term > 0)) return null;
+  return Object.assign(C.loanExtra(I.amount, I.apr, I.term, I.freq, amt, Math.min(m, I.term)), { amt:amt, m:Math.min(m, I.term) });
+}
+function caReasons(){
+  return [
+    ["shield", "Pay it off any time", "No penalty for paying the balance early — Ontario's Consumer Protection Act gives you that right. Your credit agreement confirms the details."],
+    ["trend", "Builds your credit", "On-time payments are reported to the credit bureaus, which can help your credit history."],
+    ["lock", "Your cash stays yours", "Money on hand for emergencies or opportunities, instead of tied up in the vehicle."]];
+}
+function caSummary(res, I){
+  var good = res.adv >= 0;
+  return `<div class="ca-sum">
+      <div><span>${caPayLabel(res.freq)}</span><strong class="num">${money(res.pmt)}</strong><small>${I.down > 0 ? money0(I.amount) + " financed" : esc(caState.term) + " months"}</small></div>
+      <div><span>Cash kept invested</span><strong class="num">${money0(res.cash)}</strong><small>${I.down > 0 ? money0(I.down) + " down today" : "instead of paying cash"}</small></div>
+      <div class="${good ? "good" : "bad"}"><span>${good ? "Ahead" : "Behind"} after ${caYears(res.months)}</span><strong class="num">${caSigned(res.adv)}</strong><small>vs paying cash</small></div></div>`;
+}
+function caPayoffCard(res, I){
+  var rows = caPayoffRows(res, I), ex = caExtra(I), s = caState;
+  var months = [3,6,12,18,24,36,48,60,72,84].filter(function(m){ return m < I.term; });
+  var mOpts = months.map(function(m){ return `<option value="${m}" ${String(m) === String(s.extraMonth) ? "selected" : ""}>month ${m}</option>`; }).join("");
+  return `<div class="ca-card"><div class="ca-card-h"><h3>Pay it off any time</h3><span class="muted small">Total interest if kept the full ${esc(s.term)} months: <strong>${money0(res.interest)}</strong></span></div>
+    ${rows.length ? `<div class="tablewrap"><table class="ca-tbl"><thead><tr><th>Paid off after</th><th class="right">Interest paid</th><th class="right">Payoff amount</th><th class="right">vs paying cash</th></tr></thead><tbody>
+      ${rows.map(function(x){ return `<tr><td>${x.m} months</td><td class="right num">${money0(x.interest)}</td><td class="right num">${money0(x.balance)}</td><td class="right num ${x.result >= 0 ? "pos" : "neg"}">${caSigned(x.result)}</td></tr>`; }).join("")}</tbody></table></div>
+      <p class="tiny muted" style="margin:6px 0 0">“vs paying cash” = what's left in the account after paying the loan off that month, with the investment return above.</p>` : ""}
+    <div class="ca-extra">
+      <span>One-time extra payment</span>
+      <div class="ca-in"><i>$</i><input type="text" inputmode="decimal" data-ca="extraAmt" value="${esc(s.extraAmt)}" placeholder="e.g. 10,000" autocomplete="off"></div>
+      <select data-ca="extraMonth" aria-label="Month of the extra payment">${mOpts}</select>
+      ${ex ? `<div class="ca-extra-out">${ex.sooner > 0 ? `Saves <strong>${money0(ex.saved)}</strong> interest and ends the loan ${caDuration(ex.sooner, ex.ppy)} sooner.` : `Saves <strong>${money0(ex.saved)}</strong> interest.`}</div>` : ""}
+    </div></div>`;
+}
+function caSplitCard(I){
+  var rows = caSplits(I);
+  if (rows.length < 2) return "";
+  return `<div class="ca-card"><div class="ca-card-h"><h3>Keep some cash, finance the rest</h3><span class="muted small">For customers who won't finance it all</span></div>
+    <div class="tablewrap"><table class="ca-tbl"><thead><tr><th>Down today</th><th class="right">Financed</th><th class="right">Payment</th><th class="right">Kept invested</th><th class="right">After ${caYears(rows[0].months)}</th><th></th></tr></thead><tbody>
+    ${rows.map(function(x){ return `<tr class="${x.cur ? "cur" : ""}"><td class="num">${money0(x.down)}</td><td class="right num">${money0(x.financed)}</td><td class="right num">${money(x.pmt)}</td><td class="right num">${money0(x.kept)}</td><td class="right num ${x.adv >= 0 ? "pos" : "neg"}">${caSigned(x.adv)}</td>
+      <td class="right">${x.cur ? `<span class="tag">Showing</span>` : `<button type="button" class="btn sm" data-act="ca-down" data-down="${x.down}">Use</button>`}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+}
+function caTermCard(I){
+  var rows = caTerms(I);
+  return `<div class="ca-card"><div class="ca-card-h"><h3>Compare terms</h3><span class="muted small">Same ${caPct(I.apr)} rate on every term — confirm the lender's rate for each</span></div>
+    <div class="tablewrap"><table class="ca-tbl"><thead><tr><th>Term</th><th class="right">Payment</th><th class="right">Total interest</th><th class="right">${caState.years === "same" ? "At the end of the term" : "After " + caYears(Math.round(I.years*12))}</th><th></th></tr></thead><tbody>
+    ${rows.map(function(x){ var cur = String(x.term) === String(caState.term);
+      return x.none ? `<tr><td>${x.term} months</td><td colspan="4" class="muted small">Not enough market history for this period</td></tr>`
+        : `<tr class="${cur ? "cur" : ""}"><td>${x.term} months</td><td class="right num">${money(x.pmt)}</td><td class="right num">${money0(x.interest)}</td><td class="right num ${x.adv >= 0 ? "pos" : "neg"}">${caSigned(x.adv)}</td>
+        <td class="right">${cur ? `<span class="tag">Showing</span>` : `<button type="button" class="btn sm" data-act="ca-term" data-term="${x.term}">Use</button>`}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+}
+
+/* ---- email to the customer (formatted to paste, or plain text through the mail app) ---- */
+function caPlain(h){ return String(h).replace(/<[^>]+>/g, "").replace(/&amp;/g, "&").replace(/&nbsp;/g, " ").replace(/&#39;/g, "'").replace(/&quot;/g, '"'); }
+function caEmail(){
+  var s = caState || caBlank(), I = caInputs(), cfg = state.config, pb = caPrintBrand(), u = V.currentUser ? V.currentUser() : null;
+  var name = s.customer.trim(), first = name.split(" ")[0];
+  var subject = (s.tab === "loc" ? "Line of credit vs dealer financing" : "Your cash vs finance comparison") + " — " + (cfg.name || "");
+  var lead, big, sub, basis = "", rows = [], extra = [], reasons = [];
+  if (s.tab === "loc"){
+    var lc = C.locCompare(I);
+    if (!lc) return null;
+    var lh = caLocHeadline(lc), L = lc.loc;
+    lead = caPlain(lh.lead); big = caPlain(lh.big); sub = caPlain(lh.sub);
+    rows = [["Dealer financing", caPct(I.apr) + " fixed · " + money(lc.dealer.pmt) + " " + caFreqWord(lc.freq) + " · " + money0(lc.dealer.interest) + " interest"],
+      ["Line of credit", caPct(L.rate) + " variable · " + (L.payoff ? "paid off in " + caDuration(L.payoff, lc.ppy) + " · " + money0(L.interest) + " interest" : "not paid off at this payment")]];
+    reasons = caLocReasons().map(function(t){ return ["", caPlain(t)]; });
+  } else {
+    var res = C.cashAdvantage(I);
+    if (!res) return null;
+    var st = caStatement(res), inv = caInvestName(true);
+    lead = res.adv >= 0 ? "Your financing advantage" : "Your comparison";
+    big = caSigned(res.adv); sub = caPlain(st.heroSub);
+    basis = (res.kind === "history" ? `Based on ${caPlain(inv)}'s average of ${caPct(res.rate)} a year, ${res.avgFrom}–${res.avgTo}`
+      : s.invest === "gic" ? `Based on a GIC at ${caPct(res.rate)}, guaranteed` : `If ${caPlain(inv)} earns ${caPct(res.rate)} a year`) + caTaxNote();
+    rows = st.rows.map(function(x){ return [caPlain(x[0]), caPlain(x[1])]; }).concat([[caPlain(st.totalLabel.replace(/^= /, "")), caPlain(st.total)]]);
+    extra = [[caPayLabel(res.freq), money(res.pmt)], ["Term", s.term + " months at " + caPct(I.apr) + " APR"]];
+    if (I.down > 0) extra.push(["Down payment", money0(I.down)]);
+    extra = extra.concat(caPayoffRows(res, I).slice(0, 3).map(function(x){ return ["If paid off after " + x.m + " months", money0(x.interest) + " interest · " + caSigned(x.result) + " vs paying cash"]; }));
+    reasons = caReasons().map(function(r){ return [r[1], r[2]]; });
+  }
+  var td = 'style="padding:7px 0;border-bottom:1px solid #e6e9ef;font-size:14px;color:#1b2130"';
+  var tdr = 'style="padding:7px 0;border-bottom:1px solid #e6e9ef;font-size:14px;color:#1b2130;text-align:right;font-weight:600;white-space:nowrap"';
+  var table = function(list){ return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${list.map(function(x){ return `<tr><td ${td}>${esc(x[0])}</td><td ${tdr}>${esc(x[1])}</td></tr>`; }).join("")}</table>`; };
+  var html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f8;padding:20px 0;font-family:Arial,Helvetica,sans-serif"><tr><td align="center">
+    <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:10px;overflow:hidden">
+      <tr><td style="background:${pb.base};padding:18px 24px;color:#ffffff"><div style="font-size:18px;font-weight:700">${esc(cfg.name || "")}</div><div style="font-size:12px;opacity:.85">${esc(s.tab === "loc" ? "Line of credit vs dealer financing" : "Cash vs finance comparison")}</div></td></tr>
+      <tr><td style="padding:22px 24px 6px;font-size:15px;color:#1b2130">${first ? "Hi " + esc(first) + "," : "Hello,"}<br><br>As promised, here is the comparison we went through together.</td></tr>
+      <tr><td style="padding:10px 24px"><div style="background:${pb.soft};border-radius:10px;padding:16px 18px">
+        <div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${pb.deep}">${esc(lead)}</div>
+        <div style="font-size:30px;font-weight:700;color:${pb.deep};margin:4px 0">${esc(big)}</div>
+        <div style="font-size:13px;color:#3a4252">${esc(sub)}</div>${basis ? `<div style="font-size:12px;color:#6b7383;margin-top:6px">${esc(basis)}</div>` : ""}</div></td></tr>
+      <tr><td style="padding:8px 24px">${table(rows)}</td></tr>
+      ${extra.length ? `<tr><td style="padding:8px 24px">${table(extra)}</td></tr>` : ""}
+      ${reasons.length ? `<tr><td style="padding:12px 24px 4px">${reasons.map(function(r){ return `<div style="font-size:13px;color:#3a4252;margin:0 0 8px;padding-left:10px;border-left:3px solid ${pb.base}">${r[0] ? `<strong>${esc(r[0])}.</strong> ` : ""}${esc(r[1])}</div>`; }).join("")}</td></tr>` : ""}
+      <tr><td style="padding:14px 24px;font-size:14px;color:#1b2130">Happy to answer any questions.<br><br>${u ? esc(u.name) + "<br>" : ""}Finance Manager, ${esc(cfg.name || "")}<br><span style="color:#6b7383">${esc([cfg.phone, cfg.email].filter(Boolean).join(" · "))}</span></td></tr>
+      <tr><td style="padding:12px 24px 20px;font-size:11px;line-height:1.5;color:#8a91a0">${esc(caDisclaimer(s.tab))}</td></tr>
+    </table></td></tr></table>`;
+  var text = (first ? "Hi " + first + "," : "Hello,") + "\n\nAs promised, here is the comparison we went through together.\n\n" +
+    lead + ": " + big + "\n" + sub + (basis ? "\n" + basis : "") + "\n\n" +
+    rows.concat(extra).map(function(x){ return x[0] + ": " + x[1]; }).join("\n") + "\n\n" +
+    reasons.map(function(r){ return "- " + (r[0] ? r[0] + ". " : "") + r[1]; }).join("\n") + "\n\nHappy to answer any questions.\n\n" +
+    (u ? u.name + "\n" : "") + "Finance Manager, " + (cfg.name || "") + "\n" + [cfg.phone, cfg.email].filter(Boolean).join(" · ") + "\n\n" + caDisclaimer(s.tab);
+  return { subject:subject, html:html, text:text };
+}
+function caEmailModal(){
+  if (!state.ui.modal || state.ui.modal.kind !== "caemail") return "";
+  var m = caEmail();
+  return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal wide">
+    <div class="modal-h"><h2>Email the comparison</h2><div class="sp">
+      <button class="btn" data-act="close-modal">Close</button>
+      <button class="btn" data-act="ca-email-copy" ${m ? "" : "disabled"}>Copy formatted email</button>
+      <button class="btn" data-act="ca-email-text" ${m ? "" : "disabled"}>Copy plain text</button>
+      <button class="btn primary" data-act="ca-email-open" ${m ? "" : "disabled"}>Open in email app</button></div></div>
+    <div class="modal-b">
+      ${m ? `<div class="inline">
+        <label class="f"><span>To</span><input type="text" data-ca="email" value="${esc(caState.email)}" placeholder="customer@example.ca" autocomplete="off"></label>
+        <label class="f"><span>Subject</span><input type="text" id="caEmailSubject" value="${esc(m.subject)}"></label></div>
+      <div style="background:#f3f5f8;border-radius:10px;overflow:hidden;border:1px solid var(--border)">${m.html}</div>
+      <p class="small muted" style="margin-top:10px">“Open in email app” sends the plain-text version. For the formatted version, use “Copy formatted email” and paste it into a Gmail or Outlook message.</p>`
+      : `<p class="muted">Complete the comparison first, then email it.</p>`}
+    </div></div></div>`;
+}
+function caEmailCopy(rich){
+  var m = caEmail(); if (!m) return;
+  var done = false;
+  try {
+    if (rich && navigator.clipboard && navigator.clipboard.write && window.ClipboardItem){
+      navigator.clipboard.write([ new ClipboardItem({ "text/html":new Blob([m.html], { type:"text/html" }), "text/plain":new Blob([m.text], { type:"text/plain" }) }) ]);
+      done = true;
+    }
+  } catch (e) { done = false; }
+  if (!done){ try { if (navigator.clipboard && navigator.clipboard.writeText){ navigator.clipboard.writeText(m.text); done = true; } } catch (e) {} }
+  toast(done ? (rich ? "Formatted email copied — paste it (Ctrl/Cmd+V) into your email." : "Plain text copied.") : "This browser blocked copying. Use Open in email app instead.", done ? "ok" : "err");
+}
+function caEmailOpen(){
+  var m = caEmail(); if (!m) return;
+  var subj = document.getElementById("caEmailSubject");
+  var href = "mailto:" + encodeURIComponent(caState.email || "") + "?subject=" + encodeURIComponent(subj ? subj.value : m.subject) + "&body=" + encodeURIComponent(m.text);
+  var opened = null;
+  try { opened = window.open(href, "_blank"); } catch (e) { opened = null; }
+  toast(opened ? "Opening your email app with the plain-text version." : "The browser blocked the mail app. Use Copy formatted email instead.", opened ? "ok" : "err");
+}
+function caTaxAssume(){
+  var t = caTaxPct();
+  return t ? "Assumes the payment schedule shown, investment earnings taxed at " + caPct(t) + " as they are earned, and no fees."
+    : "Assumes the payment schedule shown, investments held tax-free (e.g. a TFSA) and no fees.";
 }
 function caInvestName(withThe){
   var s = caState;
@@ -4860,6 +5132,7 @@ function caLocReasons(){
 /* ---- page ---- */
 function viewCashAdv(){
   if (!caState) caState = caBlank();
+  caSavePrefs();
   setTimeout(caPushWindow, 0);
   var s = caState, tabs = `<div class="ca-tabs no-print">
       <button class="btn ${s.tab==="invest"?"on":""}" data-act="ca-tab" data-tab="invest">Cash vs Finance &amp; Invest</button>
@@ -4868,6 +5141,7 @@ function viewCashAdv(){
       <button class="btn" data-act="ca-clear">Clear</button>
       <button class="btn" data-act="ca-window">Second screen ↗</button>
       <button class="btn" data-act="ca-present">Full screen</button>
+      <button class="btn" data-act="ca-email">Email</button>
       <button class="btn primary" data-act="ca-print">Print for customer</button></span></div>`;
   var terms = [24,36,48,60,72,84,96].map(function(t){ return `<option value="${t}" ${String(t)===String(s.term)?"selected":""}>${t} months</option>`; }).join("");
   var common = `${caField("Customer name (optional)", "customer", { ph:"For the printout" })}
@@ -4885,7 +5159,9 @@ function viewCashAdv(){
     var inv = [["gic","GIC"],["sp500","S&P 500"],["tsx","TSX"],["other","Other"]].map(function(o){
       return `<button class="btn ${s.invest===o[0]?"on":""}" data-act="ca-invest" data-inv="${o[0]}">${o[1]}</button>`; }).join("");
     left = `${common}
+      ${caField("Down payment (optional)", "down", { pre:"$", ph:"0", hint:"Paid today either way; the comparison uses the rest. Or pick a row in “Keep some cash, finance the rest”." })}
       <label class="f"><span>Customer invests the cash in</span><div class="ca-seg">${inv}</div></label>
+      ${caPresetChips()}
       ${s.invest === "gic" ? caField("GIC rate", "gicRate", { post:"%", ph:"3.25", hint:"Use a current bank or credit union GIC rate." }) : ""}
       ${s.invest === "other" ? `<div class="ca-row">${caField("Investment name", "otherName", { ph:"e.g. XEQT, Apple" })}${caField("Expected return / yr", "otherRate", { post:"%", ph:"7" })}</div>` : ""}
       ${s.invest === "sp500" || s.invest === "tsx" ? (function(){
@@ -4896,29 +5172,30 @@ function viewCashAdv(){
           <small class="muted tiny">${esc(C.MARKETS[s.invest].long)}, dividends included, compound average. Since 1990 is the fairest long-run figure; recent years have been unusually strong.</small></label>`;
       })() : ""}
       <label class="f"><span>Investment period</span><select data-ca="years">${yearOpts}</select></label>
+      <label class="f"><span>Where the cash is invested</span><div class="ca-seg two">
+        <button class="btn ${s.acct!=="taxable"?"on":""}" data-act="ca-acct" data-acct="tfsa">TFSA / RRSP (tax-free)</button>
+        <button class="btn ${s.acct==="taxable"?"on":""}" data-act="ca-acct" data-acct="taxable">Taxable account</button></div></label>
+      ${s.acct === "taxable" ? caField("Tax on the earnings", "taxRate", { post:"%", ph:"30", hint:"GIC or savings interest: the customer's marginal tax rate. Stocks: about half of it (capital gains)." }) : ""}
       <label class="f"><span>Show it as</span><div class="ca-seg two">
         <button class="btn ${caView()==="account"?"on":""}" data-act="ca-view" data-view="account">Pay from the investment</button>
         <button class="btn ${caView()==="budget"?"on":""}" data-act="ca-view" data-view="budget">Keep it invested</button></div>
         <small class="muted tiny">Same result either way — pick the picture that fits how this customer thinks.</small></label>`;
-    var res = C.cashAdvantage(caInputs());
+    var I = caInputs(), res = C.cashAdvantage(I);
     if (!res){
       right = `<div class="ca-empty"><div class="ca-empty-ic">$</div><h3>Enter the cash amount${s.invest==="gic"?", GIC rate":s.invest==="other"?", expected return":""} and dealer rate</h3>
         <p class="muted small">The comparison appears here as you type.</p></div>`;
     } else {
       var h = caHeadline(res), why = caWhyLines(res);
-      right = `<div class="ca-hero ${h.good?"good":"bad"}">
+      right = `${caSummary(res, I)}<div class="ca-hero ${h.good?"good":"bad"}">
           <div class="ca-lead">${h.lead}</div>
           <div class="ca-big num">${h.big} <span>${h.tail}</span></div>
-          <div class="ca-sub">after ${caYears(res.months)}, compared with paying cash</div></div>
+          <div class="ca-sub">after ${caYears(res.months)}, compared with paying cash${caTaxNote()}</div></div>
         ${caReceipt(res, false)}
         ${caView() === "budget" ? "" : `<p class="ca-fmnote no-print"><strong>For you, not the customer:</strong> if the ${money0(res.run.cash)} had stayed untouched it would have earned ${money0(res.run.untouchedEarnings)} over this period. The comparison counts only ${money0(res.run.earnings)}, because each car payment leaves the account first.</p>`}
         ${why.length ? `<ul class="ca-why">${why.map(function(w){ return `<li>${w}</li>`; }).join("")}</ul>` : ""}
-        <div class="ca-facts">
-          <div><span>${caPayLabel(res.freq)}</span><strong class="num">${money(res.pmt)}</strong></div>
-          <div><span>Interest over ${esc(s.term)} months</span><strong class="num">${money0(res.interest)}</strong></div>
-          <div><span>Cash kept invested today</span><strong class="num">${money0(res.cash)}</strong></div></div>
         ${caInvestChart(res, false)}
-        ${res.kind === "history" ? `<p class="tiny muted" style="margin:6px 0 0">Uses ${esc(inv)}'s compound average return, ${res.avgFrom}–${res.avgTo}. Real years go up and down; past returns are not a guarantee.</p>` : ""}
+        ${res.kind === "history" ? `<p class="tiny muted" style="margin:6px 0 0">Uses ${esc(caInvestName())}'s compound average return, ${res.avgFrom}–${res.avgTo}. Real years go up and down; past returns are not a guarantee.</p>` : ""}
+        ${caPayoffCard(res, I)}${caSplitCard(I)}${caTermCard(I)}
         ${caYearTable(res, false)}`;
     }
   } else {
@@ -4953,6 +5230,8 @@ function viewCashAdv(){
       <dt>Explaining the number</dt><dd>“Put your cash in the account instead of giving it to us. Your car payments come out of that account. When the car is paid off, this is what's still yours. Pay cash and that number is zero.”</dd>
       <dt>“That's earnings on the whole amount, isn't it?”</dt><dd>“No — the earnings are only on what's left in the account after each payment comes out. Here's the year-by-year table.” Open the Year-by-year breakdown: the account shrinks every year, and so do the earnings.</dd>
       <dt>“I don't like debt.”</dt><dd>“Understood. You'd still own the vehicle, and the cash stays in your name. If you change your mind, you can pay the loan off at any time — Ontario's Consumer Protection Act (s. 77) gives borrowers the right to prepay the full balance without a penalty.” Confirm the lender's contract terms.</dd>
+      <dt>“I don't want to be locked in.”</dt><dd>Open “Pay it off any time”: it shows what paying the loan off after 3, 6 or 12 months costs — often less than the cash earned meanwhile.</dd>
+      <dt>“I'd rather not finance all of it.”</dt><dd>Use “Keep some cash, finance the rest” and let them pick the row they're comfortable with.</dd>
       <dt>“I want to own it outright.”</dt><dd>“You will own it either way — financing just decides where your cash sits while the car is paid off.”</dd>
       <dt>“I'll use my line of credit.”</dt><dd>Use the Line of Credit tab with their real rate. Switch to “Interest only” and add an extra withdrawal to show how a line can stay open for years. Be honest if theirs truly costs less.</dd>
       <dt>“Rates are high.”</dt><dd>Show the break-even rate. If a GIC alone beats it, that is a guaranteed result with no market risk.</dd>
@@ -4966,7 +5245,7 @@ function viewCashAdv(){
 function caDisclaimer(tab){
   return tab === "loc"
     ? "Illustration only, not financial advice. Line of credit rates are variable and set by the customer's lender; minimum payments vary by lender. Interest is shown compounding each payment period, with any unpaid interest added to the balance. Dealer financing is subject to lender approval; the credit agreement shows the APR and cost of borrowing."
-    : "Illustration only — not investment, tax or legal advice. Investment returns are not guaranteed and can be negative; past performance does not predict future results. Assumes the payment schedule shown, investments held tax-free (e.g. a TFSA) and no fees. Historical data: S&P 500 total return (NYU Stern) converted to CAD (Federal Reserve USD/CAD); S&P/TSX Composite total return from 2018, price return plus estimated 2.5% dividends before. Financing is subject to lender approval.";
+    : "Illustration only — not investment, tax or legal advice. Investment returns are not guaranteed and can be negative; past performance does not predict future results. " + caTaxAssume() + " Historical data: S&P 500 total return (NYU Stern) converted to CAD (Federal Reserve USD/CAD); S&P/TSX Composite total return from 2018, price return plus estimated 2.5% dividends before. Financing is subject to lender approval.";
 }
 
 /* ---- customer screen (second window or full screen) ----
@@ -5013,7 +5292,8 @@ function caCustomerHtml(){
       var good = res.adv >= 0, r = res.run, inv = caInvestName(true);
       var basis = res.kind === "history" ? `Based on ${esc(inv)}'s average of ${caPct(res.rate)} a year, ${res.avgFrom}–${res.avgTo}`
         : caState.invest === "gic" ? `Based on a GIC at ${caPct(res.rate)}, guaranteed` : `If ${esc(inv)} earns ${caPct(res.rate)} a year`;
-      var st = caStatement(res);
+      basis += caTaxNote() + (I.down > 0 ? ` · ${money0(I.down)} down payment today` : "");
+      var st = caStatement(res), tryRows = caPayoffRows(res, I).slice(0, 3);
       var tiles = [
         [caPayLabel(res.freq), money(res.pmt)],
         ["Term", esc(s.term) + " months"],
@@ -5043,7 +5323,10 @@ function caCustomerHtml(){
           ${res.kind === "history"
             ? `<div class="cx-tile cx-win">${caDonut(res.aheadPct)}<div><span>History check</span><strong>Beat this loan in ${Math.round(res.aheadPct)}% of past ${caYearsText(res.months)} periods</strong><em>${res.firstYear}–${res.lastYear}</em></div></div>`
             : res.breakEven !== null ? `<div class="cx-tile"><span>Break-even return</span><strong class="num">${caPct(res.breakEven)} a year</strong></div>` : ""}
-        </section>`;
+        </section>
+        ${tryRows.length ? `<section class="cx-try"><div class="cx-card-h">Try it — pay it off any time</div><div class="cx-try-row">
+          ${tryRows.map(function(x){ return `<div class="cx-tile"><span>Paid off after ${x.m} months</span><strong class="num">${money0(x.interest)} interest</strong><em>${caSigned(x.result)} compared with paying cash</em></div>`; }).join("")}</div></section>` : ""}
+        <section class="cx-reasons three">${caReasons().map(function(r){ return `<div class="cx-reason">${caIcon(r[0])}<p><strong>${esc(r[1])}.</strong> ${esc(r[2])}</p></div>`; }).join("")}</section>`;
     }
   } else {
     var lc = C.locCompare(I);
@@ -5132,7 +5415,8 @@ function cashAdvPrint(){
         <div class="pv-sub">${name ? "Prepared for <strong>" + esc(name) + "</strong> · " : ""}${C.fmtDate(C.todayISO())}</div></div>
     </div>`;
   var terms = `<div class="pv-terms">
-      <div><span>Amount</span><strong>${money0(I.amount)}</strong></div>
+      <div><span>Amount</span><strong>${money0(I.total === null ? I.amount : I.total)}</strong></div>
+      ${I.down > 0 ? `<div><span>Down payment</span><strong>${money0(I.down)}</strong></div>` : ""}
       <div><span>Dealer rate</span><strong>${caPct(I.apr)} APR</strong></div>
       <div><span>Term</span><strong>${esc(s.term)} months</strong></div>
       <div><span>Payments</span><strong>${caFreqWord(I.freq).replace(/^./, function(c){ return c.toUpperCase(); })}</strong></div>
@@ -5171,6 +5455,8 @@ function cashAdvPrint(){
       var basis = res.kind === "history" ? `Based on ${esc(inv)}'s average of ${caPct(res.rate)} a year, ${res.avgFrom}–${res.avgTo}`
         : caState.invest === "gic" ? `Based on a GIC at ${caPct(res.rate)}, guaranteed` : `If ${esc(inv)} earns ${caPct(res.rate)} a year`;
       var st = caStatement(res);
+      basis += caTaxNote();
+      var pTry = caPayoffRows(res, I);
       var facts = [[caPayLabel(res.freq), money(res.pmt)], ["Total interest", money0(res.interest)]];
       if (res.kind === "history") facts.push(["History check", `Beat this loan in ${Math.round(res.aheadPct)}% of past ${caYearsText(res.months)} periods`]);
       if (res.breakEven !== null) facts.push(["Break-even return", caPct(res.breakEven) + " a year"]);
@@ -5194,6 +5480,9 @@ function cashAdvPrint(){
           <div class="pv-card pv-chartcard"><div class="pv-card-h">${st.chartTitle}</div>${caInvestChart(res, pb)}</div>
         </div>
         <div class="pv-facts">${facts.map(function(f){ return `<div><span>${f[0]}</span><strong>${f[1]}</strong></div>`; }).join("")}</div>
+        ${pTry.length ? `<div class="pv-try"><div class="pv-card-h">Pay it off any time</div><table><thead><tr><th>Paid off after</th><th>Interest paid</th><th>Payoff amount</th><th>Compared with paying cash</th></tr></thead><tbody>
+          ${pTry.map(function(x){ return `<tr><td>${x.m} months</td><td>${money0(x.interest)}</td><td>${money0(x.balance)}</td><td>${caSigned(x.result)}</td></tr>`; }).join("")}</tbody></table></div>` : ""}
+        <div class="pv-reasons">${caReasons().map(function(r){ return `<div><strong>${esc(r[1])}.</strong> ${esc(r[2])}</div>`; }).join("")}</div>
         ${caYearTable(res, true)}`;
     }
   }
@@ -6195,6 +6484,13 @@ function couponAddProduct(){
   couponSaveList(list);
 }
 document.addEventListener("change", caFieldEvent);
+document.addEventListener("change", function(ev){
+  var el = ev.target, k = el && el.getAttribute && el.getAttribute("data-carate");
+  if (!k || !state.config) return;
+  var r = Object.assign({}, state.config.caRates || {}), v = caNum(el.value);
+  if (v === null || v < 0) delete r[k]; else r[k] = v;
+  state.config.caRates = r; commit();
+});
 document.addEventListener("input", function(ev){
   if (ev.target && ev.target.id === "giftCostInput" && state.ui.giftEdit){ state.ui.giftEdit.cost = ev.target.value; }
   if (ev.target && ev.target.id === "giftNameInput" && state.ui.giftEdit){
@@ -6274,6 +6570,23 @@ document.addEventListener("click", function(ev){
     case "ca-freq": caState.freq = el.getAttribute("data-freq"); render(); break;
     case "ca-view": caState.view = el.getAttribute("data-view"); render(); break;
     case "ca-avg": caState.avgOver = el.getAttribute("data-avg"); render(); break;
+    case "ca-acct": caState.acct = el.getAttribute("data-acct") === "taxable" ? "taxable" : "tfsa"; render(); break;
+    case "ca-term": caState.term = el.getAttribute("data-term"); render(); break;
+    case "ca-down": {
+      var cdn = Number(el.getAttribute("data-down")) || 0;
+      caState.down = cdn > 0 ? cdn.toLocaleString("en-CA") : ""; render(); break; }
+    case "ca-preset": {
+      var cpk = el.getAttribute("data-key"), cpr = caNum(((state.config && state.config.caRates) || {})[cpk]);
+      var cpd = CA_PRESETS.filter(function(x){ return x[0] === cpk; })[0];
+      if (cpd && cpr !== null){
+        if (cpd[2] === "gic"){ caState.invest = "gic"; caState.gicRate = String(cpr); }
+        else { caState.invest = "other"; caState.otherName = cpd[1]; caState.otherRate = String(cpr); }
+      }
+      render(); break; }
+    case "ca-email": state.ui.modal = { kind:"caemail" }; commit(); break;
+    case "ca-email-copy": caEmailCopy(true); break;
+    case "ca-email-text": caEmailCopy(false); break;
+    case "ca-email-open": caEmailOpen(); break;
     case "ca-window": caOpenWindow(); break;
     case "ca-present": caState.present = true; render(); break;
     case "ca-exit-present": caState.present = false; render(); break;
@@ -6780,7 +7093,7 @@ document.addEventListener("change", function(ev){
         var lout = lcv.toDataURL("image/png");
         if (lout.length > 180000) lout = lcv.toDataURL("image/webp", .9);
         if (lout.length > 180000){ toast("That logo is too detailed to store. Try a simpler or smaller file.","err"); return; }
-        state.config.logo = lout; toast("Logo saved. It now appears on coupons.","ok"); commit();
+        state.config.logo = lout; toast("Logo saved. It now appears on coupons and the worksheet.","ok"); commit();
       };
       limg.onerror = function(){ toast("That file couldn't be read as an image.","err"); };
       limg.src = lrd.result;

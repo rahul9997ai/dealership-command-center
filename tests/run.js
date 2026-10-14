@@ -195,6 +195,24 @@ eq("custom brand name", C.brandOfDealer({ brandKey: "custom", customBrandName: "
 eq("header override", C.brandOfDealer({ brandKey: "ford", headerTitle: "Ford Credit Canada" }).finLabel, "FORD CREDIT CANADA");
 eq("Subaru exists", !!D.BRANDS.subaru, true);
 
+/* --- Cash Conversion: early payoff, extra payment, tax on earnings --- */
+{
+  const po = C.loanPayoff(45000, 1.99, 60, "monthly", 12);
+  eq("CC payoff 12 payments made", po.periods, 12);
+  eq("CC payoff interest + principal = paid", po.paid - (45000 - po.balance), po.interest, 0.01);
+  eq("CC payoff interest after 12 months", Math.round(po.interest), 817, 1);
+  eq("CC payoff at full term leaves nothing", C.loanPayoff(45000, 1.99, 60, "monthly", 60).balance, 0, 0.05);
+  const ex = C.loanExtra(31790.13, 7.99, 84, "biweekly", 26300, 1);
+  eq("CC extra payment saves most of the interest", ex.saved > 0.9 * ex.baseInterest, true);
+  eq("CC extra payment shortens the loan", ex.sooner > 100, true);
+  eq("CC no extra payment saves nothing", C.loanExtra(45000, 1.99, 60, "monthly", 0, 6).saved, 0, 0.05);
+  eq("CC extra larger than balance ends the loan that period", C.loanExtra(45000, 1.99, 60, "monthly", 99999, 6).periods, 6);
+  const base = { amount: 45000, apr: 1.99, term: 60, lost: 0, years: 5, invest: "gic", rate: 3.5 };
+  const free = C.cashAdvantage(base), taxed = C.cashAdvantage(Object.assign({}, base, { tax: 30 }));
+  eq("CC tax lowers the result", taxed.adv < free.adv, true);
+  eq("CC 30% tax = 3.5% earning 2.45%", Math.round(taxed.adv), Math.round(C.cashAdvantage(Object.assign({}, base, { rate: 2.45 })).adv), 15);
+  eq("CC tax raises the break-even", taxed.breakEven > free.breakEven, true);
+}
 /* --- Cash Conversion: cash vs finance & invest, line of credit --- */
 {
   const base = { amount: 45000, apr: 1.99, term: 60, lost: 0, years: 5 };
