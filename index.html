@@ -206,6 +206,8 @@ tbody tr:hover{background:var(--surface-2)}
 .uc-feats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .uc-feat{display:flex;align-items:center;justify-content:space-between;gap:10px;border:1px solid var(--border);border-radius:10px;padding:9px 12px;background:var(--surface-2);cursor:pointer;font-size:13.5px;font-weight:600}
 .uc-feat.on{border-color:var(--ok);background:var(--ok-bg)}
+.uc-feat small{display:block;font-size:11.5px;font-weight:500;color:var(--muted);margin-top:1px}
+.uc-feat.off{opacity:.6;cursor:not-allowed}
 .uc-sw{position:relative;width:34px;height:20px;flex:0 0 auto}
 .uc-sw input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer}
 .uc-sw i{position:absolute;inset:0;border-radius:999px;background:var(--border-strong);transition:background .15s}
@@ -3316,6 +3318,18 @@ function userAccessTags(u){
     : `<span class="tag ok">Command Center · Full</span>`;
   return cc + " " + pulse;
 }
+/* Account status across both apps: Command Center (ccOn) and Axiom Pulse (pulseOn). */
+function userStatus(u){
+  if (u.role === "Master Administrator") return { cls:"ok", txt:"Active" };
+  if (u.role === "Salesperson") return u.pulseOn ? { cls:"ok", txt:"Active" } : { cls:"danger", txt:"No access" };
+  if (u.ccOn && u.pulseOn) return { cls:"ok", txt:"Active" };
+  if (u.ccOn) return { cls:"ok", txt:"Command Center only" };
+  if (u.pulseOn) return { cls:"warn", txt:"Pulse only" };
+  return { cls:"danger", txt:"No access" };
+}
+/* Roles a Master or General Manager can switch someone between. Salespeople sign in with a
+   username instead of an email, so they aren't converted here. */
+var CHANGEABLE_ROLES = [["FSM","Finance Manager"],["Sales Manager","Sales Manager"],["General Manager","General Manager"]];
 function userCanUseSummary(u){
   if (u.role === "General Manager" || u.role === "Master Administrator") return `<span class="muted">Everything</span>`;
   if (!V.isFinanceRole(u.role)) return `<span class="muted">Pulse only</span>`;
@@ -3338,7 +3352,7 @@ function viewUsers(){
       <td>${esc(dealer)}</td>
       <td>${userCanUseSummary(u)}</td>
       <td class="nowrap">${userAccessTags(u)}</td>
-      <td><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span></td>
+      <td>${(function(){ var st = userStatus(u); return `<span class="tag ${st.cls}">${st.txt}</span>`; })()}</td>
       <td class="right"><span class="u-open" aria-hidden="true">›</span></td></tr>`;
   }).join("");
   return `<div class="card"><div class="card-h"><h2>Users and access</h2>
@@ -3349,7 +3363,7 @@ function viewUsers(){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.2</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.3</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -3360,8 +3374,9 @@ function userCardModal(){
   var isFsmOnly = V.isFinanceManager(), canEdit = V.isAdmin() || isFsmOnly;
   var me = u.id === state.currentUserId, master = u.role === "Master Administrator";
   var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
-  var roleField = (V.isMaster() && (V.isFinanceRole(u.role) || u.role === "General Manager") && !me)
-    ? `<select data-act="change-role" data-user="${u.id}"><option value="FSM" ${V.isFinanceRole(u.role)?"selected":""}>Finance Manager</option><option value="General Manager" ${u.role==="General Manager"?"selected":""}>General Manager</option></select>`
+  var cur = V.isFinanceRole(u.role) ? "FSM" : u.role;
+  var roleField = (V.isAdmin() && !me && !master && u.role !== "Salesperson" && CHANGEABLE_ROLES.some(function(r){ return r[0] === cur; }))
+    ? `<select data-act="change-role" data-user="${u.id}">${CHANGEABLE_ROLES.map(function(r){ return `<option value="${r[0]}" ${cur === r[0] ? "selected" : ""}>${r[1]}</option>`; }).join("")}</select>`
     : `<div class="uc-val">${esc(V.roleLabel(u.role))}</div>`;
   var dealerField = (V.isMaster() && !master)
     ? `<select data-act="assign-dealership" data-user="${u.id}">${state.dealerships.map(function(d){ return `<option value="${d.id}" ${u.dealershipId===d.id?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select>`
@@ -3379,20 +3394,28 @@ function userCardModal(){
     features = `<div class="uc-sec"><h3>What they can use</h3><p class="small muted" style="margin:0">Everything in the Command Center for ${master ? "every dealership" : esc(dealer)}.</p></div>`;
   }
   var accessBtns = (u.demo && V.isMaster() ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}">Extend demo</button>
-      <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}">Make full access</button>` : "")
-    + ((u.role !== "Salesperson" && !master && !isFsmOnly) ? `<button class="btn sm" data-act="user-pulse" data-user="${u.id}" ${canEdit?"":"disabled"}>${u.pulseOn ? "Turn off Pulse" : "Turn on Pulse"}</button>` : "");
+      <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}">Make full access</button>` : "");
+  var sw = function(app, label, on, sub, can){
+    return `<label class="uc-feat ${on ? "on" : ""} ${can ? "" : "off"}"><span>${label}<small>${sub}</small></span>
+      <span class="uc-sw"><input type="checkbox" data-act="uc-app" data-app="${app}" data-user="${u.id}" ${on ? "checked" : ""} ${can ? "" : "disabled"}><i></i></span></label>`; };
+  var ccSub = !u.ccOn ? "Off" : u.demo ? "Demo" + (u.expiresAt ? " until " + new Date(u.expiresAt).toLocaleDateString("en-CA",{month:"short",day:"numeric"}) : "") : "Full access";
+  var appSwitches = master ? `<p class="small muted" style="margin:0">The Master Administrator always has both apps.</p>`
+    : `<div class="uc-feats">
+        ${u.role === "Salesperson" ? "" : sw("cc", "Command Center", u.ccOn, ccSub, canEdit && !isFsmOnly && !me)}
+        ${sw("pulse", "Axiom Pulse", u.pulseOn, u.pulseOn ? "Full access" : "Off", canEdit && !me && (!isFsmOnly || u.role === "Salesperson"))}</div>
+      ${!u.ccOn && !u.pulseOn && u.role !== "Salesperson" ? `<p class="tiny" style="margin:8px 0 0;color:var(--danger)">Both apps are off, so they can't sign in at all.</p>`
+        : `<p class="tiny muted" style="margin:8px 0 0">Each app is separate: turning Command Center off leaves Pulse working, and the other way round.</p>`}`;
   return `<div class="modal-bg" data-act="user-card-close"><div class="modal ucard" role="dialog" aria-label="${esc(u.name)}">
     <div class="modal-h"><div class="uc-who"><div class="avatar">${esc(u.initials || "?")}</div><div><h2>${esc(u.name)}</h2>
       <div class="tiny muted">${u.username ? "@" + esc(u.username) : esc(u.email)}</div></div></div>
-      <div class="sp"><span class="tag ${u.active?"ok":"danger"}">${u.active?"Active":"Inactive"}</span><button class="btn" data-act="user-card-close">Close</button></div></div>
+      <div class="sp">${(function(){ var st = userStatus(u); return `<span class="tag ${st.cls}">${st.txt}</span>`; })()}<button class="btn" data-act="user-card-close">Close</button></div></div>
     <div class="modal-b">
       <div class="uc-grid"><label class="f"><span>Role</span>${roleField}</label><label class="f"><span>Dealership</span>${dealerField}</label></div>
       ${features}
-      <div class="uc-sec"><h3>Access</h3><div class="uc-tags">${userAccessTags(u)}${u.demo && u.expiresAt ? ` <span class="tiny muted">Demo ends ${esc(new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}))}</span>` : ""}</div>
-        ${accessBtns ? `<div class="uc-btns">${accessBtns}</div>` : ""}</div>
+      <div class="uc-sec"><h3>Apps they can sign in to</h3>${appSwitches}
+        ${accessBtns ? `<div class="uc-btns">${accessBtns}${u.demo && u.expiresAt ? ` <span class="tiny muted">Command Center demo ends ${esc(new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}))}</span>` : ""}</div>` : ""}</div>
       <div class="uc-sec"><h3>Account</h3><div class="uc-btns">
         <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
-        <button class="btn sm" data-act="user-toggle" data-user="${u.id}" title="${u.role === "Salesperson" ? "Turns their Axiom Pulse access on or off" : "Turns Command Center access on or off — Axiom Pulse is not affected"}" ${canEdit&&!master?"":"disabled"}>${u.active?"Deactivate":"Activate"}</button>
         <span style="flex:1"></span>
         <button class="btn sm danger" data-act="user-delete" data-user="${u.id}" ${canEdit&&!me&&!master?"":"disabled"}>Remove user</button></div></div>
     </div></div></div>`;
@@ -6580,6 +6603,25 @@ document.addEventListener("change", function(ev){
     };
     rd.readAsDataURL(gfile);
     return;
+  }
+  if (act === "uc-app"){
+    var au = userById(el.getAttribute("data-user")), aapp = el.getAttribute("data-app"), aon = !!el.checked;
+    var aName = aapp === "cc" ? "Command Center" : "Axiom Pulse";
+    var go = function(){
+      var body = { action:"update", id:au.id, app:"command" };
+      body[aapp === "cc" ? "cc_enabled" : "pulse_enabled"] = aon;
+      toast("Updating…","info");
+      adminCall(body).then(function(){
+        if (aapp === "cc"){ au.ccOn = aon; if (au.role !== "Salesperson") au.active = aon; } else au.pulseOn = aon;
+        toast(au.name + (aon ? " can now sign in to " : " can no longer sign in to ") + aName + ".","ok"); refreshUsers(); commit();
+      }).catch(function(e){ toast("Couldn't change access: " + e.message,"err"); commit(); });
+    };
+    var otherOn = aapp === "cc" ? au.pulseOn : au.ccOn;
+    if (!aon && !otherOn && au.role !== "Salesperson"){
+      askConfirm("Turn off " + aName + "?", au.name + " has no other app switched on, so they won't be able to sign in at all.", "Turn off", go);
+      commit(); return;
+    }
+    go(); return;
   }
   if (act === "fm-feature" && V.isAdmin()){
     var fu2 = el.getAttribute("data-user"), fk2 = el.getAttribute("data-feature"), fuser2 = userById(fu2), cfgB = state.config;

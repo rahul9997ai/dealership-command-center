@@ -50,7 +50,7 @@ function setPasswordHtml(appName: string, appUrl: string, link: string, first: s
 <tr><td style="padding:14px 30px 26px"><div style="font-size:12.5px;line-height:1.6;color:#5a6b88">Your sign-in email is <strong>${esc(email)}</strong>. After you set your password, sign in any time at <a href="${appUrl}" style="color:#1a72e8">${esc(appUrl)}</a>. ${extra}This link works once and expires in 24 hours. If you weren't expecting this email, you can ignore it.</div></td></tr>`);
 }
 
-const ROLES = ["Master Administrator", "General Manager", "FSM Manager", "FSM", "Salesperson"];
+const ROLES = ["Master Administrator", "General Manager", "FSM Manager", "FSM", "Salesperson", "Sales Manager"];
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
