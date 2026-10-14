@@ -267,6 +267,30 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
   .ws-sig{margin-top:12pt}
 }
 /* Cash Conversion: summary strip, extra cards, presets */
+/* Payoff calculator */
+.am-lumps > span{display:block}
+.am-lump{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) auto;gap:6px;align-items:center;margin-bottom:6px}
+.am-lump select{min-width:0}
+.ca-check{display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0 6px;cursor:pointer}
+.ca-tbl td.strong{font-weight:700}
+.am-sched{max-height:460px;overflow:auto;margin-top:8px}
+.ca-tbl tr.ex td{background:var(--ok-bg)}
+.ca-tbl tr.tot td{font-weight:700;border-top:2px solid var(--border)}
+.cx-tblwrap{overflow-x:auto}
+.cx-tbl{width:100%;border-collapse:collapse;font-size:clamp(13px,1vw,15px);font-feature-settings:"tnum" 1}
+.cx-tbl th{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cd-muted);text-align:left;font-weight:600;padding:8px 10px;border-bottom:1px solid var(--cd-border)}
+.cx-tbl td{padding:9px 10px;border-bottom:1px solid var(--cd-border);color:var(--cd-text);white-space:nowrap}
+.cx-tbl .right{text-align:right}
+.cx-tbl .pos{color:var(--cd-blue);font-weight:700}
+.cx-tbl tr.cur td{background:var(--cd-surface-3);font-weight:700}
+.cx-one{margin-top:clamp(14px,1.6vw,22px)}
+.cx-tiles.am{grid-template-columns:repeat(4,minmax(0,1fr))}
+.doc .pv-cmp{width:100%;font-size:11px;border-collapse:collapse}
+.doc .pv-cmp th,.doc .pv-cmp td{padding:4px 6px;border-bottom:1px solid #e3e8ef;text-align:right}
+.doc .pv-cmp th:first-child,.doc .pv-cmp td:first-child{text-align:left}
+.pv-sched{page-break-before:always;break-before:page}
+.pv-sched tr{page-break-inside:avoid;break-inside:avoid}
+@media (max-width:640px){ .cx-tiles.am{grid-template-columns:repeat(2,minmax(0,1fr))} .am-lump{grid-template-columns:minmax(0,1fr) auto} .am-lump select{grid-column:1 / -1;grid-row:2} }
 .ca-tabnote{font-size:13px;color:var(--text-2);margin:2px 0 0;max-width:72ch}
 .ca-tabs > .btn{white-space:nowrap}
 .ca-in input::placeholder{color:var(--muted);opacity:.6;font-style:italic}
@@ -1839,6 +1863,64 @@ function loanExtra(amount, apr, term, freq, extra, atMonth){
   var base = pmt*n - amount;
   return { interest:intTot, baseInterest:base, saved:Math.max(0, base - intTot), periods:last, n:n, sooner:n - last, ppy:ppy };
 }
+/* ---------------- PAYOFF CALCULATOR (loan amortization with lump sums) ----------------
+   Works the way lenders (and the dealership's old Excel payoff sheet) do: the payment is rounded to
+   the cent, each period's interest is rounded to the cent, and the last payment is exactly what is
+   left. Corrected from the sheet: totals come from the schedule itself (the sheet used the unrounded
+   payment), there is no 156-payment limit, an extra payment can never take the balance below zero,
+   and a due date on the 29th–31st stays in its own month. */
+var AMORT_PPY = { monthly:12, semimonthly:24, biweekly:26, weekly:52 };
+function r2(v){ return Math.round((Number(v) + Number.EPSILON) * 100) / 100; }
+function amortDate(first, k, freq){
+  var d = new Date(first + "T12:00:00");
+  if (freq === "weekly" || freq === "biweekly"){ d.setDate(d.getDate() + (k - 1)*(freq === "weekly" ? 7 : 14)); return localISO(d); }
+  var step = freq === "semimonthly" ? Math.floor((k - 1)/2) : k - 1, day = d.getDate();
+  var m = new Date(d.getFullYear(), d.getMonth() + step, 1, 12);
+  m.setDate(Math.min(day, new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate()));
+  if (freq === "semimonthly" && (k - 1) % 2 === 1) m.setDate(m.getDate() + 14);
+  return localISO(m);
+}
+/* o: { amount, apr, months, freq, first (YYYY-MM-DD), lumps:[{ at:payment number, amount }], every } */
+function amortSchedule(o){
+  var amount = r2(Number(o.amount) || 0), apr = Number(o.apr) || 0, months = Number(o.months) || 0;
+  var freq = AMORT_PPY[o.freq] ? o.freq : "monthly", ppy = AMORT_PPY[freq];
+  if (!(amount > 0) || !(months > 0) || apr < 0) return null;
+  var n = Math.max(1, Math.round(months/12*ppy)), r = apr/100/ppy;
+  var pmt = r2(r === 0 ? amount/n : amount*r/(1 - Math.pow(1 + r, -n)));
+  var first = /^\d{4}-\d{2}-\d{2}$/.test(o.first || "") ? o.first : todayISO();
+  var lumps = {};
+  (o.lumps || []).forEach(function(x){ var k = Math.round(Number(x.at)), a = Number(x.amount) || 0; if (k >= 1 && a > 0) lumps[k] = (lumps[k] || 0) + a; });
+  var every = Math.max(0, Number(o.every) || 0);
+  var rows = [], bal = amount, intTot = 0, paidTot = 0, extraTot = 0;
+  for (var k = 1; k <= n && bal > 0.004; k++){
+    var it = r2(bal*r), owed = r2(bal + it);
+    var pay = (k === n || pmt >= owed) ? owed : pmt;
+    var princ = r2(pay - it);
+    var ex = Math.max(0, r2(Math.min((lumps[k] || 0) + every, bal - princ)));
+    bal = r2(bal - princ - ex);
+    intTot += it; paidTot += pay + ex; extraTot += ex;
+    rows.push({ k:k, date:amortDate(first, k, freq), pay:pay, extra:ex, interest:it, principal:r2(princ + ex), balance:bal });
+  }
+  return { amount:amount, apr:apr, months:months, freq:freq, ppy:ppy, n:n, pmt:pmt, first:first, rows:rows, count:rows.length,
+    interest:r2(intTot), paid:r2(paidTot), extra:r2(extraTot), last:rows.length ? rows[rows.length - 1].date : first };
+}
+/* The loan as scheduled next to the same loan with the extra payments. */
+function amortCompare(o){
+  var base = amortSchedule(Object.assign({}, o, { lumps:[], every:0 })), plan = amortSchedule(o);
+  if (!base) return null;
+  return { base:base, plan:plan, hasExtra:plan.extra > 0, saved:r2(base.interest - plan.interest), fewer:base.count - plan.count };
+}
+/* Year-by-year totals of a schedule (year 1 = the first ppy payments). */
+function amortYears(sch){
+  var out = [];
+  sch.rows.forEach(function(x){
+    var y = Math.ceil(x.k / sch.ppy), cur = out[y - 1];
+    if (!cur) cur = out[y - 1] = { year:y, paid:0, extra:0, interest:0, principal:0, balance:0, to:x.date };
+    cur.paid = r2(cur.paid + x.pay + x.extra); cur.extra = r2(cur.extra + x.extra); cur.interest = r2(cur.interest + x.interest);
+    cur.principal = r2(cur.principal + x.principal); cur.balance = x.balance; cur.to = x.date;
+  });
+  return out;
+}
 /* `N` is a number of payment periods. */
 function caConst(o, annualPct, N){
   var m = periodRate(annualPct, periodsPerYear(caFreq(o))), r = [];
@@ -1947,7 +2029,7 @@ function locCompare(o){
 }
 
 window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
-  MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, loanPayoff:loanPayoff, loanExtra:loanExtra,
+  MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
   totals:totals, validate:validate, brandOf:brandOf, brandOfDealer:brandOfDealer, hasListCost:hasListCost, packageLabel:packageLabel,
@@ -4636,7 +4718,8 @@ var caState = null, caWin = null;
 function caBlank(){
   return caLoadPrefs({ tab:"invest", customer:"", amount:"", apr:"", term:"60", lost:"", invest:"sp500", gicRate:"",
     otherName:"", otherRate:"", years:"same", locRate:"", payMode:"match", payAmount:"", drawAmount:"", drawYear:"2", freq:"monthly", view:"account", avgOver:"all",
-    present:false, down:"", acct:"tfsa", taxRate:"", extraAmt:"", extraMonth:"12", email:"" });
+    present:false, down:"", acct:"tfsa", taxRate:"", extraAmt:"", extraMonth:"12", email:"",
+    la:"", lapr:"", lterm:"84", lfreq:"biweekly", lfirst:"", lumpN:"1", levery:"", lfull:false });
 }
 /* Fill the comparison from the deal on screen: the customer's name, the cash it would take
    (with the chosen package, or the vehicle alone when no package is chosen yet), and the
@@ -4656,6 +4739,8 @@ function caFromDeal(){
   caState.apr = rate === undefined || rate === null || rate === "" ? "" : String(rate);
   if ([24,36,48,60,72,84,96].indexOf(Number(term)) !== -1) caState.term = String(term);
   caState.freq = (tx.finance.frequency || fin.defaultFrequency) === "biweekly" ? "biweekly" : "monthly";
+  caState.la = caState.amount; caState.lapr = caState.apr; caState.lfreq = caState.freq;
+  if ([12,24,36,48,60,72,84,96].indexOf(Number(term)) !== -1) caState.lterm = String(term);
   return { name: caState.customer, withPkg: withPkg, amount: amt };
 }
 function caFromDealToast(r){
@@ -4796,9 +4881,15 @@ function caPlain(h){ return String(h).replace(/<[^>]+>/g, "").replace(/&amp;/g, 
 function caEmail(){
   var s = caState || caBlank(), I = caInputs(), cfg = state.config, pb = caPrintBrand(), u = V.currentUser ? V.currentUser() : null;
   var name = s.customer.trim(), first = name.split(" ")[0];
-  var subject = (s.tab === "loc" ? "Line of credit vs dealer financing" : "Your cash vs finance comparison") + " — " + (cfg.name || "");
+  var docName = s.tab === "loc" ? "Line of credit vs dealer financing" : s.tab === "amort" ? "Loan payoff and amortization" : "Cash vs finance comparison";
+  var subject = (s.tab === "amort" ? "Your loan payoff plan" : s.tab === "loc" ? "Line of credit vs dealer financing" : "Your cash vs finance comparison") + " — " + (cfg.name || "");
   var lead, big, sub, basis = "", rows = [], extra = [], reasons = [];
-  if (s.tab === "loc"){
+  if (s.tab === "amort"){
+    var am = caAmortEmail();
+    if (!am) return null;
+    lead = am.lead; big = am.big; sub = am.sub; basis = am.basis; rows = am.rows; extra = am.extra;
+    reasons = [["Pay it off any time", "Ontario's Consumer Protection Act lets you prepay without penalty; ask your lender how it applies extra payments."]];
+  } else if (s.tab === "loc"){
     var lc = C.locCompare(I);
     if (!lc) return null;
     var lh = caLocHeadline(lc), L = lc.loc;
@@ -4825,7 +4916,7 @@ function caEmail(){
   var table = function(list){ return `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse">${list.map(function(x){ return `<tr><td ${td}>${esc(x[0])}</td><td ${tdr}>${esc(x[1])}</td></tr>`; }).join("")}</table>`; };
   var html = `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f3f5f8;padding:20px 0;font-family:Arial,Helvetica,sans-serif"><tr><td align="center">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%;background:#ffffff;border-radius:10px;overflow:hidden">
-      <tr><td style="background:${pb.base};padding:18px 24px;color:#ffffff"><div style="font-size:18px;font-weight:700">${esc(cfg.name || "")}</div><div style="font-size:12px;opacity:.85">${esc(s.tab === "loc" ? "Line of credit vs dealer financing" : "Cash vs finance comparison")}</div></td></tr>
+      <tr><td style="background:${pb.base};padding:18px 24px;color:#ffffff"><div style="font-size:18px;font-weight:700">${esc(cfg.name || "")}</div><div style="font-size:12px;opacity:.85">${esc(docName)}</div></td></tr>
       <tr><td style="padding:22px 24px 6px;font-size:15px;color:#1b2130">${first ? "Hi " + esc(first) + "," : "Hello,"}<br><br>As promised, here is the comparison we went through together.</td></tr>
       <tr><td style="padding:10px 24px"><div style="background:${pb.soft};border-radius:10px;padding:16px 18px">
         <div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:${pb.deep}">${esc(lead)}</div>
@@ -4881,6 +4972,211 @@ function caEmailOpen(){
   var opened = null;
   try { opened = window.open(href, "_blank"); } catch (e) { opened = null; }
   toast(opened ? "Opening your email app with the plain-text version." : "The browser blocked the mail app. Use Copy formatted email instead.", opened ? "ok" : "err");
+}
+/* ---- Payoff calculator tab: a financed customer who plans lump sums to pay the loan off faster.
+   No investment comparison here: cost of borrowing and the amortization schedule only. */
+var AM_FREQS = [["monthly","Monthly"],["semimonthly","Semi-monthly"],["biweekly","Bi-weekly"],["weekly","Weekly"]];
+var AM_MAX_LUMPS = 6;
+function amFreqWord(f){ return f === "semimonthly" ? "semi-monthly" : f === "biweekly" ? "bi-weekly" : f === "weekly" ? "weekly" : "monthly"; }
+function amFirstDefault(freq){ return C.amortDate(C.todayISO(), 2, freq); }
+function amLumpCount(){ return Math.min(AM_MAX_LUMPS, Math.max(1, Number(caState.lumpN) || 1)); }
+function caLoanInputs(){
+  var s = caState, freq = C.AMORT_PPY[s.lfreq] ? s.lfreq : "biweekly", ppy = C.AMORT_PPY[freq], lumps = [];
+  for (var i = 0; i < amLumpCount(); i++){
+    var a = caNum(s["lumpAmt" + i]), m = caNum(s["lumpAt" + i]) || 12;  /* the month list shows month 12 until one is picked */
+    if (a > 0 && m > 0) lumps.push({ at:Math.max(1, Math.round(m*ppy/12)), amount:a, month:m });
+  }
+  return { amount:caNum(s.la), apr:caNum(s.lapr), months:caNum(s.lterm) || 84, freq:freq, first:s.lfirst || amFirstDefault(freq), lumps:lumps, every:caNum(s.levery) || 0 };
+}
+function amCompare(){
+  var L = caLoanInputs();
+  if (!(L.amount > 0) || L.apr === null) return null;
+  var cmp = C.amortCompare(L);
+  if (cmp) cmp.inputs = L;
+  return cmp;
+}
+function amHeadline(cmp){
+  var b = cmp.base, p = cmp.plan;
+  return cmp.hasExtra
+    ? { eyebrow:"Your payoff plan", lead:"With the extra payments, the customer saves", big:money0(cmp.saved), tail:"in interest",
+        sub:`and the last payment is ${C.fmtDate(p.last)} instead of ${C.fmtDate(b.last)}` + (cmp.fewer > 0 ? ` — ${caDuration(cmp.fewer, b.ppy)} sooner` : "") }
+    : { eyebrow:"Your cost of borrowing", lead:"Cost of borrowing over the full term", big:money0(b.interest), tail:"interest",
+        sub:`${b.count} ${amFreqWord(b.freq)} payments of ${money(b.pmt)}, last payment ${C.fmtDate(b.last)}` };
+}
+function amTermsLine(cmp){
+  var b = cmp.base;
+  return `${money0(b.amount)} at ${caPct(b.apr)} APR · ${b.months} months · ${amFreqWord(b.freq)} payments from ${C.fmtDate(b.first)}`;
+}
+function amChart(cmp, print){
+  var c = caColors(print), b = cmp.base, p = cmp.plan;
+  var path = function(sch){ var a = [sch.amount]; sch.rows.forEach(function(x){ a.push(x.balance); }); while (a.length < b.count + 1) a.push(0); return a; };
+  var series = [{ data:path(b), color:c.b, dash:cmp.hasExtra, width:2.5, dot:false }];
+  if (cmp.hasExtra) series.push({ data:path(p), color:c.a, fill:!!print && print !== true });
+  return caLineChart(series, b.count, print, "Loan balance over time", b.ppy) +
+    caLegend(cmp.hasExtra ? [{ color:c.a, text:"With the extra payments" }, { color:c.b, dash:true, text:"As scheduled" }] : [{ color:c.b, text:"Loan balance as scheduled" }]);
+}
+function amCompareRows(cmp){
+  var b = cmp.base, p = cmp.plan;
+  return [
+    ["Payments made", b.count, p.count],
+    ["Regular payment", money(b.pmt), money(p.pmt)],
+    ["Extra payments", "—", p.extra > 0 ? money(p.extra) : "—"],
+    ["Cost of borrowing (interest)", money(b.interest), money(p.interest)],
+    ["Total paid", money(b.paid), money(p.paid)],
+    ["Last payment", C.fmtDate(b.last), C.fmtDate(p.last)]];
+}
+function amYearTable(cmp, cls){
+  var yrs = C.amortYears(cmp.plan), base = C.amortYears(cmp.base);
+  return `<table class="${cls}"><thead><tr><th>Year</th><th>To</th><th class="right">Paid</th>${cmp.hasExtra ? `<th class="right">Extra</th>` : ""}<th class="right">Interest</th><th class="right">Principal</th><th class="right">Balance</th>${cmp.hasExtra ? `<th class="right">If no extra</th>` : ""}</tr></thead><tbody>
+    ${base.map(function(by, i){ var y = yrs[i];
+      return `<tr><td>${by.year}</td><td>${C.fmtDate(y ? y.to : by.to)}</td><td class="right num">${y ? money(y.paid) : "—"}</td>${cmp.hasExtra ? `<td class="right num">${y && y.extra ? money(y.extra) : "—"}</td>` : ""}<td class="right num">${y ? money(y.interest) : "—"}</td><td class="right num">${y ? money(y.principal) : "—"}</td><td class="right num">${money(y ? y.balance : 0)}</td>${cmp.hasExtra ? `<td class="right num muted">${money(by.balance)}</td>` : ""}</tr>`; }).join("")}
+    </tbody></table>`;
+}
+function amScheduleTable(sch, cls){
+  return `<table class="${cls}"><thead><tr><th>No.</th><th>Due date</th><th class="right">Payment</th><th class="right">Extra</th><th class="right">Interest</th><th class="right">Principal</th><th class="right">Balance</th></tr></thead><tbody>
+    ${sch.rows.map(function(x){ return `<tr class="${x.extra ? "ex" : ""}"><td>${x.k}</td><td>${C.fmtDate(x.date)}</td><td class="right num">${money(x.pay)}</td><td class="right num">${x.extra ? money(x.extra) : ""}</td><td class="right num">${money(x.interest)}</td><td class="right num">${money(x.principal)}</td><td class="right num">${money(x.balance)}</td></tr>`; }).join("")}
+    <tr class="tot"><td colspan="2">Total</td><td class="right num">${money(r2(sch.paid - sch.extra))}</td><td class="right num">${sch.extra ? money(sch.extra) : ""}</td><td class="right num">${money(sch.interest)}</td><td class="right num">${money(sch.amount)}</td><td></td></tr></tbody></table>`;
+}
+var r2 = C.r2;
+function caAmortLeft(){
+  var s = caState, freq = C.AMORT_PPY[s.lfreq] ? s.lfreq : "biweekly", ppy = C.AMORT_PPY[freq];
+  var term = caNum(s.lterm) || 84, first = s.lfirst || amFirstDefault(freq);
+  var termOpts = [12,24,36,48,60,72,84,96].map(function(t){ return `<option value="${t}" ${String(t) === String(s.lterm) ? "selected" : ""}>${t} months</option>`; }).join("");
+  var mOpts = function(cur){
+    var o = "";
+    for (var m = 1; m < term; m++){ var k = Math.max(1, Math.round(m*ppy/12));
+      o += `<option value="${m}" ${String(m) === String(cur) ? "selected" : ""}>Month ${m} · payment ${k} · ${C.fmtDate(C.amortDate(first, k, freq))}</option>`; }
+    return o;
+  };
+  var lumps = "";
+  for (var i = 0; i < amLumpCount(); i++){
+    lumps += `<div class="am-lump">
+      <div class="ca-in"><i>$</i><input type="text" inputmode="decimal" data-ca="lumpAmt${i}" value="${esc(s["lumpAmt" + i] || "")}" placeholder="e.g. 10,000" autocomplete="off" aria-label="Lump sum ${i + 1} amount"></div>
+      <select data-ca="lumpAt${i}" aria-label="When lump sum ${i + 1} is paid">${mOpts(s["lumpAt" + i] || 12)}</select>
+      ${amLumpCount() > 1 || s["lumpAmt" + i] ? `<button type="button" class="btn sm ghost" data-act="ca-lump-del" data-i="${i}" title="Remove this lump sum" aria-label="Remove lump sum ${i + 1}">×</button>` : ""}</div>`;
+  }
+  return `${caField("Customer name (optional)", "customer", { ph:"For the printout" })}
+    ${caField("Loan amount (amount financed)", "la", { pre:"$", ph:"31,790", hint:"After down payment and trade, including taxes and anything financed." })}
+    <div class="ca-row">${caField("Interest rate (APR)", "lapr", { post:"%", ph:"7.99" })}
+      <label class="f"><span>Loan term</span><select data-ca="lterm">${termOpts}</select></label></div>
+    <label class="f"><span>Payments</span><div class="ca-seg">${AM_FREQS.map(function(f){
+      return `<button class="btn ${freq === f[0] ? "on" : ""}" data-act="ca-lfreq" data-freq="${f[0]}">${f[1]}</button>`; }).join("")}</div></label>
+    <label class="f"><span>First payment date</span><input type="date" data-ca="lfirst" value="${esc(first)}"></label>
+    <div class="f am-lumps"><span>Lump-sum payments</span>${lumps}
+      ${amLumpCount() < AM_MAX_LUMPS ? `<button type="button" class="btn sm" data-act="ca-lump-add">+ Add another lump sum</button>` : ""}
+      <small class="muted tiny">Paid on top of the regular payment that month, straight off the balance.</small></div>
+    ${caField("Extra on every payment (optional)", "levery", { pre:"$", ph:"0", hint:"A fixed top-up added to each regular payment." })}
+    <label class="ca-check"><input type="checkbox" data-act="ca-lfull" ${s.lfull ? "checked" : ""}> Include the full payment schedule when printing</label>`;
+}
+function caAmortRight(){
+  var cmp = amCompare();
+  if (!cmp) return `<div class="ca-empty"><div class="ca-empty-ic">%</div><h3>Enter the loan amount and interest rate</h3>
+    <p class="muted small">The cost of borrowing and the payment schedule appear here as you type. Add a lump sum to see how much sooner the loan is paid off.</p></div>`;
+  var b = cmp.base, p = cmp.plan, h = amHeadline(cmp);
+  return `<div class="ca-sum">
+      <div><span>${amFreqWord(b.freq).replace(/^./, function(c){ return c.toUpperCase(); })} payment</span><strong class="num">${money(b.pmt)}</strong><small>${b.count} payments</small></div>
+      <div><span>Cost of borrowing</span><strong class="num">${money0(p.interest)}</strong><small>${cmp.hasExtra ? "with the extra payments" : "interest over the full term"}</small></div>
+      ${cmp.hasExtra ? `<div class="good"><span>Interest saved</span><strong class="num">${money0(cmp.saved)}</strong><small>${cmp.fewer > 0 ? caDuration(cmp.fewer, b.ppy) + " sooner" : "same end date"}</small></div>`
+        : `<div><span>Total paid</span><strong class="num">${money0(b.paid)}</strong><small>last payment ${C.fmtDate(b.last)}</small></div>`}</div>
+    <div class="ca-hero ${cmp.hasExtra ? "good" : "neutral"}"><div class="ca-lead">${h.lead}</div>
+      <div class="ca-big num">${h.big} <span>${h.tail}</span></div><div class="ca-sub">${h.sub}</div></div>
+    ${cmp.hasExtra ? "" : `<p class="ca-tabnote">Add a lump sum on the left (for example a bonus or tax refund) to show how much interest it saves and how much sooner the loan ends.</p>`}
+    <div class="ca-card"><div class="ca-card-h"><h3>As scheduled vs with extra payments</h3></div>
+      <div class="tablewrap"><table class="ca-tbl am-cmp"><thead><tr><th></th><th class="right">As scheduled</th><th class="right">With extra payments</th></tr></thead><tbody>
+      ${amCompareRows(cmp).map(function(r){ return `<tr><td>${r[0]}</td><td class="right num">${r[1]}</td><td class="right num ${cmp.hasExtra ? "strong" : "muted"}">${r[2]}</td></tr>`; }).join("")}</tbody></table></div></div>
+    <div class="ca-card"><div class="ca-card-h"><h3>Loan balance over time</h3></div>${amChart(cmp, false)}</div>
+    <div class="ca-card"><div class="ca-card-h"><h3>Year by year</h3></div><div class="tablewrap">${amYearTable(cmp, "ca-tbl")}</div></div>
+    <details class="ca-years"><summary>Full payment schedule (${p.count} payments)</summary><div class="tablewrap am-sched">${amScheduleTable(p, "ca-tbl")}</div></details>`;
+}
+function caAmortCustomer(){
+  var cmp = amCompare();
+  if (!cmp) return null;
+  var b = cmp.base, p = cmp.plan, h = amHeadline(cmp);
+  return `<section class="cx-hero up">
+      <div class="cx-hero-l">
+        <div class="cx-eyebrow light">${h.eyebrow}</div>
+        <div class="cx-big num">${h.big}</div>
+        <div class="cx-hero-sub">${cmp.hasExtra ? "saved in interest " + h.sub : "in interest over the full term — " + h.sub}</div>
+        <div class="cx-basis">${amTermsLine(cmp)}</div>
+      </div>
+      <div class="cx-paths">
+        <div class="cx-path ${cmp.hasExtra ? "" : "win"}">${caIcon("flag")}<div><span>As scheduled</span><strong class="num">${C.fmtDate(b.last)}</strong><em>${b.count} payments · ${money0(b.interest)} interest</em></div></div>
+        ${cmp.hasExtra ? `<div class="cx-path win">${caIcon("trend")}<div><span>With your extra payments</span><strong class="num">${C.fmtDate(p.last)}</strong><em>${p.count} payments · ${money0(p.interest)} interest</em></div></div>` : ""}
+      </div>
+    </section>
+    <section class="cx-row">
+      <div class="cx-card"><div class="cx-card-h">Year by year</div><div class="cx-tblwrap">${amYearTable(cmp, "cx-tbl")}</div></div>
+      <div class="cx-card cx-chart"><div class="cx-card-h">Your loan balance</div>${amChart(cmp, "cd")}</div>
+    </section>
+    <section class="cx-tiles am">
+      <div class="cx-tile"><span>${amFreqWord(b.freq)} payment</span><strong class="num">${money(b.pmt)}</strong></div>
+      <div class="cx-tile"><span>Rate</span><strong class="num">${caPct(b.apr)} APR</strong></div>
+      <div class="cx-tile"><span>Term</span><strong class="num">${b.months} months</strong></div>
+      <div class="cx-tile"><span>Total paid</span><strong class="num">${money0(p.paid)}</strong></div>
+    </section>`;
+}
+function caAmortTerms(){
+  var cmp = amCompare(); if (!cmp) return "";
+  var b = cmp.base;
+  return `<div class="pv-terms">
+      <div><span>Loan amount</span><strong>${money(b.amount)}</strong></div>
+      <div><span>Rate</span><strong>${caPct(b.apr)} APR</strong></div>
+      <div><span>Term</span><strong>${b.months} months</strong></div>
+      <div><span>Payments</span><strong>${amFreqWord(b.freq).replace(/^./, function(c){ return c.toUpperCase(); })} · ${money(b.pmt)}</strong></div>
+      <div><span>First payment</span><strong>${C.fmtDate(b.first)}</strong></div></div>`;
+}
+function caAmortPrint(pb){
+  var cmp = amCompare();
+  if (!cmp) return `<p>Complete the payoff calculator on screen to print it.</p>`;
+  var h = amHeadline(cmp);
+  return `<div class="pv-hero up"><div class="pv-hero-l">
+      <div class="pv-eyebrow">${h.eyebrow}</div><div class="pv-big">${h.big}</div>
+      <div class="pv-hero-sub">${cmp.hasExtra ? "saved in interest " + h.sub : "in interest over the full term — " + h.sub}</div></div></div>
+    <div class="pv-two">
+      <div class="pv-card"><div class="pv-card-h">As scheduled vs with extra payments</div>
+        <table class="pv-cmp"><thead><tr><th></th><th>As scheduled</th><th>With extra payments</th></tr></thead><tbody>
+        ${amCompareRows(cmp).map(function(r){ return `<tr><td>${r[0]}</td><td>${r[1]}</td><td>${r[2]}</td></tr>`; }).join("")}</tbody></table></div>
+      <div class="pv-card pv-chartcard"><div class="pv-card-h">Loan balance over time</div>${amChart(cmp, pb)}</div>
+    </div>
+    <div class="pv-try"><div class="pv-card-h">Year by year</div>${amYearTable(cmp, "")}</div>
+    ${caState.lfull ? `<div class="pv-try pv-sched"><div class="pv-card-h">Payment schedule${cmp.hasExtra ? " (with extra payments)" : ""}</div>${amScheduleTable(cmp.plan, "")}</div>` : ""}`;
+}
+function caAmortEmail(){
+  var cmp = amCompare(); if (!cmp) return null;
+  var b = cmp.base, p = cmp.plan, h = amHeadline(cmp);
+  return { lead:h.eyebrow, big:h.big, sub:(cmp.hasExtra ? "saved in interest " : "in interest over the full term — ") + h.sub, basis:amTermsLine(cmp),
+    rows:[[`${amFreqWord(b.freq).replace(/^./, function(c){ return c.toUpperCase(); })} payment`, money(b.pmt)],
+      ["As scheduled", `${b.count} payments · ${money(b.interest)} interest · last payment ${C.fmtDate(b.last)}`]].concat(cmp.hasExtra ? [
+      ["With your extra payments", `${p.count} payments · ${money(p.interest)} interest · last payment ${C.fmtDate(p.last)}`],
+      ["Extra payments", money(p.extra)], ["Interest saved", money(cmp.saved)]] : []),
+    extra:C.amortYears(p).map(function(y){ return ["Year " + y.year + " (to " + C.fmtDate(y.to) + ")", money(y.interest) + " interest · balance " + money(y.balance)]; }) };
+}
+
+/* ---- customer screen for the Try financing / Keep some cash / Compare terms tabs ---- */
+function caCxTab(res, I){
+  var s = caState, good = res.adv >= 0, heroHead, table;
+  if (s.tab === "payoff"){
+    var rows = caPayoffRows(res, I), ex = caExtra(I);
+    heroHead = { eyebrow:"Pay it off any time", big:"No penalty", sub:"Finance today and pay the balance off whenever you like. Here is what that would cost, with your cash invested in the meantime." };
+    table = `<div class="cx-card"><div class="cx-card-h">If you pay it off early</div><div class="cx-tblwrap"><table class="cx-tbl"><thead><tr><th>Paid off after</th><th class="right">Interest paid</th><th class="right">Payoff amount</th><th class="right">Compared with paying cash</th></tr></thead><tbody>
+      ${rows.map(function(x){ return `<tr><td>${x.m} months</td><td class="right num">${money0(x.interest)}</td><td class="right num">${money0(x.balance)}</td><td class="right num ${x.result >= 0 ? "pos" : ""}">${caSigned(x.result)}</td></tr>`; }).join("")}</tbody></table></div>
+      ${ex ? `<p class="cx-note">A one-time extra payment of ${money0(ex.amt)} in month ${ex.m} saves ${money0(ex.saved)} in interest${ex.sooner > 0 ? " and ends the loan " + caDuration(ex.sooner, ex.ppy) + " sooner" : ""}.</p>` : ""}</div>`;
+  } else if (s.tab === "split"){
+    var sp = caSplits(I);
+    heroHead = { eyebrow:"Keep some cash, finance the rest", big:caSigned(res.adv), sub:`with ${money0(I.down || 0)} down and ${money0(res.cash)} kept invested, after ${caYears(res.months)} — compared with paying cash` };
+    table = `<div class="cx-card"><div class="cx-card-h">Choose how much to put down</div><div class="cx-tblwrap"><table class="cx-tbl"><thead><tr><th>Down today</th><th class="right">Financed</th><th class="right">${caPayLabel(res.freq)}</th><th class="right">Kept invested</th><th class="right">After ${caYears(res.months)}</th></tr></thead><tbody>
+      ${sp.map(function(x){ return `<tr class="${x.cur ? "cur" : ""}"><td class="num">${money0(x.down)}</td><td class="right num">${money0(x.financed)}</td><td class="right num">${money(x.pmt)}</td><td class="right num">${money0(x.kept)}</td><td class="right num ${x.adv >= 0 ? "pos" : ""}">${caSigned(x.adv)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+  } else {
+    var tr = caTerms(I);
+    heroHead = { eyebrow:"Choose the term that suits you", big:money(res.pmt), sub:`${caFreqWord(res.freq)} over ${esc(s.term)} months at ${caPct(I.apr)} APR` };
+    table = `<div class="cx-card"><div class="cx-card-h">Payment by term</div><div class="cx-tblwrap"><table class="cx-tbl"><thead><tr><th>Term</th><th class="right">${caPayLabel(res.freq)}</th><th class="right">Total interest</th><th class="right">Compared with paying cash</th></tr></thead><tbody>
+      ${tr.filter(function(x){ return !x.none; }).map(function(x){ return `<tr class="${String(x.term) === String(s.term) ? "cur" : ""}"><td>${x.term} months</td><td class="right num">${money(x.pmt)}</td><td class="right num">${money0(x.interest)}</td><td class="right num ${x.adv >= 0 ? "pos" : ""}">${caSigned(x.adv)}</td></tr>`; }).join("")}</tbody></table></div></div>`;
+  }
+  return `<section class="cx-hero ${good || s.tab !== "split" ? "up" : "down"}"><div class="cx-hero-l">
+      <div class="cx-eyebrow light">${heroHead.eyebrow}</div><div class="cx-big num">${heroHead.big}</div>
+      <div class="cx-hero-sub">${heroHead.sub}</div></div></section>
+    <section class="cx-one">${table}</section>
+    <section class="cx-reasons three">${caReasons().map(function(r){ return `<div class="cx-reason">${caIcon(r[0])}<p><strong>${esc(r[1])}.</strong> ${esc(r[2])}</p></div>`; }).join("")}</section>`;
 }
 function caTaxAssume(){
   var t = caTaxPct();
@@ -5139,7 +5435,7 @@ function viewCashAdv(){
   caSavePrefs();
   setTimeout(caPushWindow, 0);
   var s = caState, tabs = `<div class="ca-tabs no-print">
-      ${[["invest","Cash vs Finance &amp; Invest"],["payoff","Pay it off any time"],["split","Keep some cash"],["terms","Compare terms"],["loc","Line of Credit vs Dealer"]].map(function(t){
+      ${[["invest","Cash vs Finance &amp; Invest"],["amort","Payoff calculator"],["payoff","Try financing"],["split","Keep some cash"],["terms","Compare terms"],["loc","Line of Credit vs Dealer"]].map(function(t){
         return `<button class="btn ${s.tab===t[0]?"on":""}" data-act="ca-tab" data-tab="${t[0]}">${t[1]}</button>`; }).join("")}
       <span class="sp">${state.tx && (state.tx.customer.name || Number(state.tx.vehicle.price) > 0) ? `<button class="btn" data-act="ca-from-deal" title="Fill in the customer, amount, rate and term from the deal on the Finance screen">Use deal on screen</button>` : ""}
       <button class="btn" data-act="ca-clear">Clear</button>
@@ -5157,7 +5453,8 @@ function viewCashAdv(){
       <button class="btn ${s.freq==="biweekly"?"on":""}" data-act="ca-freq" data-freq="biweekly">Bi-weekly</button></div></label>
     ${caField("Cash discount lost by financing", "lost", { pre:"$", ph:"0", hint:"Only if the cash price is lower than the finance price." })}`;
   var left, right;
-  if (s.tab !== "loc"){
+  if (s.tab === "amort"){ left = caAmortLeft(); right = caAmortRight(); }
+  else if (s.tab !== "loc"){
     var yearOpts = `<option value="same" ${s.years==="same"?"selected":""}>Same as loan</option>` +
       [1,2,3,4,5,6,7,8,10,12,15].map(function(y){ return `<option value="${y}" ${String(y)===String(s.years)?"selected":""}>${y} year${y>1?"s":""}</option>`; }).join("");
     var inv = [["gic","GIC"],["sp500","S&P 500"],["tsx","TSX"],["other","Other"]].map(function(o){
@@ -5244,6 +5541,7 @@ function viewCashAdv(){
       <dt>“I don't like debt.”</dt><dd>“Understood. You'd still own the vehicle, and the cash stays in your name. If you change your mind, you can pay the loan off at any time — Ontario's Consumer Protection Act (s. 77) gives borrowers the right to prepay the full balance without a penalty.” Confirm the lender's contract terms.</dd>
       <dt>“I don't want to be locked in.”</dt><dd>Open “Pay it off any time”: it shows what paying the loan off after 3, 6 or 12 months costs — often less than the cash earned meanwhile.</dd>
       <dt>“I'd rather not finance all of it.”</dt><dd>Use “Keep some cash, finance the rest” and let them pick the row they're comfortable with.</dd>
+      <dt>Payoff calculator</dt><dd>For a customer who wants the lower payment of a longer term but plans to pay it down with a bonus or tax refund: enter the lump sums and show the interest saved and the new last-payment date.</dd>
       <dt>“I want to own it outright.”</dt><dd>“You will own it either way — financing just decides where your cash sits while the car is paid off.”</dd>
       <dt>“I'll use my line of credit.”</dt><dd>Use the Line of Credit tab with their real rate. Switch to “Interest only” and add an extra withdrawal to show how a line can stay open for years. Be honest if theirs truly costs less.</dd>
       <dt>“Rates are high.”</dt><dd>Show the break-even rate. If a GIC alone beats it, that is a guaranteed result with no market risk.</dd>
@@ -5255,6 +5553,7 @@ function viewCashAdv(){
       <div class="ca-disc">${caDisclaimer(s.tab)}</div></div></div>`;
 }
 function caDisclaimer(tab){
+  if (tab === "amort") return "Illustration only. Payments, interest and dates are estimates from the amount, rate, term and payment frequency shown, with interest worked out each payment period and rounded to the cent. Your credit agreement and lender statements are final. Ontario's Consumer Protection Act lets you prepay without penalty; ask your lender how it applies extra payments. Financing is subject to lender approval.";
   return tab === "loc"
     ? "Illustration only, not financial advice. Line of credit rates are variable and set by the customer's lender; minimum payments vary by lender. Interest is shown compounding each payment period, with any unpaid interest added to the balance. Dealer financing is subject to lender approval; the credit agreement shows the APR and cost of borrowing."
     : "Illustration only — not investment, tax or legal advice. Investment returns are not guaranteed and can be negative; past performance does not predict future results. " + caTaxAssume() + " Historical data: S&P 500 total return (NYU Stern) converted to CAD (Federal Reserve USD/CAD); S&P/TSX Composite total return from 2018, price return plus estimated 2.5% dividends before. Financing is subject to lender approval.";
@@ -5297,9 +5596,11 @@ function caCustomerHtml(){
       <div class="cx-welcome">Welcome${first ? ", " + esc(first) : ""}</div>
       <p>Your Finance Manager is preparing your personal comparison.</p><div class="cx-dots"><i></i><i></i><i></i></div></div>`;
   var body;
-  if (s.tab !== "loc"){
+  if (s.tab === "amort") body = caAmortCustomer() || wait;
+  else if (s.tab !== "loc"){
     var res = C.cashAdvantage(I);
     if (!res) body = wait;
+    else if (s.tab === "payoff" || s.tab === "split" || s.tab === "terms") body = caCxTab(res, I);
     else {
       var good = res.adv >= 0, r = res.run, inv = caInvestName(true);
       var basis = res.kind === "history" ? `Based on ${esc(inv)}'s average of ${caPct(res.rate)} a year, ${res.avgFrom}–${res.avgTo}`
@@ -5423,10 +5724,10 @@ function cashAdvPrint(){
   var head = `<div class="pv-head">
       <div class="pv-brand"><div class="pv-mark">${esc(cfg.logoMark || b.mark)}</div>
         <div><div class="pv-dealer">${esc(cfg.name)}</div><div class="pv-lender">${esc(b.finLabel)}</div></div></div>
-      <div class="pv-title"><div class="pv-doc">${s.tab === "loc" ? "Line of Credit vs Dealer Financing" : "Cash vs Finance Comparison"}</div>
+      <div class="pv-title"><div class="pv-doc">${s.tab === "loc" ? "Line of Credit vs Dealer Financing" : s.tab === "amort" ? "Loan Payoff &amp; Amortization" : "Cash vs Finance Comparison"}</div>
         <div class="pv-sub">${name ? "Prepared for <strong>" + esc(name) + "</strong> · " : ""}${C.fmtDate(C.todayISO())}</div></div>
     </div>`;
-  var terms = `<div class="pv-terms">
+  var terms = s.tab === "amort" ? caAmortTerms() : `<div class="pv-terms">
       <div><span>Amount</span><strong>${money0(I.total === null ? I.amount : I.total)}</strong></div>
       ${I.down > 0 ? `<div><span>Down payment</span><strong>${money0(I.down)}</strong></div>` : ""}
       <div><span>Dealer rate</span><strong>${caPct(I.apr)} APR</strong></div>
@@ -5435,7 +5736,8 @@ function cashAdvPrint(){
       ${I.lost ? `<div><span>Cash discount</span><strong>${money0(I.lost)}</strong></div>` : ""}
     </div>`;
   var body;
-  if (s.tab === "loc"){
+  if (s.tab === "amort") body = caAmortPrint(pb);
+  else if (s.tab === "loc"){
     var lc = C.locCompare(I);
     if (!lc) body = `<p>Complete the line of credit comparison on screen to print it.</p>`;
     else {
@@ -6582,6 +6884,14 @@ document.addEventListener("click", function(ev){
     case "ca-freq": caState.freq = el.getAttribute("data-freq"); render(); break;
     case "ca-view": caState.view = el.getAttribute("data-view"); render(); break;
     case "ca-avg": caState.avgOver = el.getAttribute("data-avg"); render(); break;
+    case "ca-lfreq": caState.lfreq = el.getAttribute("data-freq"); caState.lfirst = ""; render(); break;
+    case "ca-lump-add": caState.lumpN = String(Math.min(AM_MAX_LUMPS, amLumpCount() + 1)); caState["lumpAt" + (amLumpCount() - 1)] = "24"; render(); break;
+    case "ca-lump-del": {
+      var ldi = Number(el.getAttribute("data-i")), lcn = amLumpCount();
+      for (var lj = ldi; lj < lcn - 1; lj++){ caState["lumpAmt" + lj] = caState["lumpAmt" + (lj + 1)]; caState["lumpAt" + lj] = caState["lumpAt" + (lj + 1)]; }
+      caState["lumpAmt" + (lcn - 1)] = ""; caState["lumpAt" + (lcn - 1)] = "";
+      caState.lumpN = String(Math.max(1, lcn - 1)); render(); break; }
+    case "ca-lfull": caState.lfull = !caState.lfull; render(); break;
     case "ca-acct": caState.acct = el.getAttribute("data-acct") === "taxable" ? "taxable" : "tfsa"; render(); break;
     case "ca-term": caState.term = el.getAttribute("data-term"); render(); break;
     case "ca-down": {
@@ -6769,7 +7079,7 @@ document.addEventListener("click", function(ev){
       var oldTitle = document.title, pm = state.ui.modal;
       document.title = pm && pm.kind === "worksheet" ? "Purchase Proposal - " + (state.config.name || "Worksheet")
         : pm && pm.kind === "coupon" ? "Coupon " + couponState().code + (couponState().name.trim() ? " - " + couponState().name.trim() : "")
-        : pm && pm.kind === "cashadv" ? "Cash vs Finance Comparison" + (caState && caState.customer.trim() ? " - " + caState.customer.trim() : "")
+        : pm && pm.kind === "cashadv" ? (caState && caState.tab === "amort" ? "Loan Payoff Schedule" : caState && caState.tab === "loc" ? "Line of Credit Comparison" : "Cash vs Finance Comparison") + (caState && caState.customer.trim() ? " - " + caState.customer.trim() : "")
         : (pm && pm.kind === "customer" ? "Protection Summary" : "Transaction Record") + (state.tx && state.tx.customer.name ? " - " + state.tx.customer.name : "");
       if (pm && pm.kind === "worksheet"){ wsPrint(document.title); setTimeout(function(){ document.title = oldTitle; }, 1500); break; }
       try { window.print(); } catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); }

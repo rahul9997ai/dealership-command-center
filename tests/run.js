@@ -195,6 +195,40 @@ eq("custom brand name", C.brandOfDealer({ brandKey: "custom", customBrandName: "
 eq("header override", C.brandOfDealer({ brandKey: "ford", headerTitle: "Ford Credit Canada" }).finLabel, "FORD CREDIT CANADA");
 eq("Subaru exists", !!D.BRANDS.subaru, true);
 
+/* --- Payoff calculator: matches the dealership's Excel sheet example --- */
+{
+  const o = { amount: 31790.13, apr: 7.99, months: 84, freq: "biweekly", first: "2026-02-06" };
+  const base = C.amortSchedule(o);
+  eq("AM bi-weekly payment (sheet D14)", base.pmt, 228.31);
+  eq("AM 7 years bi-weekly = 182 payments (sheet stops at 156)", base.count, 182);
+  eq("AM first period interest (sheet F21)", base.rows[0].interest, 97.69);
+  eq("AM balance after payment 1 (sheet H21)", base.rows[0].balance, 31659.51);
+  eq("AM pays off to zero", base.rows[base.count - 1].balance, 0);
+  eq("AM principal paid = loan", base.rows.reduce((a, x) => a + x.principal, 0), 31790.13, 0.01);
+  eq("AM total paid = loan + interest", base.paid, 31790.13 + base.interest, 0.01);
+  eq("AM schedule interest close to sheet's 9,762.10", Math.abs(base.interest - 9762.10) < 2, true);
+  const plan = C.amortSchedule(Object.assign({}, o, { lumps: [{ at: 2, amount: 26300 }] }));
+  eq("AM lump sum: balance after payment 2 (sheet H22)", plan.rows[1].balance, 5228.49);
+  eq("AM lump sum: total interest (sheet H6)", plan.interest, 396.46);
+  eq("AM lump sum: number of payments (sheet H8)", plan.count, 26);
+  eq("AM lump sum: total payments (sheet H5)", plan.paid, 32186.59);
+  eq("AM bi-weekly dates step 14 days (sheet B22)", plan.rows[1].date, "2026-02-20");
+  const big = C.amortSchedule(Object.assign({}, o, { lumps: [{ at: 3, amount: 99999 }] }));
+  eq("AM lump larger than balance stops at zero", big.rows[big.count - 1].balance, 0);
+  eq("AM lump larger than balance ends the loan that payment", big.count, 3);
+  const cmp = C.amortCompare(Object.assign({}, o, { lumps: [{ at: 2, amount: 26300 }] }));
+  eq("AM compare: interest saved", cmp.saved, cmp.base.interest - 396.46, 0.01);
+  eq("AM compare: payments saved", cmp.fewer, 156);
+  const m = C.amortSchedule({ amount: 10000, apr: 6, months: 12, freq: "monthly", first: "2026-01-31" });
+  eq("AM month-end date stays in February", m.rows[1].date, "2026-02-28");
+  eq("AM month-end date returns to the 31st", m.rows[2].date, "2026-03-31");
+  eq("AM 0% loan", C.amortSchedule({ amount: 1200, apr: 0, months: 12, freq: "monthly" }).interest, 0);
+  const yrs = C.amortYears(base);
+  eq("AM 7 years of yearly totals", yrs.length, 7);
+  eq("AM yearly interest adds up", yrs.reduce((a, y) => a + y.interest, 0), base.interest, 0.01);
+  const ev = C.amortSchedule(Object.assign({}, o, { every: 50 }));
+  eq("AM extra on every payment shortens the loan", ev.count < 182 && ev.interest < base.interest, true);
+}
 /* --- Cash Conversion: early payoff, extra payment, tax on earnings --- */
 {
   const po = C.loanPayoff(45000, 1.99, 60, "monthly", 12);
