@@ -272,8 +272,9 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
 .am-lumps > span{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .am-lumps > .btn{margin:2px 0 4px}
 .am-lumps > small{display:block}
-.am-lump{display:grid;grid-template-columns:minmax(0,.8fr) minmax(0,1.4fr) auto;gap:6px;align-items:center;margin-bottom:6px}
-.am-lump select{min-width:0}
+.am-lump{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr) 32px;gap:4px 6px;align-items:center;margin-bottom:8px}
+.am-lump input[type=date]{min-width:0}
+.am-lump-at{grid-column:1 / -1;font-size:11.5px;color:var(--blue)}
 .ca-check{display:flex;gap:8px;align-items:center;font-size:13px;margin:4px 0 6px;cursor:pointer}
 .ca-tbl td.strong{font-weight:700}
 .am-sched{max-height:460px;overflow:auto;margin-top:8px}
@@ -293,7 +294,7 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
 .doc .pv-cmp th:first-child,.doc .pv-cmp td:first-child{text-align:left}
 .pv-sched{page-break-before:always;break-before:page}
 .pv-sched tr{page-break-inside:avoid;break-inside:avoid}
-@media (max-width:640px){ .cx-tiles.am{grid-template-columns:repeat(2,minmax(0,1fr))} .am-lump{grid-template-columns:minmax(0,1fr) auto} .am-lump select{grid-column:1 / -1;grid-row:2} }
+@media (max-width:640px){ .cx-tiles.am{grid-template-columns:repeat(2,minmax(0,1fr))} .am-lump{grid-template-columns:minmax(0,1fr) 32px} .am-lump input[type=date]{grid-column:1;grid-row:2} }
 .ca-tabnote{font-size:13px;color:var(--text-2);margin:2px 0 0;max-width:72ch}
 .ca-tabs > .btn{white-space:nowrap}
 .ca-in input::placeholder{color:var(--muted);opacity:.6;font-style:italic}
@@ -4983,13 +4984,26 @@ var AM_MAX_LUMPS = 6;
 function amFreqWord(f){ return f === "semimonthly" ? "semi-monthly" : f === "biweekly" ? "bi-weekly" : f === "weekly" ? "weekly" : "monthly"; }
 function amFirstDefault(freq){ return C.amortDate(C.todayISO(), 2, freq); }
 function amLumpCount(){ return Math.min(AM_MAX_LUMPS, Math.max(1, Number(caState.lumpN) || 1)); }
+/* A lump sum is picked by date and rides with the first scheduled payment on or after that date,
+   so it always lines up with the payment frequency chosen. Until a date is picked: the first payment. */
+function amLumpDate(i, first){ return caState["lumpDate" + i] || first; }
+function amLumpPayment(date, first, freq, n){
+  if (!date || date <= first) return 1;
+  for (var k = 1; k <= n; k++) if (C.amortDate(first, k, freq) >= date) return k;
+  return n;
+}
+function amSchedSize(){
+  var s = caState, freq = C.AMORT_PPY[s.lfreq] ? s.lfreq : "biweekly";
+  var first = s.lfirst || amFirstDefault(freq), n = Math.max(1, Math.round((caNum(s.lterm) || 84)/12*C.AMORT_PPY[freq]));
+  return { freq:freq, first:first, n:n, last:C.amortDate(first, n, freq) };
+}
 function caLoanInputs(){
-  var s = caState, freq = C.AMORT_PPY[s.lfreq] ? s.lfreq : "biweekly", ppy = C.AMORT_PPY[freq], lumps = [];
+  var s = caState, z = amSchedSize(), lumps = [];
   for (var i = 0; i < amLumpCount(); i++){
-    var a = caNum(s["lumpAmt" + i]), m = caNum(s["lumpAt" + i]) || 12;  /* the month list shows month 12 until one is picked */
-    if (a > 0 && m > 0) lumps.push({ at:Math.max(1, Math.round(m*ppy/12)), amount:a, month:m });
+    var a = caNum(s["lumpAmt" + i]);
+    if (a > 0) lumps.push({ at:amLumpPayment(amLumpDate(i, z.first), z.first, z.freq, z.n), amount:a });
   }
-  return { amount:caNum(s.la), apr:caNum(s.lapr), months:caNum(s.lterm) || 84, freq:freq, first:s.lfirst || amFirstDefault(freq), lumps:lumps, every:caNum(s.levery) || 0 };
+  return { amount:caNum(s.la), apr:caNum(s.lapr), months:caNum(s.lterm) || 84, freq:z.freq, first:z.first, lumps:lumps, every:caNum(s.levery) || 0 };
 }
 function amCompare(){
   var L = caLoanInputs();
@@ -5045,18 +5059,14 @@ function caAmortLeft(){
   var s = caState, freq = C.AMORT_PPY[s.lfreq] ? s.lfreq : "biweekly", ppy = C.AMORT_PPY[freq];
   var term = caNum(s.lterm) || 84, first = s.lfirst || amFirstDefault(freq);
   var termOpts = [12,24,36,48,60,72,84,96].map(function(t){ return `<option value="${t}" ${String(t) === String(s.lterm) ? "selected" : ""}>${t} months</option>`; }).join("");
-  var mOpts = function(cur){
-    var o = "";
-    for (var m = 1; m < term; m++){ var k = Math.max(1, Math.round(m*ppy/12));
-      o += `<option value="${m}" ${String(m) === String(cur) ? "selected" : ""}>Month ${m} · payment ${k} · ${C.fmtDate(C.amortDate(first, k, freq))}</option>`; }
-    return o;
-  };
-  var lumps = "";
+  var z = amSchedSize(), lumps = "";
   for (var i = 0; i < amLumpCount(); i++){
+    var ld = amLumpDate(i, first), lk = amLumpPayment(ld, first, freq, z.n);
     lumps += `<div class="am-lump">
       <div class="ca-in"><i>$</i><input type="text" inputmode="decimal" data-ca="lumpAmt${i}" value="${esc(s["lumpAmt" + i] || "")}" placeholder="e.g. 10,000" autocomplete="off" aria-label="Lump sum ${i + 1} amount"></div>
-      <select data-ca="lumpAt${i}" aria-label="When lump sum ${i + 1} is paid">${mOpts(s["lumpAt" + i] || 12)}</select>
-      ${amLumpCount() > 1 || s["lumpAmt" + i] ? `<button type="button" class="btn sm ghost" data-act="ca-lump-del" data-i="${i}" title="Remove this lump sum" aria-label="Remove lump sum ${i + 1}">×</button>` : ""}</div>`;
+      <input type="date" data-ca="lumpDate${i}" value="${esc(ld)}" min="${first}" max="${z.last}" aria-label="Date of lump sum ${i + 1}">
+      ${amLumpCount() > 1 || s["lumpAmt" + i] ? `<button type="button" class="btn sm ghost" data-act="ca-lump-del" data-i="${i}" title="Remove this lump sum" aria-label="Remove lump sum ${i + 1}">×</button>` : "<span></span>"}
+      <small class="am-lump-at">With ${amFreqWord(freq)} payment ${lk} of ${z.n} · ${C.fmtDate(C.amortDate(first, lk, freq))}</small></div>`;
   }
   return `${caField("Customer name (optional)", "customer", { ph:"For the printout" })}
     ${caField("Loan amount (amount financed)", "la", { pre:"$", ph:"31,790", hint:"After down payment and trade, including taxes and anything financed." })}
@@ -5067,7 +5077,7 @@ function caAmortLeft(){
     <label class="f"><span>First payment date</span><input type="date" data-ca="lfirst" value="${esc(first)}"></label>
     <div class="f am-lumps"><span>Lump-sum payments</span>${lumps}
       ${amLumpCount() < AM_MAX_LUMPS ? `<button type="button" class="btn sm" data-act="ca-lump-add">+ Add another lump sum</button>` : ""}
-      <small class="muted tiny">Paid on top of the regular payment that month, straight off the balance.</small></div>
+      <small class="muted tiny">Pick any date: the lump sum is paid with the first ${amFreqWord(freq)} payment on or after it, straight off the balance.</small></div>
     ${caField("Extra on every payment (optional)", "levery", { pre:"$", ph:"0", hint:"A fixed top-up added to each regular payment." })}
     <label class="ca-check"><input type="checkbox" data-act="ca-lfull" ${s.lfull ? "checked" : ""}> Include the full payment schedule when printing</label>`;
 }
@@ -6888,11 +6898,15 @@ document.addEventListener("click", function(ev){
     case "ca-view": caState.view = el.getAttribute("data-view"); render(); break;
     case "ca-avg": caState.avgOver = el.getAttribute("data-avg"); render(); break;
     case "ca-lfreq": caState.lfreq = el.getAttribute("data-freq"); caState.lfirst = ""; render(); break;
-    case "ca-lump-add": caState.lumpN = String(Math.min(AM_MAX_LUMPS, amLumpCount() + 1)); caState["lumpAt" + (amLumpCount() - 1)] = "24"; render(); break;
+    case "ca-lump-add": {
+      var lz = amSchedSize(), lnew = amLumpCount();
+      caState.lumpN = String(Math.min(AM_MAX_LUMPS, lnew + 1));
+      caState["lumpDate" + lnew] = C.amortDate(lz.first, Math.min(lz.n, C.AMORT_PPY[lz.freq] * lnew + 1), lz.freq);  /* a year apart by default */
+      render(); break; }
     case "ca-lump-del": {
       var ldi = Number(el.getAttribute("data-i")), lcn = amLumpCount();
-      for (var lj = ldi; lj < lcn - 1; lj++){ caState["lumpAmt" + lj] = caState["lumpAmt" + (lj + 1)]; caState["lumpAt" + lj] = caState["lumpAt" + (lj + 1)]; }
-      caState["lumpAmt" + (lcn - 1)] = ""; caState["lumpAt" + (lcn - 1)] = "";
+      for (var lj = ldi; lj < lcn - 1; lj++){ caState["lumpAmt" + lj] = caState["lumpAmt" + (lj + 1)]; caState["lumpDate" + lj] = caState["lumpDate" + (lj + 1)]; }
+      caState["lumpAmt" + (lcn - 1)] = ""; caState["lumpDate" + (lcn - 1)] = "";
       caState.lumpN = String(Math.max(1, lcn - 1)); render(); break; }
     case "ca-lfull": caState.lfull = !caState.lfull; render(); break;
     case "ca-acct": caState.acct = el.getAttribute("data-acct") === "taxable" ? "taxable" : "tfsa"; render(); break;
