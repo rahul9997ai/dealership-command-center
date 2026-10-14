@@ -182,6 +182,83 @@ tbody tr:hover{background:var(--surface-2)}
 .need{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-bg) !important}
 .choice-row.need,.mg-row.need,.chiprow.need{border-radius:12px}
 .confirm-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+/* Worksheet (Purchase Proposal): two letter pages, print only */
+@page ws{size:letter;margin:0}
+.ws-doc{font-family:Inter,"Segoe UI",Arial,sans-serif;color:#1b2130}
+.ws-doc *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.ws-sheet{page:ws;width:8.5in;height:11in;background:#fff;padding:.42in .5in .36in;position:relative;font-size:9pt;display:flex;flex-direction:column;overflow:hidden;page-break-after:always;break-after:page}
+.ws-sheet:last-child{page-break-after:auto;break-after:auto}
+.ws-prev{overflow-x:auto;padding:8px 2px 4px}
+.ws-prev .ws-doc{display:flex;flex-direction:column;align-items:center;gap:22px}
+.ws-prev .ws-sheet{box-shadow:0 14px 40px rgba(10,20,40,.2),0 2px 6px rgba(10,20,40,.12);border-radius:2px}
+.ws-hd{display:flex;align-items:center;gap:12pt}
+.ws-brand{display:flex;align-items:center;gap:10pt;min-width:0}
+.ws-logo{max-height:38pt;max-width:1.7in;object-fit:contain;display:block}
+.ws-dn{font-family:Montserrat,Inter,Arial,sans-serif;font-weight:800;font-size:16pt;letter-spacing:.03em;text-transform:uppercase;color:var(--ws-dk);line-height:1.05}
+.ws-addr{font-size:7pt;color:#5d6573;margin-top:3pt;letter-spacing:.02em}
+.ws-ttl{margin-left:auto;text-align:right;flex:0 0 auto}
+.ws-ttl b{display:block;font-family:Montserrat,Inter,Arial,sans-serif;font-weight:800;font-size:15pt;letter-spacing:.07em;text-transform:uppercase;color:var(--ws-dk)}
+.ws-ttl span{font-size:6.8pt;color:#6b7383;letter-spacing:.16em;text-transform:uppercase}
+.ws-rule{height:3.2pt;border-radius:2pt;margin-top:7pt;background:linear-gradient(90deg,var(--ws-dk) 0%,var(--ws-a) 55%,var(--ws-hl) 100%);box-shadow:0 1pt 1.5pt rgba(0,0,0,.18)}
+.ws-meta{display:grid;grid-template-columns:1fr 1.6fr 1fr;gap:8pt;margin-top:9pt}
+.ws-box{border:1pt solid #c3c8d1;border-radius:5pt;padding:3pt 7pt 0;height:24pt;background:linear-gradient(180deg,#fafbfc,#fff 40%);box-shadow:inset 0 1pt 0 #fff,0 1pt 2pt rgba(10,20,40,.06)}
+.ws-box span,.ws-lbl,.ws-tg span,.ws-fg span{display:block;font-size:6pt;letter-spacing:.16em;text-transform:uppercase;color:#6b7383;font-weight:600}
+.ws-hero{margin-top:9pt;display:grid;grid-template-columns:1.12fr 1fr;border:1pt solid #c3c8d1;border-radius:7pt;overflow:hidden;box-shadow:0 1.5pt 4pt rgba(10,20,40,.07)}
+.ws-hero > div{padding:7pt 12pt}
+.ws-cu{background:linear-gradient(180deg,#f2f3f6,#f8f9fb)}
+.ws-wline{border-bottom:.8pt solid #c3c8d1;height:19pt}
+.ws-sm{font-size:7.8pt;color:#3a4252;margin-top:3pt;line-height:1.9}
+.ws-chips{display:flex;gap:4pt;flex-wrap:wrap;margin-top:4pt}
+.ws-chips span{font-size:6.9pt;padding:1.5pt 6pt;border-radius:8pt;background:#fff;border:.6pt solid #c3c8d1;color:#3a4252;box-shadow:0 .6pt 1pt rgba(0,0,0,.06)}
+.ws-ve .ws-chips span{font-weight:600}
+.ws-cols{display:grid;grid-template-columns:2.9in 1fr;gap:16pt;margin-top:9pt;flex:1;min-height:0}
+.ws-cols > div{display:flex;flex-direction:column;min-height:0}
+.ws-sec{font-family:Montserrat,Inter,Arial,sans-serif;font-weight:700;font-size:8.2pt;letter-spacing:.16em;text-transform:uppercase;color:var(--ws-dk);display:flex;align-items:center;gap:6pt;margin-bottom:5pt}
+.ws-sec::before{content:"";width:5pt;height:5pt;border-radius:1pt;background:var(--ws-hl);flex:0 0 auto}
+.ws-sec::after{content:"";flex:1;height:.7pt;background:#d6dae1}
+table.ws-p{width:100%;border-collapse:collapse}
+table.ws-p td{padding:1.3pt 0;font-size:8.4pt;border-bottom:.6pt solid #e4e7ec;height:12pt}
+table.ws-p td.ws-a{text-align:right;font-weight:600;width:70pt;border-bottom:.8pt solid #c3c8d1}
+table.ws-p tr.ws-h2 td{font-weight:600;border-bottom:0;padding-bottom:1pt}
+table.ws-p tr.ws-inc td{font-size:7.6pt;color:#4a5262;padding:1.4pt 0 1.4pt 9pt;border-bottom:0;height:11.4pt}
+table.ws-p tr.ws-inc td.ws-a{color:#1b2130;border-bottom:.7pt solid #c3c8d1}
+.ws-wl{display:inline-block;width:1.35in;border-bottom:.7pt solid #c3c8d1;height:9pt;vertical-align:bottom}
+table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
+.ws-bal{display:flex;justify-content:space-between;align-items:center;margin-top:4pt;padding:5pt 8pt;border-radius:4pt;color:#fff;font-family:Montserrat,Inter,Arial,sans-serif;font-weight:800;font-size:9.6pt;background:linear-gradient(180deg,color-mix(in srgb,var(--ws-dk) 72%,#fff) 0%,var(--ws-dk) 50%,color-mix(in srgb,var(--ws-dk) 82%,#000) 100%);box-shadow:inset 0 1pt 0 rgba(255,255,255,.28),0 1.5pt 3pt rgba(0,0,0,.22)}
+.ws-bal b{min-width:70pt;text-align:left;border-left:.6pt solid rgba(255,255,255,.3);padding-left:6pt}
+.ws-trade{margin-top:8pt;border:1pt solid #c3c8d1;border-radius:6pt;padding:5pt 9pt 6pt;flex:1;display:flex;flex-direction:column;box-shadow:0 1.5pt 4pt rgba(10,20,40,.06)}
+.ws-tg{display:grid;grid-template-columns:1.6fr 1fr;gap:1pt 10pt;margin-top:3pt}
+.ws-tg div b,.ws-fg div b{display:block;height:13pt;border-bottom:.7pt solid #c3c8d1}
+.ws-yn{font-size:7.2pt;margin-top:auto;padding-top:4pt;color:#3a4252;display:flex;flex-wrap:wrap;gap:3pt 10pt}
+.ws-yn em{font-style:normal;font-weight:700;padding:0 4pt;border:.7pt solid #c3c8d1;border-radius:6pt;margin-left:2pt}
+.ws-ops{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:1fr;gap:9pt;height:2.55in}
+.ws-op{border:1pt solid #c3c8d1;border-radius:7pt;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 2pt 5pt rgba(10,20,40,.08)}
+.ws-oph{position:relative;padding:5pt 10pt;font-family:Montserrat,Inter,Arial,sans-serif;font-weight:700;font-size:7pt;letter-spacing:.14em;text-transform:uppercase;color:#fff;background:linear-gradient(180deg,color-mix(in srgb,var(--ws-dk) 75%,#fff),var(--ws-dk))}
+.ws-op.ls .ws-oph{background:linear-gradient(180deg,color-mix(in srgb,var(--ws-a) 70%,#fff),var(--ws-a))}
+.ws-pk{position:absolute;right:8pt;top:4pt;width:10pt;height:10pt;border:1pt solid #fff;border-radius:2pt;background:rgba(255,255,255,.12)}
+.ws-opb{padding:7pt 10pt 9pt;display:flex;flex-direction:column;flex:1}
+.ws-d{font-size:7.4pt;color:#3a4252;line-height:1.55}
+.ws-pl{margin-top:auto;display:flex;align-items:flex-end;gap:4pt}
+.ws-pl b{font-family:Montserrat,Inter,Arial,sans-serif;font-weight:800;font-size:14pt;color:var(--ws-dk)}
+.ws-pl i{flex:1;border-bottom:.9pt solid #1b2130;height:20pt}
+.ws-pl small{font-size:6.6pt;color:#6b7383;white-space:nowrap}
+.ws-howto{font-size:7pt;color:#6b7383;margin-top:6pt}
+.ws-notes{flex:1;margin-top:10pt;display:flex;flex-direction:column;min-height:0}
+.ws-ln,.ws-plain{flex:1;border:1pt solid #c3c8d1;border-radius:6pt;background:#fff;box-shadow:inset 0 1pt 3pt rgba(10,20,40,.05)}
+.ws-plain{min-height:2in}
+.ws-ov{font-size:6.6pt;color:#6b7383;margin-top:3pt;text-align:right}
+.ws-acc{margin-top:9pt;border:1pt solid var(--ws-dk);border-radius:6pt;padding:6pt 9pt 7pt;background:linear-gradient(180deg,#f6f7f9,#fff);box-shadow:0 1.5pt 4pt rgba(10,20,40,.07)}
+.ws-acc h4{margin:0 0 3pt;font-family:Montserrat,Inter,Arial,sans-serif;font-size:7.4pt;letter-spacing:.16em;text-transform:uppercase;color:var(--ws-dk)}
+.ws-acc p{margin:0;font-size:6.6pt;line-height:1.45;color:#2d3442}
+.ws-sig{display:grid;grid-template-columns:1.25fr 1fr 1fr .7fr;gap:12pt;margin-top:17pt}
+.ws-sig div{border-top:.8pt solid #1b2130;padding-top:2pt;font-size:6pt;letter-spacing:.14em;text-transform:uppercase;color:#6b7383}
+.ws-ft{display:flex;justify-content:space-between;gap:10pt;margin-top:7pt;font-size:6.3pt;color:#6b7383}
+.ws-final{margin-top:12pt;border:1.4pt solid var(--ws-hl);border-radius:7pt;padding:8pt 11pt;box-shadow:0 2pt 6pt rgba(10,20,40,.08)}
+.ws-final h4{margin:0 0 5pt;font-family:Montserrat,Inter,Arial,sans-serif;font-size:8.2pt;letter-spacing:.16em;text-transform:uppercase;color:var(--ws-hl)}
+.ws-fg{display:grid;grid-template-columns:repeat(4,1fr);gap:4pt 10pt}
+.ws-fg div b{height:17pt;border-bottom-width:.8pt}
+.ws-ch{font-size:7.4pt;margin-top:7pt;color:#3a4252}
+@media print{ .modal-b:has(.ws-doc){padding:0 !important} .ws-sheet{box-shadow:none !important;border-radius:0 !important} }
 /* Dealership settings: logo */
 .logo-up{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:6px}
 .logo-prev{width:200px;height:72px;border:1px dashed var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;padding:8px}
@@ -2012,11 +2089,11 @@ function dealsForStore(){
 function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
-  if (role === "General Manager") return ["dashboard","finance","cashadv","coupons","products","reports","users","settings"];
+  if (role === "General Manager") return ["dashboard","finance","cashadv","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
-  if (isFinanceRole(role)) return ["finance","cashadv","coupons","products","reports","users"].filter(function(k){
-    return k === "products" || k === "users" || featureOn(currentUser(), k); });
-  return ["finance","cashadv","products","reports"];
+  if (isFinanceRole(role)) return ["finance","cashadv","coupons","worksheet","products","reports","users"].filter(function(k){
+    return k === "products" || k === "users" || k === "worksheet" || featureOn(currentUser(), k); });
+  return ["finance","cashadv","worksheet","products","reports"];
 }
 function navItems(){
   var items = [
@@ -2024,6 +2101,7 @@ function navItems(){
     { key:"finance", label:"Finance", ic:"◧" },
     { key:"cashadv", label:"Cash Advantage", ic:"$" },
     { key:"coupons", label:"Coupons", ic:"✂" },
+    { key:"worksheet", label:"Worksheet", ic:"☰" },
     { key:"products", label:"Products", ic:"▦" },
     { key:"reports", label:"Reports", ic:"▥" },
     { key:"users", label:"Users & access", ic:"◍" },
@@ -3307,6 +3385,91 @@ function viewCoupons(){
   </div>`;
 }
 
+/* ---------------- WORKSHEET ----------------
+   The salesperson's Purchase Proposal: a blank two-page form (front + Deal summary back) printed
+   for the sales floor. Nothing is filled in or saved here; the dealership's name, address, logo and
+   brand colours come from Dealership settings. */
+var WS_FEES = [["Security & safety package", 599], ["Tire & road hazard", 799], ["Air tax & OTSF", null], ["OMVIC fee", null], ["", null], ["", null]];
+var WS_ACCEPT = "By signing, I/we accept the terms marked on this proposal (both sides) and ask the dealer to prepare a bill of sale on exactly these terms. I/We understand this proposal is <b>not a bill of sale</b>: the bill of sale signed by me/us and the dealer is the binding contract, and it will show the all-in price with every fee itemized, plus HST and licensing. Any deposit paid is refundable if a bill of sale is not signed. Changes are valid only if initialled by me/us and the dealer.";
+function wsHeader(title, page){
+  var cfg = state.config, b = V.brand();
+  var logo = cfg.logo && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(cfg.logo) ? cfg.logo : null;
+  var addr = [[cfg.address, cfg.city].filter(Boolean).join(", "), cfg.phone].filter(Boolean).join(" · ");
+  return `<div class="ws-hd">
+      <div class="ws-brand">${logo ? `<img class="ws-logo" src="${esc(logo)}" alt="">` : ""}
+        <div><div class="ws-dn">${esc(cfg.name || b.label)}</div><div class="ws-addr">${esc(addr)}</div></div></div>
+      <div class="ws-ttl"><b>${esc(title)}</b><span>Page ${page} of 2</span></div></div>
+    <div class="ws-rule"></div>`;
+}
+function wsFront(){
+  var cfg = state.config;
+  var fees = WS_FEES.map(function(f){
+    return `<tr class="ws-inc"><td>${f[0] ? esc(f[0]) : `<i class="ws-wl"></i>`}</td><td class="ws-a">${f[1] === null ? "" : money(f[1])}</td></tr>`; }).join("");
+  var opt = function(kind, n){
+    var lease = kind === "Lease";
+    return `<div class="ws-op ${lease ? "ls" : ""}"><div class="ws-oph">${kind} option ${n}<span class="ws-pk"></span></div>
+      <div class="ws-opb"><div class="ws-d">Term ____ mo · Down $________${lease ? "<br>________ km / year" : ""}</div>
+        <div class="ws-pl"><b>$</b><i></i><small>per ☐ mo ☐ 2 wks</small></div></div></div>`; };
+  return `<div class="ws-sheet">${wsHeader("Purchase Proposal", 1)}
+    <div class="ws-meta"><div class="ws-box"><span>Date</span></div><div class="ws-box"><span>Sales consultant</span></div><div class="ws-box"><span>DMS #</span></div></div>
+    <div class="ws-hero">
+      <div class="ws-cu"><div class="ws-lbl">Prepared for</div><div class="ws-wline"></div>
+        <div class="ws-sm">Address ________________________________<br>Phone ______________ Email ______________</div>
+        <div class="ws-chips"><span>☐ 1st time</span><span>☐ Be-back</span><span>☐ Repeat</span><span>☐ Referral</span><span>☐ Test drive</span></div></div>
+      <div class="ws-ve"><div class="ws-lbl">Your vehicle · ☐ New ☐ Used</div><div class="ws-wline"></div>
+        <div class="ws-sm">Model code ________ Colours ________________ Stock ________</div>
+        <div class="ws-chips"><span>3 Yr Basic Limited Warranty</span><span>5 Yr Basic Powertrain Warranty</span></div></div></div>
+    <div class="ws-cols">
+      <div>
+        <div class="ws-sec">Price</div>
+        <table class="ws-p">
+          <tr><td>MSRP</td><td class="ws-a"></td></tr><tr><td>Options</td><td class="ws-a"></td></tr><tr><td>Freight &amp; PDI</td><td class="ws-a"></td></tr>
+          <tr class="ws-h2"><td colspan="2">Dealer-installed options &amp; fees</td></tr>${fees}
+          <tr class="ws-st"><td>All-in price</td><td class="ws-a"></td></tr>
+          <tr><td>Trade-in allowance</td><td class="ws-a">−</td></tr><tr><td>Lien payout</td><td class="ws-a"></td></tr>
+          <tr><td>HST (${esc(cfg.tax && cfg.tax.standard != null ? cfg.tax.standard : 13)}%)</td><td class="ws-a"></td></tr><tr><td>Licensing</td><td class="ws-a"></td></tr>
+          <tr><td>Cash down</td><td class="ws-a">−</td></tr></table>
+        <div class="ws-bal"><span>Balance</span><b>$</b></div>
+        <div class="ws-trade"><div class="ws-sec" style="margin:0">Trade-in</div>
+          <div class="ws-tg"><div><span>Year · make · model</span><b></b></div><div><span>Kilometres</span><b></b></div>
+            <div><span>VIN</span><b></b></div><div><span>Colour</span><b></b></div>
+            <div><span>Lien holder</span><b></b></div><div><span>Lien amount $</span><b></b></div></div>
+          <div class="ws-yn"><span>Accident <em>Yes</em><em>No</em></span><span>Ext. warranty <em>Yes</em><em>No</em></span><span>Protection <em>Yes</em><em>No</em></span></div></div>
+      </div>
+      <div>
+        <div class="ws-sec">Your options</div>
+        <div class="ws-ops">${opt("Finance", 1)}${opt("Finance", 2)}${opt("Lease", 1)}${opt("Lease", 2)}</div>
+        <div class="ws-howto">Payments include HST, on approved credit. Tick the option you'd like and initial: ________</div>
+        <div class="ws-notes"><div class="ws-sec">Notes</div><div class="ws-ln"></div><div class="ws-ov">Final agreed terms are recorded on page 2</div></div>
+      </div></div>
+    <div class="ws-acc"><h4>Acceptance of terms</h4><p>${WS_ACCEPT}</p></div>
+    <div class="ws-sig"><div>Customer signature</div><div>Sales consultant</div><div>Sales manager</div><div>Date</div></div>
+    <div class="ws-ft"><span>${esc(cfg.name || "")}</span><span>Rates subject to lender approval</span></div></div>`;
+}
+function wsBack(){
+  var cfg = state.config;
+  return `<div class="ws-sheet">${wsHeader("Deal Summary", 2)}
+    <div class="ws-meta"><div class="ws-box"><span>Customer</span></div><div class="ws-box"><span>Vehicle · stock #</span></div><div class="ws-box"><span>DMS #</span></div></div>
+    <div class="ws-sec" style="margin-top:12pt">Notes</div><div class="ws-plain"></div>
+    <div class="ws-final"><h4>Final agreed terms</h4>
+      <div class="ws-fg"><div><span>All-in price $</span><b></b></div><div><span>Trade allowance $</span><b></b></div><div><span>Down payment $</span><b></b></div><div><span>Balance $</span><b></b></div>
+        <div><span>Payment $</span><b></b></div><div><span>Term (months)</span><b></b></div><div><span>Frequency</span><b></b></div><div><span>Lease km / yr</span><b></b></div></div>
+      <div class="ws-ch">Based on: ☐ Finance option 1 &nbsp; ☐ Finance option 2 &nbsp; ☐ Lease option 1 &nbsp; ☐ Lease option 2</div></div>
+    <div class="ws-acc"><h4>Acceptance of terms</h4><p>${WS_ACCEPT.replace("the terms marked on this proposal (both sides)", "the final agreed terms above")}</p></div>
+    <div class="ws-sig"><div>Customer signature</div><div>Sales consultant</div><div>Sales manager</div><div>Date · time</div></div>
+    <div class="ws-ft"><span>${esc(cfg.name || "")}</span><span>Page 2 of 2 · Read together with page 1</span></div></div>`;
+}
+function wsDoc(){ var ink = couponInk(); return `<div class="ws-doc" style="--ws-dk:${ink.dk};--ws-hl:${ink.hl};--ws-a:${ink.a};--ws-b:${ink.b}">${wsFront()}${wsBack()}</div>`; }
+function viewWorksheet(){
+  var hasLogo = !!(state.config.logo && /^data:image\//.test(state.config.logo));
+  return `<div class="card"><div class="card-h"><h2>Purchase Proposal worksheet</h2>
+      <div class="sp"><button class="btn primary" data-act="ws-print">Print worksheet</button></div></div>
+    <div class="card-b">
+      <p class="muted small" style="margin:0 0 6px;max-width:80ch">A blank two-page form for the sales floor: the proposal on the front and the deal summary on the back. Print it <strong>double-sided on letter paper</strong>. Nothing is saved.</p>
+      ${hasLogo ? "" : `<div class="notice info" style="margin:8px 0 0">No dealership logo yet, so the worksheet shows the dealership name on its own. ${V.isAdmin() ? `Upload one in <a href="#" data-act="route" data-route="settings">Dealership settings</a>.` : "Your General Manager can upload one in Dealership settings."}</div>`}
+      <div class="ws-prev">${wsDoc()}</div></div></div>`;
+}
+
 /* ---------------- USERS ---------------- */
 /* Users & access: a clean list; clicking a person opens their user card, where every change to
    that account is made (role, dealership, what they can use, Pulse, password, status). */
@@ -4086,7 +4249,12 @@ function emailModal(){
 }
 function printModal(){
   var m = state.ui.modal;
-  if (!m || (m.kind !== "internal" && m.kind !== "customer" && m.kind !== "cashadv" && m.kind !== "coupon")) return "";
+  if (!m || (m.kind !== "internal" && m.kind !== "customer" && m.kind !== "cashadv" && m.kind !== "coupon" && m.kind !== "worksheet")) return "";
+  if (m.kind === "worksheet") return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal wide">
+    <div class="modal-h"><h2>Purchase Proposal · print double-sided on letter</h2>
+      <div class="sp"><button class="btn" data-act="close-modal">Close</button>
+      <button class="btn primary" data-act="do-print">Print</button></div></div>
+    <div class="modal-b">${wsDoc()}</div></div></div>`;
   if (m.kind === "coupon") return `<div class="modal-bg" data-act="close-modal-bg"><div class="modal wide">
     <div class="modal-h"><h2>Coupon · ${couponState().copies === 3 ? "3 per A4 sheet" : "1 on A4"}</h2>
       <div class="sp"><button class="btn" data-act="close-modal">Close</button>
@@ -5014,6 +5182,7 @@ function routeView(){
     case "finance": return V.viewFinance();
     case "cashadv": return viewCashAdv();
     case "coupons": return viewCoupons();
+    case "worksheet": return viewWorksheet();
     case "products": return viewProducts();
     case "reports": return viewReports();
     case "users": return viewUsers();
@@ -6031,6 +6200,7 @@ document.addEventListener("click", function(ev){
     case "ca-invest": caState.invest = el.getAttribute("data-inv"); render(); break;
     case "ca-clear": caState = caBlank(); render(); break;
     case "cp-add": couponAddProduct(); break;
+    case "ws-print": state.ui.modal = { kind:"worksheet" }; commit(); break;
     case "user-card": state.ui.userCard = el.getAttribute("data-user"); commit(); break;
     case "user-card-close": state.ui.userCard = null; commit(); break;
     case "dealer-logo-remove": if (V.isAdmin()){ delete state.config.logo; toast("Logo removed.","ok"); commit(); } break;
@@ -6239,7 +6409,8 @@ document.addEventListener("click", function(ev){
       state.ui.modal = null; state.ui.productEdit = null; state.ui.userForm = false; state.ui.dealerForm = null; state.ui.extendForm = null; state.ui.pwReset = null; commit(); break;
     case "do-print": {
       var oldTitle = document.title, pm = state.ui.modal;
-      document.title = pm && pm.kind === "coupon" ? "Coupon " + couponState().code + (couponState().name.trim() ? " - " + couponState().name.trim() : "")
+      document.title = pm && pm.kind === "worksheet" ? "Purchase Proposal - " + (state.config.name || "Worksheet")
+        : pm && pm.kind === "coupon" ? "Coupon " + couponState().code + (couponState().name.trim() ? " - " + couponState().name.trim() : "")
         : pm && pm.kind === "cashadv" ? "Cash vs Finance Comparison" + (caState && caState.customer.trim() ? " - " + caState.customer.trim() : "")
         : (pm && pm.kind === "customer" ? "Protection Summary" : "Transaction Record") + (state.tx && state.tx.customer.name ? " - " + state.tx.customer.name : "");
       try { window.print(); } catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); }
