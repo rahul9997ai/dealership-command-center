@@ -267,6 +267,7 @@ table.ws-p tr.ws-st td{font-weight:700;border-bottom:1pt solid #1b2130}
   .ws-sig{margin-top:12pt}
 }
 /* Cash Conversion: summary strip, extra cards, presets */
+.ca-in input::placeholder{color:var(--muted);opacity:.6;font-style:italic}
 .ca-sum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-bottom:12px}
 .ca-sum > div{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
 .ca-sum span{display:block;font-size:11.5px;color:var(--muted)}
@@ -4905,9 +4906,10 @@ function caDuration(p, ppy){
 }
 function caField(label, key, opts){
   opts = opts || {};
-  var v = caState[key];
+  var v = caState[key], ph = opts.ph || "";
+  if (/^[\d.,]+$/.test(ph) && ph !== "0") ph = "e.g. " + ph;
   return `<label class="f"><span>${label}</span>
-    <div class="ca-in">${opts.pre ? `<i>${opts.pre}</i>` : ""}<input type="text" inputmode="decimal" data-ca="${key}" value="${esc(v)}" placeholder="${esc(opts.ph || "")}" autocomplete="off">${opts.post ? `<i>${opts.post}</i>` : ""}</div>
+    <div class="ca-in">${opts.pre ? `<i>${opts.pre}</i>` : ""}<input type="text" inputmode="decimal" data-ca="${key}" value="${esc(v)}" placeholder="${esc(ph)}" autocomplete="off">${opts.post ? `<i>${opts.post}</i>` : ""}</div>
     ${opts.hint ? `<small class="muted tiny">${opts.hint}</small>` : ""}</label>`;
 }
 
