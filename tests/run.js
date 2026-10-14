@@ -195,7 +195,7 @@ eq("custom brand name", C.brandOfDealer({ brandKey: "custom", customBrandName: "
 eq("header override", C.brandOfDealer({ brandKey: "ford", headerTitle: "Ford Credit Canada" }).finLabel, "FORD CREDIT CANADA");
 eq("Subaru exists", !!D.BRANDS.subaru, true);
 
-/* --- Cash Advantage: cash vs finance & invest, line of credit --- */
+/* --- Cash Conversion: cash vs finance & invest, line of credit --- */
 {
   const base = { amount: 45000, apr: 1.99, term: 60, lost: 0, years: 5 };
   const gic = C.cashAdvantage(Object.assign({}, base, { invest: "gic", rate: 3.5 }));

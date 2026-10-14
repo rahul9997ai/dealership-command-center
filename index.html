@@ -967,7 +967,7 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 }
 @media (max-width:520px){ .axiom-word{font-size:42px} .axiom-slogan{font-size:24px} .axiom-page{padding:32px 18px} }
 
-/* ---- Cash Advantage: customer printout ---- */
+/* ---- Cash Conversion: customer printout ---- */
 .doc.pv{padding:0;overflow:hidden;font-size:12px;line-height:1.45;color:#1a2233}
 @media screen{ .doc.pv{min-width:760px} .modal-b:has(.doc.pv){overflow-x:auto} }
 .pv-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:20px 28px;background:linear-gradient(120deg,var(--pv-deep),var(--pv-base));color:#fff}
@@ -1033,7 +1033,7 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
   .doc.pv .pv-two,.doc.pv .pv-facts,.doc.pv .pv-reasons,.doc.pv > .pv-chartcard{margin-top:10px}
   .doc.pv .ca-ytable th,.doc.pv .ca-ytable td{padding:3px 6px;font-size:9.5px}
 }
-/* ---- Cash Advantage: customer screen ---- */
+/* ---- Cash Conversion: customer screen ---- */
 .cx{min-height:100vh;background:radial-gradient(1200px 600px at 85% -10%,var(--cd-surface-3),transparent 60%),var(--cd-surface);color:var(--cd-text);font-feature-settings:"tnum" 1}
 .cx .cx-ic{width:22px;height:22px;flex:0 0 22px}
 .cx-head{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:18px clamp(18px,3vw,48px);border-bottom:1px solid var(--cd-border);background:var(--cd-surface-2)}
@@ -1108,7 +1108,7 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 .cx-foot p{margin:0;line-height:1.5;max-width:1400px}
 @media (max-width:1000px){ .cx-hero,.cx-row,.cx-row.loc{grid-template-columns:minmax(0,1fr)} .cx-tiles{grid-template-columns:repeat(2,minmax(0,1fr))} .cx-tile.cx-win{grid-column:1 / -1} .cx-reasons{grid-template-columns:repeat(2,minmax(0,1fr))} }
 @media (max-width:600px){ .cx-plans,.cx-reasons{grid-template-columns:minmax(0,1fr)} .cx-head{flex-direction:column;align-items:flex-start} .cx-meta{text-align:left} }
-/* ---- Cash Advantage ---- */
+/* ---- Cash Conversion ---- */
 .ca-tabs{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
 .ca-tabs .sp{margin-left:auto;display:flex;gap:8px;flex-wrap:wrap}
 .ca-grid{display:grid;grid-template-columns:minmax(300px,380px) minmax(0,1fr);gap:14px;align-items:start}
@@ -1722,7 +1722,7 @@ function dealSig(d){
 }
 
 
-/* ---------------- CASH ADVANTAGE (cash-to-finance comparison) ----------------
+/* ---------------- CASH CONVERSION (cash-to-finance comparison) ----------------
    Calendar-year total returns in CAD, 1990–2025.
    S&P 500: total return in USD (Damodaran, NYU Stern) converted to CAD with
    December USD/CAD averages (Federal Reserve EXCAUS).
@@ -2064,7 +2064,7 @@ function allDeals(){ return state.history.concat(state.completed); }
    (config.fmAccess[userId][feature] === false = off; anything missing = on).
    Promotional offers also honour the older Dealership-settings choice (config.offerAccess). */
 var FM_FEATURES = [
-  { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Advantage" }, { key:"coupons", label:"Coupons" },
+  { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Conversion" }, { key:"coupons", label:"Coupons" },
   { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" }
 ];
 function featureOn(u, key){
@@ -2106,7 +2106,7 @@ function navItems(){
   var items = [
     { key:"dashboard", label:"Dashboard", ic:"▤" },
     { key:"finance", label:"Finance", ic:"◧" },
-    { key:"cashadv", label:"Cash Advantage", ic:"$" },
+    { key:"cashadv", label:"Cash Conversion", ic:"$" },
     { key:"coupons", label:"Coupons", ic:"✂" },
     { key:"worksheet", label:"Worksheet", ic:"☰" },
     { key:"products", label:"Products", ic:"▦" },
@@ -2341,7 +2341,7 @@ function colorMode(cfg){
   return /^#[0-9a-f]{6}$/i.test(cfg.brandColor || "") ? "custom" : "brand";
 }
 function customColor(){ var c = (state.config || {}).brandColor; return colorMode() === "custom" && /^#[0-9a-f]{6}$/i.test(c || "") ? c : null; }
-/* Colours for the printed customer copy, the email and the Cash Advantage printout: a band
+/* Colours for the printed customer copy, the email and the Cash Conversion printout: a band
    (header gradient, white text on it) and a hue for headings and ticks that reads on white. */
 function brandInk(){
   var W = "#ffffff", K = "#0a1220", cc = customColor(), pal = cc ? null : brand().pal;
@@ -3467,6 +3467,32 @@ function wsBack(){
     <div class="ws-ft"><span>${esc(cfg.name || "")}</span><span>Page 2 of 2 · Read together with page 1</span></div></div>`;
 }
 function wsDoc(){ var ink = couponInk(); return `<div class="ws-doc" style="--ws-dk:${ink.dk};--ws-hl:${ink.hl};--ws-a:${ink.a};--ws-b:${ink.b}">${wsFront()}${wsBack()}</div>`; }
+/* Print from a hidden frame holding only the two sheets: none of the app's own print rules or overlays
+   can add a page, whatever the browser or printer. */
+function wsPrint(title){
+  var css = [];
+  Array.prototype.forEach.call(document.styleSheets, function(sh){
+    try { Array.prototype.forEach.call(sh.cssRules, function(r){ if (/\.ws-|@page ws/.test(r.cssText) && !/#overlay|modal/.test(r.cssText)) css.push(r.cssText); }); } catch (e) {}
+  });
+  var fonts = Array.prototype.map.call(document.querySelectorAll('link[href*="fonts.googleapis.com"]'), function(l){ return l.outerHTML; }).join("");
+  var html = '<!doctype html><html><head><meta charset="utf-8"><title>' + esc(title) + '</title>' + fonts +
+    '<style>@page{size:letter;margin:0}html,body{margin:0;padding:0;background:#fff}' + css.join("\n") +
+    '.ws-sheet{height:10.95in;box-shadow:none;border-radius:0}.ws-sig{margin-top:12pt}</style></head><body>' + wsDoc() + '</body></html>';
+  var old = document.getElementById("ws-print-frame"); if (old) old.remove();
+  var fr = document.createElement("iframe");
+  fr.id = "ws-print-frame"; fr.setAttribute("aria-hidden", "true"); fr.tabIndex = -1;
+  fr.style.cssText = "position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden";
+  document.body.appendChild(fr);
+  var doc = fr.contentDocument; doc.open(); doc.write(html); doc.close();
+  var imgs = Array.prototype.map.call(doc.images, function(i){ return i.decode ? i.decode().catch(function(){}) : null; });
+  var fontsReady = doc.fonts && doc.fonts.ready ? doc.fonts.ready : Promise.resolve();
+  Promise.all(imgs.concat([fontsReady])).then(function(){
+    setTimeout(function(){
+      try { fr.contentWindow.focus(); fr.contentWindow.print(); }
+      catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); }
+    }, 150);
+  });
+}
 function viewWorksheet(){
   var hasLogo = !!(state.config.logo && /^data:image\//.test(state.config.logo));
   return `<div class="card"><div class="card-h"><h2>Purchase Proposal worksheet</h2>
@@ -3533,7 +3559,7 @@ function viewUsers(){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.5</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.6</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -3851,7 +3877,7 @@ function viewSettings(){
         ${state.config.logo ? `<button type="button" class="btn danger" data-act="dealer-logo-remove" ${dis}>Remove</button>` : ""}</div></div>
     </div></div>
     <div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
-      <p class="muted small" style="max-width:66ch">Used on the customer display, the full-screen view, the pop-out window, the printed customer copy, the Cash Advantage printout and the emailed package. Works in light and dark mode.</p>
+      <p class="muted small" style="max-width:66ch">Used on the customer display, the full-screen view, the pop-out window, the printed customer copy, the Cash Conversion printout and the emailed package. Works in light and dark mode.</p>
       ${(function(){
         var mode = V.colorMode(), pal = b.pal;
         var seg = `<div class="color-mode" role="group" aria-label="Colour scheme">
@@ -4540,7 +4566,7 @@ function renderLogin(){
   return axLanding(card);
 }
 
-/* ---------------- CASH ADVANTAGE ----------------
+/* ---------------- CASH CONVERSION ----------------
    Helps a Finance Manager show a cash buyer, honestly, what financing and
    investing the cash would do. Kept out of `state` on purpose: it is never
    saved or synced and starts blank every time the app loads. */
@@ -6120,7 +6146,7 @@ function sendEmail(){
 }
 
 /* ---------------- EVENTS ---------------- */
-/* Cash Advantage fields update the comparison as the FM types (lightly debounced). */
+/* Cash Conversion fields update the comparison as the FM types (lightly debounced). */
 var caTimer = null;
 function caFieldEvent(ev){
   var el = ev.target, k = el && el.getAttribute && el.getAttribute("data-ca");
@@ -6420,6 +6446,7 @@ document.addEventListener("click", function(ev){
         : pm && pm.kind === "coupon" ? "Coupon " + couponState().code + (couponState().name.trim() ? " - " + couponState().name.trim() : "")
         : pm && pm.kind === "cashadv" ? "Cash vs Finance Comparison" + (caState && caState.customer.trim() ? " - " + caState.customer.trim() : "")
         : (pm && pm.kind === "customer" ? "Protection Summary" : "Transaction Record") + (state.tx && state.tx.customer.name ? " - " + state.tx.customer.name : "");
+      if (pm && pm.kind === "worksheet"){ wsPrint(document.title); setTimeout(function(){ document.title = oldTitle; }, 1500); break; }
       try { window.print(); } catch (e) { toast("The browser blocked printing. Try again, or use your browser's Print command.","err"); }
       setTimeout(function(){ document.title = oldTitle; }, 1500);
       break; }
