@@ -6,7 +6,7 @@
 <title>AXIOM Dealership Command Center</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Pinyon+Script&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Montserrat:wght@600;700;800&family=Pinyon+Script&display=swap" rel="stylesheet">
 <style>
 /* ---- light (normal) mode: white + blue ---- */
 :root{
@@ -182,6 +182,11 @@ tbody tr:hover{background:var(--surface-2)}
 .need{border-color:var(--danger) !important;box-shadow:0 0 0 3px var(--danger-bg) !important}
 .choice-row.need,.mg-row.need,.chiprow.need{border-radius:12px}
 .confirm-a{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:18px}
+/* Dealership settings: logo */
+.logo-up{display:flex;gap:14px;align-items:center;flex-wrap:wrap;margin-top:6px}
+.logo-prev{width:200px;height:72px;border:1px dashed var(--border-strong);border-radius:10px;display:flex;align-items:center;justify-content:center;background:#fff;padding:8px}
+.logo-prev img{max-width:100%;max-height:100%;object-fit:contain}
+.logo-prev.empty{color:#8b93a3;font-size:12px;background:var(--surface-2)}
 /* Users & access: what each Finance Manager can use */
 .feat-row{display:flex;gap:5px;flex-wrap:wrap;max-width:330px}
 .feat{border:1px solid var(--border-strong);background:var(--surface);color:var(--muted);border-radius:999px;padding:3px 9px;font:inherit;font-size:11.5px;cursor:pointer;text-decoration:line-through}
@@ -205,39 +210,41 @@ tbody tr:hover{background:var(--surface-2)}
 .cpf-go{display:flex;justify-content:flex-end;gap:8px}
 .cp-prev{overflow-x:auto;padding:4px}
 .cp-prev .cp{box-shadow:0 8px 30px rgba(10,20,40,.18);margin:0 auto}
-/* The coupon: DL, 210 x 99 mm, one-sided */
-.cp{position:relative;width:210mm;height:99mm;overflow:hidden;background:#ffffff;color:#1b2233;font-family:Inter,"Segoe UI",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
+/* The coupon: DL, 210 x 99 mm, one-sided ("Header bar" design) */
+.cp{position:relative;width:210mm;height:99mm;overflow:hidden;background:#ffffff;color:#1d2433;font-family:Inter,"Segoe UI",Arial,sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
 .cp *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
-.cp-art{position:absolute;top:0;right:0;bottom:0;width:70mm;clip-path:polygon(16mm 0,100% 0,100% 100%,0 100%)}
+.cp-hdr{position:absolute;left:0;right:0;top:0;height:16mm;display:flex;align-items:center;padding:0 8mm;border-bottom:.28mm solid #e3e7ed;background:#fff;z-index:2}
+.cp-logo{max-height:10mm;max-width:42mm;object-fit:contain;display:block;margin-right:4mm}
+.cp-dn{padding-left:4mm;border-left:.28mm solid #cfd5df;line-height:1.35}
+.cp-dn.solo{padding-left:0;border-left:0}
+.cp-dn b{display:block;font-family:Montserrat,Inter,Arial,sans-serif;font-size:2.6mm;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--cp-dk)}
+.cp-dn.solo b{font-size:3.6mm}
+.cp-dn span{display:block;font-size:1.8mm;letter-spacing:.18em;text-transform:uppercase;color:#6b7383}
+.cp-cd{margin-left:auto;text-align:right;line-height:1.25}
+.cp-cd span{display:block;font-size:1.7mm;letter-spacing:.22em;text-transform:uppercase;color:#6b7383;font-weight:600}
+.cp-cd b{display:block;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:3.3mm;font-weight:700;letter-spacing:.06em;color:var(--cp-dk)}
+.cp-art{position:absolute;right:0;top:16mm;width:58mm;height:28.5mm;clip-path:polygon(14mm 0,100% 0,100% 100%,0 100%)}
 .cp-art svg{width:100%;height:100%;display:block}
-.cp-code{position:absolute;top:4.5mm;right:4.5mm;z-index:3;background:rgba(255,255,255,.94);border:.35mm dashed var(--cp-a);border-radius:2mm;padding:1.6mm 2.6mm;text-align:right;line-height:1.15}
-.cp-code span{display:block;font-size:1.9mm;letter-spacing:.18em;text-transform:uppercase;color:#5d6573;font-weight:700}
-.cp-code b{display:block;font-family:ui-monospace,Consolas,"Courier New",monospace;font-size:3.6mm;letter-spacing:.05em;color:var(--cp-a)}
-.cp-code i{display:block;font-style:normal;font-size:1.9mm;color:#3a4252;font-weight:600;margin-top:.5mm}
-.cp-top{position:absolute;left:8mm;top:6mm;width:120mm}
-.cp-dn{font-size:4.6mm;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-a);line-height:1.05;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cp-br{font-size:2mm;letter-spacing:.2em;text-transform:uppercase;color:#6b7383;margin-top:.8mm}
-.cp-hd{position:absolute;left:8mm;top:17mm;width:128mm}
-.cp-h1{font-size:9.6mm;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--cp-a);line-height:1}
-.cp-h2{font-size:3.6mm;letter-spacing:.24em;text-transform:uppercase;color:#5d6573;margin-top:1mm}
-.cp-h3{display:flex;align-items:center;gap:2.5mm;font-size:3.2mm;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cp-a);margin-top:2mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.cp-h3 i{flex:0 0 auto;width:13mm;height:.7mm;background:var(--cp-h);border-radius:1mm}
-.cp-band{position:absolute;left:0;top:44mm;width:166mm;height:24mm;display:flex;align-items:center;gap:4mm;padding:0 14mm 0 8mm;color:#fff;background:linear-gradient(105deg,var(--cp-a),var(--cp-b));clip-path:polygon(0 0,100% 0,calc(100% - 9mm) 100%,0 100%)}
-.cp-amt{display:flex;align-items:baseline;gap:2mm;white-space:nowrap}
-.cp-amt b{font-size:17mm;font-weight:900;letter-spacing:-.02em;line-height:1}
-.cp-amt span{font-size:7.5mm;font-weight:900;text-transform:uppercase}
-.cp-sep{width:.35mm;align-self:stretch;margin:4mm 0;background:rgba(255,255,255,.55)}
-.cp-prod{text-transform:uppercase;letter-spacing:.08em;line-height:1.22;font-weight:600;min-width:0}
-.cp-prod div{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.cp-ben{position:absolute;left:8mm;top:70.5mm;width:132mm;display:flex;gap:3mm;padding:1.6mm 3mm;border-radius:1.5mm;background:#f2f4f8}
-.cp-ben div{flex:1;display:flex;align-items:center;gap:2mm;font-size:2.15mm;letter-spacing:.1em;text-transform:uppercase;color:#3a4252;line-height:1.25}
-.cp-ben svg{width:6mm;height:6mm;color:var(--cp-a);flex:0 0 auto}
-.cp-ben div + div{border-left:.3mm solid #cfd5df;padding-left:3mm}
-.cp-sign{position:absolute;left:8mm;right:74mm;top:85mm;display:grid;grid-template-columns:1.25fr 1.25fr .8fr;gap:5mm}
-.cp-sign div{border-top:.3mm solid #8b93a3;padding-top:.8mm;position:relative}
-.cp-sign b{position:absolute;bottom:calc(100% + .6mm);left:0;font-size:3mm;font-weight:600;color:#1b2233;white-space:nowrap}
-.cp-sign span{font-size:1.9mm;letter-spacing:.18em;text-transform:uppercase;color:#6b7383}
-.cp-foot{position:absolute;left:8mm;right:74mm;bottom:1.8mm;font-size:1.8mm;color:#8b93a3;letter-spacing:.04em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-h1{position:absolute;left:8mm;top:21mm;font-family:Montserrat,Inter,Arial,sans-serif;font-size:3mm;font-weight:700;letter-spacing:.3em;text-transform:uppercase;color:#6b7383}
+.cp-nm{position:absolute;left:8mm;right:64mm;top:25mm;height:11mm;display:flex;align-items:center;font-family:Montserrat,Inter,Arial,sans-serif;font-weight:800;letter-spacing:.02em;text-transform:uppercase;color:var(--cp-dk);line-height:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-h2{position:absolute;left:8mm;right:64mm;top:37.5mm;font-family:Montserrat,Inter,Arial,sans-serif;font-size:2.7mm;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:#1d2433;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-h2 b{color:var(--cp-hl)}
+.cp-band{position:absolute;left:0;right:0;top:44.5mm;height:22mm;background:linear-gradient(90deg,var(--cp-a),var(--cp-b));display:flex;align-items:center;padding:0 8mm;color:#fff;gap:5mm;font-family:Montserrat,Inter,Arial,sans-serif}
+.cp-band::after{content:"";position:absolute;left:0;right:0;bottom:0;height:.9mm;background:var(--cp-hl)}
+.cp-amt{font-size:15mm;font-weight:800;line-height:1;white-space:nowrap}
+.cp-off{font-size:6.5mm;font-weight:800;margin-left:-2.5mm;margin-top:2.5mm;text-transform:uppercase}
+.cp-vr{width:.3mm;align-self:stretch;margin:4.5mm 0;background:rgba(255,255,255,.45);flex:0 0 auto}
+.cp-pl{flex:1;min-width:0;font-weight:600;letter-spacing:.1em;text-transform:uppercase;line-height:1.4}
+.cp-pl div{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cp-valid{font-size:2.1mm;font-weight:600;letter-spacing:.14em;text-transform:uppercase;text-align:right;line-height:1.5;color:rgba(255,255,255,.88);white-space:nowrap}
+.cp-ben{position:absolute;left:8mm;right:8mm;top:70mm;display:flex}
+.cp-ben div{flex:1;display:flex;align-items:center;gap:2.2mm;font-size:2.1mm;letter-spacing:.12em;text-transform:uppercase;color:#3a4252}
+.cp-ben div + div{border-left:.28mm solid #cfd5df;padding-left:3.5mm}
+.cp-ben svg{width:5.6mm;height:5.6mm;color:var(--cp-dk);flex:0 0 auto}
+.cp-sign{position:absolute;left:8mm;right:8mm;top:87mm;display:grid;grid-template-columns:1.3fr 1.3fr .8fr;gap:6mm}
+.cp-sign div{border-top:.28mm solid #9aa1ad;padding-top:.9mm;font-size:1.9mm;letter-spacing:.2em;text-transform:uppercase;color:#6b7383;position:relative}
+.cp-sign b{position:absolute;left:0;bottom:calc(100% + .7mm);font-size:3mm;letter-spacing:.02em;text-transform:none;color:#1d2433;font-weight:600;white-space:nowrap}
+.cp-ft{position:absolute;left:8mm;right:8mm;bottom:2mm;font-size:1.75mm;color:#9aa1ad;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .cp-sheet{width:210mm;max-height:297mm;overflow:hidden;margin:0 auto;background:#fff}
 .cp-cut{position:relative;height:0}
 .cp-cut::before{content:"";position:absolute;left:0;right:0;top:-.13mm;border-top:.25mm dashed #9aa3b2}
@@ -2837,7 +2844,7 @@ function viewFinance(){
     <div><div class="stack"><div class="cv-row">${customerCard}${vehicleCard}</div>${financeCard}${productsCard}${offersCard}${packageCard}</div></div></div>`;
 }
 
-window.__DCC_VIEW1__ = { state:state, brand:brand, cdThemeStyle:cdThemeStyle, brandInk:brandInk, colorMode:colorMode, hexLum:hexLum, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
+window.__DCC_VIEW1__ = { state:state, brand:brand, cdThemeStyle:cdThemeStyle, brandInk:brandInk, colorMode:colorMode, hexLum:hexLum, readableOn:readableOn, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
   isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, canUseOffers:canUseOffers, featureOn:featureOn, FM_FEATURES:FM_FEATURES, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
@@ -3170,63 +3177,60 @@ function couponState(){
 }
 function couponAmount(cp){ var n = parseFloat(String(cp.amount || "").replace(/[$,\s]/g, "")); return isNaN(n) || n <= 0 ? null : n; }
 function couponArt(ink){
-  /* A modern showroom, light streaks and an SUV silhouette in the brand's colours. */
-  var A = ink.bandA, B = ink.bandB, H = ink.hue;
-  return `<svg viewBox="0 0 300 400" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
-    <defs><linearGradient id="cpSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#eef3f9"/><stop offset=".62" stop-color="#d9e2ee"/><stop offset="1" stop-color="#b8c4d4"/></linearGradient>
-      <linearGradient id="cpGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="${B}"/><stop offset="1" stop-color="${A}"/></linearGradient>
-      <linearGradient id="cpCar" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${V.mixHex(A, "#ffffff", .12)}"/><stop offset="1" stop-color="${V.mixHex(A, "#000000", .35)}"/></linearGradient></defs>
-    <rect width="300" height="400" fill="url(#cpSky)"/>
-    <path d="M40 70 L300 30 L300 290 L40 290 Z" fill="url(#cpGlass)"/>
-    <path d="M40 70 L300 30 L300 52 L40 88 Z" fill="${V.mixHex(A, "#000000", .3)}"/>
-    ${[0,1,2,3,4,5].map(function(i){ var x = 62 + i * 40; return `<path d="M${x} ${99 - i * 6} L${x} 290" stroke="#ffffff" stroke-opacity=".28" stroke-width="2"/>`; }).join("")}
-    ${[0,1,2].map(function(i){ var y = 140 + i * 50; return `<path d="M40 ${y} L300 ${y - 34}" stroke="#ffffff" stroke-opacity=".22" stroke-width="2"/>`; }).join("")}
-    <path d="M58 104 L300 70 L300 74 L58 108 Z" fill="${H}" opacity=".9"/>
-    <rect x="0" y="290" width="300" height="110" fill="#c3ccd8"/>
-    <path d="M-10 318 C 90 300, 200 300, 320 290" stroke="#ffffff" stroke-opacity=".7" stroke-width="3" fill="none"/>
-    <path d="M-10 336 C 100 318, 210 316, 320 306" stroke="${H}" stroke-opacity=".55" stroke-width="2" fill="none"/>
-    <g transform="translate(36 262)">
-      <ellipse cx="118" cy="82" rx="118" ry="9" fill="#000" opacity=".22"/>
-      <path d="M6 64 C6 52 14 46 28 44 L62 40 L96 16 C102 12 110 10 120 10 L178 10 C190 10 198 14 206 22 L228 42 L244 46 C254 48 260 54 260 64 L260 72 C260 76 256 78 252 78 L10 78 C7 78 6 76 6 72 Z" fill="url(#cpCar)"/>
-      <path d="M100 22 C104 18 110 16 118 16 L148 16 L148 42 L76 42 Z" fill="#dfe8f3" opacity=".85"/>
-      <path d="M154 16 L178 16 C186 16 192 18 198 24 L216 42 L154 42 Z" fill="#dfe8f3" opacity=".85"/>
-      <path d="M14 56 L252 56" stroke="#ffffff" stroke-opacity=".35" stroke-width="2"/>
-      <circle cx="62" cy="76" r="17" fill="#1b1f27"/><circle cx="62" cy="76" r="8" fill="#9aa4b2"/>
-      <circle cx="204" cy="76" r="17" fill="#1b1f27"/><circle cx="204" cy="76" r="8" fill="#9aa4b2"/>
-      <path d="M244 52 L258 54" stroke="#ffffff" stroke-width="3" stroke-linecap="round"/>
-    </g>
+  /* A glass storefront: sky, curtain wall with a soft reflection, dark fascia with a brand stripe, pavement. */
+  return `<svg viewBox="0 0 200 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+    <defs><linearGradient id="cpSky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#cfdcea"/><stop offset="1" stop-color="#eef2f7"/></linearGradient>
+      <linearGradient id="cpGlass" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#a9bcd2"/><stop offset=".45" stop-color="#6d839e"/><stop offset="1" stop-color="#3b4a5e"/></linearGradient>
+      <linearGradient id="cpRefl" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".5" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></linearGradient></defs>
+    <rect width="200" height="110" fill="url(#cpSky)"/>
+    <path d="M0 26 L200 10 L200 110 L0 110 Z" fill="${ink.dk}"/>
+    <path d="M0 38 L200 24 L200 110 L0 110 Z" fill="url(#cpGlass)"/>
+    <g stroke="#e8eef5" stroke-opacity=".55" stroke-width=".9"><path d="M0 64 L200 54"/><path d="M0 90 L200 84"/>
+      <path d="M30 36 L30 110"/><path d="M62 34 L62 110"/><path d="M94 31 L94 110"/><path d="M126 29 L126 110"/><path d="M158 27 L158 110"/><path d="M190 25 L190 110"/></g>
+    <path d="M44 110 L104 32 L140 29 L80 110 Z" fill="url(#cpRefl)"/>
+    <path d="M0 31 L200 16 L200 19 L0 34 Z" fill="${ink.hl}"/>
   </svg>`;
 }
 function couponIcon(n){
-  var p = { shield:'<path d="M12 3l7.5 2.8v5.6c0 4.6-3.2 8.3-7.5 10-4.3-1.7-7.5-5.4-7.5-10V5.8z"/>',
-    car:'<path d="M5 16l1.5-5.5C7 9 8 8 9.5 8h5c1.5 0 2.5 1 3 2.5L19 16"/><path d="M4 16h16v3H4z"/><circle cx="7.5" cy="19" r="1.4"/><circle cx="16.5" cy="19" r="1.4"/>',
-    tools:'<path d="M14.5 5.5a3.5 3.5 0 004.6 4.6L13 16.2 7.8 11z"/><path d="M5 19l5-5"/><path d="M4 4l4 4"/>' }[n];
-  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  var p = { shield:'<path d="M12 3l7.5 2.8v5.6c0 4.6-3.2 8.3-7.5 10-4.3-1.7-7.5-5.4-7.5-10V5.8z"/><path d="M8.8 12l2.3 2.3 4.2-4.4"/>',
+    car:'<path d="M4.5 15.5l1.6-5c.4-1.2 1.4-2 2.7-2h6.4c1.3 0 2.3.8 2.7 2l1.6 5"/><rect x="3" y="15" width="18" height="4" rx="1.2"/><path d="M6 19v1.5M18 19v1.5"/>',
+    tools:'<path d="M14.7 6.3a4 4 0 005 5L13 18l-3-3z"/><path d="M4 20l6-6"/><path d="M4 4l5 5"/>' }[n];
+  return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+}
+/* Coupon colours from the dealership: the darker brand colour for the name and text (kept readable
+   on white), the vivid one for accents, and the band gradient. */
+function couponInk(){
+  var ink = V.brandInk(), W = "#ffffff", K = "#0a1220";
+  var dk = V.hexLum(ink.main) <= V.hexLum(ink.accent) ? ink.main : ink.accent;
+  dk = V.readableOn(dk, W, 7, K);
+  return { dk:dk, hl:ink.hue, a:ink.bandA, b:ink.bandB };
 }
 function couponHtml(cp){
-  var cfg = state.config, b = V.brand(), ink = V.brandInk();
+  var cfg = state.config, b = V.brand(), ink = couponInk();
   var amt = couponAmount(cp), list = couponProducts().filter(function(p){ return cp.chosen[p]; });
   var amtTxt = amt === null ? "$—" : (Math.round(amt) === amt ? money0(amt) : money(amt));
   var today = C.todayISO(), exp = cp.expiry || today;
-  var valid = exp === today ? "Valid today only · " + C.fmtDate(exp) : "Valid until " + C.fmtDate(exp);
-  var short = String(cfg.name || b.label);
+  var dealer = String(cfg.name || b.label);
   var addr = [cfg.address, cfg.city].filter(Boolean).join(", ");
   var plist = list.length ? list : ["Select a product"];
-  var pSize = plist.length <= 2 ? 4.1 : plist.length === 3 ? 3.5 : 2.9;
-  return `<div class="cp" style="--cp-a:${ink.bandA};--cp-b:${ink.bandB};--cp-h:${ink.hue}">
+  var pSize = plist.length <= 3 ? 3 : plist.length === 4 ? 2.5 : 2.1;
+  var logo = cfg.logo && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(cfg.logo) ? cfg.logo : null;
+  var name = String(cp.name || "").trim();
+  var nSize = name.length > 22 ? 7.2 : name.length > 16 ? 8.6 : 10;
+  return `<div class="cp" style="--cp-dk:${ink.dk};--cp-hl:${ink.hl};--cp-a:${ink.a};--cp-b:${ink.b}">
+    <div class="cp-hdr">${logo ? `<img class="cp-logo" src="${esc(logo)}" alt="">` : ""}
+      <div class="cp-dn ${logo ? "" : "solo"}"><b>${esc(dealer)}</b><span>${esc(b.finLabel || b.label)}</span></div>
+      <div class="cp-cd"><span>Coupon code</span><b>${esc(cp.code)}</b></div></div>
     <div class="cp-art">${couponArt(ink)}</div>
-    <div class="cp-code"><span>Coupon code</span><b>${esc(cp.code)}</b><i>${esc(valid)}</i></div>
-    <div class="cp-top"><div class="cp-dn">${esc(short)}</div><div class="cp-br">${esc(b.finLabel || b.label)}</div></div>
-    <div class="cp-hd"><div class="cp-h1">Congratulations</div><div class="cp-h2">${esc(COUPON_HEADLINES[cp.headline] || COUPON_HEADLINES.lease)}</div>
-      <div class="cp-h3"><i></i>${esc(short)} has you covered.</div></div>
-    <div class="cp-band"><div class="cp-amt"><b style="font-size:${amtTxt.length > 6 ? 12.5 : amtTxt.length > 4 ? 14.5 : 17}mm">${esc(amtTxt)}</b><span>Off</span></div><div class="cp-sep"></div>
-      <div class="cp-prod" style="font-size:${pSize}mm">${plist.map(function(p){ return `<div>${esc(p)}</div>`; }).join("")}</div></div>
-    <div class="cp-ben"><div>${couponIcon("shield")}<span>Protect your<br>investment</span></div><div>${couponIcon("car")}<span>Enjoy peace<br>of mind</span></div><div>${couponIcon("tools")}<span>Drive with<br>confidence</span></div></div>
-    <div class="cp-sign">
-      <div><b>${esc(cp.name || "")}</b><span>Customer name</span></div>
-      <div><b></b><span>Manager signature</span></div>
-      <div><b>${esc(C.fmtDate(today))}</b><span>Date</span></div></div>
-    <div class="cp-foot">${esc([cfg.name, addr, cfg.phone].filter(Boolean).join(" · "))}</div>
+    <div class="cp-h1">Congratulations</div>
+    <div class="cp-nm" style="font-size:${nSize}mm">${esc(name || "Customer name")}</div>
+    <div class="cp-h2">${esc(COUPON_HEADLINES[cp.headline] || COUPON_HEADLINES.lease)} — <b>${esc(dealer)}</b> has you covered</div>
+    <div class="cp-band"><span class="cp-amt">${esc(amtTxt)}</span><span class="cp-off">Off</span><span class="cp-vr"></span>
+      <div class="cp-pl" style="font-size:${pSize}mm">${plist.map(function(p){ return `<div>${esc(p)}</div>`; }).join("")}</div>
+      <div class="cp-valid">${exp === today ? "Valid today only" : "Valid until"}<br>${esc(C.fmtDate(exp))}</div></div>
+    <div class="cp-ben"><div>${couponIcon("shield")}Protect your investment</div><div>${couponIcon("car")}Enjoy peace of mind</div><div>${couponIcon("tools")}Drive with confidence</div></div>
+    <div class="cp-sign"><div><b>${esc(name)}</b>Customer name</div><div>Manager signature</div><div><b>${esc(C.fmtDate(today))}</b>Date</div></div>
+    <div class="cp-ft">${esc([dealer, addr, cfg.phone].filter(Boolean).join(" · "))}</div>
   </div>`;
 }
 function couponSheet(cp){
@@ -3575,6 +3579,12 @@ function viewSettings(){
       </div>
       <div class="notice info">Tax changes apply immediately to the open deal, both prints, the emailed presentation and every report, because all of them call the same calculation engine.</div>
 
+    </div></div>
+    <div class="card"><div class="card-h"><h2>Dealership logo</h2></div><div class="card-b">
+      <p class="muted small" style="max-width:66ch">Shown in the top-left corner of every coupon. Use the dealership's own logo (a PNG with a transparent background looks best). Without one, the coupon shows the dealership name there instead.</p>
+      <div class="logo-up">${state.config.logo && /^data:image\//.test(state.config.logo) ? `<div class="logo-prev"><img src="${esc(state.config.logo)}" alt="Dealership logo"></div>` : `<div class="logo-prev empty">No logo yet</div>`}
+        <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn ${canEdit ? "" : "disabled"}" style="cursor:${canEdit ? "pointer" : "not-allowed"}">${state.config.logo ? "Replace logo" : "Upload logo"}<input type="file" accept="image/png,image/jpeg,image/webp" data-act="dealer-logo" style="display:none" ${dis}></label>
+        ${state.config.logo ? `<button type="button" class="btn danger" data-act="dealer-logo-remove" ${dis}>Remove</button>` : ""}</div></div>
     </div></div>
     <div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
       <p class="muted small" style="max-width:66ch">Used on the customer display, the full-screen view, the pop-out window, the printed customer copy, the Cash Advantage printout and the emailed package. Works in light and dark mode.</p>
@@ -5925,6 +5935,7 @@ document.addEventListener("click", function(ev){
     case "ca-invest": caState.invest = el.getAttribute("data-inv"); render(); break;
     case "ca-clear": caState = caBlank(); render(); break;
     case "cp-add": couponAddProduct(); break;
+    case "dealer-logo-remove": if (V.isAdmin()){ delete state.config.logo; toast("Logo removed.","ok"); commit(); } break;
     case "cp-remove": {
       var cpl = couponProducts().slice(), cpi = Number(el.getAttribute("data-idx")), cpn = cpl[cpi];
       if (cpn === undefined) break;
@@ -6450,6 +6461,29 @@ document.addEventListener("change", function(ev){
     var gv = state.tx.offers.gifts[Number(el.getAttribute("data-idx"))];
     if (gv) gv.showValue = el.checked;
     commit(); return;
+  }
+  if (act === "dealer-logo"){
+    if (!V.isAdmin()) return;
+    var lfile = el.files && el.files[0];
+    if (!lfile) return;
+    var lrd = new FileReader();
+    lrd.onload = function(){
+      var limg = new Image();
+      limg.onload = function(){
+        /* keep it crisp but small: at most 600 px wide / 200 px tall, PNG keeps transparency */
+        var sc = Math.min(1, 600 / limg.width, 200 / limg.height);
+        var lcv = document.createElement("canvas"); lcv.width = Math.round(limg.width * sc); lcv.height = Math.round(limg.height * sc);
+        lcv.getContext("2d").drawImage(limg, 0, 0, lcv.width, lcv.height);
+        var lout = lcv.toDataURL("image/png");
+        if (lout.length > 180000) lout = lcv.toDataURL("image/webp", .9);
+        if (lout.length > 180000){ toast("That logo is too detailed to store. Try a simpler or smaller file.","err"); return; }
+        state.config.logo = lout; toast("Logo saved. It now appears on coupons.","ok"); commit();
+      };
+      limg.onerror = function(){ toast("That file couldn't be read as an image.","err"); };
+      limg.src = lrd.result;
+    };
+    lrd.readAsDataURL(lfile);
+    return;
   }
   if (act === "gift-photo"){
     var gidx = Number(el.getAttribute("data-idx")), gfile = el.files && el.files[0];
