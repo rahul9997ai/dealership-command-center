@@ -5000,8 +5000,8 @@ function amCompare(){
 function amHeadline(cmp){
   var b = cmp.base, p = cmp.plan;
   return cmp.hasExtra
-    ? { eyebrow:"Your payoff plan", lead:"With the extra payments, the customer saves", big:money0(cmp.saved), tail:"in interest",
-        sub:`and the last payment is ${C.fmtDate(p.last)} instead of ${C.fmtDate(b.last)}` + (cmp.fewer > 0 ? ` — ${caDuration(cmp.fewer, b.ppy)} sooner` : "") }
+    ? { eyebrow:"Your interest with the extra payments", lead:"With the extra payments, the customer pays only", big:money0(p.interest), tail:"in interest",
+        sub:`instead of ${money0(b.interest)} as scheduled — saves ${money0(cmp.saved)}. Last payment ${C.fmtDate(p.last)} instead of ${C.fmtDate(b.last)}` + (cmp.fewer > 0 ? ` (${caDuration(cmp.fewer, b.ppy)} sooner)` : "") + "." }
     : { eyebrow:"Your cost of borrowing", lead:"Cost of borrowing over the full term", big:money0(b.interest), tail:"interest",
         sub:`${b.count} ${amFreqWord(b.freq)} payments of ${money(b.pmt)}, last payment ${C.fmtDate(b.last)}` };
 }
@@ -5060,8 +5060,8 @@ function amGoalCard(g, cx){
   return `<div class="${cx ? "cx-card" : "ca-card"} am-goal">
     <div class="${cx ? "cx-card-h" : "ca-card-h"}">${cx ? `Paid off in ${g.months} months` : `<h3>Customer's goal: paid off in ${g.months} months</h3><span class="muted small">${g.nt} ${f} payments · last payment by ${C.fmtDate(lastT)}</span>`}</div>
     <div class="am-goal-grid">
-      ${box("Option A · One lump sum with the first payment", money(L.amount), [`paid on ${C.fmtDate(b.first)}, together with the first ${f} payment of ${money(b.pmt)}`, `last payment ${C.fmtDate(L.sched.last)} · saves ${money0(L.saved)} interest`], "ca-goal-lump", "Use this lump sum")}
-      ${box("Option B · Or add to every payment", "+" + money(E.amount), [`${f} payment becomes ${money(r2(b.pmt + E.amount))} instead of ${money(b.pmt)}`, `last payment ${C.fmtDate(E.sched.last)} · saves ${money0(E.saved)} interest`], "ca-goal-every", "Use this top-up")}
+      ${box("Option A · One lump sum with the first payment", money(L.amount), [`paid on ${C.fmtDate(b.first)}, together with the first ${f} payment of ${money(b.pmt)}`, `interest paid ${money0(L.sched.interest)} (saves ${money0(L.saved)}) · last payment ${C.fmtDate(L.sched.last)}`], "ca-goal-lump", "Use this lump sum")}
+      ${box("Option B · Or add to every payment", "+" + money(E.amount), [`${f} payment becomes ${money(r2(b.pmt + E.amount))} instead of ${money(b.pmt)}`, `interest paid ${money0(E.sched.interest)} (saves ${money0(E.saved)}) · last payment ${C.fmtDate(E.sched.last)}`], "ca-goal-every", "Use this top-up")}
     </div>
     ${cx ? "" : `<p class="tiny muted" style="margin:8px 0 0">Worked out on the loan alone. “Use” puts it into the extra payments on the left (replacing what's there), so the comparison, customer screen, printout and email all show it.</p>`}</div>`;
 }
@@ -5098,7 +5098,7 @@ function caAmortLeft(){
       ${amLumpCount() > 1 || s["lumpAmt" + i] ? `<button type="button" class="btn sm ghost" data-act="ca-lump-del" data-i="${i}" title="Remove this lump sum" aria-label="Remove lump sum ${i + 1}">×</button>` : "<span></span>"}
       <small class="am-lump-at">With ${amFreqWord(freq)} payment ${lk} of ${z.n} · ${C.fmtDate(C.amortDate(first, lk, freq))}</small></div>`;
   }
-  var goalOpts = `<option value="">No goal set</option>` + [6,12,18,24,30,36,42,48,54,60,66,72,78,84,90].filter(function(m){ return m < term; })
+  var goalOpts = `<option value="">No goal set</option>` + [7,12,18,24,30,36,42,48,54,60,66,72,78,84,90].filter(function(m){ return m < term; })
     .map(function(m){ return `<option value="${m}" ${String(m) === String(s.lgoal) ? "selected" : ""}>${m} months</option>`; }).join("");
   return `<div class="am-sec"><b>1</b> The loan</div>
     ${caField("Customer name (optional)", "customer", { ph:"For the printout" })}
@@ -5127,8 +5127,8 @@ function caAmortRight(){
   var b = cmp.base, p = cmp.plan, h = amHeadline(cmp), goal = amGoal();
   return `${goal ? amGoalCard(goal, false) : ""}<div class="ca-sum">
       <div><span>${amFreqWord(b.freq).replace(/^./, function(c){ return c.toUpperCase(); })} payment</span><strong class="num">${money(b.pmt)}</strong><small>${b.count} payments</small></div>
-      <div><span>Cost of borrowing</span><strong class="num">${money0(p.interest)}</strong><small>${cmp.hasExtra ? "with the extra payments" : "interest over the full term"}</small></div>
-      ${cmp.hasExtra ? `<div class="good"><span>Interest saved</span><strong class="num">${money0(cmp.saved)}</strong><small>${cmp.fewer > 0 ? caDuration(cmp.fewer, b.ppy) + " sooner" : "same end date"}</small></div>`
+      <div><span>${cmp.hasExtra ? "Interest paid" : "Cost of borrowing"}</span><strong class="num">${money0(p.interest)}</strong><small>${cmp.hasExtra ? "with the extra payments" : "interest over the full term"}</small></div>
+      ${cmp.hasExtra ? `<div class="good"><span>Interest saved</span><strong class="num">${money0(cmp.saved)}</strong><small>vs ${money0(b.interest)} as scheduled${cmp.fewer > 0 ? " · " + caDuration(cmp.fewer, b.ppy) + " sooner" : ""}</small></div>`
         : `<div><span>Total paid</span><strong class="num">${money0(b.paid)}</strong><small>last payment ${C.fmtDate(b.last)}</small></div>`}</div>
     <div class="ca-hero ${cmp.hasExtra ? "good" : "neutral"}"><div class="ca-lead">${h.lead}</div>
       <div class="ca-big num">${h.big} <span>${h.tail}</span></div><div class="ca-sub">${h.sub}</div></div>
@@ -5148,7 +5148,7 @@ function caAmortCustomer(){
       <div class="cx-hero-l">
         <div class="cx-eyebrow light">${h.eyebrow}</div>
         <div class="cx-big num">${h.big}</div>
-        <div class="cx-hero-sub">${cmp.hasExtra ? "saved in interest " + h.sub : "in interest over the full term — " + h.sub}</div>
+        <div class="cx-hero-sub">${cmp.hasExtra ? "in interest, " + h.sub : "in interest over the full term — " + h.sub}</div>
         <div class="cx-basis">${amTermsLine(cmp)}</div>
       </div>
       <div class="cx-paths">
@@ -5185,7 +5185,7 @@ function caAmortPrint(pb){
   var h = amHeadline(cmp);
   return `<div class="pv-hero up"><div class="pv-hero-l">
       <div class="pv-eyebrow">${h.eyebrow}</div><div class="pv-big">${h.big}</div>
-      <div class="pv-hero-sub">${cmp.hasExtra ? "saved in interest " + h.sub : "in interest over the full term — " + h.sub}</div></div></div>
+      <div class="pv-hero-sub">${cmp.hasExtra ? "in interest, " + h.sub : "in interest over the full term — " + h.sub}</div></div></div>
     <div class="pv-two">
       <div class="pv-card"><div class="pv-card-h">As scheduled vs with extra payments</div>
         <table class="pv-cmp"><thead><tr><th></th><th>As scheduled</th><th>With extra payments</th></tr></thead><tbody>
@@ -5194,15 +5194,15 @@ function caAmortPrint(pb){
     </div>
     ${(function(){ var g = amGoal(); if (!g || g.reached) return "";
       return `<div class="pv-try"><div class="pv-card-h">Paid off in ${g.months} months</div><table><tbody>
-        <tr><td>Option A · One lump sum with the first payment (${C.fmtDate(g.base.first)})</td><td>${money(g.lump.amount)}</td><td>saves ${money0(g.lump.saved)} interest</td></tr>
-        <tr><td>Option B · Or add to every ${amFreqWord(g.base.freq)} payment</td><td>+${money(g.every.amount)}</td><td>saves ${money0(g.every.saved)} interest</td></tr></tbody></table></div>`; })()}
+        <tr><td>Option A · One lump sum with the first payment (${C.fmtDate(g.base.first)})</td><td>${money(g.lump.amount)}</td><td>interest paid ${money0(g.lump.sched.interest)} (saves ${money0(g.lump.saved)})</td></tr>
+        <tr><td>Option B · Or add to every ${amFreqWord(g.base.freq)} payment</td><td>+${money(g.every.amount)}</td><td>interest paid ${money0(g.every.sched.interest)} (saves ${money0(g.every.saved)})</td></tr></tbody></table></div>`; })()}
     <div class="pv-try"><div class="pv-card-h">Year by year</div>${amYearTable(cmp, "")}</div>
     ${caState.lfull || cmp.hasExtra ? `<div class="pv-try pv-sched"><div class="pv-card-h">${cmp.hasExtra ? "Payment schedule with the extra payments, to the last payment" : "Payment schedule"} · ${cmp.plan.count} payments</div>${amScheduleTable(cmp.plan, "")}</div>` : ""}`;
 }
 function caAmortEmail(){
   var cmp = amCompare(); if (!cmp) return null;
   var b = cmp.base, p = cmp.plan, h = amHeadline(cmp);
-  return { lead:h.eyebrow, big:h.big, sub:(cmp.hasExtra ? "saved in interest " : "in interest over the full term — ") + h.sub, basis:amTermsLine(cmp),
+  return { lead:h.eyebrow, big:h.big, sub:(cmp.hasExtra ? "in interest, " : "in interest over the full term — ") + h.sub, basis:amTermsLine(cmp),
     rows:[[`${amFreqWord(b.freq).replace(/^./, function(c){ return c.toUpperCase(); })} payment`, money(b.pmt)],
       ["As scheduled", `${b.count} payments · ${money(b.interest)} interest · last payment ${C.fmtDate(b.last)}`]].concat(cmp.hasExtra ? [
       ["With your extra payments", `${p.count} payments · ${money(p.interest)} interest · last payment ${C.fmtDate(p.last)}`],
