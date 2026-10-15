@@ -3744,7 +3744,7 @@ function viewUsers(){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.10</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.11</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -5118,7 +5118,7 @@ function caAmortLeft(){
     ${caField("Extra on every payment (optional)", "levery", { pre:"$", ph:"0", hint:"A fixed top-up added to each regular payment." })}
     <div class="am-sec"><b>4</b> Printout</div>
     <label class="ca-check"><input type="checkbox" data-act="ca-lfull" ${s.lfull ? "checked" : ""}> Include the full payment schedule when printing</label>
-    <small class="muted tiny">With a lump sum or top-up, the schedule to the last payment always prints.</small>`;
+    <small class="muted tiny">Ticked: every payment down to $0.00 prints after the summary. Unticked: the summary and year-by-year table only.</small>`;
 }
 function caAmortRight(){
   var cmp = amCompare();
@@ -5197,7 +5197,7 @@ function caAmortPrint(pb){
         <tr><td>Option A · One lump sum with the first payment (${C.fmtDate(g.base.first)})</td><td>${money(g.lump.amount)}</td><td>interest paid ${money0(g.lump.sched.interest)} (saves ${money0(g.lump.saved)})</td></tr>
         <tr><td>Option B · Or add to every ${amFreqWord(g.base.freq)} payment</td><td>+${money(g.every.amount)}</td><td>interest paid ${money0(g.every.sched.interest)} (saves ${money0(g.every.saved)})</td></tr></tbody></table></div>`; })()}
     <div class="pv-try"><div class="pv-card-h">Year by year</div>${amYearTable(cmp, "")}</div>
-    ${caState.lfull || cmp.hasExtra ? `<div class="pv-try pv-sched"><div class="pv-card-h">${cmp.hasExtra ? "Payment schedule with the extra payments, to the last payment" : "Payment schedule"} · ${cmp.plan.count} payments</div>${amScheduleTable(cmp.plan, "")}</div>` : ""}`;
+    ${caState.lfull ? `<div class="pv-try pv-sched"><div class="pv-card-h">${cmp.hasExtra ? "Payment schedule with the extra payments, to the last payment" : "Payment schedule"} · ${cmp.plan.count} payments</div>${amScheduleTable(cmp.plan, "")}</div>` : ""}`;
 }
 function caAmortEmail(){
   var cmp = amCompare(); if (!cmp) return null;
