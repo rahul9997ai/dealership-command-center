@@ -64,6 +64,23 @@ button,input,select,textarea{font:inherit;color:inherit}
 .rail-brand .sb{font-size:11px;color:var(--rail-text)}
 .rail nav{padding:10px;flex:1}
 .nav-group{font-size:10.5px;letter-spacing:.09em;color:#6d84a3;text-transform:uppercase;padding:14px 10px 6px}
+.rail-back{all:unset;box-sizing:border-box;display:block;width:100%;cursor:pointer;font-size:12.5px;color:#9db7ff;padding:7px 10px;border-radius:8px;margin:2px 0 2px}
+.rail-back:hover,.rail-back:focus-visible{background:rgba(255,255,255,.06)}
+.topbar .crumb{font-size:12px;color:var(--muted);margin-bottom:1px}
+.topbar .crumb a{color:var(--blue);text-decoration:none}
+.topbar .crumb a:hover{text-decoration:underline}
+.dgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.dcard{all:unset;box-sizing:border-box;display:block;border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer;background:var(--surface);position:relative;transition:border-color .15s, box-shadow .15s}
+.dcard:hover,.dcard:focus-visible{border-color:var(--blue);box-shadow:0 6px 18px rgba(29,99,237,.12)}
+.dcard .t{display:flex;gap:10px;align-items:center;padding-right:54px}
+.dcard .dm{width:38px;height:38px;border-radius:10px;color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;flex:0 0 auto}
+.dcard .nm{font-weight:700;font-size:14.5px;color:var(--text)}
+.dcard .bd{font-size:12px;color:var(--muted)}
+.dcard .st{display:flex;gap:16px;align-items:flex-end;margin-top:12px;font-size:12px;color:var(--muted)}
+.dcard .st b{display:block;color:var(--text);font-size:16px}
+.dcard .go{position:absolute;right:14px;top:14px;color:var(--blue);font-weight:700;font-size:13px}
+.dcard.add{display:flex;align-items:center;justify-content:center;border-style:dashed;color:var(--blue);font-weight:600;min-height:118px}
+.dcard-tools{display:flex;gap:6px;margin-top:10px}
 .nav-item{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;color:var(--rail-text);padding:9px 10px;border-radius:8px;cursor:pointer;font-size:13.5px}
 .nav-item:hover{background:var(--rail-2);color:#fff}
 .nav-item.active{background:var(--rail-2);color:#fff;box-shadow:inset 3px 0 0 var(--blue)}
@@ -2250,13 +2267,16 @@ function allDeals(){ return state.history.concat(state.completed); }
    Promotional offers also honour the older Dealership-settings choice (config.offerAccess). */
 var FM_FEATURES = [
   { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Conversion" }, { key:"coupons", label:"Coupons" },
-  { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" }
+  { key:"worksheet", label:"Worksheet" }, { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" }
 ];
+/* Off unless a Master or GM turns it on for that person (everything else is on unless turned off). */
+var FEATURES_OFF_BY_DEFAULT = ["worksheet"];
 function featureOn(u, key){
   u = u || currentUser();
   if (u.role === "Master Administrator" || u.role === "General Manager") return true;
   var cfg = state.config || {}, a = cfg.fmAccess && cfg.fmAccess[u.id];
   if (a && a[key] === false) return false;
+  if (FEATURES_OFF_BY_DEFAULT.indexOf(key) !== -1) return !!(a && a[key] === true);
   if (key === "offers"){ var acc = cfg.offerAccess; if (acc && acc.mode === "selected") return (acc.users || []).indexOf(u.id) !== -1; }
   return true;
 }
@@ -2284,22 +2304,26 @@ function allowedRouteKeys(){
   if (role === "General Manager") return ["dashboard","finance","cashadv","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
   if (isFinanceRole(role)) return ["finance","cashadv","coupons","worksheet","products","reports","users"].filter(function(k){
-    return k === "products" || k === "users" || k === "worksheet" || featureOn(currentUser(), k); });
-  return ["finance","cashadv","worksheet","products","reports"];
+    return k === "products" || k === "users" || featureOn(currentUser(), k); });
+  return ["finance","cashadv","worksheet","products","reports"].filter(function(k){ return k !== "worksheet" || featureOn(currentUser(), k); });
 }
+/* A Master starts at head office (the dealership list); opening a store gives its own Command Center. */
+function inHQ(){ return isMaster() && !!state.ui.hq; }
 function navItems(){
+  if (inHQ()) return [
+    { key:"dealerships", label:"Dealerships", ic:"◈", grp:"Head office" },
+    { key:"hqusers", label:"Head-office users", ic:"◍", grp:"Head office" }];
   var items = [
-    { key:"dashboard", label:"Dashboard", ic:"▤" },
-    { key:"finance", label:"Finance", ic:"◧" },
-    { key:"cashadv", label:"Cash Conversion", ic:"$" },
-    { key:"coupons", label:"Coupons", ic:"✂" },
-    { key:"worksheet", label:"Worksheet", ic:"☰" },
-    { key:"products", label:"Products", ic:"▦" },
-    { key:"reports", label:"Reports", ic:"▥" },
-    { key:"users", label:"Users & access", ic:"◍" },
-    { key:"settings", label:"Dealership settings", ic:"⚙" }
+    { key:"dashboard", label:"Dashboard", ic:"▤", grp:"Tools" },
+    { key:"finance", label:"Finance", ic:"◧", grp:"Tools" },
+    { key:"cashadv", label:"Cash Conversion", ic:"$", grp:"Tools" },
+    { key:"coupons", label:"Coupons", ic:"✂", grp:"Tools" },
+    { key:"worksheet", label:"Worksheet", ic:"☰", grp:"Tools" },
+    { key:"products", label:"Products", ic:"▦", grp:"Tools" },
+    { key:"reports", label:"Reports", ic:"▥", grp:"Tools" },
+    { key:"users", label:"Users & access", ic:"◍", grp:"Manage" },
+    { key:"settings", label:"Dealership settings", ic:"⚙", grp:"Manage" }
   ];
-  if (isMaster()) items.splice(6, 0, { key:"dealerships", label:"Dealerships", ic:"◈" });
   var allowed = allowedRouteKeys();
   if (allowed) items = items.filter(function(n){ return allowed.indexOf(n.key) !== -1; });
   return items;
@@ -2310,13 +2334,17 @@ function routeTitle(){
 }
 function renderShell(inner){
   var b = brand(), u = currentUser();
+  var lastGrp = null;
   var nav = navItems().map(function(n){
-    return `<button class="nav-item ${state.route===n.key?"active":""}" data-act="route" data-route="${n.key}">
+    var head = n.grp && n.grp !== lastGrp ? `<div class="nav-group">${esc(n.grp)}</div>` : "";
+    lastGrp = n.grp;
+    return head + `<button class="nav-item ${state.route===n.key?"active":""}" data-act="route" data-route="${n.key}">
       <span class="ic">${n.ic}</span><span>${esc(n.label)}</span>${n.tag?`<span class="tagx">${n.tag}</span>`:""}</button>`;
   }).join("");
-  var brandName = state.config ? esc(state.config.name) : "Dealership Command Center";
-  var brandMark = state.config ? esc(state.config.logoMark||b.mark) : "DCC";
-  var brandSub = state.config ? esc(b.label) + " · Command Center" : "No dealership yet";
+  var hq = inHQ(), store = !hq && state.config;
+  var brandName = hq ? "AXIOM" : store ? esc(state.config.name) : "Dealership Command Center";
+  var brandMark = hq ? "AX" : store ? esc(state.config.logoMark||b.mark) : "DCC";
+  var brandSub = hq ? "Head office" : store ? esc(b.label) + " · Command Center" : "No dealership yet";
   return `<div class="app">
     <aside class="rail ${state.ui.railOpen?"open":""}">
       <div class="rail-brand">
@@ -2324,19 +2352,14 @@ function renderShell(inner){
         <div><div class="nm">${brandName}</div><div class="sb">${brandSub}</div></div>
         <button class="btn sm ghost menu-btn" data-act="toggle-rail" style="color:#cbd5e1">Menu</button>
       </div>
-      <nav><div class="nav-group">Operations</div>${nav}</nav>
+      <nav>${isMaster() && !hq ? `<button class="rail-back" data-act="go-hq">← All dealerships</button>` : ""}${nav}</nav>
       <div class="rail-foot"><div class="userchip"><div class="avatar">${esc(u.initials)}</div>
         <div><div class="nm">${esc(u.name)}</div><div class="tiny">${esc(roleLabel(u.role))}</div></div></div></div>
     </aside>
     <div class="main">
       <header class="topbar">
-        <h1>${esc(routeTitle())}</h1>
+        <div>${isMaster() && store ? `<div class="crumb"><a href="#" data-act="go-hq">Dealerships</a> › ${esc(state.config.name)}</div>` : ""}<h1>${esc(routeTitle())}</h1></div>
         <div class="demo">
-          ${(isMaster() && state.dealerships.length) ? `<label class="switch"><span class="muted small">Dealership</span>
-            <select data-act="switch-dealership" style="width:auto;min-width:210px">
-              ${state.dealerships.filter(function(d){ return d.active; }).map(function(d){
-                return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}
-            </select></label>` : ""}
           <button class="btn sm" data-act="toggle-theme">${state.ui.theme === "dark" ? "Normal" : "Dark"} mode</button>
           <span class="tag">${esc(u.name)} · ${esc(roleLabel(u.role))}</span>
           <button class="btn sm" data-act="logout">Log out</button>
@@ -3713,18 +3736,23 @@ function userStatus(u){
 var CHANGEABLE_ROLES = [["FSM","Finance Manager"],["Sales Manager","Sales Manager"],["General Manager","General Manager"]];
 function userCanUseSummary(u){
   if (u.role === "General Manager" || u.role === "Master Administrator") return `<span class="muted">Everything</span>`;
+  if (u.role === "Sales Manager") return `<span class="muted">Sales tools${V.featureOn(u, "worksheet") ? " + Worksheet" : ""}</span>`;
   if (!V.isFinanceRole(u.role)) return `<span class="muted">Pulse only</span>`;
   var off = V.FM_FEATURES.filter(function(f){ return !V.featureOn(u, f.key); });
   if (!off.length) return `<span class="muted">Everything</span>`;
-  return `<span class="tag warn" title="Turned off: ${esc(off.map(function(f){ return f.label; }).join(", "))}">${V.FM_FEATURES.length - off.length} of ${V.FM_FEATURES.length}</span>`;
+  return `<span class="tag" title="Turned off: ${esc(off.map(function(f){ return f.label; }).join(", "))}">${V.FM_FEATURES.length - off.length} of ${V.FM_FEATURES.length}</span>`;
 }
-function viewUsers(){
+function viewUsers(scope){
+  var hq = scope === "hq";
   var isFsmOnly = V.isFinanceManager();
   var canEdit = V.isAdmin() || isFsmOnly;
   /* Salespeople are Pulse-only accounts, so they're left out of the GM/Master list; a Finance
      Manager's own view is the exception, since that's where they manage their salespeople. */
   var rows = V.storeUsers().filter(function(u){
-    return u.id !== "u0" && (isFsmOnly ? u.role === "Salesperson" : u.role !== "Salesperson");
+    if (u.id === "u0") return false;
+    if (hq) return !u.dealershipId;
+    if (u.dealershipId !== state.activeDealershipId) return false;
+    return isFsmOnly ? u.role === "Salesperson" : u.role !== "Salesperson";
   }).map(function(u){
     var dealer = u.dealershipId ? V.dealershipById(u.dealershipId).name : "All dealerships";
     return `<tr class="u-row" data-act="user-card" data-user="${u.id}" title="Open ${esc(u.name)}'s card">
@@ -3736,15 +3764,16 @@ function viewUsers(){
       <td>${(function(){ var st = userStatus(u); return `<span class="tag ${st.cls}">${st.txt}</span>`; })()}</td>
       <td class="right"><span class="u-open" aria-hidden="true">›</span></td></tr>`;
   }).join("");
-  return `<div class="card"><div class="card-h"><h2>Users and access</h2>
+  var count = (rows.match(/class="u-row"/g) || []).length, storeName = state.config ? state.config.name : "";
+  return `<div class="card"><div class="card-h"><h2>${hq ? "Head-office users" : esc(storeName) + " · " + count + (count === 1 ? " person" : " people")}</h2>
     <div class="sp">${canEdit?"":`<span class="tag warn">Only a general manager can change access</span>`}
-      <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>Add a user</button></div></div>
+      <button class="btn primary" data-act="user-new" ${canEdit?"":"disabled"}>${hq ? "Add a user" : "Add a user to this store"}</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="margin:0 0 14px;line-height:1.55">A master administrator sees every dealership and can move a user between stores. A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
+      <p class="muted small" style="margin:0 0 14px;line-height:1.55">${hq ? "People who aren't tied to one dealership, such as Master administrators. Each store's staff are listed inside that store, under Manage › Users &amp; access." : "Only this dealership's people. A Master can move someone to another store from their card."} A General Manager and Finance Managers work inside one dealership. Invite users by email — they set their own password from a link in the invite. A demo user has the full functionality of their role until the expiry you set, and sees a notice and countdown each time they sign in.</p>
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.2</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.3</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -3770,7 +3799,13 @@ function userCardModal(){
         return `<label class="uc-feat ${on ? "on" : ""}"><span>${esc(f.label)}</span>
           <span class="uc-sw"><input type="checkbox" data-act="fm-feature" data-user="${u.id}" data-feature="${f.key}" ${on ? "checked" : ""} ${V.isAdmin() ? "" : "disabled"}><i></i></span></label>`; }).join("")}</div>
         <p class="tiny muted" style="margin:8px 0 0">Changes apply straight away; anything switched off disappears from their menu.</p>`
-      : `<p class="small muted" style="margin:0">Switch to ${esc(dealer)} at the top to change what they can use there.</p>`}</div>`;
+      : `<p class="small muted" style="margin:0">Open ${esc(dealer)} from Dealerships to change what they can use there.</p>`}</div>`;
+  } else if (u.role === "Sales Manager"){
+    var wsOn = V.featureOn(u, "worksheet"), shere = u.dealershipId === state.activeDealershipId;
+    features = `<div class="uc-sec"><h3>What they can use</h3>
+      ${shere ? `<div class="uc-feats"><label class="uc-feat ${wsOn ? "on" : ""}"><span>Worksheet<small>Print the Purchase Proposal</small></span>
+          <span class="uc-sw"><input type="checkbox" data-act="fm-feature" data-user="${u.id}" data-feature="worksheet" ${wsOn ? "checked" : ""} ${V.isAdmin() ? "" : "disabled"}><i></i></span></label></div>`
+        : `<p class="small muted" style="margin:0">Open ${esc(dealer)} from Dealerships to change what they can use there.</p>`}</div>`;
   } else if (u.role === "General Manager" || master){
     features = `<div class="uc-sec"><h3>What they can use</h3><p class="small muted" style="margin:0">Everything in the Command Center for ${master ? "every dealership" : esc(dealer)}.</p></div>`;
   }
@@ -3818,7 +3853,7 @@ function userModal(){
       <div class="inline">
         <label class="f" id="ufEmailBox"><span>Email</span><input type="text" data-uf="email" placeholder="name@dealership.ca" autocapitalize="off"></label>
         <label class="f" id="ufUserBox" style="display:none"><span>Username</span><input type="text" data-uf="username" placeholder="e.g. alexis.n" autocapitalize="off" autocorrect="off"></label>
-        <label class="f"><span>Dealership</span><select data-uf="dealership">
+        <label class="f"><span>Dealership</span><select data-uf="dealership" ${V.isMaster() && !state.ui.hq ? "disabled" : ""}>
           ${state.dealerships.map(function(d){ return `<option value="${d.id}" ${d.id===state.activeDealershipId?"selected":""}>${esc(d.name)}</option>`; }).join("")}</select></label>
       </div>
       <label class="f" id="ufPwBox" style="display:none"><span>Temporary password (at least 8 characters)</span>
@@ -3903,25 +3938,23 @@ function saveUser(){
 
 /* ---------------- DEALERSHIPS (master administrator) ---------------- */
 function viewDealerships(){
-  var rows = state.dealerships.map(function(d){
-    var b = C.brandOfDealer(d);
-    var count = state.users.filter(function(u){ return u.dealershipId === d.id; }).length;
-    return `<tr><td><strong>${esc(d.name)}</strong><div class="tiny muted">${esc(d.dealerCode)} · ${esc(d.city)}</div></td>
-      <td>${esc(b.label)}</td><td class="small">${esc(b.finLabel)}</td>
-      <td class="right num">${count}</td>
-      <td><span class="tag ${d.active?"ok":"danger"}">${d.active?"Active":"Inactive"}</span></td>
-      <td class="right nowrap">
-        <button class="btn sm ${d.id===state.activeDealershipId?"on":""}" data-act="switch-to-dealership" data-dealership="${d.id}">${d.id===state.activeDealershipId?"Current":"Open"}</button>
-        <button class="btn sm" data-act="dealer-edit" data-dealership="${d.id}">Edit</button>
-        <button class="btn sm danger" data-act="dealer-delete" data-dealership="${d.id}" ${state.dealerships.length<=1?"disabled":""}>Delete</button>
-      </td></tr>`;
+  var month = C.todayISO().slice(0,7), deals = V.allDeals ? V.allDeals() : [];
+  var cards = state.dealerships.map(function(d){
+    var b = C.brandOfDealer(d), ink = (b.pal && b.pal.main) || b.color || "#2c5a9b";
+    var people = state.users.filter(function(u){ return u.dealershipId === d.id && u.role !== "Master Administrator"; }).length;
+    var mtd = deals.filter(function(x){ return x.dealershipId === d.id && String(x.createdAt || "").slice(0,7) === month; }).length;
+    return `<div class="dcard" role="button" tabindex="0" data-act="switch-to-dealership" data-dealership="${d.id}" title="Open ${esc(d.name)}">
+        <span class="go">Open ›</span>
+        <div class="t"><div class="dm" style="background:${esc(ink)}">${esc(d.logoMark || b.mark || "")}</div><div><div class="nm">${esc(d.name)}</div><div class="bd">${esc(b.label)}${d.city ? " · " + esc(d.city) : ""}</div></div></div>
+        <div class="st"><div><b>${people}</b>${people === 1 ? "person" : "people"}</div><div><b>${mtd}</b>deals this month</div><div><span class="tag ${d.active ? "ok" : "danger"}">${d.active ? "Active" : "Inactive"}</span></div></div>
+        <div class="dcard-tools"><button class="btn sm" data-act="dealer-edit" data-dealership="${d.id}">Edit</button>
+          <button class="btn sm danger" data-act="dealer-delete" data-dealership="${d.id}" ${state.dealerships.length<=1?"disabled":""}>Delete</button></div></div>`;
   }).join("");
-  return `<div class="card"><div class="card-h"><h2>Dealership group</h2>
+  return `<div class="card"><div class="card-h"><h2>Dealerships</h2>
     <div class="sp"><button class="btn primary" data-act="dealer-new">Create a dealership</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="max-width:76ch">Each dealership carries its own brand, taxes, finance defaults and users. The brand decides what the customer display shows in its header, so an INFINITI store presents INFINITI FINANCIAL SERVICES and a Ford store presents FORD CREDIT FINANCIAL SERVICES, with no change to the application itself.</p>
-      <div class="tablewrap"><table><thead><tr><th>Dealership</th><th>Brand</th><th>Customer-facing header</th><th class="right">Users</th><th>Status</th><th></th></tr></thead>
-      <tbody>${rows}</tbody></table></div></div></div>`;
+      <p class="muted small" style="max-width:76ch;margin:0 0 14px"><strong>Click a dealership to open its own Command Center.</strong> Each one carries its own brand, taxes, finance defaults, products and people; you manage its users and settings from inside it.</p>
+      <div class="dgrid">${cards}<button type="button" class="dcard add" data-act="dealer-new">+ Create a dealership</button></div></div></div>`;
 }
 function dealerModal(){
   var d = state.ui.dealerForm;
@@ -5836,6 +5869,13 @@ function cashAdvPrint(){
 
 /* ---------------- ROUTER + RENDER ---------------- */
 function routeView(){
+  if (V.isMaster()){
+    if (state.route === "dealerships" || state.route === "hqusers" || !state.dealerships.length) state.ui.hq = true;
+    if (state.ui.hq){
+      if (state.route !== "hqusers") state.route = "dealerships";
+      return state.route === "hqusers" ? viewUsers("hq") : viewDealerships();
+    }
+  }
   if (!state.config) return renderOnboarding();
   var allowed = V.allowedRouteKeys();
   if (allowed && allowed.length === 0) return viewSalespersonRedirect();
@@ -5849,7 +5889,7 @@ function routeView(){
     case "products": return viewProducts();
     case "reports": return viewReports();
     case "users": return viewUsers();
-    case "dealerships": return V.isMaster() ? viewDealerships() : V.viewDashboard();
+    case "dealerships": return V.viewDashboard();
     case "settings": return viewSettings();
     default: return V.viewDashboard();
   }
@@ -6401,6 +6441,8 @@ function finishEnter(u){
     else V.setDealership(state.dealerships[0].id);
   }
   state.route = (u.role === "Master Administrator" || u.role === "General Manager") ? "dashboard" : "finance";
+  state.ui.hq = u.role === "Master Administrator";
+  if (state.ui.hq) state.route = "dealerships";
   if (state.tx && !V.isAdmin()) state.tx.fsmUserId = u.id;
   var resumed = resumeSession(u), who = String(state.tx && state.tx.customer.name || "").trim();
   var isDemo = !!(state.auth && state.auth.accessType === "demo"), isFirst = !!(state.auth && !state.auth.onboarded);
@@ -7278,7 +7320,13 @@ document.addEventListener("click", function(ev){
     case "dealer-cancel": state.ui.dealerForm = null; commit(); break;
     case "dealer-save": saveDealer(); maybeStartTour(); break;
     case "dealer-delete": deleteDealer(el.getAttribute("data-dealership")); break;
-    case "switch-to-dealership": V.setDealership(el.getAttribute("data-dealership")); state.route = "finance"; commit(); break;
+    case "switch-to-dealership": {
+      var openId = el.getAttribute("data-dealership");
+      var enter = function(){ state.ui.hq = false; state.route = "dashboard"; state.ui.railOpen = false; window.scrollTo(0, 0); commit(); };
+      if (openId === state.activeDealershipId && state.config) enter();
+      else leaveDeal(function(){ V.setDealership(openId); resetDealUi(); enter(); }, "switch");
+      break; }
+    case "go-hq": state.ui.hq = true; state.route = "dealerships"; state.ui.railOpen = false; state.ui.userCard = null; window.scrollTo(0, 0); commit(); break;
     case "do-login": doLogin(); break;
     case "logout": doLogout(); break;
     case "forgot-password": state.ui.forgot = true; state.ui.forgotMsg = null; state.ui.loginError = null; commit(); break;
