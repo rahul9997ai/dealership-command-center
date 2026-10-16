@@ -2827,10 +2827,10 @@ function viewFinance(){
         <button type="button" class="cdm-item" data-act="print-customer">Customer copy</button>
       </div>` : ""}
     </div>
+    <button class="btn sm" data-act="new-deal" title="Clear this deal and start a fresh one (you can keep it in Saved deals first)">↺ New deal</button>
     <div class="cdmenu-wrap">
       <button class="btn sm ${menu==="deal"?"on":""}" data-act="bar-menu" data-menu="deal">Deal ▾${savedBadge}</button>
       ${menu==="deal" ? `<div class="cdmenu bar-menu">
-        <button type="button" class="cdm-item" data-act="new-deal">New deal</button>
         <button type="button" class="cdm-item" data-act="save-deal">Save deal</button>
         <button type="button" class="cdm-item" data-act="saved-list">Saved deals${savedBadge}</button>
       </div>` : ""}
@@ -3775,7 +3775,7 @@ function viewUsers(scope){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.5</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.6</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
