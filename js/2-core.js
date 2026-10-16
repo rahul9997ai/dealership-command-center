@@ -603,7 +603,118 @@ function locCompare(o){
     locCheaperBy:loc.payoff ? (dInt + lost) - loc.interest : null };
 }
 
-window.__DCC_CORE__ = { clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
+/* ---------------- SALES TRACKER MATHS ----------------
+   Selling days and the sales-performance numbers, the same way the sales managers' sheet works:
+   Tracking = sold ÷ current selling day × total selling days, status AHEAD ≥ 100% / PACE ≥ 90% /
+   BEHIND, required per day = (target − sold) ÷ selling days left. */
+function easterSunday(y){
+  var a = y % 19, b = Math.floor(y/100), c = y % 100, d = Math.floor(b/4), e = b % 4, f = Math.floor((b + 8)/25),
+      g = Math.floor((b - f + 1)/3), h = (19*a + b - d - g + 15) % 30, i = Math.floor(c/4), k = c % 4,
+      l = (32 + 2*e + 2*i - h - k) % 7, m = Math.floor((a + 11*h + 22*l)/451),
+      mo = Math.floor((h + l - 7*m + 114)/31), da = ((h + l - 7*m + 114) % 31) + 1;
+  return new Date(y, mo - 1, da, 12);
+}
+function nthWeekday(y, m, dow, n){ var d = new Date(y, m, 1, 12); return new Date(y, m, 1 + (dow - d.getDay() + 7) % 7 + (n - 1)*7, 12); }
+/* Days Ontario dealerships close: the statutory holidays plus the Civic Holiday. A holiday on a Sunday
+   (or New Year's / Christmas / Boxing Day on a Saturday) also closes the next weekday. */
+function ontarioHolidays(y){
+  var out = {}, add = function(d, name, satToo){
+    out[localISO(d)] = name;
+    var dow = d.getDay();
+    if (dow === 0 || (dow === 6 && satToo)){
+      var n = new Date(d); n.setDate(n.getDate() + 1);
+      while (n.getDay() === 0 || n.getDay() === 6 || out[localISO(n)]) n.setDate(n.getDate() + 1);
+      out[localISO(n)] = name + " (observed)";
+    }
+  };
+  var easter = easterSunday(y), gf = new Date(easter); gf.setDate(gf.getDate() - 2);
+  var may25 = new Date(y, 4, 25, 12), vic = new Date(may25); vic.setDate(25 - ((may25.getDay() + 6) % 7 || 7));
+  add(new Date(y, 0, 1, 12), "New Year's Day", true);
+  add(nthWeekday(y, 1, 1, 3), "Family Day");
+  add(gf, "Good Friday");
+  add(vic, "Victoria Day");
+  add(new Date(y, 6, 1, 12), "Canada Day");
+  add(nthWeekday(y, 7, 1, 1), "Civic Holiday");
+  add(nthWeekday(y, 8, 1, 1), "Labour Day");
+  add(nthWeekday(y, 9, 1, 2), "Thanksgiving");
+  add(new Date(y, 11, 25, 12), "Christmas Day", true);
+  add(new Date(y, 11, 26, 12), "Boxing Day", true);
+  return out;
+}
+/* month "YYYY-MM"; opts: { openWeekdays:[1..6], closed:[iso], open:[iso] } (manual changes win) */
+function sellingDays(month, opts){
+  opts = opts || {};
+  var y = Number(month.slice(0, 4)), m = Number(month.slice(5, 7)) - 1, last = new Date(y, m + 1, 0).getDate();
+  var weekdays = opts.openWeekdays || [1,2,3,4,5,6], hol = ontarioHolidays(y), closed = opts.closed || [], open = opts.open || [];
+  var days = [], total = 0;
+  for (var d = 1; d <= last; d++){
+    var dt = new Date(y, m, d, 12), iso = localISO(dt), reason = null, isOpen = weekdays.indexOf(dt.getDay()) !== -1;
+    if (!isOpen) reason = dt.getDay() === 0 ? "Sunday" : "Closed";
+    if (isOpen && hol[iso]){ isOpen = false; reason = hol[iso]; }
+    if (closed.indexOf(iso) !== -1){ isOpen = false; reason = reason || "Closed"; }
+    if (open.indexOf(iso) !== -1){ isOpen = true; reason = null; }
+    if (isOpen) total++;
+    days.push({ date:iso, day:d, dow:dt.getDay(), open:isOpen, reason:reason, holiday:hol[iso] || null });
+  }
+  return { month:month, days:days, total:total };
+}
+/* Selling days used up to and including `iso` (0 before the first one). */
+function sellingDayOf(info, iso){ return info.days.filter(function(x){ return x.open && x.date <= iso; }).length; }
+var SALE_STATUSES = ["pending","approved","scheduled","delivered","rdr","carry","declined","cancelled"];
+function saleCounts(d){ return d && d.status !== "declined" && d.status !== "cancelled"; }
+function saleIsUsed(d){ return d.type === "Used" || d.type === "As-is"; }
+/* The date a deal counts on: sold date, or (when counting on delivery) the delivery date once delivered. */
+function saleCountDate(d, countOn){
+  if (countOn === "delivered") return (d.status === "delivered" || d.status === "rdr") ? (d.deliveredDate || d.soldDate) : null;
+  return d.soldDate;
+}
+function salePct(track, target){ return target > 0 ? track/target : null; }
+function saleStatus(pct){ return pct === null ? null : pct >= 1 ? "ahead" : pct >= 0.9 ? "pace" : "behind"; }
+/* targets: { people:[{ name, n, u }], countOn }; range: { from, to } (inclusive ISO dates);
+   day / total: selling day so far and selling days in the period. */
+function salesPerformance(deals, targets, range, day, total){
+  targets = targets || {}; var countOn = targets.countOn === "delivered" ? "delivered" : "sold";
+  var rows = {}, order = [], key = function(n){ return String(n || "").trim().toUpperCase(); };
+  var row = function(name, storeOnly){
+    var k = key(name);
+    if (!rows[k]){ rows[k] = { name:k, tN:0, tU:0, sN:0, sU:0, front:0, fi:0, storeOnly:!!storeOnly }; order.push(k); }
+    return rows[k];
+  };
+  (targets.people || []).forEach(function(p){ var r = row(p.name); r.tN = Number(p.n) || 0; r.tU = Number(p.u) || 0; });
+  var store = { name:"DEALERSHIP", tN:0, tU:0, sN:0, sU:0, front:0, fi:0, deals:0 };
+  (deals || []).forEach(function(d){
+    if (!saleCounts(d)) return;
+    var dt = saleCountDate(d, countOn);
+    if (!dt || dt < range.from || dt > range.to) return;
+    var used = saleIsUsed(d), sp = (d.salespeople && d.salespeople.length) ? d.salespeople : [{ name:"HOUSE", share:1 }];
+    sp.forEach(function(s){
+      var share = Number(s.share); if (!(share > 0)) share = 1/sp.length;
+      var r = row(s.name, /^(HOUSE|MOBILE)/.test(key(s.name)));
+      if (used) r.sU += share; else r.sN += share;
+    });
+    if (used) store.sU += 1; else store.sN += 1;
+    store.front += Number(d.frontGross) || 0; store.fi += Number(d.fiGross) || 0; store.deals++;
+  });
+  var r2 = function(v){ return Math.round(v*100)/100; };
+  var finish = function(r){
+    r.sN = r2(r.sN); r.sU = r2(r.sU);
+    r.tT = r.tN + r.tU; r.sT = r2(r.sN + r.sU);
+    var tr = function(s){ return day > 0 ? Math.round(s/day*total) : null; };
+    r.kN = tr(r.sN); r.kU = tr(r.sU); r.kT = r.kN === null ? null : r.kN + r.kU;
+    r.pct = r.kT === null ? null : salePct(r.kT, r.tT);
+    r.status = saleStatus(r.pct);
+    r.perDay = r.tT > 0 ? (total - day > 0 ? Math.max(0, (r.tT - r.sT)/(total - day)) : null) : null;
+    return r;
+  };
+  var people = order.map(function(k){ return rows[k]; });
+  people.forEach(function(p){ if (!p.storeOnly){ store.tN += p.tN; store.tU += p.tU; } });
+  people = people.map(finish);
+  /* salespeople with targets first (as entered), then anyone else who sold, then House / Mobile */
+  people.sort(function(a, b){ var ga = a.storeOnly ? 2 : (a.tT > 0 ? 0 : 1), gb = b.storeOnly ? 2 : (b.tT > 0 ? 0 : 1); return ga - gb; });
+  return { store:finish(store), people:people, countOn:countOn, day:day, total:total };
+}
+
+window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,

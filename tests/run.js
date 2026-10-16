@@ -193,6 +193,62 @@ eq("custom brand name", C.brandOfDealer({ brandKey: "custom", customBrandName: "
 eq("header override", C.brandOfDealer({ brandKey: "ford", headerTitle: "Ford Credit Canada" }).finLabel, "FORD CREDIT CANADA");
 eq("Subaru exists", !!D.BRANDS.subaru, true);
 
+/* --- Sales Tracker: selling days and performance maths (matches the sales managers' sheet) --- */
+{
+  eq("ST Easter 2026", C.localISO(C.easterSunday(2026)), "2026-04-05");
+  eq("ST Easter 2027", C.localISO(C.easterSunday(2027)), "2027-03-28");
+  const h26 = C.ontarioHolidays(2026);
+  eq("ST Family Day 2026", h26["2026-02-16"], "Family Day");
+  eq("ST Good Friday 2026", h26["2026-04-03"], "Good Friday");
+  eq("ST Victoria Day 2026", h26["2026-05-18"], "Victoria Day");
+  eq("ST Civic Holiday 2026", h26["2026-08-03"], "Civic Holiday");
+  eq("ST Labour Day 2026", h26["2026-09-07"], "Labour Day");
+  eq("ST Thanksgiving 2026", h26["2026-10-12"], "Thanksgiving");
+  eq("ST Victoria Day 2027 (May 24)", C.ontarioHolidays(2027)["2027-05-24"], "Victoria Day");
+  eq("ST Christmas 2027 on a Saturday closes Monday", C.ontarioHolidays(2027)["2027-12-27"], "Christmas Day (observed)");
+  eq("ST Canada Day 2029 on a Sunday closes Monday", C.ontarioHolidays(2029)["2029-07-02"], "Canada Day (observed)");
+  eq("ST August 2026 = 25 selling days (their sheet)", C.sellingDays("2026-08").total, 25);
+  eq("ST September 2026 = 25 selling days (their sheet)", C.sellingDays("2026-09").total, 25);
+  eq("ST October 2026 = 26 selling days (their sheet)", C.sellingDays("2026-10").total, 26);
+  const oct = C.sellingDays("2026-10");
+  eq("ST Oct 16 is selling day 13", C.sellingDayOf(oct, "2026-10-16"), 13);
+  eq("ST Oct 12 counts as day 9 still (closed)", C.sellingDayOf(oct, "2026-10-12"), 9);
+  eq("ST a closed day can be opened", C.sellingDays("2026-10", { open:["2026-10-12"] }).total, 27);
+  eq("ST an open day can be closed", C.sellingDays("2026-10", { closed:["2026-10-31"] }).total, 25);
+  const deals = [
+    { soldDate:"2026-10-02", status:"delivered", type:"New", salespeople:[{ name:"Arun", share:1 }], frontGross:1000, fiGross:500 },
+    { soldDate:"2026-10-03", status:"pending", type:"Used", salespeople:[{ name:"ARUN", share:1 }] },
+    { soldDate:"2026-10-04", status:"approved", type:"As-is", salespeople:[{ name:"Keegan", share:0.5 }, { name:"Abbas", share:0.5 }] },
+    { soldDate:"2026-10-05", status:"declined", type:"New", salespeople:[{ name:"Arun", share:1 }] },
+    { soldDate:"2026-10-06", status:"cancelled", type:"New", salespeople:[{ name:"Arun", share:1 }] },
+    { soldDate:"2026-09-29", status:"carry", type:"New", salespeople:[{ name:"Arun", share:1 }] },
+    { soldDate:"2026-10-07", status:"delivered", type:"New", salespeople:[{ name:"HOUSE", share:1 }], frontGross:2000 }
+  ];
+  const tg = { people:[{ name:"ARUN", n:10, u:8 }, { name:"KEEGAN", n:10, u:8 }, { name:"ABBAS", n:10, u:8 }] };
+  const p = C.salesPerformance(deals, tg, { from:"2026-10-01", to:"2026-10-31" }, 10, 26);
+  const arun = p.people.find(x => x.name === "ARUN"), keegan = p.people.find(x => x.name === "KEEGAN"), house = p.people.find(x => x.name === "HOUSE");
+  eq("ST Arun sold N (declined/cancelled/last month don't count)", arun.sN, 1);
+  eq("ST Arun sold U", arun.sU, 1);
+  eq("ST As-is counts as Used, split 0.5", keegan.sU, 0.5);
+  eq("ST Arun tracking N = round(1/10*26)", arun.kN, 3);
+  eq("ST Arun % to target", Math.round(arun.pct * 100), Math.round((3 + 3)/18 * 100));
+  eq("ST Arun status", arun.status, "behind");
+  eq("ST Arun needs per day", arun.perDay, (18 - 2)/16, 0.0001);
+  eq("ST House is store-only", house.storeOnly, true);
+  eq("ST store sold N (whole units)", p.store.sN, 2);
+  eq("ST store sold U", p.store.sU, 2);
+  eq("ST store target = salespeople only", p.store.tT, 54);
+  eq("ST store gross", p.store.front + p.store.fi, 3500);
+  eq("ST House listed last", p.people[p.people.length - 1].name, "HOUSE");
+  eq("ST status bands", [C.saleStatus(1), C.saleStatus(0.95), C.saleStatus(0.89)].join(","), "ahead,pace,behind");
+  const dl = C.salesPerformance(deals, Object.assign({ countOn:"delivered" }, tg), { from:"2026-10-01", to:"2026-10-31" }, 10, 26);
+  eq("ST counting on delivery", dl.store.sT, 2);
+  eq("ST day 0 has no tracking yet", C.salesPerformance(deals, tg, { from:"2026-10-01", to:"2026-10-31" }, 0, 26).store.kT, null);
+  /* their August sheet: ARUN sold N 7, U 12 on day 25 of 25 → tracking 7 / 12, 106% of 18 */
+  const aug = C.salesPerformance(Array.from({ length:19 }, (_, i) => ({ soldDate:"2026-08-10", status:"delivered", type:i < 7 ? "New" : "Used", salespeople:[{ name:"ARUN", share:1 }] })),
+    { people:[{ name:"ARUN", n:10, u:8 }] }, { from:"2026-08-01", to:"2026-08-31" }, 25, 25);
+  eq("ST matches the August sheet (ARUN 106%, AHEAD)", Math.round(aug.people[0].pct * 100) + " " + aug.people[0].status, "106 ahead");
+}
 /* --- Payoff calculator: matches the dealership's Excel sheet example --- */
 {
   const o = { amount: 31790.13, apr: 7.99, months: 84, freq: "biweekly", first: "2026-02-06" };

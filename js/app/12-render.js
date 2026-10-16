@@ -16,6 +16,7 @@ function routeView(){
     case "dashboard": return V.viewDashboard();
     case "finance": return V.viewFinance();
     case "cashadv": return viewCashAdv();
+    case "sales": return viewSalesTracker();
     case "coupons": return viewCoupons();
     case "worksheet": return viewWorksheet();
     case "products": return viewProducts();
@@ -30,7 +31,7 @@ function routeView(){
    just moved focus to (e.g. the next field after Tab), which silently drops
    focus back to <body>. We fingerprint the focused field before the rewrite
    and refocus its replacement afterwards, restoring the caret too. */
-var FOCUS_ATTRS = ["data-ca","data-cp","data-bind","data-act","data-term","data-line","data-fee","data-product","data-package","data-df","data-uf","id"];
+var FOCUS_ATTRS = ["data-ca","data-cp","data-bind","data-act","data-term","data-line","data-fee","data-product","data-package","data-df","data-uf","data-stf","data-stt","id"];
 function focusFingerprint(el){
   if (!el || !el.getAttribute || !el.tagName) return null;
   var parts = [el.tagName.toLowerCase()];

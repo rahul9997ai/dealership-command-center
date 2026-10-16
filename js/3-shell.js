@@ -201,11 +201,13 @@ function dealsForStore(){
 function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
-  if (role === "General Manager") return ["dashboard","finance","cashadv","coupons","worksheet","products","reports","users","settings"];
+  if (role === "General Manager") return ["dashboard","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
   if (isFinanceRole(role)) return ["finance","cashadv","coupons","worksheet","products","reports","users"].filter(function(k){
     return k === "products" || k === "users" || featureOn(currentUser(), k); });
-  return ["finance","cashadv","worksheet","products","reports"].filter(function(k){ return k !== "worksheet" || featureOn(currentUser(), k); });
+  return ["finance","cashadv","sales","worksheet","products","reports"].filter(function(k){
+    if (k === "sales") return role === "Sales Manager";
+    return k !== "worksheet" || featureOn(currentUser(), k); });
 }
 /* A Master starts at head office (the dealership list); opening a store gives its own Command Center. */
 function inHQ(){ return isMaster() && !!state.ui.hq; }
@@ -217,6 +219,7 @@ function navItems(){
     { key:"dashboard", label:"Dashboard", ic:"▤", grp:"Tools" },
     { key:"finance", label:"Finance", ic:"◧", grp:"Tools" },
     { key:"cashadv", label:"Cash Conversion", ic:"$", grp:"Tools" },
+    { key:"sales", label:"Sales Tracker", ic:"◆", grp:"Tools" },
     { key:"coupons", label:"Coupons", ic:"✂", grp:"Tools" },
     { key:"worksheet", label:"Worksheet", ic:"☰", grp:"Tools" },
     { key:"products", label:"Products", ic:"▦", grp:"Tools" },
