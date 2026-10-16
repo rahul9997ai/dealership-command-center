@@ -3582,7 +3582,7 @@ function viewCoupons(){
    for the sales floor. Nothing is filled in or saved here; the dealership's name, address, logo and
    brand colours come from Dealership settings. */
 var WS_FEES = [["Security & safety package", 599], ["Tire & road hazard", 799], ["Air tax & OTSF", null], ["OMVIC fee", null], ["", null], ["", null]];
-var WS_ACCEPT = "By signing, I/we accept the terms marked on this proposal (both sides) and ask the dealer to prepare a bill of sale on exactly these terms. I/We understand this proposal is <b>not a bill of sale</b>: the bill of sale signed by me/us and the dealer is the binding contract, and it will show the all-in price with every fee itemized, plus HST and licensing. Any deposit paid is refundable if a bill of sale is not signed. Changes are valid only if initialled by me/us and the dealer.";
+var WS_ACCEPT = "By signing, I/we confirm the vehicle and the terms marked on this proposal (both sides) and ask the dealer to proceed with the purchase. I/We understand this proposal is <b>not a bill of sale</b>: the final price, payment, rate, term and any products are confirmed with the Finance Manager and set out in the bill of sale, and payments are subject to lender approval. Only the bill of sale signed by me/us and the dealer is the binding contract; it will show the all-in price with every fee itemized, plus HST and licensing. Any deposit paid is refundable if a bill of sale is not signed. Changes to this proposal are valid only if initialled by me/us and the dealer.";
 function wsHeader(title, page){
   var cfg = state.config, b = V.brand();
   var logo = cfg.logo && /^data:image\/(png|jpe?g|webp|gif);base64,/.test(cfg.logo) ? cfg.logo : null;
@@ -3647,7 +3647,7 @@ function wsBack(){
       <div class="ws-fg"><div><span>All-in price $</span><b></b></div><div><span>Trade allowance $</span><b></b></div><div><span>Down payment $</span><b></b></div><div><span>Balance $</span><b></b></div>
         <div><span>Payment $</span><b></b></div><div><span>Term (months)</span><b></b></div><div><span>Frequency</span><b></b></div><div><span>Lease km / yr</span><b></b></div></div>
       <div class="ws-ch">Based on: ☐ Finance option 1 &nbsp; ☐ Finance option 2 &nbsp; ☐ Lease option 1 &nbsp; ☐ Lease option 2</div></div>
-    <div class="ws-acc"><h4>Acceptance of terms</h4><p>${WS_ACCEPT.replace("the terms marked on this proposal (both sides)", "the final agreed terms above")}</p></div>
+    <div class="ws-acc"><h4>Acceptance of terms</h4><p>${WS_ACCEPT.replace("the vehicle and the terms marked on this proposal (both sides)", "the vehicle and the final agreed terms above")}</p></div>
     <div class="ws-sig"><div>Customer signature</div><div>Sales consultant</div><div>Sales manager</div><div>Date · time</div></div>
     <div class="ws-ft"><span>${esc(cfg.name || "")}</span><span>Page 2 of 2 · Read together with page 1</span></div></div>`;
 }
@@ -3744,7 +3744,7 @@ function viewUsers(){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-14.11</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.1</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
