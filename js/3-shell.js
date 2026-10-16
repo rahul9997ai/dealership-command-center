@@ -168,10 +168,17 @@ function allDeals(){ return state.history.concat(state.completed); }
 var FM_FEATURES = [
   { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Conversion" }, { key:"coupons", label:"Coupons" },
   { key:"worksheet", label:"Worksheet" }, { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" },
-  { key:"sales", label:"Sales Tracker (own F&I)" }
+  { key:"sales", label:"Sales Tracker (own F&I)" }, { key:"insights", label:"Dashboard (Insights)" }
 ];
+/* A Sales Manager's switches (Sales Tracker and the Insights dashboard are off until turned on). */
+var SM_FEATURES = [
+  { key:"sales", label:"Sales Tracker", sub:"Log deals, Today, Sales performance, Appointments, Funding, Targets" },
+  { key:"insights", label:"Dashboard (Insights)", sub:"Month and year to date gross, scorecards, year-end projections" },
+  { key:"worksheet", label:"Worksheet", sub:"Print the Purchase Proposal" }
+];
+function featureLabel(key){ var f = SM_FEATURES.concat(FM_FEATURES).filter(function(x){ return x.key === key; })[0]; return f ? f.label : key; }
 /* Off unless a Master or GM turns it on for that person (everything else is on unless turned off). */
-var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales"];
+var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales", "insights"];
 function featureOn(u, key){
   u = u || currentUser();
   if (u.role === "Master Administrator" || u.role === "General Manager") return true;
@@ -204,10 +211,11 @@ function allowedRouteKeys(){
   if (role === "Master Administrator") return null;
   if (role === "General Manager") return ["dashboard","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
-  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users"].filter(function(k){
-    return k === "products" || k === "users" || featureOn(currentUser(), k); });
-  return ["finance","cashadv","sales","worksheet","products","reports"].filter(function(k){
-    if (k === "sales") return role === "Sales Manager";
+  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users","dashboard"].filter(function(k){
+    return k === "products" || k === "users" || featureOn(currentUser(), k === "dashboard" ? "insights" : k); });
+  return ["finance","cashadv","sales","worksheet","products","reports","dashboard"].filter(function(k){
+    if (k === "sales") return role === "Sales Manager" && featureOn(currentUser(), "sales");
+    if (k === "dashboard") return featureOn(currentUser(), "insights");
     return k !== "worksheet" || featureOn(currentUser(), k); });
 }
 /* A Master starts at head office (the dealership list); opening a store gives its own Command Center. */
@@ -1073,7 +1081,7 @@ function viewFinance(){
 }
 
 window.__DCC_VIEW1__ = { state:state, brand:brand, cdThemeStyle:cdThemeStyle, brandInk:brandInk, colorMode:colorMode, hexLum:hexLum, readableOn:readableOn, userById:userById, currentUser:currentUser, isAdmin:isAdmin,
-  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, canUseOffers:canUseOffers, featureOn:featureOn, FM_FEATURES:FM_FEATURES, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
+  isMaster:isMaster, roleLabel:roleLabel, isDealOwnerRole:isDealOwnerRole, isFinanceRole:isFinanceRole, isFinanceManager:isFinanceManager, canEditProducts:canEditProducts, ensureOffers:ensureOffers, savedForMe:savedForMe, canUseOffers:canUseOffers, featureOn:featureOn, FM_FEATURES:FM_FEATURES, SM_FEATURES:SM_FEATURES, featureLabel:featureLabel, mixHex:mixHex, storeUsers:storeUsers, fsmUsers:fsmUsers, setPath:setPath, toast:toast, allDeals:allDeals,
   dealsForStore:dealsForStore, dealershipById:dealershipById, setDealership:setDealership, applyFinanceDefaults:applyFinanceDefaults,
   firstFsmFor:firstFsmFor, renderShell:renderShell, viewDashboard:viewDashboard, viewUnderConstruction:viewUnderConstruction,
   renderCustomerDisplay:renderCustomerDisplay, viewFinance:viewFinance, commit:commit, persist:persist,

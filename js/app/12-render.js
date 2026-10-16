@@ -13,7 +13,7 @@ function routeView(){
   if (allowed && allowed.length === 0) return viewSalespersonRedirect();
   if (allowed && allowed.indexOf(state.route) === -1) state.route = allowed[0] || "finance";
   switch (state.route){
-    case "dashboard": return V.viewDashboard();
+    case "dashboard": return viewInsights();
     case "finance": return V.viewFinance();
     case "cashadv": return viewCashAdv();
     case "sales": return viewSalesTracker();

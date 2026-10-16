@@ -125,7 +125,7 @@ document.addEventListener("click", function(ev){
       }
       cfgA.fmAccess = cfgA.fmAccess || {}; cfgA.fmAccess[fu] = cfgA.fmAccess[fu] || {};
       cfgA.fmAccess[fu][fk] = !wasOn;
-      toast(fuser.name + (wasOn ? " can no longer use " : " can now use ") + (V.FM_FEATURES.filter(function(f){ return f.key === fk; })[0] || {}).label + ".", "ok");
+      toast(fuser.name + (wasOn ? " can no longer use " : " can now use ") + V.featureLabel(fk) + ".", "ok");
       commit(); break; }
     case "ca-from-deal": {
       var caR = caFromDeal();
@@ -746,7 +746,7 @@ document.addEventListener("change", function(ev){
     }
     cfgB.fmAccess = cfgB.fmAccess || {}; cfgB.fmAccess[fu2] = cfgB.fmAccess[fu2] || {};
     cfgB.fmAccess[fu2][fk2] = !!el.checked;
-    toast(fuser2.name + (el.checked ? " can now use " : " can no longer use ") + (V.FM_FEATURES.filter(function(f){ return f.key === fk2; })[0] || {}).label + ".", "ok");
+    toast(fuser2.name + (el.checked ? " can now use " : " can no longer use ") + V.featureLabel(fk2) + ".", "ok");
     commit(); return;
   }
   if (act === "cp-pick"){

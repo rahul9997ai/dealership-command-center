@@ -461,6 +461,101 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   eq("product option issue targets its select", term && term.target, '[data-bind="line:L0:term"]');
 }
 
+/* --- Sales Insights: gross split with the unit, losing money, history, projections --- */
+{
+  const sp = (n, s) => ({ name:n, share:s === undefined ? 1 : s });
+  const deals = [
+    { soldDate:"2026-10-02", status:"delivered", deliveredDate:"2026-10-03", type:"New", salespeople:[sp("ARUN")], frontGross:3000, fiGross:1000 },
+    { soldDate:"2026-10-05", status:"pending", type:"Used", salespeople:[sp("ARUN", 0.5), sp("BILAL", 0.5)], frontGross:2000, fiGross:500 },
+    { soldDate:"2026-10-06", status:"delivered", type:"Used", salespeople:[sp("BILAL")], frontGross:0, fiGross:1500 },
+    { soldDate:"2026-10-07", status:"scheduled", type:"New", salespeople:[sp("BILAL")], frontGross:-750, fiGross:0 },
+    { soldDate:"2026-10-08", status:"pending", type:"New", salespeople:[sp("BILAL")], frontGross:null, fiGross:null },
+    { soldDate:"2026-10-09", status:"declined", type:"New", salespeople:[sp("ARUN")], frontGross:-5000, fiGross:0 },
+    { soldDate:"2026-09-10", status:"delivered", type:"New", salespeople:[sp("ARUN")], frontGross:1000, fiGross:1000 },
+    { soldDate:"2026-09-11", status:"delivered", type:"Used", salespeople:[sp("ARUN")], frontGross:1000, fiGross:1000 },
+  ];
+  const a = C.salesAgg(deals, { from:"2026-10-01", to:"2026-10-31" }, "sold");
+  eq("INS declined deals don't count", a.store.units, 5);
+  eq("INS store gross = front + F&I of counted deals", a.store.front + a.store.fi, 7250);
+  eq("INS a split deal splits its gross", a.people.ARUN.front, 4000);
+  eq("INS split share of units", a.people.BILAL.units, 3.5);
+  eq("INS $0 front gross is losing money", a.people.BILAL.losingN, 2);
+  eq("INS losing amount", a.people.BILAL.losingAmt, -750);
+  eq("INS no front gross entered isn't losing", a.store.losingN, 2);
+  eq("INS deliveries counted on delivery date", a.store.delivered, 2);
+  const targets = {
+    "2026-08": { history:{ people:{ ARUN:{ n:7, u:12 }, BILAL:{ n:3, u:4 } } } },
+    "2026-10": { people:[{ name:"ARUN", n:10, u:8 }, { name:"BILAL", n:10, u:8 }], gross:100000 },
+  };
+  const ins = C.salesInsights({ deals, targets, year:2026, today:"2026-10-16" });
+  const aug = ins.months.filter((m) => m.month === "2026-08")[0];
+  eq("INS imported Sales Performance totals give past months' units", aug.units, 26);
+  eq("INS history marks the month", aug.fromHistory, true);
+  eq("INS a month with no deals has no gross", aug.hasDeals, false);
+  eq("INS year to date units = history + logged", ins.ytd.units, 26 + 2 + 5);
+  eq("INS year to date gross from logged deals", ins.ytd.gross, 4000 + 7250);
+  eq("INS year selling days", ins.yearDays, ins.months.reduce((t, m) => t + m.total, 0));
+  const octDays = C.sellingDays("2026-10"), day = C.sellingDayOf(octDays, "2026-10-16");
+  eq("INS month tracking units", ins.mtd.trackUnits, Math.round(5/day*octDays.total));
+  const arun = ins.scores.mtd.filter((p) => p.name === "ARUN")[0];
+  eq("INS last month's units", arun.last, 2);
+  eq("INS 3-month average", arun.avg3, (2 + 0 + 19)/3);
+  eq("INS growth = tracking ÷ 3-month average", arun.growth, (1.5/day*octDays.total)/((2 + 0 + 19)/3));
+  eq("INS front per vehicle", arun.frontPvr, 4000/1.5);
+  const sep = C.sellingDays("2026-09").total, aug2 = C.sellingDays("2026-08").total;
+  eq("INS gross pace uses only months with deals logged", ins.proj.gross.pace, Math.round((4000 + 7250)/(sep + day)*ins.yearDays));
+  eq("INS gross projection flagged as estimated", ins.proj.estimated, true);
+  eq("INS months with nothing recorded are left out of the unit pace", ins.proj.units.pace, Math.round((26 + 2 + 5)/(aug2 + sep + day)*ins.yearDays));
+  eq("INS store-only HOUSE isn't a salesperson", ins.scores.mtd.some((p) => p.name === "HOUSE"), false);
+  eq("INS salesperson year-end matches the store's method", arun.yearEnd, Math.round((19 + 2 + 1.5)/(aug2 + sep + day)*ins.yearDays));
+  const late = C.salesInsights({ deals:deals.concat([{ soldDate:"2026-10-03", status:"delivered", type:"New", salespeople:[sp("NEWBIE")], frontGross:1000, fiGross:0 }]), targets, year:2026, today:"2026-10-16" });
+  const nb = late.scores.ytd.filter((p) => p.name === "NEWBIE")[0];
+  eq("INS a new hire is projected from their first month", nb.yearEnd, Math.round(1/day*late.months.filter((m) => m.month >= "2026-10").reduce((t, m) => t + m.total, 0)));
+}
+/* --- Excel import: dates as typed, headers found anywhere, statuses and money read --- */
+{
+  eq("IMP 9TH SEP on a September 2026 tab", C.impDate("9TH SEP", 2026, 9), "2026-09-09");
+  eq("IMP 31ST AUG on the September tab", C.impDate("31ST AUG", 2026, 9), "2026-08-31");
+  eq("IMP DEC row on a January tab is last year", C.impDate("28TH DEC", 2027, 1), "2026-12-28");
+  eq("IMP an Excel day number", C.impDate(46274, 2026, 9), "2026-09-09");
+  eq("IMP ISO date", C.impDate("2026-10-03", null, null), "2026-10-03");
+  eq("IMP day after month", C.impDate("Sep 9", 2026, 9), "2026-09-09");
+  eq("IMP 31 SEP isn't a date", C.impDate("31ST SEP", 2026, 9), null);
+  eq("IMP money with $ and commas", C.impMoney("$1,250.50"), 1250.5);
+  eq("IMP a dash is no amount", C.impMoney("-"), null);
+  eq("IMP negative in brackets", C.impMoney("(250)"), -250);
+  eq("IMP month from a perf title", C.impMonthOf("AUGUST 2026 SALES PERFORMANCE").m, 8);
+  const rows = [["Pre-Owned sales log"], ["September 2026 — 401Dixie Nissan"], [], ["S #","Day","Date","Stock #","RDR","CPO","Stock Source","Customer #","Salesperson","F&I Manager","Customer Name","Vehicle","Status","F/C","Front G.P","Posted","Disc./Unit","F&I GP/Unit","2nd T.O","Source","Close Type","App (Y/N)","Sec.Pack","Trade","Tire Sale"],
+    [1,"TUESDAY","18TH AUG","M0304","","Y","Traderev","","Abbas","Rahul","JUSTIN POYSER","2024 ROGUE","Delivered","Finance",-1000,"","",9000,"","Phone","1st Visit","","","N",""],
+    [2,"THURSDAY","3RD SEP","I0050","Y","","Internal","","Arun","Salma","MUHAMMAD ABDULLAH","2023 GV80","Delivered","Finance","2,500","","","-","","Walk In","Be-Back","Y","","Y",""],
+    [3,"","","M0400","","","","","","","","","Sch. Delivery","Cash","","","","","","","","","","",""],
+    [4,"","","","","","","","","","","","","","","","","","","","","","","",""]];
+  const sh = C.impLogSheet("September 2026", rows, { type:"Used", leads:["Walk in","E-Lead","Phone"], closes:["1st visit","Be-back"], stocks:["Internal","Trade in","Auction / TradeRev"] });
+  eq("IMP header found below the summary", sh.header.row, 3);
+  eq("IMP month from the tab name", sh.month, "2026-09");
+  eq("IMP rows read (blank rows skipped)", sh.rows.length, 3);
+  const d0 = sh.rows[0].deal, d1 = sh.rows[1].deal;
+  eq("IMP an August row on the September tab keeps its date", d0.soldDate, "2026-08-18");
+  eq("IMP negative front gross", d0.frontGross, -1000);
+  eq("IMP salesperson upper-cased", d0.salespeople[0].name, "ABBAS");
+  eq("IMP RDR = Y on a delivered deal", d1.status, "rdr");
+  eq("IMP F&I dash = none", d1.fiGross, null);
+  eq("IMP lead source matched", d1.leadSource, "Walk in");
+  eq("IMP close type matched", d1.closeType, "Be-back");
+  eq("IMP ticks read", d1.flags.appt && d1.flags.trade, true);
+  eq("IMP stock source matched", d0.stockSource, "Auction / TradeRev");
+  eq("IMP delivered deals get a delivery date", d1.deliveredDate, "2026-09-03");
+  eq("IMP a row without a date can't be imported", sh.rows[2].bad, true);
+  eq("IMP Sch. Delivery read", sh.rows[2].deal.status, "scheduled");
+  eq("IMP the same row gives the same id", C.impLogSheet("September 2026", rows, { type:"Used" }).rows[0].deal.id, d0.id);
+  eq("IMP a sheet without a sales log is ignored", C.impLogSheet("Read Me", [["Hello"], ["World"]], {}), null);
+  const perf = C.impPerfSheet("SALES PERFORMANCE", [["AUGUST 2026 SALES PERFORMANCE","","","","","","","","","","","Current Selling Day",25], [],
+    ["Salesperson","Target N","Target U","Target Total","Sold N","Sold U","Sold Total"], ["DEALERSHIP",50,40,90,56,39,95], ["ARUN",10,8,18,7,12,19], ["ABBAS",10,8,18,17,6,23], [], ["HOUSE",0,0,0,3,3,6]]);
+  eq("IMP perf month from the title", perf.month, "2026-08");
+  eq("IMP perf people (store row left out)", perf.people.length, 3);
+  eq("IMP perf sold used", perf.people[0].su, 12);
+}
+
 /* --- deal signature: ignores bookkeeping and key order, sees real changes --- */
 {
   const a = build([["a", P]]).tx;

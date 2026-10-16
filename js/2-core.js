@@ -714,7 +714,271 @@ function salesPerformance(deals, targets, range, day, total){
   return { store:finish(store), people:people, countOn:countOn, day:day, total:total };
 }
 
-window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
+/* ---------------- SALES INSIGHTS ----------------
+   The GM dashboard: gross, units and deliveries for a period, each salesperson's scorecard, and
+   year-end projections. A split deal splits its gross the same way it splits the unit. Losing money
+   = a deal with front gross entered at $0 or less. */
+var SALE_OPEN = ["pending","approved","scheduled","carry"];
+function saleIsOpen(d){ return !!d && SALE_OPEN.indexOf(d.status) !== -1; }
+function saleDelivered(d){ return !!d && (d.status === "delivered" || d.status === "rdr"); }
+function saleKey(n){ return String(n || "").trim().toUpperCase(); }
+function saleStoreOnly(k){ return /^(HOUSE|MOBILE)/.test(saleKey(k)); }
+function saleAmt(v){ if (v === null || v === undefined || v === "") return null; var n = Number(v); return isNaN(n) ? null : n; }
+/* Totals for one period (inclusive ISO dates). countOn: "sold" or "delivered" (see saleCountDate). */
+function salesAgg(deals, range, countOn){
+  var store = { units:0, N:0, U:0, front:0, fi:0, losingN:0, losingAmt:0, delivered:0 }, people = {};
+  var person = function(k){ return people[k] || (people[k] = { name:k, units:0, N:0, U:0, front:0, fi:0, losingN:0, losingAmt:0, storeOnly:saleStoreOnly(k) }); };
+  (deals || []).forEach(function(d){
+    if (saleDelivered(d)){ var dd = d.deliveredDate || d.soldDate; if (dd && dd >= range.from && dd <= range.to) store.delivered++; }
+    if (!saleCounts(d)) return;
+    var dt = saleCountDate(d, countOn); if (!dt || dt < range.from || dt > range.to) return;
+    var used = saleIsUsed(d), f = saleAmt(d.frontGross), fi = saleAmt(d.fiGross), losing = f !== null && f <= 0;
+    store.units++; if (used) store.U++; else store.N++;
+    store.front += f || 0; store.fi += fi || 0;
+    if (losing){ store.losingN++; store.losingAmt += f; }
+    var sp = d.salespeople && d.salespeople.length ? d.salespeople : [{ name:"HOUSE", share:1 }];
+    sp.forEach(function(s){
+      var share = Number(s.share); if (!(share > 0)) share = 1/sp.length;
+      var p = person(saleKey(s.name));
+      p.units += share; if (used) p.U += share; else p.N += share;
+      p.front += (f || 0)*share; p.fi += (fi || 0)*share;
+      if (losing){ p.losingN++; p.losingAmt += f*share; }
+    });
+  });
+  var r = function(v){ return Math.round(v*100)/100; };
+  Object.keys(people).forEach(function(k){ var p = people[k]; p.units = r(p.units); p.N = r(p.N); p.U = r(p.U); p.front = r(p.front); p.fi = r(p.fi); p.losingAmt = r(p.losingAmt); });
+  return { store:store, people:people };
+}
+function salesMonthAdd(m, n){ var d = new Date(+m.slice(0, 4), +m.slice(5, 7) - 1 + n, 1, 12); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2); }
+/* Everything the Insights dashboard shows, for one store and one year.
+   opts: { deals:[...], targets:{ "YYYY-MM": targets }, year:2026, today:"YYYY-MM-DD" }
+   A month before the current one that has Sales Performance totals imported (targets.history) takes its
+   units from those totals; gross and deliveries always come from the deals logged. */
+function salesInsights(opts){
+  var deals = opts.deals || [], tg = opts.targets || {}, year = Number(opts.year), today = opts.today;
+  var cur = today.slice(0, 7), first = year + "-01", lastM = year + "-12";
+  if (cur > lastM) cur = lastM;
+  var months = [], rec = {}, m;
+  for (m = salesMonthAdd(first, -5); m <= lastM; m = salesMonthAdd(m, 1)){
+    var t = tg[m] || {}, info = sellingDays(m, { closed:t.closed || [], open:t.open || [], openWeekdays:t.openWeekdays });
+    var used = m < cur ? info.total : m > cur ? 0 : (today.slice(0, 7) === cur ? sellingDayOf(info, today) : info.total);
+    var agg = salesAgg(deals, { from:m + "-01", to:m + "-31" }, t.countOn === "delivered" ? "delivered" : "sold");
+    var hist = m < today.slice(0, 7) && t.history && t.history.people ? t.history.people : null;
+    var units = {}, N = 0, U = 0;
+    if (hist) Object.keys(hist).forEach(function(k){ var h = hist[k], key = saleKey(k), n = Number(h.n) || 0, u = Number(h.u) || 0; units[key] = { units:n + u, N:n, U:u }; N += n; U += u; });
+    else { Object.keys(agg.people).forEach(function(k){ var p = agg.people[k]; units[k] = { units:p.units, N:p.N, U:p.U }; }); N = agg.store.N; U = agg.store.U; }
+    var r = { month:m, total:info.total, used:used, future:m > cur, N:N, U:U, units:N + U, people:units, fromHistory:!!hist,
+      hasDeals:agg.store.units > 0 || agg.store.delivered > 0, gross:agg.store.front + agg.store.fi, front:agg.store.front, fi:agg.store.fi, delivered:agg.store.delivered, agg:agg,
+      target:(t.people || []).reduce(function(a, p){ return a + (Number(p.n) || 0) + (Number(p.u) || 0); }, 0), grossTarget:Number(t.gross) || 0 };
+    months.push(r); rec[m] = r;
+  }
+  var yearMonths = months.filter(function(r){ return r.month >= first; });
+  var sofar = yearMonths.filter(function(r){ return !r.future; });
+  var sum = function(list, f){ return list.reduce(function(a, r){ return a + (typeof f === "function" ? f(r) : r[f]); }, 0); };
+  var yearDays = sum(yearMonths, "total"), usedDays = sum(sofar, "used"), leftDays = yearDays - usedDays;
+  /* months with something recorded: units come from deals or imported totals, gross and deliveries from deals.
+     A month with nothing recorded (before the tracker, nothing imported) is left out of the pace, not counted as 0. */
+  var dataMonths = sofar.filter(function(r){ return r.hasDeals; }), dataDays = sum(dataMonths, "used");
+  var unitMonths = sofar.filter(function(r){ return r.hasDeals || r.fromHistory; }), unitDays = sum(unitMonths, "used");
+  var last3 = sofar.slice(-3), last3Data = last3.filter(function(r){ return r.hasDeals; }), last3Units = last3.filter(function(r){ return r.hasDeals || r.fromHistory; });
+  var gapU = unitMonths.length < sofar.length, gapG = dataMonths.length < sofar.length;
+  /* year-end: this year's pace (so far ÷ selling days used × selling days in the year) and the last 3 months' pace */
+  var paceAll = function(f, list, days){ return days > 0 ? sum(list, f)/days*yearDays : null; };
+  /* the last 3 months' rate for the rest of the year; when early months have no deals logged, for the whole year */
+  var pace3 = function(f, list, ytd, whole){ var d = sum(list, "used"); return d > 0 ? (whole ? sum(list, f)/d*yearDays : ytd + sum(list, f)/d*leftDays) : null; };
+  var ytdU = sum(sofar, "units"), ytdN = sum(sofar, "N"), ytdUu = sum(sofar, "U"), ytdG = sum(sofar, "gross"), ytdD = sum(sofar, "delivered");
+  var rnd = function(v){ return v === null ? null : Math.round(v); };
+  var proj = {
+    units:{ pace:rnd(paceAll("units", unitMonths, unitDays)), last3:rnd(pace3("units", last3Units, ytdU, gapU)) },
+    N:{ pace:rnd(paceAll("N", unitMonths, unitDays)), last3:rnd(pace3("N", last3Units, ytdN, gapU)) },
+    U:{ pace:rnd(paceAll("U", unitMonths, unitDays)), last3:rnd(pace3("U", last3Units, ytdUu, gapU)) },
+    gross:{ pace:rnd(paceAll("gross", dataMonths, dataDays)), last3:rnd(pace3("gross", last3Data, ytdG, gapG)) },
+    delivered:{ pace:rnd(paceAll("delivered", dataMonths, dataDays)), last3:rnd(pace3("delivered", last3Data, ytdD, gapG)) },
+    estimated:gapG, estimatedUnits:gapU, dataFrom:dataMonths.length ? dataMonths[0].month : null, unitsFrom:unitMonths.length ? unitMonths[0].month : null };
+  var curRec = rec[cur];
+  /* each salesperson */
+  var roster = {};
+  ((tg[cur] || {}).people || []).forEach(function(p){ roster[saleKey(p.name)] = 1; });
+  sofar.forEach(function(r){ Object.keys(r.people).forEach(function(k){ if (r.people[k].units > 0) roster[k] = 1; }); });
+  var people = Object.keys(roster).filter(function(k){ return k && !saleStoreOnly(k); });
+  var storeFrontPvr = function(list){ var u = sum(list, function(r){ return r.agg.store.units; }); return u ? sum(list, "front")/u : null; };
+  var score = function(k, list, ytd){
+    var o = { name:k, units:0, N:0, U:0, front:0, fi:0, dealUnits:0, losingN:0, losingAmt:0 };
+    list.forEach(function(r){ var u = r.people[k], a = r.agg.people[k];
+      if (u){ o.units += u.units; o.N += u.N; o.U += u.U; }
+      if (a){ o.front += a.front; o.fi += a.fi; o.dealUnits += a.units; o.losingN += a.losingN; o.losingAmt += a.losingAmt; } });
+    var r2 = function(v){ return Math.round(v*100)/100; };
+    o.units = r2(o.units); o.N = r2(o.N); o.U = r2(o.U); o.total = o.front + o.fi;
+    o.frontPvr = o.dealUnits ? o.front/o.dealUnits : null; o.fiPvr = o.dealUnits ? o.fi/o.dealUnits : null; o.pvr = o.dealUnits ? o.total/o.dealUnits : null;
+    var sp = storeFrontPvr(list); o.hold = o.frontPvr === null || sp === null ? null : o.frontPvr - sp;
+    /* last 6 months' units; the current month at its pace so far, so a half-done month doesn't look like a drop */
+    o.trend = months.filter(function(r){ return !r.future; }).slice(-6).map(function(r){ var u = r.people[k] ? r.people[k].units : 0;
+      return r.month === cur && r.used > 0 && r.used < r.total ? Math.round(u/r.used*r.total*10)/10 : u; });
+    /* year-end units: their pace × the year's selling days, the same way as the store. Someone who started
+       after the records begin (a new hire) is projected from their first month instead. */
+    var active = sofar.filter(function(r){ return r.people[k] && r.people[k].units > 0; }), start = active.length ? active[0].month : null;
+    if (start && unitMonths.length && start <= unitMonths[0].month) start = unitMonths[0].month;
+    var from = start ? unitMonths.filter(function(r){ return r.month >= start; }) : [], d = sum(from, "used"), yu = sum(from, function(r){ return r.people[k] ? r.people[k].units : 0; });
+    var daysFrom = start && unitMonths.length && start === unitMonths[0].month ? yearDays : sum(yearMonths.filter(function(r){ return start && r.month >= start; }), "total");
+    o.yearEnd = d > 0 ? Math.round(yu/d*daysFrom) : 0;
+    if (!ytd && curRec){
+      o.tracking = curRec.used > 0 ? o.units/curRec.used*curRec.total : null;
+      var prev = [1, 2, 3].map(function(i){ var pr = rec[salesMonthAdd(cur, -i)]; return pr && pr.people[k] ? pr.people[k].units : 0; });
+      o.last = prev[0]; o.avg3 = (prev[0] + prev[1] + prev[2])/3;
+      o.growth = o.avg3 > 0 && o.tracking !== null ? o.tracking/o.avg3 : null;
+    }
+    return o;
+  };
+  var mtdList = curRec ? [curRec] : [];
+  var sc = { mtd:people.map(function(k){ return score(k, mtdList, false); }), ytd:people.map(function(k){ return score(k, sofar, true); }) };
+  ["mtd","ytd"].forEach(function(p){ sc[p].sort(function(a, b){ return b.units - a.units || b.total - a.total; }); });
+  var periodTotals = function(list){
+    var u = sum(list, function(r){ return r.agg.store.units; });
+    return { units:sum(list, "units"), N:sum(list, "N"), U:sum(list, "U"), front:sum(list, "front"), fi:sum(list, "fi"), gross:sum(list, "gross"), delivered:sum(list, "delivered"),
+      losingN:sum(list, function(r){ return r.agg.store.losingN; }), losingAmt:sum(list, function(r){ return r.agg.store.losingAmt; }),
+      dealUnits:u, frontPvr:u ? sum(list, "front")/u : null, fiPvr:u ? sum(list, "fi")/u : null, pvr:u ? sum(list, "gross")/u : null,
+      target:sum(list, "target"), grossTarget:sum(list, "grossTarget"), used:sum(list, "used"), total:sum(list, "total") };
+  };
+  var mtd = periodTotals(mtdList);
+  if (curRec){ mtd.trackUnits = curRec.used ? Math.round(mtd.units/curRec.used*curRec.total) : null; mtd.trackGross = curRec.used ? Math.round(mtd.gross/curRec.used*curRec.total) : null; }
+  return { year:year, cur:cur, months:yearMonths, all:months, yearDays:yearDays, usedDays:usedDays, leftDays:leftDays,
+    mtd:mtd, ytd:periodTotals(sofar), proj:proj, scores:sc };
+}
+
+/* ---------------- EXCEL IMPORT ----------------
+   Reads the sheets the sales office already keeps: a sales log (one row per vehicle, header row found
+   automatically) and the Sales Performance workbook (monthly totals per salesperson). Rows arrive as
+   arrays of cell values. */
+var IMP_MON = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+function impText(v){ return String(v === null || v === undefined ? "" : v).replace(/\s+/g, " ").trim(); }
+function impHead(v){ return impText(v).toLowerCase().replace(/[^a-z0-9#&\/]+/g, " ").replace(/\s+/g, " ").trim(); }
+function impYmd(y, m, d){ var dt = new Date(y, m - 1, d, 12); return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d ? localISO(dt) : null; }
+/* "September 2026", "SEP SALES PERFORMANCE", "AUGUST 2026 SALES PERFORMANCE" → { m:9, y:2026 } (either may be null) */
+function impMonthOf(text){
+  var t = impText(text).toUpperCase(), mm = t.match(/\b(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\b/), yy = t.match(/\b(20\d{2})\b/);
+  return { m:mm ? IMP_MON.indexOf(mm[1]) + 1 : null, y:yy ? Number(yy[1]) : null };
+}
+/* A sold date as typed: "9TH SEP", "Sep 9", "2026-09-09", "9/9/2026", an Excel day number or a Date.
+   Without a year, the tab's year is used (a December row on a January tab is the year before). */
+function impDate(v, tabYear, tabMonth){
+  if (v === null || v === undefined || v === "") return null;
+  if (v instanceof Date) return isNaN(v) ? null : localISO(v);
+  if (typeof v === "number"){
+    if (v > 20000 && v < 80000){ var d = new Date(Math.round((v - 25569)*86400000)); return impYmd(d.getUTCFullYear(), d.getUTCMonth() + 1, d.getUTCDate()); }
+    return null;
+  }
+  var t = impText(v).toUpperCase(), m;
+  if ((m = t.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) return impYmd(+m[1], +m[2], +m[3]);
+  if ((m = t.match(/^(\d{1,2})[\/.-](\d{1,2})[\/.-](\d{2,4})$/))){
+    var a = +m[1], b = +m[2], y = +m[3] < 100 ? 2000 + +m[3] : +m[3];
+    return a > 12 ? impYmd(y, b, a) : impYmd(y, a, b);
+  }
+  var yy = t.match(/\b(20\d{2})\b/), rest = t.replace(/\b20\d{2}\b/, " "), mon = rest.match(/(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)/), day = rest.match(/\b(\d{1,2})(?:ST|ND|RD|TH)?\b/);
+  if (!mon || !day) return null;
+  var mo = IMP_MON.indexOf(mon[1]) + 1, yr = yy ? +yy[1] : tabYear;
+  if (!yr) return null;
+  if (!yy && tabMonth){ if (mo - tabMonth > 6) yr--; else if (tabMonth - mo > 6) yr++; }
+  return impYmd(yr, mo, +day[1]);
+}
+function impMoney(v){
+  if (v === null || v === undefined || v === "") return null;
+  if (typeof v === "number") return isNaN(v) ? null : Math.round(v*100)/100;
+  var t = impText(v).replace(/[$,\s]/g, ""), neg = /^\(.*\)$/.test(t) || /^[-−]/.test(t);
+  t = t.replace(/[()−-]/g, "");
+  if (!t || isNaN(Number(t))) return null;
+  return (neg ? -1 : 1)*Math.round(Number(t)*100)/100;
+}
+function impYes(v){ return /^(y|yes|true|x|✓|1)$/i.test(impText(v)); }
+var IMP_LOG_COLS = [
+  ["soldDate", /^(sold )?date( sold)?$/], ["stockNo", /^stock ?(#|no|number)$/], ["customerNo", /^(customer|cust) ?(#|no|number)$/],
+  ["customer", /^(customer|cust)( name)?$/], ["sp", /^sales ?(person|rep|consultant|c)$/], ["fiManager", /^(f ?& ?i|fi|finance) ?(manager|mgr)?$/],
+  ["vehicle", /^vehicle/], ["status", /^(deal )?status$/], ["dealType", /^(f\/c|f\/l\/c|deal type|finance\/cash|fin\/cash)$/],
+  ["frontGross", /^front( g ?p| gross)?$/], ["fiGross", /^(f ?& ?i|fi) (g ?p|gross)/], ["leadSource", /^(lead )?source$/],
+  ["closeType", /^close( type)?$/], ["stockSource", /^stock source$/], ["rdr", /^rdr$/], ["appt", /^app(t|ointment)?( y\/n)?$/],
+  ["secPack", /^sec ?pack/], ["trade", /^trade( in)?$/], ["tire", /^tire/], ["secondTO", /^2nd t ?o/], ["posted", /^posted$/],
+  ["type", /^(n\/u|new\/used|new or used|type)$/], ["lender", /^(lender|bank)$/], ["notes", /^(notes?|comments?)$/]];
+var IMP_COL_LABEL = { soldDate:"Date sold", stockNo:"Stock #", customerNo:"Customer #", customer:"Customer", sp:"Salesperson", fiManager:"F&I manager", vehicle:"Vehicle",
+  status:"Status", dealType:"Deal", frontGross:"Front gross", fiGross:"F&I gross", leadSource:"Lead source", closeType:"Close", stockSource:"Stock source", rdr:"Del / scanned",
+  appt:"Appointment", secPack:"Security pack", trade:"Trade-in", tire:"Tire & wheel", secondTO:"2nd turnover", posted:"Posted", type:"New / Used", lender:"Lender", notes:"Notes" };
+/* the first row (in the top 80) that has these headings; returns { row, cols:{ field:index }, heads:{ field:text } } */
+function impFindHeader(rows, table, need){
+  for (var i = 0; i < Math.min(rows.length, 80); i++){
+    var r = rows[i] || [], cols = {}, heads = {};
+    for (var c = 0; c < r.length; c++){
+      var h = impHead(r[c]); if (!h) continue;
+      for (var j = 0; j < table.length; j++){ if (cols[table[j][0]] === undefined && table[j][1].test(h)){ cols[table[j][0]] = c; heads[table[j][0]] = impText(r[c]); break; } }
+    }
+    if (need.every(function(f){ return cols[f] !== undefined; })) return { row:i, cols:cols, heads:heads };
+  }
+  return null;
+}
+function impPick(text, list, other){
+  var t = impText(text).toLowerCase().replace(/[^a-z0-9]/g, ""); if (!t) return "";
+  for (var i = 0; i < list.length; i++){ var l = list[i].toLowerCase().replace(/[^a-z0-9]/g, ""); if (l === t || l.indexOf(t) !== -1 || t.indexOf(l) !== -1) return list[i]; }
+  return other === undefined ? "" : other;
+}
+var IMP_STATUS = { delivered:"delivered", "delscanned":"rdr", scanned:"rdr", rdr:"rdr", declined:"declined", cancelled:"cancelled", canceled:"cancelled", carryover:"carry", carry:"carry",
+  pending:"pending", approved:"approved", schdelivery:"scheduled", scheduleddelivery:"scheduled", scheduled:"scheduled", sched:"scheduled" };
+function impHash(s){ var h = 2166136261; for (var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
+/* One sales-log tab. opts: { type:"Used"|"New"|"file", leads:[..], closes:[..], stocks:[..], store:"id", file:"name" }
+   Returns null when the tab has no sales-log header, else { name, month, header, rows:[{ line, deal, issues:[], bad }] }. */
+function impLogSheet(name, rows, opts){
+  opts = opts || {};
+  var hdr = impFindHeader(rows, IMP_LOG_COLS, ["stockNo", "sp"]);
+  if (!hdr || (hdr.cols.soldDate === undefined && hdr.cols.customer === undefined)) return null;
+  var tab = impMonthOf(name);
+  if (!tab.y) for (var k = 0; k < Math.min(hdr.row, 4) && !tab.y; k++) (rows[k] || []).forEach(function(c){ var mo = impMonthOf(c); if (mo.y && !tab.y){ tab.y = mo.y; if (!tab.m) tab.m = mo.m; } });
+  var cell = function(r, f){ var c = hdr.cols[f]; return c === undefined ? "" : r[c]; };
+  var out = [];
+  for (var i = hdr.row + 1; i < rows.length; i++){
+    var r = rows[i] || [];
+    var stock = impText(cell(r, "stockNo")).toUpperCase(), cust = impText(cell(r, "customer")), sp = saleKey(cell(r, "sp")), rawDate = cell(r, "soldDate");
+    if (!stock && !cust && !sp) continue;
+    if (!stock && !cust) continue;
+    var issues = [], sold = impDate(rawDate, tab.y, tab.m), st = impText(cell(r, "status")), status = IMP_STATUS[st.toLowerCase().replace(/[^a-z]/g, "")];
+    if (!sold) issues.push(impText(rawDate) ? "Date not readable (" + impText(rawDate) + ")" : "No date");
+    if (!status){ if (st) issues.push("Status \"" + st + "\" read as Pending"); else issues.push("No status · imported as Pending"); status = "pending"; }
+    if (status === "delivered" && impYes(cell(r, "rdr"))) status = "rdr";
+    if (!sp){ issues.push("No salesperson · counted as HOUSE"); sp = "HOUSE"; }
+    if (!cust) issues.push("No customer name");
+    var tc = impText(cell(r, "type")), type = opts.type === "New" || opts.type === "Used" ? opts.type : /^n(ew)?$/i.test(tc) ? "New" : /as.?is/i.test(tc) ? "As-is" : "Used";
+    var front = impMoney(cell(r, "frontGross")), fi = impMoney(cell(r, "fiGross"));
+    var deal = { id:"X" + impHash([opts.store || "", stock, sold || "", cust.toUpperCase(), sp].join("|")) + impHash(stock + "|" + sold).slice(0, 3),
+      soldDate:sold || "", status:status, statusDates:{}, type:type, dealType:impPick(cell(r, "dealType"), ["Finance", "Lease", "Cash"]),
+      salespeople:[{ name:sp, share:1 }], stockNo:stock, customerNo:impText(cell(r, "customerNo")), customer:cust, vehicle:impText(cell(r, "vehicle")),
+      fiManager:impText(cell(r, "fiManager")), fiUserId:"", frontGross:front, fiGross:fi, lender:impText(cell(r, "lender")),
+      leadSource:impPick(cell(r, "leadSource"), opts.leads || [], "Other"), closeType:impPick(cell(r, "closeType"), opts.closes || []),
+      stockSource:impPick(cell(r, "stockSource"), opts.stocks || [], "Other"),
+      flags:{}, deliveryAt:"", deliveredDate:"", notes:impText(cell(r, "notes")), importedFrom:(opts.file ? opts.file + " · " : "") + name };
+    if (!impText(cell(r, "leadSource"))) deal.leadSource = "";
+    if (!impText(cell(r, "stockSource"))) deal.stockSource = "";
+    ["appt","trade","secondTO","secPack","tire","posted"].forEach(function(f){ if (impYes(cell(r, f))) deal.flags[f] = true; });
+    if (sold){ deal.statusDates[status] = sold; if (status === "delivered" || status === "rdr") deal.deliveredDate = sold; }
+    out.push({ line:i + 1, deal:deal, issues:issues, bad:!sold });
+  }
+  return { name:name, month:tab.y && tab.m ? tab.y + "-" + ("0" + tab.m).slice(-2) : null, header:hdr, rows:out };
+}
+var IMP_PERF_COLS = [["sp", /^sales ?(person|rep|consultant|c)$/], ["tn", /^target n(ew)?$/], ["tu", /^target u(sed)?$/], ["sn", /^sold n(ew)?$/], ["su", /^sold u(sed)?$/]];
+/* One Sales Performance tab → { name, month:"YYYY-MM"|null, people:[{ name, tn, tu, sn, su }] } or null. */
+function impPerfSheet(name, rows){
+  var hdr = impFindHeader(rows, IMP_PERF_COLS, ["sp", "sn", "su"]);
+  if (!hdr) return null;
+  var mo = { m:null, y:null };
+  for (var k = 0; k < hdr.row; k++) (rows[k] || []).forEach(function(c){ var x = impMonthOf(c); if (x.m && !mo.m){ mo.m = x.m; } if (x.y && !mo.y) mo.y = x.y; });
+  var tn = impMonthOf(name); if (!mo.m) mo.m = tn.m; if (!mo.y) mo.y = tn.y;
+  var num = function(v){ var n = impMoney(v); return n === null ? 0 : n; };
+  var people = [];
+  for (var i = hdr.row + 1; i < rows.length; i++){
+    var r = rows[i] || [], nm = saleKey(r[hdr.cols.sp]);
+    if (!nm || /^(DEALERSHIP|TOTAL|STORE)/.test(nm)) continue;
+    var p = { name:nm, tn:hdr.cols.tn === undefined ? 0 : num(r[hdr.cols.tn]), tu:hdr.cols.tu === undefined ? 0 : num(r[hdr.cols.tu]), sn:num(r[hdr.cols.sn]), su:num(r[hdr.cols.su]) };
+    if (p.tn || p.tu || p.sn || p.su) people.push(p);
+  }
+  return { name:name, month:mo.m && mo.y ? mo.y + "-" + ("0" + mo.m).slice(-2) : null, people:people };
+}
+
+window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
+  impText:impText, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,

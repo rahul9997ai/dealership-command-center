@@ -3,12 +3,15 @@
    The sales log, Sales performance (the sales managers' sheet, done automatically), Today, and
    monthly targets with selling days. Everything is typed in here: nothing comes from the Finance
    deals. Stored in sales_log / sales_targets, one store at a time; only Master, the store's GM and
-   its Sales Managers can read or change it (enforced by the database). */
+   Sales Managers with the Sales Tracker switch on can read or change it (enforced by the database).
+   A deal sold in an earlier month that isn't delivered, declined or cancelled is a carry-over: it shows
+   on Today and at the top of the current month's Sales log, and still counts in the month it was sold. */
 var ST = stFresh(null);
 function stFresh(store){
   return { store:store, deals:{}, months:{}, loading:{}, targets:{}, targetsLoaded:{}, view:"today", month:null, perf:"month",
     f:{ type:"all", status:"all", sp:"all", q:"" }, edit:null, editErr:null, saving:false, modal:null, tDraft:null, tDirty:false, err:null,
-    appts:{}, apptDay:null, apptTimer:null, apptSaved:null, fms:null, mine:{}, mineLoading:{}, tv:false, tvTimer:null, fundEdit:null };
+    appts:{}, apptDay:null, apptTimer:null, apptSaved:null, fms:null, mine:{}, mineLoading:{}, tv:false, tvTimer:null, fundEdit:null,
+    carryFor:null, carryLoading:false, imp:null };
 }
 var ST_LABEL = { pending:"Pending", approved:"Approved", scheduled:"Sch. delivery", delivered:"Delivered", rdr:"Del / scanned",
   carry:"Carry over", declined:"Declined", cancelled:"Cancelled" };
@@ -19,16 +22,18 @@ var ST_STOCK = ["Internal","Trade in","Lease return","Rental","Customer purchase
 var ST_FLAGS = [["appt","Appointment"],["trade","Trade-in"],["secondTO","2nd turnover"],["secPack","Security pack"],["tire","Tire & wheel"],["posted","Posted"]];
 var ST_HUES = ["#2563eb","#0f766e","#7c3aed","#dc2626","#d97706","#0891b2","#db2777","#4d7c0f","#9333ea","#0369a1"];
 
-function stCan(){ var r = V.currentUser().role; return r === "Master Administrator" || r === "General Manager" || r === "Sales Manager"; }
+function stCan(){ var u = V.currentUser(), r = u.role; return r === "Master Administrator" || r === "General Manager" || (r === "Sales Manager" && V.featureOn(u, "sales")); }
 function stIsFM(){ return V.isFinanceRole(V.currentUser().role); }
 function stToday(){ return C.todayISO(); }
 function stShift(month, n){ var d = new Date(+month.slice(0, 4), +month.slice(5, 7) - 1 + n, 1, 12); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2); }
 function stMonthName(month){ return new Date(+month.slice(0, 4), +month.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"long", year:"numeric" }); }
 function stDay(iso){ return iso ? new Date(iso.slice(0, 10) + "T12:00:00").toLocaleDateString("en-CA", { month:"short", day:"numeric" }) : ""; }
+/* whole dollars with a proper minus sign: −$1,500 */
+function stMoney(v){ var n = Number(v) || 0; return n < 0 ? "−" + money0(-n) : money0(n); }
 function stNum(v){ var n = parseFloat(String(v === null || v === undefined ? "" : v).replace(/[$,\s]/g, "")); return isNaN(n) ? null : n; }
 function stKey(n){ return String(n || "").trim().toUpperCase(); }
 function stF(n){ return n === null || n === undefined ? "—" : (Math.round(n * 10) / 10 % 1 ? (Math.round(n * 10) / 10).toFixed(1) : String(Math.round(n))); }
-function stSync(){ if (ST.store !== state.activeDealershipId) ST = stFresh(state.activeDealershipId); if (!ST.month) ST.month = stToday().slice(0, 7); }
+function stSync(){ if (ST.store !== state.activeDealershipId){ ST = stFresh(state.activeDealershipId); INS.loaded = {}; } if (!ST.month) ST.month = stToday().slice(0, 7); }
 function stAllDeals(){ return Object.keys(ST.deals).map(function(k){ return ST.deals[k]; }); }
 
 /* ---- loading and saving ---- */
@@ -86,6 +91,26 @@ function stQueueAppt(day){
       if (r.error) toast("Couldn't save the appointment board: " + r.error.message, "err"); else { ST.apptSaved = day; render(); }
     });
   }, 700);
+}
+/* Carry-overs: deals sold in an earlier month (up to a year back) that are still pending, approved,
+   scheduled or marked carry over. Loaded once a month; saving a deal keeps the list current. */
+function stLoadCarry(){
+  var cur = stToday().slice(0, 7);
+  if (ST.carryFor === cur || ST.carryLoading) return;
+  if (!stOnline()){ ST.carryFor = cur; return; }
+  ST.carryLoading = true;
+  var store = ST.store;
+  fetchAllRows(function(){ return sb.from("sales_log").select("id,data").eq("dealership_id", store).gte("sold_on", stShift(cur, -12) + "-01").lt("sold_on", cur + "-01").in("data->>status", C.SALE_OPEN).order("id"); })
+    .then(function(rows){ ST.carryLoading = false; if (ST.store !== store) return; rows.forEach(function(r){ if (r.data && r.data.id) ST.deals[r.data.id] = r.data; }); ST.carryFor = cur; render(); },
+      function(e){ ST.carryLoading = false; ST.carryFor = cur; ST.err = "Couldn't load carry-overs: " + (e && e.message ? e.message : e); render(); });
+}
+function stCarry(){
+  var start = stToday().slice(0, 7) + "-01";
+  return stAllDeals().filter(function(d){ return C.saleIsOpen(d) && d.soldDate && d.soldDate < start; }).sort(function(a, b){ return String(a.soldDate).localeCompare(String(b.soldDate)); });
+}
+function stFromPill(d){
+  var m = String(d.soldDate || "").slice(0, 7);
+  return m && m < stToday().slice(0, 7) ? ' <span class="st-pill carryfrom">from ' + esc(new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"long" })) + '</span>' : '';
 }
 /* The store's Finance Managers, to pick on a deal (matched by account, not by typed name). */
 function stLoadFms(){
@@ -192,7 +217,7 @@ function stViewToday(){
   var noTargets = !(t.people || []).length, fund = stFunding();
   var ap = (ST.appts[today] || {}).people || {}, apNames = Object.keys(ap).filter(function(k){ var a = ap[k]; return (Number(a.new) || 0) + (Number(a.used) || 0) > 0; });
   var apTot = 0, apConf = 0; apNames.forEach(function(k){ apTot += (Number(ap[k].new) || 0) + (Number(ap[k].used) || 0); apConf += Number(ap[k].confirmed) || 0; });
-  var mtd = stApptTotals(month);
+  var mtd = stApptTotals(month), carry = stCarry();
   var li = function(d, right){ return '<li data-st="edit" data-id="' + esc(d.id) + '" style="cursor:pointer">' + right + '<span><b>' + esc(d.customer || d.stockNo || "Deal") + '</b><br><span style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</span></span><span class="who">' + stSpText(d) + '</span></li>'; };
   return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Morning meeting</div><h2>' +
       new Date(today + "T12:00:00").toLocaleDateString("en-CA", { weekday:"long", month:"long", day:"numeric" }) + '</h2><div class="st-hsub">' + esc(state.config.name || "") + ' · selling day ' + day + ' of ' + total + ' · ' + left + ' left</div></div>' +
@@ -203,10 +228,10 @@ function stViewToday(){
       '<div class="st-hk"><div class="l">New · Used sold</div><div class="v">' + stF(s.sN) + ' · ' + stF(s.sU) + '</div><div class="s">targets ' + s.tN + ' · ' + s.tU + (s.kN !== null ? ' · tracking ' + s.kN + ' · ' + s.kU : '') + '</div>' +
         '<div class="st-pace"><i style="width:' + (s.tT ? Math.min(100, s.sT/s.tT*100) : 0) + '%"></i>' + (total ? '<em style="left:' + (day/total*100) + '%"></em>' : '') + '</div></div>' +
       '<div class="st-hk"><div class="l">Needed per day</div><div class="v">' + (s.perDay === null ? "—" : s.perDay.toFixed(1)) + '</div><div class="s">' + (s.tT ? 'to reach ' + s.tT + ' in the ' + left + ' days left' : 'set targets to see this') + '</div></div>' +
-      '<div class="st-hk"><div class="l">Gross vs forecast</div><div class="v">' + money0(gross) + '</div><div class="s">' + (t.gross ? 'of ' + money0(t.gross) + ' · tracking ' + money0(grossTrack) : 'front ' + money0(s.front) + ' · F&amp;I ' + money0(s.fi)) + '</div>' +
+      '<div class="st-hk"><div class="l">Gross vs forecast</div><div class="v">' + stMoney(gross) + '</div><div class="s">' + (t.gross ? 'of ' + stMoney(t.gross) + ' · tracking ' + stMoney(grossTrack) : 'front ' + stMoney(s.front) + ' · F&amp;I ' + stMoney(s.fi)) + '</div>' +
         (t.gross ? '<div class="st-pace"><i class="g" style="width:' + Math.min(100, gross/t.gross*100) + '%"></i><em style="left:' + (total ? day/total*100 : 0) + '%"></em></div>' : '') + '</div>' +
     '</div></div>' +
-    (noTargets ? '<div class="st-warn" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">No targets for ' + stMonthName(month) + ' yet, so tracking and status can\'t be shown. <button type="button" class="btn sm primary" data-st="view" data-v="tgt">Set the targets</button></div>' : '') +
+    (noTargets ? stNewMonth(month, carry) : '') + (carry.length ? stCarryCard(carry) : '') +
     '<div class="st-g3">' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico g">✓</span><h3>Delivered yesterday<small>' + stDay(yesterday) + '</small></h3><span class="cnt">' + deliveredY.length + '</span></div>' +
         (deliveredY.length ? '<ul class="st-list">' + deliveredY.map(function(d){ return li(d, stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE")); }).join("") + '</ul>' : '<div class="st-empty">No deliveries recorded for yesterday.</div>') + '</div>' +
@@ -221,16 +246,35 @@ function stViewToday(){
     '</div>' +
     '<div class="st-g3">' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico p">⏳</span><h3>Still to deliver<small>pending · approved · scheduled · carry over</small></h3><span class="cnt">' + open.length + '</span></div>' +
-        (open.length ? '<ul class="st-list">' + open.slice(0, 6).map(function(d){ return li(d, '<span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>'); }).join("") + '</ul>' + (open.length > 6 ? '<div class="st-empty">and ' + (open.length - 6) + ' more in the Sales log</div>' : '') : '<div class="st-empty">Everything sold has been delivered.</div>') + '</div>' +
+        (open.length ? '<ul class="st-list">' + open.slice(0, 6).map(function(d){ return li(d, '<span class="st-pills"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + '</span>'); }).join("") + '</ul>' + (open.length > 6 ? '<div class="st-empty">and ' + (open.length - 6) + ' more in the Sales log</div>' : '') : '<div class="st-empty">Everything sold has been delivered.</div>') + '</div>' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico o">⚑</span><h3>Save-a-deal<small>pending, declined and approved</small></h3><span class="cnt">' + save.length + '</span></div>' +
         (save.length ? save.slice(0, 6).map(function(d){ return '<div class="st-row" data-st="edit" data-id="' + esc(d.id) + '">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") +
           '<span><b>' + esc(d.customer || d.stockNo || "Deal") + '</b><br><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span></span><span class="nx">' + esc(d.notes || (d.status === "approved" ? "Book the delivery" : "")) + '</span></div>'; }).join("") : '<div class="st-empty">Nothing waiting.</div>') +
-        '<div class="st-mini"><div>Not funded<b style="color:' + (fund.waiting.length ? "var(--danger)" : "inherit") + '">' + money0(fund.amount) + '</b></div><div>Contracts<b>' + fund.waiting.length + '</b></div><div>Oldest<b>' + (fund.oldest ? fund.oldest + " days" : "—") + '</b></div></div></div>' +
+        '<div class="st-mini"><div>Not funded<b style="color:' + (fund.waiting.length ? "var(--danger)" : "inherit") + '">' + stMoney(fund.amount) + '</b></div><div>Contracts<b>' + fund.waiting.length + '</b></div><div>Oldest<b>' + (fund.oldest ? fund.oldest + " days" : "—") + '</b></div></div></div>' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico r">▲</span><h3>Who needs help<small>tracking under 90% of target</small></h3></div>' +
         (noTargets ? '<div class="st-empty">Set targets to see who\'s behind.</div>' : help.length ? help.map(function(h){
           return '<div class="st-help">' + stAv(h.name) + '<b>' + esc(h.name) + '</b><div>' + stTrack(h.sT, h.tT, day, total) + '<div class="t2">' + stF(h.sT) + ' sold · tracking ' + h.kT + ' of ' + h.tT + (h.perDay !== null ? ' · needs ' + h.perDay.toFixed(1) + '/day' : '') + '</div></div>' + stBadge(h.status) + '</div>'; }).join("") +
           '<div class="st-legend"><span>Bar: sold so far</span><span>Line: where they should be today</span></div>' : '<div class="st-empty">Everyone is at 90% of target or better.</div>') + '</div>' +
     '</div>';
+}
+/* The first days of a month (or any time a month has no targets): set them, starting from last month's. */
+function stNewMonth(month, carry){
+  var prev = stShift(month, -1), early = Number(stToday().slice(8, 10)) <= 7;
+  return '<div class="st-card st-banner"><span class="st-ico o">✦</span><div class="t"><b>' + (early ? "It's a new month: time to set " + stMonthName(month) + "'s targets." : "No targets for " + stMonthName(month) + " yet.") + '</b>' +
+    '<div class="st-hsub">' + stMonthName(prev) + ' is closed off as it stands' + (carry.length ? ' · ' + carry.length + ' deal' + (carry.length === 1 ? "" : "s") + ' carr' + (carry.length === 1 ? "ies" : "y") + ' over into ' + stMonthName(month).split(" ")[0] : '') + '. Tracking, status and who needs help show once the targets are saved.</div></div>' +
+    '<span class="acts"><button type="button" class="btn sm" data-st="view" data-v="tgt">Set the targets</button><button type="button" class="btn sm primary" data-st="newmonth">Copy ' + esc(stMonthName(prev).split(" ")[0]) + '\'s targets</button></span></div>';
+}
+function stCarryCard(carry){
+  var cur = stToday().slice(0, 7), from = {};
+  carry.forEach(function(d){ var m = String(d.soldDate).slice(0, 7); from[m] = (from[m] || 0) + 1; });
+  var front = 0; carry.forEach(function(d){ front += Number(d.frontGross) || 0; });
+  return '<div class="st-card st-carry"><div class="st-ch"><span class="st-ico p">↻</span><h3>Carry-overs<small>sold in an earlier month, not delivered yet · they count in the month they were sold</small></h3><span class="cnt">' + carry.length + '</span></div>' +
+    '<div class="st-carry-b"><div class="st-carry-l">' + carry.slice(0, 8).map(function(d){ var nx = d.status === "scheduled" && d.deliveryAt ? stDay(d.deliveryAt) + " " + String(d.deliveryAt).slice(11, 16) : d.notes || "";
+      return '<div class="st-row" data-st="edit" data-id="' + esc(d.id) + '">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") + '<span><b>' + esc(d.customer || d.stockNo || "Deal") + '</b> <span style="font-size:11.5px;color:var(--muted)">· ' + esc(d.vehicle || "") + '</span><br>' +
+        '<span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + '</span><span class="nx">' + esc(nx) + '<br><span style="color:var(--muted)">' + stDaysSince(d.soldDate) + ' days since sold</span></span></div>'; }).join("") +
+      (carry.length > 8 ? '<div class="st-empty">and ' + (carry.length - 8) + ' more at the top of the Sales log</div>' : '') + '</div>' +
+      '<div class="st-mini st-carry-s">' + Object.keys(from).sort().reverse().slice(0, 3).map(function(m){ return '<div>From ' + esc(new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"long" })) + '<b>' + from[m] + '</b></div>'; }).join("") +
+        '<div>Front gross<b>' + stMoney(front) + '</b></div><div>Oldest<b>' + stDaysSince(carry[0].soldDate) + ' days</b></div></div></div></div>';
 }
 /* ---- Month dashboard ---- */
 function stMonthStats(month){
@@ -275,14 +319,14 @@ function stDonut(parts, label){
 }
 function stViewMonth(){
   var month = ST.month, t = stTargets(month), p = stPerf(month, "month"), s = p.store, m = stMonthStats(month), gross = s.front + s.fi;
-  var gTrack = p.day ? gross/p.day*p.total : 0, pv = function(v){ return s.deals ? money0(v/s.deals) : "—"; };
+  var gTrack = p.day ? gross/p.day*p.total : 0, pv = function(v){ return s.deals ? stMoney(v/s.deals) : "—"; };
   var bar = function(label, v, c1, c2){ return '<div style="margin-top:11px"><div style="display:flex;font-size:12.5px;font-weight:600"><span>' + label + '</span><b style="margin-left:auto">' + Math.round(v*100) + '%</b></div><div class="st-track" style="margin-top:5px"><i style="width:' + Math.round(v*100) + '%;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')"></i></div></div>'; };
   return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Month dashboard</div><h2>' + stMonthName(month) + '</h2><div class="st-hsub">' + esc(state.config.name || "") + ' · selling day ' + p.day + ' of ' + p.total + '</div></div>' +
       '<div class="st-actions">' + stMonthSelect() + '</div></div>' +
     '<div class="st-kpis first-wide"><div class="st-hk ring">' + stRing(s.tT ? s.sT/s.tT : 0, 104, "#fde68a", "#f59e0b", stF(s.sT), s.tT ? "of " + s.tT : "sold", true) +
         '<div><div class="l">Sold vs target</div><div class="v">' + (s.kT === null ? "—" : s.kT) + ' <small>projected</small></div><div class="s">New ' + (s.kN === null ? "—" : s.kN) + ' · Used ' + (s.kU === null ? "—" : s.kU) + '</div><div style="margin-top:6px">' + (s.tT ? stBadge(s.status) : "") + '</div></div></div>' +
-      '<div class="st-hk"><div class="l">Gross so far</div><div class="v">' + money0(gross) + '</div><div class="s">front ' + money0(s.front) + ' · F&amp;I ' + money0(s.fi) + '</div></div>' +
-      '<div class="st-hk"><div class="l">Gross forecast</div><div class="v">' + (t.gross ? money0(t.gross) : "—") + '</div><div class="s">' + (t.gross ? 'tracking ' + money0(gTrack) + ' · ' + money0(Math.max(0, t.gross - gross)) + ' to go' : 'set it in Targets') + '</div>' +
+      '<div class="st-hk"><div class="l">Gross so far</div><div class="v">' + stMoney(gross) + '</div><div class="s">front ' + stMoney(s.front) + ' · F&amp;I ' + stMoney(s.fi) + '</div></div>' +
+      '<div class="st-hk"><div class="l">Gross forecast</div><div class="v">' + (t.gross ? stMoney(t.gross) : "—") + '</div><div class="s">' + (t.gross ? 'tracking ' + stMoney(gTrack) + ' · ' + stMoney(Math.max(0, t.gross - gross)) + ' to go' : 'set it in Targets') + '</div>' +
         (t.gross ? '<div class="st-pace"><i class="g" style="width:' + Math.min(100, gross/t.gross*100) + '%"></i><em style="left:' + (p.total ? p.day/p.total*100 : 0) + '%"></em></div>' : '') + '</div>' +
       '<div class="st-hk ring">' + stRing(t.rdr ? m.rdr/t.rdr : 0, 84, "#a7f3d0", "#10b981", String(m.rdr), t.rdr ? "of " + t.rdr : "RDR", true) + '<div><div class="l">RDR</div><div class="v">' + (t.rdr ? Math.max(0, t.rdr - m.rdr) : "—") + '</div><div class="s">' + (t.rdr ? "still to report" : "set a target") + '</div></div></div></div></div>' +
     '<div class="st-g2" style="grid-template-columns:1.5fr 1fr"><div class="st-card"><div class="st-ch"><span class="st-ico b">↗</span><h3>Sold vs target pace<small>' + stMonthName(month) + ' · counted on ' + (p.countOn === "delivered" ? "delivery" : "sold") + '</small></h3><span style="margin-left:auto">' + (s.tT ? stBadge(s.status) : "") + '</span></div>' + stChart(m.cum, s.tT, p.total, s.kT) + '</div>' +
@@ -349,15 +393,15 @@ function stFunding(){
 function stViewFund(){
   var f = stFunding(), over = 0; f.over10.forEach(function(w){ over += Number(w.d.funding && w.d.funding.amount) || 0; });
   return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Funding</div><h2>Contracts in transit</h2><div class="st-hsub">Delivered finance and lease deals the lender hasn\'t paid yet · oldest first</div></div></div>' +
-    '<div class="st-kpis"><div class="st-hk"><div class="l">Not yet funded</div><div class="v" style="color:' + (f.waiting.length ? "#fca5a5" : "#fff") + '">' + money0(f.amount) + '</div><div class="s">' + f.waiting.length + ' contract' + (f.waiting.length === 1 ? "" : "s") + '</div></div>' +
+    '<div class="st-kpis"><div class="st-hk"><div class="l">Not yet funded</div><div class="v" style="color:' + (f.waiting.length ? "#fca5a5" : "#fff") + '">' + stMoney(f.amount) + '</div><div class="s">' + f.waiting.length + ' contract' + (f.waiting.length === 1 ? "" : "s") + '</div></div>' +
       '<div class="st-hk"><div class="l">Average days waiting</div><div class="v">' + (f.waiting.length ? f.avg.toFixed(1) : "—") + '</div><div class="s">oldest ' + (f.oldest || 0) + ' days</div></div>' +
-      '<div class="st-hk"><div class="l">Over 10 days</div><div class="v" style="color:' + (f.over10.length ? "#fca5a5" : "#fff") + '">' + f.over10.length + '</div><div class="s">' + money0(over) + (f.over10.length ? ' · chase today' : '') + '</div></div>' +
+      '<div class="st-hk"><div class="l">Over 10 days</div><div class="v" style="color:' + (f.over10.length ? "#fca5a5" : "#fff") + '">' + f.over10.length + '</div><div class="s">' + stMoney(over) + (f.over10.length ? ' · chase today' : '') + '</div></div>' +
       '<div class="st-hk"><div class="l">Funded this month</div><div class="v">' + f.funded.length + '</div><div class="s">' + (f.avgFunded === null ? "—" : "average " + f.avgFunded.toFixed(1) + " days") + '</div></div></div></div>' +
     '<div class="st-table"><div class="st-th"><div><h2>CONTRACTS IN TRANSIT</h2><div class="st-hsub">Change the step right here · red after 10 days · open a deal to edit the amount or what\'s holding it up</div></div></div>' +
       '<div class="st-tw">' + (f.waiting.length ? '<table><thead><tr><th class="l">Delivered</th><th class="l">Customer · vehicle</th><th>Lender</th><th class="r">Amount</th><th>Waiting</th><th class="l">Step</th><th class="l">Holding it up</th><th></th></tr></thead><tbody>' +
         f.waiting.map(function(w){ var d = w.d, fu = d.funding || {}, cls = w.days > 10 ? "declined" : w.days > 5 ? "scheduled" : "delivered";
           return '<tr><td class="l">' + stDay(d.deliveredDate || d.soldDate) + '</td><td class="l"><b>' + esc(d.customer || d.stockNo || "") + '</b><div style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</div></td><td>' + esc(d.lender || "—") + '</td>' +
-            '<td class="r num"><b>' + (fu.amount ? money0(fu.amount) : "—") + '</b></td><td><span class="st-pill ' + cls + '">' + w.days + ' days</span></td>' +
+            '<td class="r num"><b>' + (fu.amount ? stMoney(fu.amount) : "—") + '</b></td><td><span class="st-pill ' + cls + '">' + w.days + ' days</span></td>' +
             '<td class="l"><select class="st-tin" style="width:auto" data-stfund="' + esc(d.id) + '"><option value="">Not started</option>' + ST_FUND.map(function(x){ return '<option value="' + x[0] + '" ' + (fu.step === x[0] ? "selected" : "") + '>' + x[1] + '</option>'; }).join("") + '</select></td>' +
             '<td class="l" style="font-size:12px;color:var(--text-2);white-space:normal;max-width:220px">' + esc(fu.holdup || "") + '</td><td><button type="button" class="btn sm" data-st="edit" data-id="' + esc(d.id) + '">Open</button></td></tr>'; }).join("") + '</tbody></table>' :
         '<div class="st-empty" style="padding:20px 16px">Nothing waiting on a lender. Delivered finance and lease deals show here until they\'re marked Funded.</div>') + '</div>' +
@@ -388,8 +432,8 @@ function stViewMine(){
   rows.forEach(function(d){ tot += Number(d.fiGross) || 0; });
   var counted = rows.filter(function(d){ return C.saleCounts(d); });
   return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · My F&amp;I</div><h2>' + stMonthName(month) + '</h2><div class="st-hsub">' + esc(me.name || "") + ' · deals where you\'re the F&amp;I manager</div></div><div class="st-actions">' + stMonthSelect() + '</div></div>' +
-    '<div class="st-kpis"><div class="st-hk"><div class="l">My F&amp;I gross</div><div class="v">' + money0(tot) + '</div><div class="s">' + rows.length + ' deal' + (rows.length === 1 ? "" : "s") + '</div></div>' +
-      '<div class="st-hk"><div class="l">Per deal</div><div class="v">' + (counted.length ? money0(tot/counted.length) : "—") + '</div><div class="s">declined and cancelled left out</div></div>' +
+    '<div class="st-kpis"><div class="st-hk"><div class="l">My F&amp;I gross</div><div class="v">' + stMoney(tot) + '</div><div class="s">' + rows.length + ' deal' + (rows.length === 1 ? "" : "s") + '</div></div>' +
+      '<div class="st-hk"><div class="l">Per deal</div><div class="v">' + (counted.length ? stMoney(tot/counted.length) : "—") + '</div><div class="s">declined and cancelled left out</div></div>' +
       '<div class="st-hk"><div class="l">Not yet funded</div><div class="v">' + rows.filter(function(d){ return (d.status === "delivered" || d.status === "rdr") && (d.dealType === "Finance" || d.dealType === "Lease") && !(d.funding && d.funding.step === "funded"); }).length + '</div><div class="s">of your delivered finance and lease deals</div></div>' +
       '<div class="st-hk"><div class="l">Delivered</div><div class="v">' + rows.filter(function(d){ return d.status === "delivered" || d.status === "rdr"; }).length + '</div><div class="s">this month</div></div></div></div>' +
     '<div class="st-table"><div class="st-th"><div><h2>MY DEALS</h2><div class="st-hsub">You can update F&amp;I gross and the funding step. Front gross isn\'t shown to Finance Managers.</div></div></div>' +
@@ -444,19 +488,31 @@ function stViewLog(){
   var counts = { all:list.length, open:0, del:0, neg:0, N:0, U:0, A:0 };
   list.forEach(function(d){ if (["pending","approved","scheduled","carry"].indexOf(d.status) !== -1) counts.open++; else if (d.status === "delivered" || d.status === "rdr") counts.del++; else counts.neg++;
     if (d.type === "As-is") counts.A++; else if (d.type === "Used") counts.U++; else counts.N++; });
-  var rows = list.filter(function(d){
+  var keep = function(d){
     if (f.type !== "all" && (f.type === "Used" ? !C.saleIsUsed(d) : d.type !== f.type)) return false;
     if (f.status === "open" && ["pending","approved","scheduled","carry"].indexOf(d.status) === -1) return false;
     if (f.status !== "all" && f.status !== "open" && d.status !== f.status) return false;
     if (f.sp !== "all" && !(d.salespeople || []).some(function(s){ return stKey(s.name) === f.sp; })) return false;
     if (q && [d.customer, d.stockNo, d.vehicle, d.customerNo].join(" ").toLowerCase().indexOf(q) === -1) return false;
     return true;
-  }).sort(function(a, b){ return String(b.soldDate).localeCompare(String(a.soldDate)) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")); });
+  };
+  var rows = list.filter(keep).sort(function(a, b){ return String(b.soldDate).localeCompare(String(a.soldDate)) || String(b.createdAt || "").localeCompare(String(a.createdAt || "")); });
+  var allCarry = month === stToday().slice(0, 7) ? stCarry() : [], carry = allCarry.filter(keep);
+  var sec = function(cls, text){ return '<tr class="st-sec ' + cls + '"><td colspan="11">' + text + '</td></tr>'; };
+  var rowHtml = function(d){ return '<tr class="click" data-st="edit" data-id="' + esc(d.id) + '"><td class="l" style="font-weight:600">' + stDay(d.soldDate) + '</td><td><b>' + esc(d.stockNo || "") + '</b></td>' +
+          '<td class="l"><b>' + esc(d.customer || "") + '</b><div style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</div></td><td><span class="st-pill ' + esc(d.type || "New") + '">' + esc(d.type || "New") + '</span></td>' +
+          '<td class="l"><span class="st-who" style="font-weight:600">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") + stSpText(d) + '</span></td><td>' + esc(d.dealType || "") + '</td>' +
+          '<td style="font-size:11.5px">' + esc(d.leadSource || "") + '<br><span style="color:var(--muted)">' + esc(d.closeType || "") + '</span></td>' +
+          '<td class="r num"><b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : stMoney(d.frontGross)) + '</b></td><td class="r num"><b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b></td>' +
+          '<td class="l"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + (d.status === "scheduled" && d.deliveryAt ? '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + stDay(d.deliveryAt) + ' ' + String(d.deliveryAt).slice(11, 16) + '</div>' : '') + '</td>' +
+          '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Edit">Edit</button>' +
+          (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + ST_LABEL[stNextStatus(d.status)] + '">→ ' + ST_LABEL[stNextStatus(d.status)] + '</button>' : '') +
+          '<button type="button" class="st-act del" data-st="delrow" data-id="' + esc(d.id) + '" title="Delete" aria-label="Delete">✕</button></span></td></tr>'; };
   var sel = function(key, opts){ return '<select class="st-gsel" data-stf="f.' + key + '">' + opts.map(function(o){ return '<option value="' + esc(o[0]) + '" ' + (f[key] === o[0] ? "selected" : "") + '>' + esc(o[1]) + '</option>'; }).join("") + '</select>'; };
   var card = function(ico, cls, title, sub, n, foot){ return '<div class="st-card"><div class="st-ch"><span class="st-ico ' + cls + '">' + ico + '</span><h3>' + title + '<small>' + sub + '</small></h3><span class="cnt">' + n + '</span></div><div style="font-size:11.5px;color:var(--muted)">' + foot + '</div></div>'; };
   return '<div class="st-g4">' +
       card("✎", "b", "Deals this month", stMonthName(month), counts.all, "New " + counts.N + " · Used " + counts.U + " · As-is " + counts.A) +
-      card("⏱", "o", "Not delivered yet", "pending · approved · scheduled", counts.open, "carry overs included") +
+      card("⏱", "o", "Not delivered yet", "pending · approved · scheduled", counts.open, allCarry.length ? "+ " + allCarry.length + " carried over from earlier months" : "none carried over from earlier months") +
       card("✓", "g", "Delivered", "delivered and scanned", counts.del, "") +
       card("✕", "r", "Declined / cancelled", "not counted", counts.neg, "") + '</div>' +
     '<div class="st-table"><div class="st-th"><div><h2>' + esc(stMonthName(month).toUpperCase()) + ' SALES LOG</h2><div class="st-hsub">New and Used together · click a deal to open it</div></div>' +
@@ -464,19 +520,12 @@ function stViewLog(){
         sel("status", [["all","All statuses"],["open","Not delivered yet"]].concat(C.SALE_STATUSES.map(function(s){ return [s, ST_LABEL[s]]; }))) +
         sel("sp", [["all","All salespeople"]].concat(stRoster(month).map(function(n){ return [n, n]; }))) +
         '<input class="st-gsel" data-stf="f.q" value="' + esc(f.q) + '" placeholder="Search customer or stock #" style="width:190px">' +
-        '<button type="button" class="st-gbtn" data-st="csv">Export</button><button type="button" class="st-gbtn primary" data-st="add">+ Add a deal</button></div></div>' +
-      '<div class="st-tw">' + (rows.length ? '<table><thead><tr><th class="l">Date</th><th>Stock #</th><th class="l">Customer · vehicle</th><th>Type</th><th class="l">Salesperson</th><th>Deal</th><th>Source · close</th><th class="r">Front</th><th class="r">F&amp;I</th><th class="l">Status</th><th class="r">Update</th></tr></thead><tbody>' +
-        rows.map(function(d){ return '<tr class="click" data-st="edit" data-id="' + esc(d.id) + '"><td class="l" style="font-weight:600">' + stDay(d.soldDate) + '</td><td><b>' + esc(d.stockNo || "") + '</b></td>' +
-          '<td class="l"><b>' + esc(d.customer || "") + '</b><div style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</div></td><td><span class="st-pill ' + esc(d.type || "New") + '">' + esc(d.type || "New") + '</span></td>' +
-          '<td class="l"><span class="st-who" style="font-weight:600">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") + stSpText(d) + '</span></td><td>' + esc(d.dealType || "") + '</td>' +
-          '<td style="font-size:11.5px">' + esc(d.leadSource || "") + '<br><span style="color:var(--muted)">' + esc(d.closeType || "") + '</span></td>' +
-          '<td class="r num"><b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : money0(d.frontGross)) + '</b></td><td class="r num"><b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : money0(d.fiGross)) + '</b></td>' +
-          '<td class="l"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + (d.status === "scheduled" && d.deliveryAt ? '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + stDay(d.deliveryAt) + ' ' + String(d.deliveryAt).slice(11, 16) + '</div>' : '') + '</td>' +
-          '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Edit">Edit</button>' +
-          (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + ST_LABEL[stNextStatus(d.status)] + '">→ ' + ST_LABEL[stNextStatus(d.status)] + '</button>' : '') +
-          '<button type="button" class="st-act del" data-st="delrow" data-id="' + esc(d.id) + '" title="Delete" aria-label="Delete">✕</button></span></td></tr>'; }).join("") +
+        '<button type="button" class="st-gbtn" data-st="csv">Export</button><button type="button" class="st-gbtn" data-st="view" data-v="import">Import</button><button type="button" class="st-gbtn primary" data-st="add">+ Add a deal</button></div></div>' +
+      '<div class="st-tw">' + (rows.length || carry.length ? '<table><thead><tr><th class="l">Date</th><th>Stock #</th><th class="l">Customer · vehicle</th><th>Type</th><th class="l">Salesperson</th><th>Deal</th><th>Source · close</th><th class="r">Front</th><th class="r">F&amp;I</th><th class="l">Status</th><th class="r">Update</th></tr></thead><tbody>' +
+        (carry.length ? sec("carry", "Carried over from earlier months · " + carry.length) + carry.map(rowHtml).join("") + sec("", "Sold in " + stMonthName(month).split(" ")[0] + " · " + rows.length) : "") +
+        rows.map(rowHtml).join("") +
         '</tbody></table>' : '<div class="st-empty" style="padding:24px 16px">' + (list.length ? "No deals match these filters." : "No deals logged for " + stMonthName(month) + " yet. Use <b>+ Add a deal</b>.") + '</div>') + '</div>' +
-      '<div class="st-note">Carry over = sold last month, delivering this month (it counts in the month it was sold). Declined and cancelled deals stay in the log but don\'t count toward anyone\'s numbers.</div></div>';
+      '<div class="st-note">Carry-overs are deals sold in an earlier month that aren\'t delivered, declined or cancelled yet. They sit at the top of the current month and on Today, and count in the month they were sold (or the month they\'re delivered, when counting on delivery), so nothing is counted twice. Declined and cancelled deals stay in the log but don\'t count toward anyone\'s numbers.</div></div>';
 }
 
 /* ---- Adding or editing a deal ---- */
@@ -586,10 +635,10 @@ function stViewTargets(){
   });
   var weekly = function(v){ return info.total ? (v * 6 / info.total).toFixed(1) : "—"; };
   return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Targets &amp; selling days</div><h2>' + stMonthName(month) + '</h2><div class="st-hsub">Set by the Sales Manager or GM · selling days worked out automatically</div></div>' +
-      '<div class="st-actions">' + stMonthSelect() + '<button type="button" class="st-gbtn" data-st="copytargets">Copy last month\'s targets</button><button type="button" class="st-gbtn primary" data-st="savetargets"' + (ST.saving ? " disabled" : "") + '>' + (ST.tDirty ? "Save changes" : "Saved") + '</button></div></div>' +
+      '<div class="st-actions">' + stMonthSelect() + '<button type="button" class="st-gbtn" data-st="view" data-v="import">Import from Excel</button><button type="button" class="st-gbtn" data-st="copytargets">Copy last month\'s targets</button><button type="button" class="st-gbtn primary" data-st="savetargets"' + (ST.saving ? " disabled" : "") + '>' + (ST.tDirty ? "Save changes" : "Saved") + '</button></div></div>' +
     '<div class="st-kpis"><div class="st-hk"><div class="l">Store target</div><div class="v">' + (totN + totU) + '</div><div class="s">New ' + totN + ' · Used ' + totU + '</div></div>' +
       '<div class="st-hk"><div class="l">Selling days</div><div class="v">' + info.total + '</div><div class="s">' + day + ' used · ' + (info.total - day) + ' left</div><div class="st-pace"><i class="b" style="width:' + (info.total ? day/info.total*100 : 0) + '%"></i></div></div>' +
-      '<div class="st-hk"><div class="l">Gross forecast</div><div class="v">' + (t.gross ? money0(t.gross) : "—") + '</div><div class="s">' + (t.gross && totN + totU ? "about " + money0(t.gross/(totN + totU)) + " per vehicle" : "optional") + '</div></div>' +
+      '<div class="st-hk"><div class="l">Gross forecast</div><div class="v">' + (t.gross ? stMoney(t.gross) : "—") + '</div><div class="s">' + (t.gross && totN + totU ? "about " + stMoney(t.gross/(totN + totU)) + " per vehicle" : "optional") + '</div></div>' +
       '<div class="st-hk"><div class="l">RDR target</div><div class="v">' + (t.rdr || "—") + '</div><div class="s">optional</div></div></div></div>' +
     (ST.tDirty ? '<div class="st-warn">You have unsaved changes to ' + stMonthName(month) + '\'s targets.</div>' : '') +
     '<div class="st-g2"><div class="st-table" style="margin:0"><div class="st-th"><div><h2>SALESPERSON TARGETS</h2><div class="st-hsub">units · New and Used · HOUSE and MOBILE/HOUSE are always there (store only)</div></div></div>' +
@@ -613,6 +662,7 @@ function stViewTargets(){
 
 /* ---- print and email ---- */
 function stSheet(what){
+  if (String(what).indexOf("ins-") === 0) return insSheet(what.slice(4));
   if (what === "today") return stViewToday().replace(/<div class="st-actions">[\s\S]*?<\/div><\/div>/, "</div>");
   var cur = stToday().slice(0, 7), week = ST.perf === "week" && ST.month === cur, p = stPerf(ST.month, week ? "week" : "month");
   return '<div class="st-table"><div class="st-th"><div><h2>' + esc((state.config.name || "") + " · " + (week ? "WEEK OF " + stDay(p.week.from) + " – " + stDay(p.week.to) : stMonthName(ST.month).toUpperCase() + " SALES PERFORMANCE")) + '</h2>' +
@@ -621,7 +671,7 @@ function stSheet(what){
 }
 function stPrint(what){
   var css = appCssText(), body = stSheet(what);
-  var html = '<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>' + esc((state.config.name || "") + " · Sales Tracker") + '</title>' +
+  var html = '<!doctype html><html data-theme="light"><head><meta charset="utf-8"><title>' + esc((state.config.name || "") + (String(what).indexOf("ins-") === 0 ? " · Insights" : " · Sales Tracker")) + '</title>' +
     '<style>' + css + '@page{size:letter landscape;margin:10mm}html,body{background:#fff}body{padding:0}.stx *{-webkit-print-color-adjust:exact;print-color-adjust:exact}.st-tw{overflow:visible}.st-table,.st-card,.st-hero{break-inside:avoid}</style></head>' +
     '<body><div class="stx">' + body + '</div></body></html>';
   var old = document.getElementById("st-print-frame"); if (old) old.remove();
@@ -632,6 +682,7 @@ function stPrint(what){
   setTimeout(function(){ try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (e) { toast("The browser blocked printing. Try again.","err"); } }, 300);
 }
 function stEmailContent(what){
+  if (String(what).indexOf("ins-") === 0) return insEmailContent(what.slice(4));
   var cur = stToday().slice(0, 7), month = what === "today" ? cur : ST.month, week = what === "perf" && ST.perf === "week" && ST.month === cur;
   var p = stPerf(month, week ? "week" : "month"), s = p.store, name = state.config.name || "";
   var title = week ? "Week of " + stDay(p.week.from) + " – " + stDay(p.week.to) : stMonthName(month) + " sales performance";
@@ -684,14 +735,15 @@ function viewSalesTracker(){
     stSync();
     return '<div class="stx">' + (ST.err ? '<div class="st-err">' + esc(ST.err) + '</div>' : '') + stViewMine() + '</div>';
   }
-  if (!stCan()) return '<div class="card"><div class="card-b">The Sales Tracker is for the General Manager and Sales Managers.</div></div>';
+  if (!stCan()) return '<div class="card"><div class="card-b">The Sales Tracker needs the Sales Tracker switch on your user card. Ask your General Manager.</div></div>';
   stSync();
   var month = ST.view === "today" || ST.view === "fund" ? stToday().slice(0, 7) : ST.view === "appt" ? (ST.apptDay || stNextSat()).slice(0, 7) : ST.month;
   stLoad(month); stLoad(stShift(month, -1));
   if (ST.view === "fund") stLoad(stShift(month, -2));
+  if (ST.view === "today" || ST.view === "log") stLoadCarry();
   var loading = ST.loading[month] || ST.loading[stShift(month, -1)];
   var body = ST.view === "perf" ? stViewPerf() : ST.view === "log" ? stViewLog() : ST.view === "tgt" ? stViewTargets() : ST.view === "month" ? stViewMonth() :
-    ST.view === "appt" ? stViewAppts() : ST.view === "fund" ? stViewFund() : stViewToday();
+    ST.view === "appt" ? stViewAppts() : ST.view === "fund" ? stViewFund() : ST.view === "import" ? stViewImport() : stViewToday();
   return '<div class="stx">' + stSubnav() + (ST.err ? '<div class="st-err">' + esc(ST.err) + '</div>' : '') +
     (loading ? '<div class="st-warn" style="background:var(--info-bg);border-color:var(--blue);color:var(--blue)">Loading the sales log…</div>' : '') +
     body + stDrawer() + stModal() + stTV() + '</div>';
@@ -703,6 +755,11 @@ function stAct(act, el){
   switch (act){
     case "view": ST.view = v; ST.err = null; if (v !== "today" && !ST.month) ST.month = stToday().slice(0, 7); window.scrollTo(0, 0); break;
     case "perfmode": ST.perf = v; break;
+    case "insview": INS.view = v; INS.err = null; window.scrollTo(0, 0); break;
+    case "newmonth": ST.month = stToday().slice(0, 7); ST.view = "tgt"; ST.tDraft = null; ST.tDirty = false; window.scrollTo(0, 0); stAct("copytargets", el); return;
+    case "imptype": stImp().type = v; stImpBuild(); break;
+    case "impsave": stImpSave(); return;
+    case "impcancel": stImpReset(); ST.view = "log"; break;
     case "add": stOpen(stBlank()); break;
     case "edit": { var d = ST.deals[el.getAttribute("data-id")]; if (d) stOpen(d); break; }
     case "close": ST.edit = null; break;
@@ -784,11 +841,14 @@ document.addEventListener("click", function(ev){
 });
 function stField(ev){
   var el = ev.target; if (!el || !el.getAttribute) return;
+  if (el.getAttribute("data-stimp") === "file"){ if (ev.type === "change" && el.files && el.files[0]) stImpRead(el.files[0]); return; }
   var k = el.getAttribute("data-stf"), tk = el.getAttribute("data-stt");
   if (k){
     var val = el.type === "checkbox" ? el.checked : el.value;
     if (k === "month"){ if (ev.type !== "change") return; ST.month = val; ST.tDraft = null; ST.tDirty = false; render(); return; }
     if (k === "apptDay"){ if (ev.type !== "change" || !val) return; ST.apptDay = val; render(); return; }
+    if (k === "insYear"){ if (ev.type !== "change") return; INS.year = Number(val) || null; render(); return; }
+    if (k === "impTab" || k === "impShow"){ if (ev.type !== "change") return; stImp()[k === "impTab" ? "tab" : "show"] = val; render(); return; }
     if (k.indexOf("f.") === 0){ ST.f[k.slice(2)] = val; if (ev.type === "change" || k === "f.q") render(); return; }
     if (k.indexOf("e.") === 0 && ST.edit){
       ST.edit[k.slice(2)] = val;

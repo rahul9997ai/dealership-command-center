@@ -24,7 +24,10 @@ function userStatus(u){
 var CHANGEABLE_ROLES = [["FSM","Finance Manager"],["Sales Manager","Sales Manager"],["General Manager","General Manager"]];
 function userCanUseSummary(u){
   if (u.role === "General Manager" || u.role === "Master Administrator") return `<span class="muted">Everything</span>`;
-  if (u.role === "Sales Manager") return `<span class="muted">Sales tools${V.featureOn(u, "worksheet") ? " + Worksheet" : ""}</span>`;
+  if (u.role === "Sales Manager"){
+    var on = V.SM_FEATURES.filter(function(f){ return V.featureOn(u, f.key); }).map(function(f){ return f.key === "insights" ? "Dashboard" : f.label; });
+    return `<span class="muted">${on.length ? esc(on.join(" + ")) : "Finance tools only"}</span>`;
+  }
   if (!V.isFinanceRole(u.role)) return `<span class="muted">Pulse only</span>`;
   var off = V.FM_FEATURES.filter(function(f){ return !V.featureOn(u, f.key); });
   if (!off.length) return `<span class="muted">Everything</span>`;
@@ -89,10 +92,12 @@ function userCardModal(){
         <p class="tiny muted" style="margin:8px 0 0">Changes apply straight away; anything switched off disappears from their menu.</p>`
       : `<p class="small muted" style="margin:0">Open ${esc(dealer)} from Dealerships to change what they can use there.</p>`}</div>`;
   } else if (u.role === "Sales Manager"){
-    var wsOn = V.featureOn(u, "worksheet"), shere = u.dealershipId === state.activeDealershipId;
+    var shere = u.dealershipId === state.activeDealershipId;
     features = `<div class="uc-sec"><h3>What they can use</h3>
-      ${shere ? `<div class="uc-feats"><label class="uc-feat ${wsOn ? "on" : ""}"><span>Worksheet<small>Print the Purchase Proposal</small></span>
-          <span class="uc-sw"><input type="checkbox" data-act="fm-feature" data-user="${u.id}" data-feature="worksheet" ${wsOn ? "checked" : ""} ${V.isAdmin() ? "" : "disabled"}><i></i></span></label></div>`
+      ${shere ? `<div class="uc-feats">${V.SM_FEATURES.map(function(f){ var on = V.featureOn(u, f.key);
+          return `<label class="uc-feat ${on ? "on" : ""}"><span>${esc(f.label)}<small>${esc(f.sub)}</small></span>
+          <span class="uc-sw"><input type="checkbox" data-act="fm-feature" data-user="${u.id}" data-feature="${f.key}" ${on ? "checked" : ""} ${V.isAdmin() ? "" : "disabled"}><i></i></span></label>`; }).join("")}</div>
+        <p class="tiny muted" style="margin:8px 0 0">Off until you turn it on. The database checks the same switches, so a hidden screen can't be reached another way.</p>`
         : `<p class="small muted" style="margin:0">Open ${esc(dealer)} from Dealerships to change what they can use there.</p>`}</div>`;
   } else if (u.role === "General Manager" || master){
     features = `<div class="uc-sec"><h3>What they can use</h3><p class="small muted" style="margin:0">Everything in the Command Center for ${master ? "every dealership" : esc(dealer)}.</p></div>`;
