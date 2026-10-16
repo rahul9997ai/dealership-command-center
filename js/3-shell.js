@@ -167,10 +167,11 @@ function allDeals(){ return state.history.concat(state.completed); }
    Promotional offers also honour the older Dealership-settings choice (config.offerAccess). */
 var FM_FEATURES = [
   { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Conversion" }, { key:"coupons", label:"Coupons" },
-  { key:"worksheet", label:"Worksheet" }, { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" }
+  { key:"worksheet", label:"Worksheet" }, { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" },
+  { key:"sales", label:"Sales Tracker (own F&I)" }
 ];
 /* Off unless a Master or GM turns it on for that person (everything else is on unless turned off). */
-var FEATURES_OFF_BY_DEFAULT = ["worksheet"];
+var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales"];
 function featureOn(u, key){
   u = u || currentUser();
   if (u.role === "Master Administrator" || u.role === "General Manager") return true;
@@ -203,7 +204,7 @@ function allowedRouteKeys(){
   if (role === "Master Administrator") return null;
   if (role === "General Manager") return ["dashboard","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
-  if (isFinanceRole(role)) return ["finance","cashadv","coupons","worksheet","products","reports","users"].filter(function(k){
+  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users"].filter(function(k){
     return k === "products" || k === "users" || featureOn(currentUser(), k); });
   return ["finance","cashadv","sales","worksheet","products","reports"].filter(function(k){
     if (k === "sales") return role === "Sales Manager";
