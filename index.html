@@ -3383,6 +3383,8 @@ function canSeeAllReports(){
 function filteredDeals(){
   var f = state.ui.reports;
   if (!f.from || !f.to){ var r = presetRange(f.period); f.from = f.from||r.from; f.to = f.to||r.to; }
+  if (V.isMaster() && f.dealership === "all" && typeof cloud !== "undefined" && cloud.loaded && !cloud.dealsAll)
+    ensureAllDeals().then(function(){ commit(); });
   var pool = (V.isMaster() && f.dealership === "all") ? V.allDeals() : V.dealsForStore();
   /* An FSM only ever sees their own deals here — "all" or someone else's
      selection is only honoured for a GM, FSM Manager or master admin. */
@@ -3773,7 +3775,7 @@ function viewUsers(scope){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.4</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.5</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -3939,10 +3941,12 @@ function saveUser(){
 /* ---------------- DEALERSHIPS (master administrator) ---------------- */
 function viewDealerships(){
   var month = C.todayISO().slice(0,7), deals = V.allDeals ? V.allDeals() : [];
+  if (typeof loadMonthCounts === "function") loadMonthCounts();
+  var counts = (typeof cloud !== "undefined" && cloud.monthCounts && cloud.monthCounts.month === month) ? cloud.monthCounts.by : null;
   var cards = state.dealerships.map(function(d){
     var b = C.brandOfDealer(d), ink = (b.pal && b.pal.main) || b.color || "#2c5a9b";
     var people = state.users.filter(function(u){ return u.dealershipId === d.id && u.role !== "Master Administrator"; }).length;
-    var mtd = deals.filter(function(x){ return x.dealershipId === d.id && String(x.createdAt || "").slice(0,7) === month; }).length;
+    var mtd = counts ? (counts[d.id] || 0) : deals.filter(function(x){ return x.dealershipId === d.id && String(x.createdAt || "").slice(0,7) === month; }).length;
     return `<div class="dcard" role="button" tabindex="0" data-act="switch-to-dealership" data-dealership="${d.id}" title="Open ${esc(d.name)}">
         <span class="go">Open ›</span>
         <div class="t"><div class="dm" style="background:${esc(ink)}">${esc(d.logoMark || b.mark || "")}</div><div><div class="nm">${esc(d.name)}</div><div class="bd">${esc(b.label)}${d.city ? " · " + esc(d.city) : ""}</div></div></div>
@@ -5933,6 +5937,7 @@ function render(){
   markIssues();
   if (state.ui.tour) positionTour();
   if (state.ui.extendForm || state.ui.userForm) initWheels();
+  if (typeof syncHash === "function") syncHash();
 }
 window.__DCC_RENDER__ = render;
 /* The Finance bar pins itself just under the header, and jumping to a step must land below
@@ -6275,11 +6280,77 @@ function cloudApply(dRows, pRows, xRows, keepTx){
   state.activeDealershipId = null;
   V.setDealership(want);
 }
-function cloudFetch(){
-  return Promise.all([ sb.from("dealerships").select("*"), sb.from("products").select("*"), sb.from("deals").select("*") ]).then(function(rs){
-    rs.forEach(function(r){ if (r.error) throw r.error; });
-    return { d:rs[0].data, p:rs[1].data, x:rs[2].data };
+/* The database hands back at most 1,000 rows per request, so every list is read in pages. */
+var CLOUD_PAGE = 1000;
+function fetchAllRows(make){
+  var out = [];
+  var page = function(from){
+    return make().range(from, from + CLOUD_PAGE - 1).then(function(r){
+      if (r.error) throw r.error;
+      var rows = r.data || [];
+      out = out.concat(rows);
+      return rows.length === CLOUD_PAGE ? page(from + CLOUD_PAGE) : out;
+    });
+  };
+  return page(0);
+}
+function fetchDeals(ids){
+  if (ids && !ids.length) return Promise.resolve([]);
+  return fetchAllRows(function(){ var q = sb.from("deals").select("*").order("id"); return ids ? q.in("dealership_id", ids) : q; });
+}
+/* A Master can see every store's deals, so they're loaded one store at a time as stores are opened.
+   Everyone else is limited to their own store by the database, so they get everything they can see.
+   dealIds: null = everything allowed; [] = no deals; [ids] = those stores only. */
+function cloudFetch(dealIds){
+  return Promise.all([
+    fetchAllRows(function(){ return sb.from("dealerships").select("*").order("id"); }),
+    fetchAllRows(function(){ return sb.from("products").select("*").order("dealership_id").order("id"); }),
+    fetchDeals(dealIds)
+  ]).then(function(rs){ return { d:rs[0], p:rs[1], x:rs[2] }; });
+}
+/* Which deals this browser currently holds: null = all it may see, otherwise the loaded stores. */
+function dealScope(){ return (!V.isMaster() || cloud.dealsAll) ? null : Object.keys(cloud.dealsFor || {}); }
+/* Swap in fresh deal rows for the given stores (null = all), keeping the sync snapshot in step. */
+function cloudMergeDeals(rows, ids){
+  var inScope = function(x){ return !ids || ids.indexOf(x.dealershipId) !== -1; };
+  state.completed = (state.completed || []).filter(function(x){ return x && !inScope(x); });
+  state.saved = (state.saved || []).filter(function(x){ return x && !inScope(x); });
+  Object.keys(cloud.snap.x).forEach(function(k){ var j = cloud.snap.x[k]; try { if (inScope(JSON.parse(j))) delete cloud.snap.x[k]; } catch (e) {} });
+  rows.forEach(function(r){
+    var x = r.data; if (!x) return;
+    (x.status === "Saved" ? state.saved : state.completed).push(x);
+    cloud.snap.x[x.id] = JSON.stringify(x);
   });
+}
+/* Make sure a store's deals are here before it opens (Master only; instant if already loaded). */
+function ensureStoreDeals(id){
+  if (!sb || !cloud.loaded || !V.isMaster() || cloud.dealsAll || (cloud.dealsFor && cloud.dealsFor[id])) return Promise.resolve();
+  toast("Opening the dealership…","info");
+  return fetchDeals([id]).then(function(rows){
+    cloudMergeDeals(rows, [id]); cloud.dealsFor = cloud.dealsFor || {}; cloud.dealsFor[id] = 1;
+  }, function(){ toast("Couldn't load this dealership's deals. Check the connection and try again.","err"); throw new Error("deals"); });
+}
+/* Reports across every dealership need every store's deals. */
+function ensureAllDeals(){
+  if (!sb || !cloud.loaded || cloud.dealsAll) return Promise.resolve();
+  if (cloud.allLoading) return cloud.allLoading;
+  cloud.allLoading = fetchDeals(null).then(function(rows){
+    cloudMergeDeals(rows, null); cloud.dealsAll = true; cloud.allLoading = null;
+  }, function(){ cloud.allLoading = null; toast("Couldn't load every dealership's deals. Try again.","err"); });
+  return cloud.allLoading;
+}
+/* This month's completed deals per store, for the Dealerships cards (a light count, not the deals). */
+function loadMonthCounts(){
+  var month = C.todayISO().slice(0,7);
+  if (!sb || !cloud.loaded) return;
+  if (cloud.monthCounts && cloud.monthCounts.month === month && Date.now() - cloud.monthCounts.at < 60000) return;
+  if (cloud.countsLoading) return;
+  cloud.countsLoading = true;
+  fetchAllRows(function(){ return sb.from("deals").select("id,dealership_id").gte("data->>createdAt", month + "-01").neq("data->>status", "Saved").order("id"); })
+    .then(function(rows){
+      var c = {}; rows.forEach(function(r){ c[r.dealership_id] = (c[r.dealership_id] || 0) + 1; });
+      cloud.monthCounts = { month:month, at:Date.now(), by:c }; cloud.countsLoading = false; commit();
+    }, function(){ cloud.countsLoading = false; });
 }
 /* A brand-new cloud has nothing in it. If the master administrator signs in on
    the browser that already holds the dealerships they built before the cloud
@@ -6301,12 +6372,19 @@ function cloudMigrate(){
     toast("Your existing dealerships and deals were moved to the cloud.","ok"); });
 }
 function cloudLoad(){
-  return cloudFetch().then(function(r){
-    if (!r.d.length && V.isMaster() && state.dealerships.length) return cloudMigrate().then(cloudFetch);
+  var master = V.isMaster(), first = master ? [] : null;
+  cloud.dealsFor = {}; cloud.dealsAll = !master; cloud.monthCounts = null;
+  return cloudFetch(first).then(function(r){
+    if (!r.d.length && master && state.dealerships.length) return cloudMigrate().then(function(){ return cloudFetch(first); });
     return r;
   }).then(function(r){
     cloudApply(r.d, r.p, r.x, false);
     cloud.loaded = true; cloud.lastLoad = Date.now();
+    /* A Master starts with only the store that's open. */
+    if (master && state.activeDealershipId){
+      var id = state.activeDealershipId;
+      return fetchDeals([id]).then(function(rows){ cloudMergeDeals(rows, [id]); cloud.dealsFor[id] = 1; });
+    }
   });
 }
 function cloudDiff(){
@@ -6379,7 +6457,7 @@ document.addEventListener("visibilitychange", function(){
   if (document.visibilityState !== "visible" || !cloud.loaded || !state.loggedIn || cloud.running || cloud.timer) return;
   if (Date.now() - cloud.lastLoad < 45000) return;
   if (cloudHasWork(cloudDiff())) return;
-  cloudFetch().then(function(r){ cloudApply(r.d, r.p, r.x, true); cloud.lastLoad = Date.now(); commit(); }, function(){});
+  cloudFetch(dealScope()).then(function(r){ cloudApply(r.d, r.p, r.x, true); cloud.lastLoad = Date.now(); cloud.monthCounts = null; commit(); }, function(){});
 });
 function cloudWipeLocal(){
   state.dealerships = []; state.completed = []; state.saved = []; state.history = []; state.customers = []; state.vehicles = [];
@@ -6451,6 +6529,8 @@ function finishEnter(u){
     : "Welcome back, " + String(u.name||"").split(" ")[0] + ".","ok");
   refreshUsers();
   if (!state.ui.welcome) maybeStartTour();
+  navSync.last = null;
+  if (navSync.boot){ var bootLink = navSync.boot; navSync.boot = null; if (routeFromHash(bootLink)) return; }
   commit();
 }
 function loadProfileAndEnter(){
@@ -6816,6 +6896,62 @@ function sendEmail(){
   if (!opened) toast("The browser blocked the mail app. Use Copy formatted email instead.","err");
   else toast("Opening your email app with the plain-text version.","ok");
 }
+
+/* ---------------- ADDRESSES ----------------
+   Every screen has its own link in the address bar (#/401-dixie-nissan/users, #/dealerships), so the
+   browser's Back and Forward buttons, bookmarks and refresh all land on the right screen. */
+var ROUTE_SLUG = { dashboard:"dashboard", finance:"finance", cashadv:"cash-conversion", coupons:"coupons", worksheet:"worksheet",
+  products:"products", reports:"reports", users:"users", settings:"settings" };
+var SLUG_ROUTE = {}; Object.keys(ROUTE_SLUG).forEach(function(k){ SLUG_ROUTE[ROUTE_SLUG[k]] = k; });
+var navSync = { last:null, boot:/^#\/[a-z0-9-]/i.test(location.hash) ? location.hash : null };
+function slugify(t){ return String(t || "").toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "store"; }
+function storeSlug(d){
+  var base = slugify(d.name), twin = state.dealerships.filter(function(x){ return slugify(x.name) === base; }).length > 1;
+  return twin ? base + "-" + String(d.id).replace(/[^a-z0-9]/gi, "").slice(0, 6).toLowerCase() : base;
+}
+function hashForState(){
+  if (!state.loggedIn || (state.auth && state.auth.mustChange)) return null;
+  if (V.isMaster() && state.ui.hq) return state.route === "hqusers" ? "#/head-office-users" : "#/dealerships";
+  if (!state.config) return null;
+  return "#/" + storeSlug(state.config) + "/" + (ROUTE_SLUG[state.route] || "dashboard");
+}
+function syncHash(){
+  var h = hashForState();
+  if (!h) return;
+  if (h !== location.hash){
+    try { if (navSync.last === null) history.replaceState(null, "", h); else history.pushState(null, "", h); } catch (e) {}
+  }
+  navSync.last = h;
+}
+/* Open a store's Command Center on a given screen (loads its deals first if needed). */
+function openStore(id, route){
+  var enter = function(){ state.ui.hq = false; state.route = route || "dashboard"; state.ui.railOpen = false; state.ui.userCard = null; window.scrollTo(0, 0); commit(); };
+  if (id === state.activeDealershipId && state.config) return ensureStoreDeals(id).then(enter, function(){});
+  leaveDeal(function(){
+    ensureStoreDeals(id).then(function(){ V.setDealership(id); resetDealUi(); enter(); }, function(){ commit(); });
+  }, "switch");
+}
+/* Read an address and go there. Anything that doesn't match is ignored. */
+function routeFromHash(h){
+  var m = /^#\/([^/?#]+)(?:\/([^/?#]+))?/.exec(h || "");
+  if (!m || !state.loggedIn) return false;
+  var a = m[1].toLowerCase(), b = (m[2] || "").toLowerCase();
+  if (a === "dealerships" || a === "head-office-users"){
+    if (!V.isMaster()) return false;
+    state.ui.hq = true; state.route = a === "dealerships" ? "dealerships" : "hqusers"; state.ui.userCard = null; commit(); return true;
+  }
+  var d = state.dealerships.filter(function(x){ return storeSlug(x) === a || x.id === m[1]; })[0];
+  if (!d) return false;
+  if (!V.isMaster() && d.id !== state.activeDealershipId) return false;
+  var route = SLUG_ROUTE[b] || "dashboard";
+  if (d.id !== state.activeDealershipId || state.ui.hq){ openStore(d.id, route); return true; }
+  state.route = route; state.ui.userCard = null; commit(); return true;
+}
+window.addEventListener("popstate", function(){
+  if (!state.loggedIn) return;
+  navSync.last = location.hash;
+  if (!routeFromHash(location.hash)) commit();
+});
 
 /* ---------------- EVENTS ---------------- */
 /* Cash Conversion fields update the comparison as the FM types (lightly debounced). */
@@ -7320,12 +7456,7 @@ document.addEventListener("click", function(ev){
     case "dealer-cancel": state.ui.dealerForm = null; commit(); break;
     case "dealer-save": saveDealer(); maybeStartTour(); break;
     case "dealer-delete": deleteDealer(el.getAttribute("data-dealership")); break;
-    case "switch-to-dealership": {
-      var openId = el.getAttribute("data-dealership");
-      var enter = function(){ state.ui.hq = false; state.route = "dashboard"; state.ui.railOpen = false; window.scrollTo(0, 0); commit(); };
-      if (openId === state.activeDealershipId && state.config) enter();
-      else leaveDeal(function(){ V.setDealership(openId); resetDealUi(); enter(); }, "switch");
-      break; }
+    case "switch-to-dealership": openStore(el.getAttribute("data-dealership"), "dashboard"); break;
     case "go-hq": state.ui.hq = true; state.route = "dealerships"; state.ui.railOpen = false; state.ui.userCard = null; window.scrollTo(0, 0); commit(); break;
     case "do-login": doLogin(); break;
     case "logout": doLogout(); break;
