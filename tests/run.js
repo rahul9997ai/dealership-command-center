@@ -1,11 +1,9 @@
 /* Money-maths tests for the Command Center calculation engine.
    Run:  node tests/run.js
-   It loads the data + core layers straight out of index.html, so it tests the code that ships. */
+   It loads the data + core layers straight from js/, so it tests the code that ships. */
 const fs = require("fs"), path = require("path"), vm = require("vm");
-const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
-const script = html.split("<script>").pop().split("</script>")[0];
-const marker = script.indexOf("Layer 3: STORE");
-const core = script.slice(0, script.lastIndexOf("/*", marker));
+/* The data and calculation layers live in their own files, loaded first by index.html. */
+const core = ["1-data.js", "2-core.js"].map(function (f) { return fs.readFileSync(path.join(__dirname, "..", "js", f), "utf8"); }).join("\n");
 const sandbox = { window: {}, console };
 vm.createContext(sandbox);
 vm.runInContext(core, sandbox);
