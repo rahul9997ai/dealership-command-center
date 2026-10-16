@@ -3773,7 +3773,7 @@ function viewUsers(scope){
       <p class="small" style="margin:-6px 0 12px"><strong>Click a person</strong> to open their card and change their access.</p>
       <div class="tablewrap"><table class="u-table"><thead><tr><th>User</th><th>Role</th><th>Dealership</th><th>Can use</th><th>Access</th><th>Status</th><th></th></tr></thead>
       <tbody>${rows}</tbody></table></div>
-      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.3</p></div></div>`;
+      <p class="tiny muted" style="margin:10px 0 0;text-align:right">App build 2026-10-16.4</p></div></div>`;
 }
 /* The user card: every change to one account in one place. */
 function userCardModal(){
@@ -7386,6 +7386,17 @@ document.addEventListener("change", function(ev){
   }
   if (act === "dealer-brand"){
     if (state.ui.dealerForm){
+      /* Keep what's already typed: picking a brand redraws the form. */
+      var dfm = state.ui.dealerForm;
+      document.querySelectorAll("[data-df]").forEach(function(inp){
+        var k = inp.getAttribute("data-df"), v = inp.value;
+        if (k === "brandKey") return;
+        if (k === "taxStandard"){ dfm.tax = dfm.tax || {}; dfm.tax.standard = v === "" ? dfm.tax.standard : Number(v); }
+        else if (k === "taxVrc"){ dfm.tax = dfm.tax || {}; dfm.tax.vrc = v === "" ? dfm.tax.vrc : Number(v); }
+        else if (k === "apr"){ dfm.finance = dfm.finance || {}; dfm.finance.defaultApr = v === "" ? dfm.finance.defaultApr : Number(v); }
+        else if (k === "term"){ dfm.finance = dfm.finance || {}; dfm.finance.defaultTerm = v === "" ? dfm.finance.defaultTerm : Number(v); }
+        else dfm[k] = v;
+      });
       state.ui.dealerForm.brandKey = el.value;
       state.ui.dealerForm.logoMark = C.brandOfDealer({ brandKey:el.value, customBrandName:state.ui.dealerForm.customBrandName }).mark;
     }
