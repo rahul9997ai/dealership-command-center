@@ -26,7 +26,7 @@ function userCanUseSummary(u){
   if (u.role === "General Manager" || u.role === "Master Administrator") return `<span class="muted">Everything</span>`;
   if (u.role === "Sales Manager"){
     var on = V.SM_FEATURES.filter(function(f){ return V.featureOn(u, f.key); }).map(function(f){ return f.key === "insights" ? "Dashboard" : f.label; });
-    return `<span class="muted">${on.length ? esc(on.join(" + ")) : "Finance tools only"}</span>`;
+    return `<span class="muted">${on.length ? esc(on.join(" + ")) : "Nothing switched on"}</span>`;
   }
   if (!V.isFinanceRole(u.role)) return `<span class="muted">Pulse only</span>`;
   var off = V.FM_FEATURES.filter(function(f){ return !V.featureOn(u, f.key); });
@@ -110,7 +110,7 @@ function userCardModal(){
   var ccSub = !u.ccOn ? "Off" : u.demo ? "Demo" + (u.expiresAt ? " until " + new Date(u.expiresAt).toLocaleDateString("en-CA",{month:"short",day:"numeric"}) : "") : "Full access";
   var appSwitches = master ? `<p class="small muted" style="margin:0">The Master Administrator always has both apps.</p>`
     : `<div class="uc-feats">
-        ${u.role === "Salesperson" ? "" : sw("cc", "Command Center", u.ccOn, ccSub, canEdit && !isFsmOnly && !me)}
+        ${u.role === "Salesperson" ? "" : u.role === "Sales Manager" ? sw("cc", "Command Center", u.ccOn, (u.ccOn ? "On" : "Off") + " · follows the switches above (on while Sales Tracker, Dashboard or Worksheet is on)", false) : sw("cc", "Command Center", u.ccOn, ccSub, canEdit && !isFsmOnly && !me)}
         ${sw("pulse", "Axiom Pulse", u.pulseOn, u.pulseOn ? "Full access" : "Off", canEdit && !me && (!isFsmOnly || u.role === "Salesperson"))}</div>
       ${!u.ccOn && !u.pulseOn && u.role !== "Salesperson" ? `<p class="tiny" style="margin:8px 0 0;color:var(--danger)">Both apps are off, so they can't sign in at all.</p>`
         : `<p class="tiny muted" style="margin:8px 0 0">Each app is separate: turning Command Center off leaves Pulse working, and the other way round.</p>`}`;

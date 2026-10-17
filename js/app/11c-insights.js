@@ -193,13 +193,13 @@ function insEmailContent(mode){
 function viewInsights(){
   if (!insCan()) return '<div class="card"><div class="card-b">The dashboard needs the Insights switch. Ask your General Manager.</div></div>';
   if (INS.view === "fi" && V.isAdmin()) return '<div class="stx">' + insSubnav() + '</div>' + V.viewDashboard();
-  if (INS.view === "brief" && aiCan()) return '<div class="stx">' + insSubnav() + viewBrief() + stModal() + '</div>';
+  if (INS.view === "brief" && aiCan()) return '<div class="stx">' + insSubnav() + dsBanner() + viewBrief() + stModal() + '</div>';
   if (INS.view === "brief") INS.view = "mtd";
   if (INS.view === "fi") INS.view = "mtd";
   var year = insYear(); insLoad(year);
   var loading = INS.loading[ST.store + ":" + year];
   var I = insData(year);
-  return '<div class="stx">' + insSubnav() + (INS.err ? '<div class="st-err">' + esc(INS.err) + '</div>' : '') +
+  return '<div class="stx">' + insSubnav() + dsBanner() + (INS.err ? '<div class="st-err">' + esc(INS.err) + '</div>' : '') +
     (loading ? '<div class="st-warn" style="background:var(--info-bg);border-color:var(--blue);color:var(--blue)">Loading the year\'s sales…</div>' : '') +
     (INS.view === "ytd" ? insViewYtd(I) : insViewMtd(I)) + stModal() + '</div>';
 }

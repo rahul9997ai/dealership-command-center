@@ -172,7 +172,7 @@ var FM_FEATURES = [
 ];
 /* A Sales Manager's switches (Sales Tracker and the Insights dashboard are off until turned on). */
 var SM_FEATURES = [
-  { key:"sales", label:"Sales Tracker", sub:"Log deals, Today, Sales performance, Appointments, Funding, Targets" },
+  { key:"sales", label:"Sales Tracker", sub:"Log deals, Today, Sales performance, Appointments, Targets" },
   { key:"insights", label:"Dashboard (Insights)", sub:"Month and year to date gross, scorecards, year-end projections" },
   { key:"worksheet", label:"Worksheet", sub:"Print the Purchase Proposal" }
 ];
@@ -213,6 +213,8 @@ function allowedRouteKeys(){
   if (role === "Salesperson") return [];
   if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users","dashboard"].filter(function(k){
     return k === "products" || k === "users" || featureOn(currentUser(), k === "dashboard" ? "insights" : k); });
+  /* A Sales Manager sees only what's switched on for them: Sales Tracker, the Dashboard (Insights), Worksheet. */
+  if (role === "Sales Manager") return ["sales","dashboard","worksheet"].filter(function(k){ return featureOn(currentUser(), k === "dashboard" ? "insights" : k); });
   return ["finance","cashadv","sales","worksheet","products","reports","dashboard"].filter(function(k){
     if (k === "sales") return role === "Sales Manager" && featureOn(currentUser(), "sales");
     if (k === "dashboard") return featureOn(currentUser(), "insights");

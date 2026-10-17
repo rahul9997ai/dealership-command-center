@@ -10,6 +10,8 @@ function routeView(){
   }
   if (!state.config) return renderOnboarding();
   var allowed = V.allowedRouteKeys();
+  if (allowed && allowed.length === 0 && V.currentUser().role === "Sales Manager")
+    return '<div class="card"><div class="card-b"><h2 style="margin:0 0 6px">Nothing is switched on for you yet</h2><p class="muted" style="margin:0">Your General Manager turns on the Sales Tracker (and the Dashboard or Worksheet) from your user card in Users &amp; access.</p></div></div>';
   if (allowed && allowed.length === 0) return viewSalespersonRedirect();
   if (allowed && allowed.indexOf(state.route) === -1) state.route = allowed[0] || "finance";
   switch (state.route){
@@ -23,7 +25,7 @@ function routeView(){
     case "reports": return viewReports();
     case "users": return viewUsers();
     case "dealerships": return V.viewDashboard();
-    case "settings": return viewSettings() + viewAiSettings();
+    case "settings": return viewSettings() + viewAiSettings() + viewDriveSettings();
     default: return V.viewDashboard();
   }
 }

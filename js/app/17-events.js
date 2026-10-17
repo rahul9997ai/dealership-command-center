@@ -747,7 +747,18 @@ document.addEventListener("change", function(ev){
     cfgB.fmAccess = cfgB.fmAccess || {}; cfgB.fmAccess[fu2] = cfgB.fmAccess[fu2] || {};
     cfgB.fmAccess[fu2][fk2] = !!el.checked;
     toast(fuser2.name + (el.checked ? " can now use " : " can no longer use ") + V.featureLabel(fk2) + ".", "ok");
-    commit(); return;
+    commit();
+    /* A Sales Manager's Command Center sign-in follows their switches: on while any of them is on, off when none is. */
+    if (fuser2.role === "Sales Manager"){
+      var smAny = V.SM_FEATURES.some(function(f){ return V.featureOn(fuser2, f.key); });
+      if (smAny !== !!fuser2.ccOn){
+        adminCall({ action:"update", id:fuser2.id, app:"command", cc_enabled:smAny }).then(function(){
+          fuser2.ccOn = smAny; fuser2.active = smAny || fuser2.pulseOn;
+          toast(fuser2.name + (smAny ? " can now sign in to the Command Center." : " no longer signs in to the Command Center (nothing is switched on)."), "ok"); refreshUsers(); commit();
+        }).catch(function(e){ toast("Saved the switch, but couldn't update " + fuser2.name + "'s sign-in: " + e.message, "err"); commit(); });
+      }
+    }
+    return;
   }
   if (act === "cp-pick"){
     var cpk = couponProducts()[Number(el.getAttribute("data-idx"))];

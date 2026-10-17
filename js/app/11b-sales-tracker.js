@@ -541,6 +541,7 @@ function stDrawer(){
     '<div class="b">' + (ST.editErr ? '<div class="st-err">' + esc(ST.editErr) + '</div>' : '') +
       '<div class="st-steps">' + ST_STEPS.map(function(s, i){ return '<button type="button" data-st="status" data-v="' + s + '" class="' + (e.status === s ? "cur" : idx > i ? "done" : "") + '">' + ST_LABEL[s] + '</button>'; }).join("") +
         ST_OTHER.map(function(s){ return '<button type="button" data-st="status" data-v="' + s + '" class="' + (e.status === s ? "cur" : "") + (s !== "carry" ? " neg" : "") + '">' + ST_LABEL[s] + '</button>'; }).join("") + '</div>' +
+      (String(e.source || "").indexOf("drive:") === 0 ? '<div class="st-warn">This deal comes from the Google Drive sales log (' + esc(String(e.importedFrom || "").split(" · ")[0]) + '). Change it in the Excel file: edits made here are replaced at the next sync.</div>' : '') +
       (dup.length ? '<div class="st-warn">Stock # ' + esc(e.stockNo) + ' is already in the log (' + esc(dup[0].customer || "") + ', ' + stDay(dup[0].soldDate) + ', ' + ST_LABEL[dup[0].status] + '). Saving adds it again.</div>' : '') +
       '<div class="st-dcols"><div class="st-dcol"><div class="st-dsec">The deal</div>' +
         '<div class="st-r3"><label class="f"><span>Date sold</span><input type="date" data-stf="e.soldDate" value="' + esc(e.soldDate) + '"></label><label class="f"><span>Stock #</span><input data-stf="e.stockNo" value="' + esc(e.stockNo) + '"></label><label class="f"><span>Customer #</span><input data-stf="e.customerNo" value="' + esc(e.customerNo) + '"></label></div>' +
@@ -713,7 +714,7 @@ function viewSalesTracker(){
   var loading = ST.loading[month] || ST.loading[stShift(month, -1)];
   var body = ST.view === "perf" ? stViewPerf() : ST.view === "log" ? stViewLog() : ST.view === "tgt" ? stViewTargets() : ST.view === "month" ? stViewMonth() :
     ST.view === "appt" ? stViewAppts() : ST.view === "import" ? stViewImport() : stViewToday();
-  return '<div class="stx">' + stSubnav() + (ST.err ? '<div class="st-err">' + esc(ST.err) + '</div>' : '') +
+  return '<div class="stx">' + stSubnav() + dsBanner() + (ST.err ? '<div class="st-err">' + esc(ST.err) + '</div>' : '') +
     (loading ? '<div class="st-warn" style="background:var(--info-bg);border-color:var(--blue);color:var(--blue)">Loading the sales log…</div>' : '') +
     body + stDrawer() + stModal() + stTV() + '</div>';
 }
