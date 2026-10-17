@@ -48,9 +48,10 @@ function insGrowthPill(g){
   return '<span class="st-pill ' + (g >= 1 ? "delivered" : g >= 0.9 ? "scheduled" : "declined") + '">' + (g >= 1 ? "▲ " : "▼ ") + Math.round(g*100) + '%</span>';
 }
 function insSubnav(){
-  var tabs = [["mtd","Month to date"],["ytd","Year to date"]];
+  var tabs = (aiCan() ? [["brief","Morning brief"]] : []).concat([["mtd","Month to date"],["ytd","Year to date"]]);
   if (V.isAdmin()) tabs.push(["fi","F&I office"]);
-  return '<div class="st-sub">' + tabs.map(function(t){ return '<button type="button" data-st="insview" data-v="' + t[0] + '" class="' + (INS.view === t[0] ? "on" : "") + '">' + t[1] + '</button>'; }).join("") + '</div>';
+  return '<div class="st-sub">' + tabs.map(function(t){ return '<button type="button" data-st="insview" data-v="' + t[0] + '" class="' + (INS.view === t[0] ? "on" : "") + '">' + t[1] + '</button>'; }).join("") +
+    (aiCan() ? '<span style="margin-left:auto;display:flex;gap:5px"><button type="button" data-st="aimail">✉ Morning email</button><button type="button" data-st="aichat">✦ Ask AI</button></span>' : '') + '</div>';
 }
 function insPersonList(rows, right){
   return rows.length ? rows.map(function(p){ return '<div class="st-help ins-li">' + stAv(p.name) + '<b>' + esc(p.name) + '</b>' + right(p) + '</div>'; }).join("") : '<div class="st-empty">Nobody yet.</div>';
@@ -192,6 +193,8 @@ function insEmailContent(mode){
 function viewInsights(){
   if (!insCan()) return '<div class="card"><div class="card-b">The dashboard needs the Insights switch. Ask your General Manager.</div></div>';
   if (INS.view === "fi" && V.isAdmin()) return '<div class="stx">' + insSubnav() + '</div>' + V.viewDashboard();
+  if (INS.view === "brief" && aiCan()) return '<div class="stx">' + insSubnav() + viewBrief() + stModal() + '</div>';
+  if (INS.view === "brief") INS.view = "mtd";
   if (INS.view === "fi") INS.view = "mtd";
   var year = insYear(); insLoad(year);
   var loading = INS.loading[ST.store + ":" + year];

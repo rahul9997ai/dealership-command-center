@@ -209,7 +209,7 @@ function dealsForStore(){
 function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
-  if (role === "General Manager") return ["dashboard","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
+  if (role === "General Manager") return ["dashboard","assistant","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
   if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users","dashboard"].filter(function(k){
     return k === "products" || k === "users" || featureOn(currentUser(), k === "dashboard" ? "insights" : k); });
@@ -226,6 +226,7 @@ function navItems(){
     { key:"hqusers", label:"Head-office users", ic:"◍", grp:"Head office" }];
   var items = [
     { key:"dashboard", label:"Dashboard", ic:"▤", grp:"Tools" },
+    { key:"assistant", label:"AI Assistant", ic:"✦", grp:"Tools", st:"aichat" },
     { key:"finance", label:"Finance", ic:"◧", grp:"Tools" },
     { key:"cashadv", label:"Cash Conversion", ic:"$", grp:"Tools" },
     { key:"sales", label:"Sales Tracker", ic:"◆", grp:"Tools" },
@@ -250,6 +251,9 @@ function renderShell(inner){
   var nav = navItems().map(function(n){
     var head = n.grp && n.grp !== lastGrp ? `<div class="nav-group">${esc(n.grp)}</div>` : "";
     lastGrp = n.grp;
+    /* the AI Assistant opens a chat panel on the right instead of a screen */
+    if (n.st) return head + `<button class="nav-item ${window.AIC && window.AIC.open ? "active" : ""}" data-st="${n.st}">
+      <span class="ic">${n.ic}</span><span>${esc(n.label)}</span></button>`;
     return head + `<button class="nav-item ${state.route===n.key?"active":""}" data-act="route" data-route="${n.key}">
       <span class="ic">${n.ic}</span><span>${esc(n.label)}</span>${n.tag?`<span class="tagx">${n.tag}</span>`:""}</button>`;
   }).join("");

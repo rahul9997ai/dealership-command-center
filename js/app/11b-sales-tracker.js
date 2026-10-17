@@ -733,6 +733,18 @@ function stAct(act, el){
       fim.forced[v] = fr; stImpBuild(); fim.tab = v; break; }
     case "impautomap": stImp().headMap = {}; stImp().forced = {}; stImpBuild(); break;
     case "impdel": stImpDelete(v); return;
+    case "aichat": AIC.open = !AIC.open; if (AIC.open){ AIC.scroll = true; setTimeout(function(){ var t = document.querySelector('[data-stf="aiDraft"]'); if (t) t.focus(); }, 30); } break;
+    case "aisend": aiSend(AIC.draft); return;
+    case "aichip": aiSend(v); return;
+    case "aiclear": AIC.msgs = []; AIC.err = null; break;
+    case "aibrief": aiBriefWrite(); return;
+    case "aibriefask": { var bq = String(AIC.briefQ || "").trim(); if (!bq) return; AIC.briefQ = ""; AIC.open = true; aiSend(bq); return; }
+    case "aimail": aiMailOpen(); break;
+    case "aimailclose": AIM = null; break;
+    case "aimailset": if (AIM){ AIM[el.getAttribute("data-k")] = v; } break;
+    case "ainote": aiMailNote(); return;
+    case "aicopyhtml": aiMailCopy(true); return;
+    case "aicopytext": aiMailCopy(false); return;
     case "aisheet": stImpAiSheet(); return;
     case "aidoc": stImpAiDoc(); return;
     case "aichoose": { var ap = String(v).split("|"), aq = stImp().ai && stImp().ai.questions[Number(ap[0])]; if (!aq) return;
@@ -816,7 +828,7 @@ document.addEventListener("click", function(ev){
 });
 function stField(ev){
   var el = ev.target; if (!el || !el.getAttribute) return;
-  if (el.getAttribute("data-st") === "aion"){ if (ev.type !== "change") return; state.config.ai = Object.assign({ cap:10 }, state.config.ai || {}, { on:!!el.checked }); commit(); toast("AI file reading is " + (el.checked ? "on" : "off") + ".", "ok"); return; }
+  if (el.getAttribute("data-st") === "aion"){ if (ev.type !== "change") return; state.config.ai = Object.assign({ cap:10 }, state.config.ai || {}, { on:!!el.checked }); commit(); toast("AI features are " + (el.checked ? "on" : "off") + ".", "ok"); return; }
   if (el.getAttribute("data-st-cap")){ if (ev.type !== "change") return; var cv = Math.max(1, Math.round(Number(el.value) || 10)); state.config.ai = Object.assign({}, state.config.ai || {}, { cap:cv }); commit(); toast("Monthly AI cap set to $" + cv + ".", "ok"); return; }
   if (el.getAttribute("data-stimp") === "file"){ if (ev.type === "change" && el.files && el.files[0]) stImpRead(el.files[0]); return; }
   var k = el.getAttribute("data-stf"), tk = el.getAttribute("data-stt");
@@ -826,6 +838,11 @@ function stField(ev){
     if (k === "apptDay"){ if (ev.type !== "change" || !val) return; ST.apptDay = val; render(); return; }
     if (k === "insYear"){ if (ev.type !== "change") return; INS.year = Number(val) || null; render(); return; }
     if (k === "impTab" || k === "impShow"){ if (ev.type !== "change") return; stImp()[k === "impTab" ? "tab" : "show"] = val; render(); return; }
+    if (k === "aiDraft"){ AIC.draft = val; return; }
+    if (k === "aiBriefQ"){ AIC.briefQ = val; return; }
+    if (k === "aiNote"){ if (AIM) AIM.note = val; if (ev.type === "change") render(); return; }
+    if (k === "aiMailWho"){ if (ev.type !== "change" || !AIM) return; AIM.who = val; render(); return; }
+    if (k === "aiMailGross"){ if (AIM){ AIM.gross = !!el.checked; render(); } return; }
     if (k === "impRemember"){ stImp().remember = !!el.checked; return; }
     if (k === "impDoc"){ if (ev.type !== "change") return; var dk = el.getAttribute("data-k"); stImp().docEdits[dk] = el.value; stImpBuild(); render(); return; }
     if (k === "impMap"){ if (ev.type !== "change") return; stImp().headMap[el.getAttribute("data-key")] = val; stImpBuild(); render(); return; }
@@ -856,7 +873,14 @@ function stField(ev){
 document.addEventListener("input", stField);
 document.addEventListener("change", stField);
 document.addEventListener("keydown", function(ev){
+  if (ev.key === "Enter" && !ev.shiftKey && ev.target && ev.target.getAttribute){
+    var ek = ev.target.getAttribute("data-stf");
+    if (ek === "aiDraft"){ ev.preventDefault(); aiSend(ev.target.value); return; }
+    if (ek === "aiBriefQ"){ ev.preventDefault(); AIC.briefQ = ev.target.value; stAct("aibriefask", ev.target); return; }
+  }
   if (ev.key !== "Escape") return;
   if (ST.tv){ ST.tv = false; clearInterval(ST.tvTimer); render(); return; }
+  if (AIM){ AIM = null; render(); return; }
+  if (AIC.open){ AIC.open = false; render(); return; }
   if (ST.edit || ST.modal){ ST.edit = null; ST.modal = null; render(); }
 });
