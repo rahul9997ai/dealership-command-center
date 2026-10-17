@@ -54,7 +54,7 @@ const FIELDS: Record<string, string> = {
   lender: "bank or finance company",
   notes: "free-text notes",
 };
-const STATUS = ["pending", "approved", "scheduled", "delivered", "rdr", "carry", "declined", "cancelled"];
+const STATUS = ["pending", "approved", "scheduled", "delivered", "cancelled", "declined"];
 const str = { type: "string" } as const;
 const int = { type: "integer" } as const;
 const obj = (props: Record<string, unknown>) => ({ type: "object", properties: props, required: Object.keys(props), additionalProperties: false });

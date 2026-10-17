@@ -660,7 +660,8 @@ function sellingDays(month, opts){
 }
 /* Selling days used up to and including `iso` (0 before the first one). */
 function sellingDayOf(info, iso){ return info.days.filter(function(x){ return x.open && x.date <= iso; }).length; }
-var SALE_STATUSES = ["pending","approved","scheduled","delivered","rdr","carry","declined","cancelled"];
+/* The six statuses the sales office uses. ("rdr" and "carry" are older values, read as delivered / pending.) */
+var SALE_STATUSES = ["pending","approved","scheduled","delivered","cancelled","declined"];
 function saleCounts(d){ return d && d.status !== "declined" && d.status !== "cancelled"; }
 function saleIsUsed(d){ return d.type === "Used" || d.type === "As-is"; }
 /* The date a deal counts on: sold date, or (when counting on delivery) the delivery date once delivered. */
@@ -959,7 +960,7 @@ function impPick(text, list, other){
 }
 /* "Del / scanned" (RDR) counts as Delivered: the tracker has no separate scanned status */
 var IMP_STATUS = { delivered:"delivered", del:"delivered", "delscanned":"delivered", scanned:"delivered", rdr:"delivered", reported:"delivered", declined:"declined", cancelled:"cancelled", canceled:"cancelled", unwound:"cancelled",
-  carryover:"carry", carry:"carry", pending:"pending", sold:"pending", approved:"approved", schdelivery:"scheduled", scheduleddelivery:"scheduled", scheduled:"scheduled", sched:"scheduled", booked:"scheduled" };
+  carryover:"pending", carry:"pending", pending:"pending", sold:"pending", approved:"approved", schdelivery:"scheduled", scheduleddelivery:"scheduled", scheduled:"scheduled", sched:"scheduled", booked:"scheduled" };
 function impHash(s){ var h = 2166136261; for (var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
 function impLogNeed(c){ return c.sp !== undefined && (c.stockNo !== undefined || c.customer !== undefined) && Object.keys(c).length >= 3; }
 /* One sales-log tab. opts: { type:"auto"|"New"|"Used"|"file", headMap:{}, headerRow:n, leads:[..], closes:[..], stocks:[..], store:"id", file:"name",
@@ -1092,7 +1093,7 @@ function impDocDeals(result, opts){
   var out = [], year = opts.year || null;
   ((result && result.deals) || []).forEach(function(x, i){
     var sp = saleKey(x.salesperson) || "HOUSE", sp2 = saleKey(x.salesperson2), sold = impDate(x.soldDate, year, null), st = String(x.status || "").toLowerCase();
-    var status = st === "rdr" ? "delivered" : SALE_STATUSES.indexOf(st) !== -1 ? st : (IMP_STATUS[st.replace(/[^a-z]/g, "")] || "pending");
+    var status = SALE_STATUSES.indexOf(st) !== -1 ? st : (IMP_STATUS[st.replace(/[^a-z]/g, "")] || "pending");
     var type = /^new$/i.test(x.vehicleType) ? "New" : /as.?is/i.test(x.vehicleType) ? "As-is" : /^used$/i.test(x.vehicleType) ? "Used" : (opts.type || "");
     var stock = impText(x.stockNo).toUpperCase(), cust = impText(x.customer);
     var deal = { id:"X" + impHash([opts.store || "", stock, sold || "", cust.toUpperCase(), sp].join("|")) + impHash(stock + "|" + sold).slice(0, 3),

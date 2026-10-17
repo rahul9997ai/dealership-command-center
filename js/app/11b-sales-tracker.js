@@ -11,12 +11,12 @@ function stFresh(store){
   return { store:store, deals:{}, months:{}, loading:{}, targets:{}, targetsLoaded:{}, view:"today", month:null, perf:"month",
     f:{ type:"all", status:"all", sp:"all", q:"" }, edit:null, editErr:null, saving:false, modal:null, tDraft:null, tDirty:false, err:null,
     appts:{}, apptDay:null, apptTimer:null, apptSaved:null, fms:null, mine:{}, mineLoading:{}, tv:false, tvTimer:null,
-    carryFor:null, carryLoading:false, imp:null };
+    carryFor:null, carryLoading:false, imp:null, cell:null };
 }
-var ST_LABEL = { pending:"Pending", approved:"Approved", scheduled:"Sch. delivery", delivered:"Delivered", rdr:"Delivered",
-  carry:"Carry over", declined:"Declined", cancelled:"Cancelled" };
+var ST_LABEL = { pending:"Pending", approved:"Approved", scheduled:"Scheduled", delivered:"Delivered", rdr:"Delivered",
+  carry:"Pending", declined:"Declined", cancelled:"Cancelled" };
 var ST_STEPS = ["pending","approved","scheduled","delivered"];
-var ST_OTHER = ["carry","declined","cancelled"];
+var ST_OTHER = ["cancelled","declined"];
 var ST_LEAD = ["Walk in","E-Lead","Phone","Referral","Mobile","Repeat","Other"];
 var ST_STOCK = ["Internal","Trade in","Lease return","Rental","Customer purchase","Auction / TradeRev","Dealer trade","M unit","BDC","Other"];
 var ST_FLAGS = [["appt","Appointment"],["trade","Trade-in"],["secondTO","2nd turnover"],["secPack","Security pack"],["tire","Tire & wheel"],["posted","Posted"]];
@@ -246,7 +246,7 @@ function stViewToday(){
           return li(d, '<span class="st-time">' + (done ? "✓ done" : (tm ? new Date("2000-01-01T" + tm).toLocaleTimeString("en-CA", { hour:"numeric", minute:"2-digit" }) : "today")) + '</span>'); }).join("") + '</ul>' : '<div class="st-empty">Nothing booked for today.</div>') + '</div>' +
     '</div>' +
     '<div class="st-g3">' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico p">⏳</span><h3>Still to deliver<small>pending · approved · scheduled · carry over</small></h3><span class="cnt">' + open.length + '</span></div>' +
+      '<div class="st-card"><div class="st-ch"><span class="st-ico p">⏳</span><h3>Still to deliver<small>pending · approved · scheduled</small></h3><span class="cnt">' + open.length + '</span></div>' +
         (open.length ? '<ul class="st-list">' + open.slice(0, 6).map(function(d){ return li(d, '<span class="st-pills"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + '</span>'); }).join("") + '</ul>' + (open.length > 6 ? '<div class="st-empty">and ' + (open.length - 6) + ' more in the Sales log</div>' : '') : '<div class="st-empty">Everything sold has been delivered.</div>') + '</div>' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico o">⚑</span><h3>Save-a-deal<small>pending, declined and approved</small></h3><span class="cnt">' + save.length + '</span></div>' +
         (save.length ? save.slice(0, 6).map(function(d){ return '<div class="st-row" data-st="edit" data-id="' + esc(d.id) + '">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") +
@@ -473,17 +473,23 @@ function stViewLog(){
   var carry = allCarry.concat(carryDel).filter(keep).sort(function(a, b){ return String(a.soldDate).localeCompare(String(b.soldDate)); });
   var delivered = stDeliveredIn(month);
   var sec = function(cls, text){ return '<tr class="st-sec ' + cls + '"><td colspan="13">' + text + '</td></tr>'; };
+  /* every value can be clicked to change just that value in a small bubble; ✎ opens the whole deal */
+  var cell = function(d, f, cls, html, title){ return '<td class="' + cls + ' st-c" data-st="cell" data-id="' + esc(d.id) + '" data-f="' + f + '"' + (title ? ' title="' + esc(title) + '"' : '') + '>' + html + '</td>'; };
   var rowHtml = function(d){
     var del = d.status === "scheduled" && d.deliveryAt ? stDay(d.deliveryAt) + " " + String(d.deliveryAt).slice(11, 16) : (d.status === "delivered" || d.status === "rdr") && d.deliveredDate ? stDay(d.deliveredDate) : "";
-    return '<tr class="click" data-st="edit" data-id="' + esc(d.id) + '"><td class="l" style="font-weight:600">' + stDay(d.soldDate) + '</td><td><b>' + esc(d.stockNo || "") + '</b></td>' +
-      '<td class="l st-ell" title="' + esc(d.customer || "") + '"><b>' + esc(d.customer || "") + '</b></td><td class="l st-ell" title="' + esc(d.vehicle || "") + '">' + esc(d.vehicle || "") + '</td>' +
-      '<td><span class="st-pill ' + esc(d.type || "New") + '">' + esc(d.type || "New") + '</span></td>' +
-      '<td class="l" style="font-weight:600">' + stSpText(d) + '</td><td>' + esc(d.dealType || "") + '</td>' +
-      '<td style="font-size:11.5px">' + esc(d.leadSource || "") + (d.closeType ? '<span style="color:var(--muted)">' + (d.leadSource ? ' · ' : '') + esc(d.closeType) + '</span>' : '') + '</td>' +
-      '<td class="r num"><b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : stMoney(d.frontGross)) + '</b></td><td class="r num"><b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b></td>' +
-      '<td class="l"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span></td><td class="l" style="font-size:12px;color:var(--text-2)">' + esc(del) + '</td>' +
-      '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Edit" aria-label="Edit">✎</button>' +
-      (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + ST_LABEL[stNextStatus(d.status)] + '">→ ' + ({ approved:"Approve", scheduled:"Book", delivered:"Deliver" }[stNextStatus(d.status)] || ST_LABEL[stNextStatus(d.status)]) + '</button>' : '') +
+    var on = ST.cell && ST.cell.id === d.id ? ST.cell.f : "";
+    var c = function(f, cls, html, title){ return cell(d, f, cls + (on === f ? " on" : ""), html, title); };
+    return '<tr>' + c("soldDate", "l", '<b>' + stDay(d.soldDate) + '</b>') + c("stockNo", "", '<b>' + esc(d.stockNo || "—") + '</b>') +
+      c("customer", "l st-ell", '<b>' + esc(d.customer || "—") + '</b>', d.customer) + c("vehicle", "l st-ell", esc(d.vehicle || "—"), d.vehicle) +
+      c("type", "", '<span class="st-pill ' + esc(d.type || "New") + '">' + esc(d.type || "New") + '</span>') +
+      c("sp", "l", '<span style="font-weight:600">' + stSpText(d) + '</span>') + c("dealType", "", esc(d.dealType || "—")) +
+      c("source", "", '<span style="font-size:11.5px">' + (esc(d.leadSource || "") + (d.closeType ? '<span style="color:var(--muted)">' + (d.leadSource ? ' · ' : '') + esc(d.closeType) + '</span>' : '') || '<span style="color:var(--muted)">—</span>') + '</span>') +
+      c("frontGross", "r num", '<b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : stMoney(d.frontGross)) + '</b>') +
+      c("fiGross", "r num", '<b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b>') +
+      c("status", "l", '<span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>') +
+      c("delivery", "l", '<span style="font-size:12px;color:var(--text-2)">' + (esc(del) || '<span style="color:var(--muted)">—</span>') + '</span>') +
+      '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Open the whole deal" aria-label="Open the whole deal">✎</button>' +
+      (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + ST_LABEL[stNextStatus(d.status)] + '">→ ' + ST_LABEL[stNextStatus(d.status)] + '</button>' : '') +
       '<button type="button" class="st-act del" data-st="delrow" data-id="' + esc(d.id) + '" title="Delete" aria-label="Delete">✕</button></span></td></tr>'; };
   var sel = function(key, opts){ return '<select class="st-gsel" data-stf="f.' + key + '">' + opts.map(function(o){ return '<option value="' + esc(o[0]) + '" ' + (f[key] === o[0] ? "selected" : "") + '>' + esc(o[1]) + '</option>'; }).join("") + '</select>'; };
   var card = function(ico, cls, title, sub, n, foot){ return '<div class="st-card"><div class="st-ch"><span class="st-ico ' + cls + '">' + ico + '</span><h3>' + title + '<small>' + sub + '</small></h3><span class="cnt">' + n + '</span></div><div style="font-size:11.5px;color:var(--muted)">' + foot + '</div></div>'; };
@@ -492,9 +498,9 @@ function stViewLog(){
       card("⏱", "o", "Not delivered yet", "pending · approved · scheduled", counts.open, allCarry.length ? "+ " + allCarry.length + " carried over from earlier months" : "none carried over from earlier months") +
       card("✓", "g", "Delivered", "in " + stMonthName(month).split(" ")[0] + ", whenever it was sold", delivered.length, carryDel.length ? "incl. " + carryDel.length + " carry-over" + (carryDel.length === 1 ? "" : "s") + " from earlier months" : "") +
       card("✕", "r", "Declined / cancelled", "not counted", counts.neg, "") + '</div>' +
-    '<div class="st-table"><div class="st-th"><div><h2>' + esc(stMonthName(month).toUpperCase()) + ' SALES LOG</h2><div class="st-hsub">New and Used together · click a deal to open it</div></div>' +
+    '<div class="st-table"><div class="st-th"><div><h2>' + esc(stMonthName(month).toUpperCase()) + ' SALES LOG</h2><div class="st-hsub">New and Used together · click any value to change it · ✎ opens the whole deal</div></div>' +
       '<div class="st-actions">' + stMonthSelect() + sel("type", [["all","New & Used"],["New","New"],["Used","Used (incl. As-is)"],["As-is","As-is only"]]) +
-        sel("status", [["all","All statuses"],["open","Not delivered yet"]].concat(C.SALE_STATUSES.filter(function(s){ return s !== "rdr"; }).map(function(s){ return [s, ST_LABEL[s]]; }))) +
+        sel("status", [["all","All statuses"],["open","Not delivered yet"]].concat(C.SALE_STATUSES.map(function(s){ return [s, ST_LABEL[s]]; }))) +
         sel("sp", [["all","All salespeople"]].concat(stRoster(month).map(function(n){ return [n, n]; }))) +
         '<input class="st-gsel" data-stf="f.q" value="' + esc(f.q) + '" placeholder="Search customer or stock #" style="width:190px">' +
         '<button type="button" class="st-gbtn" data-st="csv">Export</button>' + (stImpCan() ? '<button type="button" class="st-gbtn" data-st="view" data-v="import">Import</button>' : '') + '<button type="button" class="st-gbtn primary" data-st="add">+ Add a deal</button></div></div>' +
@@ -505,6 +511,76 @@ function stViewLog(){
       '<div class="st-note">Carry-overs are deals sold in an earlier month that aren\'t delivered, declined or cancelled yet. They sit at the top of the current month and on Today. The unit counts in the month it was sold (or the month it\'s delivered, when counting on delivery); the delivery counts in the month it happens. Declined and cancelled deals stay in the log but don\'t count toward anyone\'s numbers.</div></div>';
 }
 
+/* ---- Changing one value in the Sales log (a small bubble next to it) ---- */
+var ST_CELL_TITLE = { soldDate:"Date sold", stockNo:"Stock #", customer:"Customer", vehicle:"Vehicle", type:"New / Used", sp:"Salesperson", dealType:"Deal",
+  source:"Lead source · close", frontGross:"Front gross", fiGross:"F&I gross", status:"Status", delivery:"Delivery" };
+function stCellOpen(el){
+  var d = ST.deals[el.getAttribute("data-id")]; if (!d) return;
+  var f = el.getAttribute("data-f"), r = el.getBoundingClientRect(), w = 290, sp = (d.salespeople || [])[0];
+  var v = f === "sp" ? (sp ? stKey(sp.name) : "") : f === "source" ? (d.leadSource || "") : f === "delivery" ? (d.status === "scheduled" ? String(d.deliveryAt || "").slice(0, 16) : (d.deliveredDate || "")) :
+    f === "frontGross" || f === "fiGross" ? (d[f] === null || d[f] === undefined ? "" : String(d[f])) : (d[f] === undefined || d[f] === null ? "" : String(d[f]));
+  ST.cell = { id:d.id, f:f, v:v, v2:f === "source" ? (d.closeType || "") : "", pick:null, err:null,
+    top:r.bottom + window.scrollY + 6, left:Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - w - 12)) };
+  stLoadFms();
+  setTimeout(function(){ var x = document.querySelector(".st-bubble input, .st-bubble select"); if (x){ x.focus(); if (x.select) try { x.select(); } catch (e) {} } }, 30);
+}
+function stCellSave(opt){
+  var c = ST.cell; if (!c || ST.saving) return;
+  var o = ST.deals[c.id]; if (!o){ ST.cell = null; return render(); }
+  var d = C.clone(o), f = c.f, v = String(c.v || "").trim(), today = stToday();
+  if (f === "soldDate"){ if (!v){ c.err = "Pick the date sold."; return render(); } d.soldDate = v; }
+  else if (f === "stockNo") d.stockNo = v.toUpperCase();
+  else if (f === "customer" || f === "vehicle") d[f] = v;
+  else if (f === "type" || f === "dealType") d[f] = opt;
+  else if (f === "sp"){ if (!v){ c.err = "Pick the salesperson (or HOUSE)."; return render(); }
+    if ((d.salespeople || []).length > 1) d.salespeople[0] = { name:stKey(v), share:d.salespeople[0].share }; else d.salespeople = [{ name:stKey(v), share:1 }]; }
+  else if (f === "source"){ d.leadSource = v; d.closeType = String(c.v2 || ""); }
+  else if (f === "frontGross" || f === "fiGross") d[f] = stNum(v);
+  else if (f === "status"){
+    var to = opt || c.pick;
+    if (to === "scheduled" && !opt && !v){ c.err = "Pick the delivery date and time."; return render(); }
+    if (to === "scheduled" && opt){ c.pick = "scheduled"; c.v = String(d.deliveryAt || "").slice(0, 16); c.err = null; render();
+      setTimeout(function(){ var x = document.querySelector('.st-bubble input[type="datetime-local"]'); if (x) x.focus(); }, 30); return; }
+    d.status = to; d.statusDates = d.statusDates || {}; if (!d.statusDates[to]) d.statusDates[to] = today;
+    if (to === "scheduled") d.deliveryAt = v;
+    if (to === "delivered" && !d.deliveredDate) d.deliveredDate = today;
+  }
+  else if (f === "delivery"){
+    if (d.status === "scheduled") d.deliveryAt = v;
+    else if (d.status === "delivered" || d.status === "rdr") d.deliveredDate = v.slice(0, 10);
+  }
+  ST.saving = true; render();
+  stSaveDeal(d).then(function(){ ST.saving = false; ST.cell = null; toast((d.customer || d.stockNo || "Deal") + ": " + ST_CELL_TITLE[f].toLowerCase() + " saved.", "ok"); render(); },
+    function(err){ ST.saving = false; c.err = "Couldn't save: " + (err && err.message ? err.message : err); render(); });
+}
+function stCellBubble(){
+  var c = ST.cell; if (!c || state.route !== "sales" || ST.view !== "log") return "";
+  var d = ST.deals[c.id]; if (!d){ ST.cell = null; return ""; }
+  var f = c.f, body = "", save = true;
+  var opts = function(list, cur){ save = false; return '<div class="st-bopts">' + list.map(function(o){ return '<button type="button" data-st="cellset" data-v="' + o[0] + '" class="' + (cur === o[0] ? "cur " : "") + (o[2] || "") + '">' + o[1] + '</button>'; }).join("") + '</div>'; };
+  if (f === "type") body = opts([["New","New"],["Used","Used"],["As-is","As-is"]], d.type);
+  else if (f === "dealType") body = opts([["Finance","Finance"],["Lease","Lease"],["Cash","Cash"]], d.dealType);
+  else if (f === "status"){
+    if (c.pick === "scheduled") body = '<label class="st-bf"><span>Delivery booked for</span><input type="datetime-local" data-stf="cell.v" value="' + esc(c.v) + '"></label>';
+    else body = opts(C.SALE_STATUSES.map(function(s){ return [s, ST_LABEL[s], "st-pill " + s]; }), d.status);
+  }
+  else if (f === "source") body = '<label class="st-bf"><span>Lead source</span><select data-stf="cell.v"><option value="">—</option>' + ST_LEAD.map(function(o){ return '<option ' + (c.v === o ? "selected" : "") + '>' + esc(o) + '</option>'; }).join("") + '</select></label>' +
+    '<label class="st-bf"><span>Close</span><select data-stf="cell.v2"><option value="">—</option>' + ["1st visit","Be-back"].map(function(o){ return '<option ' + (c.v2 === o ? "selected" : "") + '>' + o + '</option>'; }).join("") + '</select></label>';
+  else if (f === "soldDate") body = '<label class="st-bf"><input type="date" data-stf="cell.v" value="' + esc(c.v) + '"></label>';
+  else if (f === "delivery"){
+    if (d.status === "scheduled") body = '<label class="st-bf"><span>Delivery booked for</span><input type="datetime-local" data-stf="cell.v" value="' + esc(c.v) + '"></label>';
+    else if (d.status === "delivered" || d.status === "rdr") body = '<label class="st-bf"><span>Delivered on</span><input type="date" data-stf="cell.v" value="' + esc(c.v) + '"></label>';
+    else { body = '<div class="st-bnote">A delivery date goes with Scheduled or Delivered. Change the status first.</div>'; save = false; }
+  }
+  else if (f === "sp") body = '<datalist id="st-roster-c">' + stRoster(ST.month).map(function(n){ return '<option value="' + esc(n) + '">'; }).join("") + '</datalist><label class="st-bf"><input list="st-roster-c" data-stf="cell.v" value="' + esc(c.v) + '" placeholder="Pick or type a name"></label>' +
+    ((d.salespeople || []).length > 1 ? '<div class="st-bnote">Split deal: this changes the first salesperson. Use ✎ to change the split.</div>' : '');
+  else body = '<label class="st-bf"><input ' + (f === "frontGross" || f === "fiGross" ? 'inputmode="decimal" placeholder="$"' : '') + ' data-stf="cell.v" value="' + esc(c.v) + '"></label>';
+  var synced = String(d.source || "").indexOf("drive:") === 0;
+  return '<div class="st-bubble" data-st-stop="1" style="top:' + Math.round(c.top) + 'px;left:' + Math.round(c.left) + 'px" role="dialog" aria-label="' + esc(ST_CELL_TITLE[f]) + '">' +
+    '<div class="st-bh"><b>' + esc(ST_CELL_TITLE[f]) + '</b><span>' + esc(d.customer || d.stockNo || "") + '</span><button type="button" class="st-bx" data-st="cellclose" aria-label="Close">✕</button></div>' + body +
+    (c.err ? '<div class="st-berr">' + esc(c.err) + '</div>' : '') + (synced ? '<div class="st-bnote">From the Google Drive sales log: the next sync replaces changes made here.</div>' : '') +
+    (save || c.pick ? '<div class="st-bb"><button type="button" class="btn sm" data-st="cellclose">Cancel</button><button type="button" class="btn sm primary" data-st="cellsave"' + (ST.saving ? " disabled" : "") + '>' + (ST.saving ? "Saving…" : "Save") + '</button></div>' : '') + '</div>';
+}
 /* ---- Adding or editing a deal ---- */
 function stBlank(){
   return { id:"S" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6), soldDate:stToday(), status:"pending", statusDates:{ pending:stToday() }, type:"New", dealType:"Finance",
@@ -520,7 +596,7 @@ function stOpen(d){
   ST.edit = e; ST.editErr = null;
   stLoadFms();
 }
-function stNextStatus(s){ return { pending:"approved", approved:"scheduled", scheduled:"delivered", carry:"delivered" }[s] || null; }
+function stNextStatus(s){ return { pending:"approved", approved:"scheduled", carry:"approved", scheduled:"delivered" }[s] || null; }
 /* Adding or editing a deal: a centred window, deal details on the left, people and money on the right. */
 function stDrawer(){
   var e = ST.edit; if (!e) return "";
@@ -731,6 +807,10 @@ function stAct(act, el){
       fim.forced[v] = fr; stImpBuild(); fim.tab = v; break; }
     case "impautomap": stImp().headMap = {}; stImp().forced = {}; stImpBuild(); break;
     case "impdel": stImpDelete(v); return;
+    case "cell": stCellOpen(el); break;
+    case "cellset": stCellSave(v); return;
+    case "cellsave": stCellSave(); return;
+    case "cellclose": ST.cell = null; break;
     case "railmini": state.ui.railMini = !state.ui.railMini; try { localStorage.setItem("dcc-rail-mini", state.ui.railMini ? "1" : "0"); } catch (x) {} break;
     case "aichat": AIC.open = !AIC.open; if (AIC.open){ AIC.scroll = true; setTimeout(function(){ var t = document.querySelector('[data-stf="aiDraft"]'); if (t) t.focus(); }, 30); } break;
     case "aisend": aiSend(AIC.draft); return;
@@ -820,6 +900,8 @@ function stAct(act, el){
 }
 document.addEventListener("click", function(ev){
   var el = ev.target && ev.target.closest ? ev.target.closest("[data-st],[data-st-stop]") : null;
+  /* a click anywhere else closes the value bubble */
+  if (ST.cell && !(ev.target.closest && ev.target.closest(".st-bubble")) && !(el && el.getAttribute("data-st") === "cell")){ ST.cell = null; if (!el || !el.hasAttribute("data-st")){ render(); return; } }
   if (!el || !el.hasAttribute("data-st")) return;
   if (el.tagName === "INPUT" || el.tagName === "SELECT") return;
   ev.preventDefault();
@@ -837,6 +919,7 @@ function stField(ev){
     if (k === "apptDay"){ if (ev.type !== "change" || !val) return; ST.apptDay = val; render(); return; }
     if (k === "insYear"){ if (ev.type !== "change") return; INS.year = Number(val) || null; render(); return; }
     if (k === "impTab" || k === "impShow"){ if (ev.type !== "change") return; stImp()[k === "impTab" ? "tab" : "show"] = val; render(); return; }
+    if (k === "cell.v" || k === "cell.v2"){ if (ST.cell){ ST.cell[k === "cell.v" ? "v" : "v2"] = val; } return; }
     if (k === "aiDraft"){ AIC.draft = val; return; }
     if (k === "aiBriefQ"){ AIC.briefQ = val; return; }
     if (k === "aiNote"){ if (AIM) AIM.note = val; if (ev.type === "change") render(); return; }
@@ -874,11 +957,13 @@ document.addEventListener("change", stField);
 document.addEventListener("keydown", function(ev){
   if (ev.key === "Enter" && !ev.shiftKey && ev.target && ev.target.getAttribute){
     var ek = ev.target.getAttribute("data-stf");
+    if (ek === "cell.v" || ek === "cell.v2"){ ev.preventDefault(); if (ST.cell) ST.cell[ek === "cell.v" ? "v" : "v2"] = ev.target.value; stCellSave(); return; }
     if (ek === "aiDraft"){ ev.preventDefault(); aiSend(ev.target.value); return; }
     if (ek === "aiBriefQ"){ ev.preventDefault(); AIC.briefQ = ev.target.value; stAct("aibriefask", ev.target); return; }
   }
   if (ev.key !== "Escape") return;
   if (ST.tv){ ST.tv = false; clearInterval(ST.tvTimer); render(); return; }
+  if (ST.cell){ ST.cell = null; render(); return; }
   if (AIM){ AIM = null; render(); return; }
   if (AIC.open){ AIC.open = false; render(); return; }
   if (ST.edit || ST.modal){ ST.edit = null; ST.modal = null; render(); }
