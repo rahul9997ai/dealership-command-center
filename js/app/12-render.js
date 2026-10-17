@@ -23,7 +23,7 @@ function routeView(){
     case "reports": return viewReports();
     case "users": return viewUsers();
     case "dealerships": return V.viewDashboard();
-    case "settings": return viewSettings();
+    case "settings": return viewSettings() + viewAiSettings();
     default: return V.viewDashboard();
   }
 }

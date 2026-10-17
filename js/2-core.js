@@ -961,7 +961,8 @@ var IMP_STATUS = { delivered:"delivered", del:"delivered", "delscanned":"rdr", s
   carryover:"carry", carry:"carry", pending:"pending", sold:"pending", approved:"approved", schdelivery:"scheduled", scheduleddelivery:"scheduled", scheduled:"scheduled", sched:"scheduled", booked:"scheduled" };
 function impHash(s){ var h = 2166136261; for (var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
 function impLogNeed(c){ return c.sp !== undefined && (c.stockNo !== undefined || c.customer !== undefined) && Object.keys(c).length >= 3; }
-/* One sales-log tab. opts: { type:"auto"|"New"|"Used"|"file", headMap:{}, headerRow:n, leads:[..], closes:[..], stocks:[..], store:"id", file:"name" }
+/* One sales-log tab. opts: { type:"auto"|"New"|"Used"|"file", headMap:{}, headerRow:n, leads:[..], closes:[..], stocks:[..], store:"id", file:"name",
+   typeMap:{ "D":"Used" }, statusMap:{ "PEND":"pending" }, skipLines:[spreadsheet row numbers], tabType:"New"|"Used" } (the last four come from AI reading or a saved layout)
    "auto" takes New / Used from a New/Used column, else from the tab or file name ("pre-owned" = Used, "new" = New).
    Returns null when the tab has no sales-log headings, else { name, month, header, rows:[{ line, deal, issues:[], bad }], typeGuess, typeFrom, typeUnknown }. */
 function impLogSheet(name, rows, opts){
@@ -973,19 +974,21 @@ function impLogSheet(name, rows, opts){
   if (!tab.y) for (var k = 0; k < Math.min(hdr.row, 4) && !tab.y; k++) (rows[k] || []).forEach(function(c){ var mo = impMonthOf(c); if (mo.y && !tab.y){ tab.y = mo.y; if (!tab.m) tab.m = mo.m; } });
   if (!tab.y){ var fy = impMonthOf(opts.file || ""); if (fy.y) tab.y = fy.y; }
   var cell = function(r, f){ var c = hdr.cols[f]; return c === undefined ? "" : r[c]; };
-  var guess = impTypeFromName(name) || impTypeFromName(opts.file || ""), hasCol = hdr.cols.type !== undefined, unknown = false;
+  var guess = opts.tabType || impTypeFromName(name) || impTypeFromName(opts.file || ""), hasCol = hdr.cols.type !== undefined, unknown = false;
+  var skip = opts.skipLines || [], tmap = opts.typeMap || {}, smap = opts.statusMap || {};
   var out = [];
   for (var i = hdr.row + 1; i < rows.length; i++){
     var r = rows[i] || [];
     var stock = impText(cell(r, "stockNo")).toUpperCase(), cust = impText(cell(r, "customer")), sp = saleKey(cell(r, "sp")), sp2 = saleKey(cell(r, "sp2")), rawDate = cell(r, "soldDate");
     if (!stock && !cust) continue;
-    var issues = [], sold = impDate(rawDate, tab.y, tab.m), st = impText(cell(r, "status")), status = IMP_STATUS[st.toLowerCase().replace(/[^a-z]/g, "")];
+    if (skip.indexOf(i + 1) !== -1) continue;
+    var issues = [], sold = impDate(rawDate, tab.y, tab.m), st = impText(cell(r, "status")), status = smap[st.toUpperCase()] || IMP_STATUS[st.toLowerCase().replace(/[^a-z]/g, "")];
     if (!sold) issues.push(impText(rawDate) ? "Date not readable (" + impText(rawDate) + ")" : "No date");
     if (!status){ if (st) issues.push("Status \"" + st + "\" read as Pending"); else issues.push("No status · imported as Pending"); status = "pending"; }
     if (status === "delivered" && impYes(cell(r, "rdr"))) status = "rdr";
     if (!sp){ issues.push("No salesperson · counted as HOUSE"); sp = "HOUSE"; }
     if (!cust) issues.push("No customer name");
-    var tc = impText(cell(r, "type")), fromCol = /^n(ew)?$/i.test(tc) ? "New" : /as.?is/i.test(tc) ? "As-is" : /^(u(sed)?|pre|cpo|demo)/i.test(tc) ? "Used" : null, type;
+    var tc = impText(cell(r, "type")), fromCol = tmap[tc.toUpperCase()] || (/^n(ew)?$/i.test(tc) ? "New" : /as.?is/i.test(tc) ? "As-is" : /^(u(sed)?|pre|cpo|demo)/i.test(tc) ? "Used" : null), type;
     if (opts.type === "New" || opts.type === "Used") type = opts.type;
     else if (opts.type === "file") type = fromCol || guess || "Used";
     else { type = fromCol || guess; if (!type){ unknown = true; type = "Used"; } }
@@ -1026,8 +1029,74 @@ function impPerfSheet(name, rows){
   return { name:name, month:mo.m && mo.y ? mo.y + "-" + ("0" + mo.m).slice(-2) : null, people:people };
 }
 
+/* ---- AI file reading: what is sent, and turning a read page into deals ----
+   A tab's sample: its top rows (titles, headings, the first deals) plus its last rows, numbered with the
+   spreadsheet row. Customer details are replaced before anything leaves the browser: emails, phone numbers,
+   and every value in a column that holds people's names (two or more words, letters only, mostly not the
+   store's salespeople or Finance Managers). Returns { lines:[[row, cells]], masked:[headings], hidden:n }. */
+var IMP_EMAIL = /[^\s@|]+@[^\s@|]+\.[a-z]{2,}/gi, IMP_PHONE = /(\+?1[\s.-]?)?\(?\b\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}\b/g;
+function impMaskTab(rows, roster, top, tail){
+  top = top || 40; tail = tail || 6;
+  var known = {}; (roster || []).forEach(function(n){ var k = saleKey(n).split(/\s+/)[0]; if (k) known[k] = 1; });
+  var head = impGuessHeader(rows), from = head === null ? 0 : head + 1, width = 0;
+  rows.forEach(function(r){ width = Math.max(width, (r || []).length); });
+  var nameCol = {}, hidden = 0, map = {}, n = 0, masked = [];
+  for (var c = 0; c < Math.min(width, 60); c++){
+    var vals = [], named = 0, distinct = {};
+    for (var i = from; i < rows.length; i++){ var v = impText((rows[i] || [])[c]); if (v && isNaN(Number(v.replace(/[$,]/g, "")))) vals.push(v); }
+    /* names: two or more words, letters only, not a salesperson, and mostly all different (statuses and sources repeat) */
+    vals.forEach(function(v){ var w = v.split(/\s+/); if (/^[A-Za-z][A-Za-z'.,\- ]*$/.test(v) && w.length >= 2 && v.length <= 40 && !known[saleKey(w[0])]){ named++; distinct[saleKey(v)] = 1; } });
+    if (named >= 2 && named / Math.max(1, vals.length) >= 0.4 && Object.keys(distinct).length / named >= 0.6){ nameCol[c] = 1; if (head !== null) masked.push(impText((rows[head] || [])[c]) || "column " + (c + 1)); }
+  }
+  var cellOut = function(v, c, i){
+    if (v === null || v === undefined || v === "") return "";
+    var t = typeof v === "number" ? String(v) : impText(v);
+    if (nameCol[c] && i >= from && t){ hidden++; return map[t] || (map[t] = "Customer " + (++n)); }
+    var before = t;
+    t = t.replace(IMP_EMAIL, "[email]").replace(IMP_PHONE, "[phone]");
+    if (t !== before) hidden++;
+    return t;
+  };
+  var pick = [];
+  for (var i2 = 0; i2 < rows.length && pick.length < top; i2++) if ((rows[i2] || []).some(function(v){ return impText(v); })) pick.push(i2);
+  var last = [];
+  for (var j = rows.length - 1; j > (pick.length ? pick[pick.length - 1] : -1) && last.length < tail; j--) if ((rows[j] || []).some(function(v){ return impText(v); })) last.unshift(j);
+  var lines = pick.concat(last).map(function(i){
+    var cells = (rows[i] || []).slice(0, 40).map(function(v, c){ return cellOut(v, c, i); });
+    while (cells.length && cells[cells.length - 1] === "") cells.pop();
+    return [i + 1, cells];
+  });
+  return { lines:lines, masked:masked, hidden:hidden };
+}
+/* Deals the AI read from a PDF or photo → the same rows the sales-log reader returns.
+   result.deals[]: strings (see the ai-read function); unsure: field names the AI wasn't sure of. */
+var IMP_DOC_FIELD = { soldDate:"soldDate", stockNo:"stockNo", customer:"customer", vehicle:"vehicle", salesperson:"sp", salesperson2:"sp2", fiManager:"fiManager",
+  status:"status", dealType:"dealType", vehicleType:"type", frontGross:"frontGross", fiGross:"fiGross", lender:"lender", deliveredDate:"deliveredDate", notes:"notes" };
+function impDocDeals(result, opts){
+  opts = opts || {};
+  var out = [], year = opts.year || null;
+  ((result && result.deals) || []).forEach(function(x, i){
+    var sp = saleKey(x.salesperson) || "HOUSE", sp2 = saleKey(x.salesperson2), sold = impDate(x.soldDate, year, null), st = String(x.status || "").toLowerCase();
+    var status = SALE_STATUSES.indexOf(st) !== -1 ? st : (IMP_STATUS[st.replace(/[^a-z]/g, "")] || "pending");
+    var type = /^new$/i.test(x.vehicleType) ? "New" : /as.?is/i.test(x.vehicleType) ? "As-is" : /^used$/i.test(x.vehicleType) ? "Used" : (opts.type || "");
+    var stock = impText(x.stockNo).toUpperCase(), cust = impText(x.customer);
+    var deal = { id:"X" + impHash([opts.store || "", stock, sold || "", cust.toUpperCase(), sp].join("|")) + impHash(stock + "|" + sold).slice(0, 3),
+      soldDate:sold || "", status:status, statusDates:{}, type:type || "Used", dealType:impPick(x.dealType, ["Finance", "Lease", "Cash"]),
+      salespeople:sp2 && sp2 !== sp ? [{ name:sp, share:0.5 }, { name:sp2, share:0.5 }] : [{ name:sp, share:1 }], stockNo:stock, customerNo:"", customer:cust, vehicle:impText(x.vehicle),
+      fiManager:impText(x.fiManager), fiUserId:"", frontGross:impMoney(x.frontGross), fiGross:impMoney(x.fiGross), lender:impText(x.lender), leadSource:"", closeType:"", stockSource:"",
+      flags:{}, deliveryAt:"", deliveredDate:"", notes:impText(x.notes), importedFrom:(opts.file || "") + " · read by AI" };
+    if (sold){ deal.statusDates[status] = sold; if (status === "delivered" || status === "rdr") deal.deliveredDate = impDate(x.deliveredDate, year, null) || sold; }
+    var unsure = (x.unsure || []).map(function(f){ return IMP_DOC_FIELD[f]; }).filter(Boolean);
+    var issues = [];
+    if (!sold) issues.push(impText(x.soldDate) ? "Date not readable (" + impText(x.soldDate) + ")" : "No date");
+    if (!type) issues.push("New or Used not on the page");
+    out.push({ line:i + 1, deal:deal, issues:issues, bad:!sold, unsure:unsure, unsureNote:impText(x.unsureNote), typeMissing:!type });
+  });
+  return out;
+}
+
 window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
-  impText:impText, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
+  impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,

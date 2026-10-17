@@ -513,7 +513,7 @@ function stViewLog(){
   var rowHtml = function(d){ return '<tr class="click" data-st="edit" data-id="' + esc(d.id) + '"><td class="l" style="font-weight:600">' + stDay(d.soldDate) + '</td><td><b>' + esc(d.stockNo || "") + '</b></td>' +
           '<td class="l"><b>' + esc(d.customer || "") + '</b><div style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</div></td><td><span class="st-pill ' + esc(d.type || "New") + '">' + esc(d.type || "New") + '</span></td>' +
           '<td class="l"><span class="st-who" style="font-weight:600">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") + stSpText(d) + '</span></td><td>' + esc(d.dealType || "") + '</td>' +
-          '<td style="font-size:11.5px">' + esc(d.leadSource || "") + '<br><span style="color:var(--muted)">' + esc(d.closeType || "") + '</span></td>' +
+          '<td style="font-size:11.5px">' + esc(d.leadSource || "") + (d.closeType ? '<span style="color:var(--muted)">' + (d.leadSource ? ' · ' : '') + esc(d.closeType) + '</span>' : '') + '</td>' +
           '<td class="r num"><b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : stMoney(d.frontGross)) + '</b></td><td class="r num"><b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b></td>' +
           '<td class="l"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + (d.status === "scheduled" && d.deliveryAt ? '<div style="font-size:11px;color:var(--muted);margin-top:3px">' + stDay(d.deliveryAt) + ' ' + String(d.deliveryAt).slice(11, 16) + '</div>' : '') + '</td>' +
           '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Edit">Edit</button>' +
@@ -775,6 +775,12 @@ function stAct(act, el){
       fim.forced[v] = fr; stImpBuild(); fim.tab = v; break; }
     case "impautomap": stImp().headMap = {}; stImp().forced = {}; stImpBuild(); break;
     case "impdel": stImpDelete(v); return;
+    case "aisheet": stImpAiSheet(); return;
+    case "aidoc": stImpAiDoc(); return;
+    case "aichoose": { var ap = String(v).split("|"), aq = stImp().ai && stImp().ai.questions[Number(ap[0])]; if (!aq) return;
+      aq.pick = Number(ap[1]); stAiApplyChoice(aq.choices[aq.pick]); stImpBuild(); break; }
+    case "impdocok": stImp().docOk[Number(v)] = true; stImpBuild(); break;
+    case "aiforget": askConfirm("Forget the saved layouts?", "Files that were read with AI before will need AI (or matching by hand) again next time.", "Forget them", function(){ state.config.importLayouts = {}; commit(); toast("Saved layouts forgotten.", "ok"); }); return;
     case "impsave": stImpSave(); return;
     case "impcancel": stImpReset(); ST.view = "log"; break;
     case "add": stOpen(stBlank()); break;
@@ -858,6 +864,8 @@ document.addEventListener("click", function(ev){
 });
 function stField(ev){
   var el = ev.target; if (!el || !el.getAttribute) return;
+  if (el.getAttribute("data-st") === "aion"){ if (ev.type !== "change") return; state.config.ai = Object.assign({ cap:10 }, state.config.ai || {}, { on:!!el.checked }); commit(); toast("AI file reading is " + (el.checked ? "on" : "off") + ".", "ok"); return; }
+  if (el.getAttribute("data-st-cap")){ if (ev.type !== "change") return; var cv = Math.max(1, Math.round(Number(el.value) || 10)); state.config.ai = Object.assign({}, state.config.ai || {}, { cap:cv }); commit(); toast("Monthly AI cap set to $" + cv + ".", "ok"); return; }
   if (el.getAttribute("data-stimp") === "file"){ if (ev.type === "change" && el.files && el.files[0]) stImpRead(el.files[0]); return; }
   var k = el.getAttribute("data-stf"), tk = el.getAttribute("data-stt");
   if (k){
@@ -866,6 +874,8 @@ function stField(ev){
     if (k === "apptDay"){ if (ev.type !== "change" || !val) return; ST.apptDay = val; render(); return; }
     if (k === "insYear"){ if (ev.type !== "change") return; INS.year = Number(val) || null; render(); return; }
     if (k === "impTab" || k === "impShow"){ if (ev.type !== "change") return; stImp()[k === "impTab" ? "tab" : "show"] = val; render(); return; }
+    if (k === "impRemember"){ stImp().remember = !!el.checked; return; }
+    if (k === "impDoc"){ if (ev.type !== "change") return; var dk = el.getAttribute("data-k"); stImp().docEdits[dk] = el.value; stImpBuild(); render(); return; }
     if (k === "impMap"){ if (ev.type !== "change") return; stImp().headMap[el.getAttribute("data-key")] = val; stImpBuild(); render(); return; }
     if (k.indexOf("f.") === 0){ ST.f[k.slice(2)] = val; if (ev.type === "change" || k === "f.q") render(); return; }
     if (k.indexOf("e.") === 0 && ST.edit){

@@ -26,28 +26,40 @@ function stImpLib(){
   return ST_IMP_LIB;
 }
 function stImpCan(){ return V.isAdmin(); }
-function stImp(){ return ST.imp || (ST.imp = { file:"", raw:null, type:"auto", tab:"", show:"all", busy:"", err:null, model:null, existing:null, headMap:{}, forced:{} }); }
+function stImpBlank(){ return { raw:null, model:null, existing:null, headMap:{}, forced:{}, skip:{}, typeMap:{}, statusMap:{}, tabTypes:{}, type:"auto", ai:null, doc:null, docOk:{}, docEdits:{}, remember:true, layoutUsed:null }; }
+function stImp(){ return ST.imp || (ST.imp = Object.assign({ file:"", tab:"", show:"all", busy:"", err:null }, stImpBlank())); }
 function stImpReset(){ var h = ST.imp && ST.imp.hist; ST.imp = null; if (h) stImp().hist = h; }
 /* read the file into rows (arrays of cell values), one entry per tab */
 function stImpRead(file){
   var im = stImp();
   if (!file) return;
-  if (/\.(pdf|png|jpe?g|gif|heic|webp|docx?|pptx?|zip)$/i.test(file.name)){
-    im.err = file.name + " isn't a spreadsheet, so it can't be read yet. Open it in Excel (or export it from your DMS) and save it as .xlsx or .csv, then drop that in."; render(); return; }
+  var docType = /\.pdf$/i.test(file.name) ? "application/pdf" : /\.png$/i.test(file.name) ? "image/png" : /\.jpe?g$/i.test(file.name) ? "image/jpeg" : /\.webp$/i.test(file.name) ? "image/webp" : /\.gif$/i.test(file.name) ? "image/gif" : "";
+  if (docType){
+    /* a PDF or photo: AI file reading can read it (the screen asks before sending) */
+    if (file.size > 6*1024*1024){ im.err = "That file is over 6 MB. Save a smaller copy (fewer pages, or a smaller photo) and try again."; render(); return; }
+    Object.assign(im, stImpBlank(), { err:null, busy:"Opening " + file.name + "…", file:file.name }); render();
+    var fr = new FileReader();
+    fr.onload = function(){ im.busy = ""; im.doc = { mediaType:docType, data:String(fr.result).split(",")[1] || "" }; render(); };
+    fr.onerror = function(){ im.busy = ""; im.err = "Couldn't open " + file.name + "."; render(); };
+    fr.readAsDataURL(file); return;
+  }
+  if (/\.(heic|heif|docx?|pptx?|zip|pages|numbers)$/i.test(file.name)){
+    im.err = file.name + " can't be read. Save it as Excel (.xlsx) or CSV, or for a page or photo as PDF, JPG or PNG, then drop that in."; render(); return; }
   if (file.size > 15*1024*1024){ im.err = "That file is over 15 MB. Save a copy with just the sales tabs and try again."; render(); return; }
-  im.err = null; im.busy = "Reading " + file.name + "…"; im.file = file.name; im.raw = null; im.model = null; im.existing = null; im.headMap = {}; im.forced = {}; im.type = "auto"; render();
+  Object.assign(im, stImpBlank(), { err:null, busy:"Reading " + file.name + "…", file:file.name }); render();
   Promise.all([stImpLib(), file.arrayBuffer()]).then(function(r){
     var X = r[0], wb;
     try { wb = X.read(new Uint8Array(r[1]), { type:"array" }); } catch (e) { throw new Error(file.name + " couldn't be opened as a spreadsheet. Save it from Excel as .xlsx or .csv and try again."); }
     im.raw = wb.SheetNames.map(function(n){ return { name:n, rows:X.utils.sheet_to_json(wb.Sheets[n], { header:1, raw:true, defval:"" }) }; });
-    stImpBuild();
+    stImpApplyLayouts(); stImpBuild();
     return stImpExisting().then(function(){ im.busy = ""; stImpBuild(); render(); });
   }).catch(function(e){ im.busy = ""; im.raw = null; im.model = null; im.err = (e && e.message ? e.message : String(e)); render(); });
 }
 /* review every tab, turn rows into deals and monthly totals, and check each one */
 function stImpBuild(){
-  var im = stImp(); if (!im.raw) return;
-  var opts = { type:im.type, headMap:im.headMap, leads:ST_LEAD, closes:["1st visit","Be-back"], stocks:ST_STOCK, store:ST.store, file:im.file };
+  var im = stImp(); if (im.doc){ if (im.ai && im.ai.status === "done") stImpBuildDoc(); return; }
+  if (!im.raw) return;
+  var opts = { type:im.type, headMap:im.headMap, typeMap:im.typeMap, statusMap:im.statusMap, leads:ST_LEAD, closes:["1st visit","Be-back"], stocks:ST_STOCK, store:ST.store, file:im.file };
   var logs = [], perf = [], tabs = [], byId = {}, order = [];
   im.raw.forEach(function(s){
     var filled = s.rows.filter(function(r){ return (r || []).some(function(v){ return C.impText(v); }); }).length;
@@ -56,7 +68,7 @@ function stImpBuild(){
       var P = C.impPerfSheet(s.name, s.rows);
       if (P && P.people.length){ perf.push(P); tabs.push({ name:s.name, kind:"perf", P:P }); return; }
     }
-    var L = C.impLogSheet(s.name, s.rows, Object.assign({}, opts, { headerRow:forced }));
+    var L = C.impLogSheet(s.name, s.rows, Object.assign({}, opts, { headerRow:forced, skipLines:im.skip[s.name], tabType:im.tabTypes[s.name] }));
     if (L){ L.forced = forced !== undefined; if (L.rows.length) logs.push(L); tabs.push({ name:s.name, kind:L.rows.length ? "log" : "logEmpty", L:L }); return; }
     tabs.push({ name:s.name, kind:filled ? "unknown" : "empty", rows:filled });
   });
@@ -122,6 +134,7 @@ function stImpSave(){
   var im = stImp(), M = im.model; if (!M || im.busy) return;
   if (!stImpCan()){ toast("Only the General Manager can import.", "err"); return; }
   if (M.typeUnknown && im.type === "auto"){ toast("Choose whether these deals are New or Used first.", "err"); return; }
+  if (M.n.check){ toast("Check the " + M.n.check + " deal" + (M.n.check === 1 ? "" : "s") + " the AI wasn't sure about first.", "err"); return; }
   var me = V.currentUser(), now = new Date().toISOString(), fms = ST.fms || [];
   var batch = "I" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   var deals = M.rows.filter(function(r){ return r.state === "ready" || r.state === "note"; }).map(function(r){
@@ -155,6 +168,7 @@ function stImpSave(){
   });
   chain.then(function(){
     var msg = (deals.length ? deals.length + " deal" + (deals.length === 1 ? "" : "s") : "") + (deals.length && months.length ? " and " : "") + (months.length ? months.length + " month" + (months.length === 1 ? "" : "s") + " of Sales Performance totals" : "") + " imported. You can delete this import from Import at any time.";
+    stImpRememberLayouts();
     var h = stImp().hist; INS.loaded = {}; ST.imp = null; stImp().hist = h ? [{ id:batch, data:rec.data, created_at:now }].concat(h) : null;
     ST.view = "log"; toast(msg, "ok"); render();
   }, function(e){
@@ -164,7 +178,14 @@ function stImpSave(){
   });
 }
 /* ---- the screen ---- */
+/* a value the AI wasn't sure of: shown as a box to correct, until the deal is confirmed */
+function stImpCell(r, f, html){
+  if (!r.unsure || r.unsure.indexOf(f) === -1 || r.state !== "check") return html;
+  var d = r.deal, v = f === "sp" ? (d.salespeople[0] || {}).name : f === "soldDate" ? d.soldDate : d[f];
+  return '<input class="st-tin st-unsure" data-stf="impDoc" data-k="' + r.idx + '|' + f + '" value="' + esc(v === null || v === undefined ? "" : v) + '" title="The AI wasn\'t sure of this value">';
+}
 function stImpPill(r){
+  if (r.state === "check") return '<span class="st-pill scheduled">' + esc(r.unsureNote || "Check the outlined values") + '</span> <button type="button" class="st-act go" data-st="impdocok" data-v="' + r.idx + '">Looks right</button>';
   if (r.state === "ready") return '<span class="st-pill delivered">Ready</span>';
   if (r.state === "note") return '<span class="st-pill scheduled" title="Imports with this note">' + esc(r.issues[0]) + '</span>';
   if (r.state === "exists") return '<span class="st-pill pending">Already in the tracker · skipped</span>';
@@ -192,13 +213,17 @@ function stViewImport(){
   var im = stImp(), M = im.model;
   stLoadFms(); stImpHistLoad();
   var head = function(title, sub, actions, kpis){ return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Import</div><h2>' + title + '</h2><div class="st-hsub">' + sub + '</div></div><div class="st-actions">' + actions + '</div></div>' + (kpis || "") + '</div>'; };
-  var pick = '<label class="st-gbtn st-file">' + (M ? "Choose another file" : "Choose a file") + '<input type="file" data-stimp="file"></label>';
+  var pick = '<label class="st-gbtn st-file">' + (M || im.doc ? "Choose another file" : "Choose a file") + '<input type="file" data-stimp="file"></label>';
   var back = '<button type="button" class="st-gbtn" data-st="impcancel">' + (M ? "Cancel" : "Back to the Sales log") + '</button>';
+  if (!M && im.doc){
+    return head(esc(im.file), (im.doc.mediaType === "application/pdf" ? "A PDF" : "A photo") + " · read by AI, checked by you · nothing is saved until you press Import", '<button type="button" class="st-gbtn" data-st="impcancel">Cancel</button>' + pick) +
+      (im.err ? '<div class="st-err">' + esc(im.err) + '</div>' : '') + stAiBox();
+  }
   if (!M){
     return head("Bring in a spreadsheet", "Any sales sheet: every tab is checked and you see where it lands before anything is saved", back + pick) +
       (im.err ? '<div class="st-err">' + esc(im.err) + '</div>' : '') +
       (im.busy ? '<div class="st-warn" style="background:var(--info-bg);border-color:var(--blue);color:var(--blue)">' + esc(im.busy) + '</div>' : '') +
-      '<label class="st-drop" data-stdrop="1"><input type="file" data-stimp="file"><span class="st-ico b">⇪</span><b>Drop the file here, or click to choose it</b><span>Excel (.xlsx, .xls), CSV or OpenDocument · New car logs, pre-owned logs, Sales Performance</span></label>' +
+      '<label class="st-drop" data-stdrop="1"><input type="file" data-stimp="file"><span class="st-ico b">⇪</span><b>Drop the file here, or click to choose it</b><span>Excel (.xlsx, .xls), CSV or OpenDocument · New car logs, pre-owned logs, Sales Performance' + (stAiOn() ? ' · PDFs and photos of deal sheets (read by AI)' : '') + '</span></label>' +
       '<div class="st-g2"><div class="st-card"><div class="st-ch"><span class="st-ico g">✎</span><h3>Sales logs<small>one row per vehicle · any layout</small></h3></div><ul class="st-plain">' +
         '<li>Every tab is read; the heading row is found wherever it sits.</li><li>Headings are matched by name (Stock #, Stk, Sales Person, Buyer, Front End Gross…). Anything it gets wrong, you re-match before importing.</li>' +
         '<li>New or Used comes from a New/Used column, or from the tab or file name ("pre-owned" = Used, "new" = New). Otherwise you pick.</li><li>Dates typed as text, like <b>9TH SEP</b>, are read using the tab\'s year.</li>' +
@@ -209,17 +234,18 @@ function stViewImport(){
   }
   var n = M.n, T = M.tabs.filter(function(t){ return t.name === im.tab && t.L; })[0], L = T && T.L;
   var tabRows = M.rows.filter(function(r){ return r.tab === im.tab; }).filter(function(r){ return im.show === "all" || (im.show === "look" ? r.state === "note" || r.state === "bad" : r.state === "exists"); });
-  var perfOk = M.perf.filter(function(P){ return P.state === "ready" || P.state === "replace"; }).length, blocked = M.typeUnknown && im.type === "auto";
-  var btn = n.ready || perfOk ? '<button type="button" class="st-gbtn primary" data-st="impsave"' + (im.busy || blocked ? " disabled" : "") + (blocked ? ' title="Choose New or Used first"' : '') + '>' + (im.busy ? esc(im.busy) : "Import " + (n.ready ? n.ready + " deal" + (n.ready === 1 ? "" : "s") : "") + (n.ready && perfOk ? " + " : "") + (perfOk ? perfOk + " month" + (perfOk === 1 ? "" : "s") : "")) + '</button>' : '';
+  var perfOk = M.perf.filter(function(P){ return P.state === "ready" || P.state === "replace"; }).length, blocked = (M.typeUnknown && im.type === "auto") || !!M.n.check;
+  var btn = n.ready || perfOk ? '<button type="button" class="st-gbtn primary" data-st="impsave"' + (im.busy || blocked ? " disabled" : "") + (blocked ? ' title="' + (M.n.check ? "Check the deals the AI wasn't sure about first" : "Choose New or Used first") + '"' : '') + '>' + (im.busy ? esc(im.busy) : "Import " + (n.ready ? n.ready + " deal" + (n.ready === 1 ? "" : "s") : "") + (n.ready && perfOk ? " + " : "") + (perfOk ? perfOk + " month" + (perfOk === 1 ? "" : "s") : "")) + '</button>' : '';
   var kpis = M.logs.length ? '<div class="st-kpis"><div class="st-hk"><div class="l">Deals found</div><div class="v">' + n.all + '</div><div class="s">' + M.logs.length + ' tab' + (M.logs.length === 1 ? "" : "s") + (n.dup ? ' · ' + n.dup + ' repeated on a later tab, counted once' : '') + '</div></div>' +
       '<div class="st-hk"><div class="l">Ready to import</div><div class="v" style="color:#86efac">' + n.ready + '</div><div class="s">' + (n.note ? n.note + ' with a note (shown below)' : 'matched and checked') + '</div></div>' +
       '<div class="st-hk"><div class="l">Already in the tracker</div><div class="v" style="color:#fde68a">' + n.exists + '</div><div class="s">same stock # and date · skipped</div></div>' +
-      '<div class="st-hk"><div class="l">Can\'t import</div><div class="v" style="color:' + (n.bad ? "#fca5a5" : "#fff") + '">' + n.bad + '</div><div class="s">' + (n.bad ? 'no readable date · fix in Excel and import again' : 'every row has a date') + '</div></div></div>' : '';
+      (M.doc ? '<div class="st-hk"><div class="l">To check</div><div class="v" style="color:' + (n.check ? "#fde68a" : "#86efac") + '">' + n.check + '</div><div class="s">' + (n.check ? 'deals with a value the AI wasn\'t sure of' : 'all checked') + '</div></div></div>' :
+      '<div class="st-hk"><div class="l">Can\'t import</div><div class="v" style="color:' + (n.bad ? "#fca5a5" : "#fff") + '">' + n.bad + '</div><div class="s">' + (n.bad ? 'no readable date · fix in Excel and import again' : 'every row has a date') + '</div></div></div>') : '';
   /* where each tab lands */
   var lands = '<div class="st-table"><div class="st-th"><div><h2>WHERE THE DATA LANDS</h2><div class="st-hsub">every tab in the file, checked · nothing is saved until you press Import</div></div></div><div class="st-tw"><table><thead><tr><th class="l">Tab</th><th class="l">What it is</th><th class="l">Lands in</th><th class="l">Details</th><th></th></tr></thead><tbody>' +
     M.tabs.map(function(t){
       var what, where, det, act = "";
-      if (t.kind === "log"){ what = '<span class="st-pill delivered">Sales log</span>'; where = "Sales log" + (t.L.month ? " · " + esc(stMonthName(t.L.month)) + " tab" : ""); det = t.L.rows.length + " deals · " + stImpTypeText(t.L, im) + (t.L.forced ? " · read by hand" : "");
+      if (t.kind === "log"){ what = '<span class="st-pill delivered">Sales log</span>'; where = "Sales log" + (t.L.month ? " · " + esc(stMonthName(t.L.month)) + " tab" : ""); det = t.L.rows.length + " deals · " + stImpTypeText(t.L, im) + (t.L.forced ? (im.ai && im.ai.tabs && im.ai.tabs[t.name] ? " · read by AI" : im.layoutUsed ? " · saved layout" : " · read by hand") : "");
         act = t.name === im.tab ? '<span class="ins-sub">previewing</span>' : '<button type="button" class="st-act" data-st="imptab" data-v="' + esc(t.name) + '">Preview</button>'; }
       else if (t.kind === "logEmpty"){ what = '<span class="st-pill pending">Sales log, empty</span>'; where = "—"; det = "headings found, no deals yet"; }
       else if (t.kind === "perf"){ var P = t.P; what = '<span class="st-pill approved">Sales Performance</span>';
@@ -230,10 +256,12 @@ function stViewImport(){
       else { what = '<span class="st-pill pending">Empty</span>'; where = "—"; det = "nothing in it"; }
       return '<tr><td class="l"><b>' + esc(t.name) + '</b></td><td class="l">' + what + '</td><td class="l">' + where + '</td><td class="l" style="white-space:normal;font-size:12px">' + det + '</td><td class="r">' + act + '</td></tr>'; }).join("") +
     '</tbody></table></div></div>';
-  var fields = Object.keys(C.IMP_COL_LABEL);
-  var colmap = L ? '<div class="st-card" style="margin-bottom:14px"><div class="st-ch"><span class="st-ico b">⇄</span><h3>Columns · ' + esc(im.tab) + '<small>heading row ' + (L.header.row + 1) + ' · change any that are wrong; the same heading is used on every tab</small></h3><span class="cnt">' + Object.keys(L.header.cols).length + '</span></div><div class="st-colmap">' +
-      L.header.all.map(function(a){ return '<div class="' + (a.field ? "" : "off") + '"><span title="' + esc(a.text) + '">' + esc(a.text) + '</span><i>→</i><select class="st-tin st-mapsel" data-stf="impMap" data-key="' + esc(a.key) + '"><option value="">Not used</option>' +
-        fields.map(function(f){ return '<option value="' + f + '" ' + (a.field === f ? "selected" : "") + '>' + esc(C.IMP_COL_LABEL[f]) + '</option>'; }).join("") + '</select></div>'; }).join("") + '</div>' +
+  var fields = Object.keys(C.IMP_COL_LABEL), aiCols = (im.ai && im.ai.tabs && im.ai.tabs[im.tab] && im.ai.tabs[im.tab].columns) || [];
+  var colmap = L && !M.doc ? '<div class="st-card" style="margin-bottom:14px"><div class="st-ch"><span class="st-ico b">⇄</span><h3>Columns · ' + esc(im.tab) + '<small>heading row ' + (L.header.row + 1) + ' · change any that are wrong; the same heading is used on every tab</small></h3><span class="cnt">' + Object.keys(L.header.cols).length + '</span></div><div class="st-colmap">' +
+      L.header.all.map(function(a){ var aic = aiCols.filter(function(c){ return C.impHead(c.heading) === a.key; })[0];
+        return '<div class="' + (a.field ? "" : "off") + (aic ? " ai" : "") + '"><span title="' + esc(a.text) + '">' + esc(a.text) + '</span><i>→</i><select class="st-tin st-mapsel" data-stf="impMap" data-key="' + esc(a.key) + '"><option value="">Not used</option>' +
+        fields.map(function(f){ return '<option value="' + f + '" ' + (a.field === f ? "selected" : "") + '>' + esc(C.IMP_COL_LABEL[f]) + '</option>'; }).join("") + '</select>' +
+        (aic ? '<em>' + stAiConf(aic.confidence) + ' ' + esc(aic.reason) + '</em>' : '') + '</div>'; }).join("") + '</div>' +
       '<div class="st-legend" style="align-items:center"><span>New or Used</span><span class="st-sub" style="margin:0">' + [["auto","Work it out"],["Used","All Used"],["New","All New"]].map(function(o){ return '<button type="button" data-st="imptype" data-v="' + o[0] + '" class="' + (im.type === o[0] ? "on" : "") + '">' + o[1] + '</button>'; }).join("") + '</span>' +
         '<span>' + (blocked ? '<b style="color:var(--danger)">This file doesn\'t say whether the deals are New or Used. Choose one.</b>' : '"Work it out" uses a New/Used column, else the tab or file name.') + '</span>' +
         (Object.keys(im.headMap).length || Object.keys(im.forced).length ? '<button type="button" class="btn sm ghost" data-st="impautomap">Undo my column changes</button>' : '') + '</div></div>' : '';
@@ -242,15 +270,15 @@ function stViewImport(){
       '<select class="st-gsel" data-stf="impShow" aria-label="Show"><option value="all" ' + (im.show === "all" ? "selected" : "") + '>All rows</option><option value="look" ' + (im.show === "look" ? "selected" : "") + '>Needs a look</option><option value="exists" ' + (im.show === "exists" ? "selected" : "") + '>Already in the tracker</option></select></div></div>' +
       '<div class="st-tw">' + (tabRows.length ? '<table><thead><tr><th class="l">Sold</th><th>Stock #</th><th class="l">Customer · vehicle</th><th>Salesperson</th><th>F&amp;I</th><th class="l">Status</th><th>Deal</th><th class="r">Front</th><th class="r">F&amp;I gross</th><th class="l">Check</th></tr></thead><tbody>' +
         tabRows.slice(0, 400).map(function(r){ var d = r.deal;
-          return '<tr><td class="l" style="font-weight:600">' + (d.soldDate ? stDay(d.soldDate) : '<span style="color:var(--danger)">—</span>') + '</td><td><b>' + esc(d.stockNo) + '</b></td><td class="l"><b>' + esc(d.customer || "—") + '</b><div class="ins-sub">' + esc(d.vehicle) + ' · ' + esc(d.type) + '</div></td>' +
-            '<td>' + stSpText(d) + '</td><td>' + esc(d.fiManager || "—") + '</td><td class="l"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span></td><td>' + esc(d.dealType || "—") + '</td>' +
-            '<td class="r num"><b' + (d.frontGross !== null && d.frontGross <= 0 ? ' style="color:var(--danger)"' : '') + '>' + (d.frontGross === null ? "—" : stMoney(d.frontGross)) + '</b></td><td class="r num">' + (d.fiGross === null ? "—" : stMoney(d.fiGross)) + '</td><td class="l">' + stImpPill(r) + '</td></tr>'; }).join("") + '</tbody></table>' :
+          return '<tr><td class="l" style="font-weight:600">' + stImpCell(r, "soldDate", d.soldDate ? stDay(d.soldDate) : '<span style="color:var(--danger)">—</span>') + '</td><td><b>' + stImpCell(r, "stockNo", esc(d.stockNo)) + '</b></td><td class="l"><b>' + stImpCell(r, "customer", esc(d.customer || "—")) + '</b><div class="ins-sub">' + esc(d.vehicle) + ' · ' + esc(d.type) + '</div></td>' +
+            '<td>' + stImpCell(r, "sp", stSpText(d)) + '</td><td>' + stImpCell(r, "fiManager", esc(d.fiManager || "—")) + '</td><td class="l">' + stImpCell(r, "status", '<span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>') + '</td><td>' + stImpCell(r, "dealType", esc(d.dealType || "—")) + '</td>' +
+            '<td class="r num">' + stImpCell(r, "frontGross", '<b' + (d.frontGross !== null && d.frontGross <= 0 ? ' style="color:var(--danger)"' : '') + '>' + (d.frontGross === null ? "—" : stMoney(d.frontGross)) + '</b>') + '</td><td class="r num">' + stImpCell(r, "fiGross", d.fiGross === null ? "—" : stMoney(d.fiGross)) + '</td><td class="l">' + stImpPill(r) + '</td></tr>'; }).join("") + '</tbody></table>' :
         '<div class="st-empty" style="padding:16px">' + (L.rows.length ? "No rows to show with this filter." : "No deals found under these headings. Check the columns above: Stock # (or Customer) and Salesperson are needed.") + '</div>') + '</div>' +
       '<div class="st-note">Rows sold in another month (for example last month\'s deals repeated on this tab) keep their own date. Where the same deal is on two tabs, the later tab\'s version is imported. F&amp;I managers are matched to their accounts by first name, so they see these deals in My F&amp;I.</div></div>' : '';
   return head(esc(im.file), M.tabs.length + " tab" + (M.tabs.length === 1 ? "" : "s") + " checked · " + (n.all ? n.all + " deals" : "no deals") + (M.perf.length ? " · " + M.perf.length + " Sales Performance tab" + (M.perf.length === 1 ? "" : "s") : "") + " · nothing is saved until you press Import", back + pick + btn, kpis) +
     (im.err ? '<div class="st-err">' + esc(im.err) + '</div>' : '') +
     (!M.logs.length && !M.perf.length ? '<div class="st-warn">Nothing in this file was recognised as sales data. If a tab is a sales log with unusual headings, press <b>Read as a sales log</b> next to it and match the columns.</div>' : '') +
-    lands + colmap + preview;
+    (M.doc ? "" : lands) + stAiBox() + stAiProposal() + (im.layoutUsed ? '<div class="st-note" style="margin:-6px 0 12px;border:0">Read with a layout saved on ' + esc(im.layoutUsed) + ' (no AI needed).</div>' : '') + colmap + preview;
 }
 /* the file box: choosing or dropping a file */
 document.addEventListener("dragover", function(ev){ var z = ev.target && ev.target.closest ? ev.target.closest("[data-stdrop]") : null; if (z){ ev.preventDefault(); z.classList.add("over"); } });
@@ -259,3 +287,170 @@ document.addEventListener("drop", function(ev){
   var z = ev.target && ev.target.closest ? ev.target.closest("[data-stdrop]") : null; if (!z) return;
   ev.preventDefault(); var f = ev.dataTransfer && ev.dataTransfer.files && ev.dataTransfer.files[0]; if (f) stImpRead(f);
 });
+/* ---- AI file reading (General Manager; switched on per dealership in Dealership settings) ---- */
+function stAiOn(){ return stImpCan() && !!(state.config && state.config.ai && state.config.ai.on); }
+function stAiCall(body){
+  if (!stOnline()) return Promise.reject(new Error("AI file reading needs the live Command Center (it isn't available offline)."));
+  return sb.auth.getSession().then(function(r){
+    var sess = r.data && r.data.session;
+    if (!sess) throw new Error("You're signed out. Sign in again.");
+    return fetch(SB_URL + "/functions/v1/ai-read", { method:"POST",
+      headers:{ "Content-Type":"application/json", "apikey":SB_KEY, "Authorization":"Bearer " + sess.access_token }, body:JSON.stringify(body) });
+  }).then(function(res){ return res.json().then(function(j){ if (!res.ok || j.error) throw new Error(j.error || ("Error " + res.status)); return j; }); });
+}
+function stAiRoster(){
+  var names = stRoster(stToday().slice(0, 7)).slice();
+  (ST.fms || []).forEach(function(m){ names.push(m.name); });
+  return names;
+}
+/* what would be sent for the tabs the importer didn't recognise (shown before sending) */
+function stAiSample(){
+  var im = stImp(), roster = stAiRoster(), names = (im.model ? im.model.tabs : []).filter(function(t){ return t.kind === "unknown"; }).map(function(t){ return t.name; });
+  return (im.raw || []).filter(function(s){ return names.indexOf(s.name) !== -1; }).slice(0, 20).map(function(s){ var m = C.impMaskTab(s.rows, roster); return { name:s.name, lines:m.lines, masked:m.masked, hidden:m.hidden }; });
+}
+function stImpAiSheet(){
+  var im = stImp(), tabs = stAiSample();
+  if (!tabs.length){ toast("Every tab was recognised already.", "ok"); return; }
+  im.ai = { status:"reading", kind:"sheet" }; im.err = null; render();
+  stAiCall({ dealershipId:ST.store, kind:"sheet", file:im.file, tabs:tabs.map(function(t){ return { name:t.name, lines:t.lines }; }) }).then(function(r){
+    var res = r.result || {}, ai = { status:"done", kind:"sheet", tabs:{}, questions:(res.questions || []).map(function(q){ return Object.assign({ pick:0 }, q); }), cost:r.cost, spent:r.spent, cap:r.cap };
+    (res.tabs || []).forEach(function(t){
+      ai.tabs[t.name] = t;
+      if (t.kind !== "sales_log" || !(t.headerLine > 0)) return;
+      im.forced[t.name] = t.headerLine - 1;
+      (t.columns || []).forEach(function(c){ im.headMap[C.impHead(c.heading)] = c.field || ""; });
+      im.skip[t.name] = (t.skipLines || []).map(function(x){ return x.line; });
+      (t.statusCodes || []).forEach(function(x){ im.statusMap[String(x.code).toUpperCase()] = x.status; });
+      (t.typeCodes || []).forEach(function(x){ im.typeMap[String(x.code).toUpperCase()] = x.type; });
+      if (t.vehicleType === "New" || t.vehicleType === "Used") im.tabTypes[t.name] = t.vehicleType;
+    });
+    ai.questions.forEach(function(q){ stAiApplyChoice(q.choices && q.choices[0]); });
+    im.ai = ai; stImpBuild(); return stImpExisting().then(function(){ stImpBuild(); render(); });
+  }).catch(function(e){ im.ai = null; im.err = e.message; render(); });
+}
+function stAiApplyChoice(ch){
+  var im = stImp(); if (!ch) return;
+  if (ch.kind === "column") im.headMap[C.impHead(ch.key)] = ch.value || "";
+  else if (ch.kind === "typeCode") im.typeMap[String(ch.key).toUpperCase()] = ch.value;
+  else if (ch.kind === "statusCode") im.statusMap[String(ch.key).toUpperCase()] = ch.value;
+  else if (ch.kind === "tabType" && (ch.value === "New" || ch.value === "Used")) im.tabTypes[ch.key] = ch.value;
+}
+/* a PDF or a photo: read by AI into deals; the GM confirms each field it wasn't sure of */
+function stImpAiDoc(){
+  var im = stImp(), d = im.doc; if (!d) return;
+  im.ai = { status:"reading", kind:"document" }; im.err = null; render();
+  stAiCall({ dealershipId:ST.store, kind:"document", file:im.file, mediaType:d.mediaType, data:d.data, year:Number(stToday().slice(0, 4)) }).then(function(r){
+    im.ai = { status:"done", kind:"document", result:r.result || {}, cost:r.cost, spent:r.spent, cap:r.cap }; im.docOk = {};
+    stImpBuild(); return stImpExisting().then(function(){ stImpBuild(); render(); });
+  }).catch(function(e){ im.ai = null; im.err = e.message; render(); });
+}
+function stImpBuildDoc(){
+  var im = stImp(), res = im.ai && im.ai.result;
+  var rows = C.impDocDeals(res, { year:Number(stToday().slice(0, 4)), store:ST.store, file:im.file, type:im.type === "New" || im.type === "Used" ? im.type : "" });
+  (im.docEdits ? Object.keys(im.docEdits) : []).forEach(function(k){ var p = k.split("|"), r = rows[Number(p[0])]; if (r) stImpDocSet(r.deal, p[1], im.docEdits[k]); });
+  var ex = im.existing || {};
+  rows.forEach(function(r, i){ r.tab = im.file; r.idx = i; var k = stKey(r.deal.stockNo) + "|" + r.deal.soldDate;
+    r.state = r.bad ? "bad" : (ST.deals[r.deal.id] || ex[k]) ? "exists" : (r.unsure.length && !(im.docOk || {})[i]) ? "check" : r.issues.length ? "note" : "ready"; });
+  var L = { name:im.file, rows:rows, header:{ row:0, all:[], cols:{} }, typeUnknown:rows.some(function(r){ return r.typeMissing; }) && im.type === "auto" };
+  im.model = { doc:true, logs:rows.length ? [L] : [], perf:[], tabs:[{ name:im.file, kind:rows.length ? "log" : "empty", L:L }], rows:rows, typeUnknown:L.typeUnknown,
+    n:{ all:rows.length, ready:rows.filter(function(r){ return r.state === "ready" || r.state === "note"; }).length, note:rows.filter(function(r){ return r.state === "note"; }).length,
+      exists:rows.filter(function(r){ return r.state === "exists"; }).length, bad:rows.filter(function(r){ return r.state === "bad"; }).length,
+      check:rows.filter(function(r){ return r.state === "check"; }).length, dup:0 } };
+  im.tab = im.file;
+}
+function stImpDocSet(d, f, v){
+  if (f === "frontGross" || f === "fiGross") d[f] = C.impMoney(v);
+  else if (f === "soldDate"){ d.soldDate = C.impDate(v, Number(stToday().slice(0, 4)), null) || ""; }
+  else if (f === "sp") d.salespeople = [{ name:stKey(v) || "HOUSE", share:1 }];
+  else if (f === "status"){ var s = String(v).toLowerCase(); if (C.SALE_STATUSES.indexOf(s) !== -1) d.status = s; }
+  else d[f] = String(v || "");
+}
+/* remembered layouts: next month's file with the same headings is read without AI */
+function stImpLayoutSig(row){ return (row || []).map(function(v){ return C.impHead(v); }).filter(Boolean).sort().join("|"); }
+function stImpApplyLayouts(){
+  var im = stImp(), lay = (state.config && state.config.importLayouts) || {}, used = null;
+  if (!Object.keys(lay).length) return;
+  (im.raw || []).forEach(function(s){
+    for (var i = 0; i < Math.min(s.rows.length, 80); i++){ var L = lay[stImpLayoutSig(s.rows[i])]; if (!L) continue;
+      im.forced[s.name] = i; Object.assign(im.headMap, L.headMap || {}); Object.assign(im.typeMap, L.typeMap || {}); Object.assign(im.statusMap, L.statusMap || {});
+      if (L.tabType && !im.tabTypes[s.name]) im.tabTypes[s.name] = L.tabType;
+      used = L.savedAt || "earlier"; break; }
+  });
+  im.layoutUsed = used;
+}
+function stImpRememberLayouts(){
+  var im = stImp(); if (!im.ai || im.ai.kind !== "sheet" || !im.remember) return;
+  var lay = Object.assign({}, state.config.importLayouts || {}), n = 0;
+  (im.raw || []).forEach(function(s){
+    var row = im.forced[s.name]; if (row === undefined || !(im.ai.tabs || {})[s.name]) return;
+    var hm = {}; (s.rows[row] || []).forEach(function(v){ var k = C.impHead(v); if (k && Object.prototype.hasOwnProperty.call(im.headMap, k)) hm[k] = im.headMap[k]; });
+    lay[stImpLayoutSig(s.rows[row])] = { headMap:hm, typeMap:im.typeMap, statusMap:im.statusMap, tabType:im.tabTypes[s.name] || "", savedAt:stToday(), file:im.file }; n++;
+  });
+  if (n){ state.config.importLayouts = lay; commit(); }
+}
+function stAiConf(p){ var c = p >= 85 ? "hi" : p >= 60 ? "mid" : "lo"; return '<span class="st-conf ' + c + '"><i><b style="width:' + Math.max(4, Math.min(100, p)) + '%"></b></i>' + Math.round(p) + '%</span>'; }
+function stAiBox(){
+  var im = stImp(), ai = im.ai;
+  if (ai && ai.status === "reading") return '<div class="st-ai"><div class="st-ai-h"><span class="st-ai-tag">✦ AI</span><b>Reading ' + esc(im.file) + '…</b></div><div class="ins-sub">' + (ai.kind === "document" ? "Reading the deals on the page." : "Working out what each tab and column is.") + ' This usually takes 10 to 30 seconds.</div><div class="st-ai-prog"><i></i></div></div>';
+  if (im.doc && !(ai && ai.status === "done")){
+    if (!stAiOn()) return '<div class="st-warn">' + esc(im.file) + ' is a ' + (im.doc.mediaType === "application/pdf" ? "PDF" : "photo") + '. AI file reading can read the deals on it, but it\'s switched off. The General Manager can turn it on in Dealership settings › AI file reading.</div>';
+    return '<div class="st-ai"><div class="st-ai-h"><span class="st-ai-tag">✦ AI file reading</span><b>Let AI read this ' + (im.doc.mediaType === "application/pdf" ? "PDF" : "photo") + '?</b></div>' +
+      '<div class="st-ai-cols"><div class="st-ai-yes"><b>Sent</b>The ' + (im.doc.mediaType === "application/pdf" ? "PDF" : "photo") + ' as it is. A page can\'t have names blanked out first, so any customer names on it are sent too. The AI service doesn\'t keep it or learn from it.</div>' +
+      '<div class="st-ai-no"><b>What happens</b>The AI lists the deals on the page and marks every value it isn\'t sure of. You check those before anything is imported; nothing is saved until you press Import.</div></div>' +
+      '<div class="st-ai-go"><button type="button" class="btn sm primary" data-st="aidoc">✦ Let AI read this ' + (im.doc.mediaType === "application/pdf" ? "PDF" : "photo") + '</button><span class="ins-sub">usually 10–30 seconds · a few cents</span></div></div>';
+  }
+  if (ai || !im.model || im.model.doc) return "";
+  var unknown = im.model.tabs.filter(function(t){ return t.kind === "unknown"; });
+  if (!unknown.length) return "";
+  if (!stAiOn()) return '<div class="st-note" style="margin:-6px 0 14px;border:0">Tip: AI file reading can work out tabs that aren\'t recognised. The General Manager can turn it on in Dealership settings › AI file reading.</div>';
+  var sample = stAiSample(), first = sample[0] || { lines:[], masked:[], hidden:0 }, masked = [];
+  sample.forEach(function(s){ s.masked.forEach(function(m){ if (masked.indexOf(m) === -1) masked.push(m); }); });
+  var hidden = sample.reduce(function(a, s){ return a + s.hidden; }, 0), rows = sample.reduce(function(a, s){ return a + s.lines.length; }, 0);
+  var shown = first.lines.slice(0, 9).map(function(l){ return l[0] + ": " + l[1].slice(0, 12).map(function(c){ return String(c).slice(0, 18); }).join(" | "); }).join("\n");
+  return '<div class="st-ai"><div class="st-ai-h"><span class="st-ai-tag">✦ AI file reading</span><b>Let AI read ' + (unknown.length === 1 ? 'the "' + esc(unknown[0].name) + '" tab' : 'the ' + unknown.length + ' tabs that weren\'t recognised') + '?</b></div>' +
+    '<div class="ins-sub" style="margin-bottom:10px">It works out which row has the headings, what each column holds and which rows aren\'t deals, and shows you its proposal. The amounts are still read by the importer, not by the AI. Nothing is saved until you press Import.</div>' +
+    '<div class="st-ai-cols"><div class="st-ai-yes"><b>Sent</b>Headings and ' + rows + ' sample rows from ' + sample.length + ' tab' + (sample.length === 1 ? "" : "s") + '.' + (masked.length ? ' Customer names (' + esc(masked.join(", ")) + ') are replaced with "Customer 1", "Customer 2"…' : '') + (hidden ? ' ' + hidden + ' values blanked in all, including phone numbers and emails.' : '') + '</div>' +
+    '<div class="st-ai-no"><b>Not sent</b>The rest of the file, customer names, phone numbers, emails. Nothing from other stores. The AI service doesn\'t keep what it\'s sent or learn from it.</div></div>' +
+    '<details class="st-ai-peek"><summary>Exactly what is sent from "' + esc(first.name || "") + '"</summary><pre>' + esc(shown) + (first.lines.length > 9 ? "\n… " + (first.lines.length - 9) + " more rows" : "") + '</pre></details>' +
+    '<div class="st-ai-go"><button type="button" class="btn sm primary" data-st="aisheet">✦ Let AI read this file</button><span class="ins-sub">usually 10–30 seconds · a few cents</span></div></div>';
+}
+function stAiProposal(){
+  var im = stImp(), ai = im.ai; if (!ai || ai.status !== "done" || ai.kind !== "sheet") return "";
+  var tabs = Object.keys(ai.tabs).map(function(k){ return ai.tabs[k]; });
+  var kindTxt = { sales_log:"Sales log", monthly_totals:"Monthly totals (Sales Performance)", other:"Not sales data" };
+  var qs = ai.questions || [];
+  return '<div class="st-ai"><div class="st-ai-h"><span class="st-ai-tag">✦ AI proposal</span><b>What the AI worked out</b><span class="ins-sub" style="margin-left:auto">read for ' + stMoney2(ai.cost) + ' · ' + stMoney2(ai.spent) + ' of $' + ai.cap + ' used this month</span></div>' +
+    tabs.map(function(t){ return '<div class="st-ai-tab"><b>' + esc(t.name) + '</b> · ' + esc(kindTxt[t.kind] || t.kind) + (t.kind === "sales_log" ? ' · headings on row ' + t.headerLine + (t.vehicleType === "New" || t.vehicleType === "Used" ? ' · ' + t.vehicleType + ' (' + esc(t.vehicleTypeReason) + ')' : t.vehicleType === "from_column" ? ' · New/Used from a column' : '') + ((t.skipLines || []).length ? ' · skipping ' + t.skipLines.map(function(x){ return "row " + x.line + " (" + esc(x.reason) + ")"; }).join(", ") : '') : '') + (t.note ? '<div class="ins-sub">' + esc(t.note) + '</div>' : '') + '</div>'; }).join("") +
+    (qs.length ? '<div class="st-ai-qs"><div class="st-dsec" style="margin-top:12px">' + qs.length + ' question' + (qs.length === 1 ? "" : "s") + ' · the AI wasn\'t sure, so it asks (its suggestion is selected)</div>' + qs.map(function(q, qi){
+      return '<div class="st-ai-q"><span class="n">' + (qi + 1) + '</span><div><b>' + esc(q.text) + '</b>' + (q.detail ? '<div class="ins-sub">' + esc(q.detail) + '</div>' : '') + '</div><div class="st-sub" style="margin:0">' +
+        (q.choices || []).map(function(c, ci){ return '<button type="button" data-st="aichoose" data-v="' + qi + '|' + ci + '" class="' + (q.pick === ci ? "on" : "") + '">' + esc(c.label) + '</button>'; }).join("") + '</div></div>'; }).join("") + '</div>' : '') +
+    '<label class="st-ai-rem"><input type="checkbox" data-stf="impRemember" ' + (im.remember ? "checked" : "") + '> Remember this layout, so next time a file with the same headings is read straight away, without AI</label></div>';
+}
+function stMoney2(v){ return "$" + (Number(v) || 0).toFixed(2); }
+/* GM: Dealership settings card */
+function stAiUsageLoad(){
+  if (ST.aiUsage || ST.aiUsageLoading || !stOnline()) return;
+  ST.aiUsageLoading = true; var store = ST.store;
+  sb.from("sales_ai_usage").select("created_at,user_name,file,kind,sent,result,cost").eq("dealership_id", store).order("created_at", { ascending:false }).limit(40).then(function(r){
+    ST.aiUsageLoading = false; if (ST.store !== store) return; ST.aiUsage = r.error ? [] : (r.data || []); render(); });
+}
+function viewAiSettings(){
+  if (!V.isAdmin() || !state.config) return "";
+  stSync(); stAiUsageLoad();
+  var ai = state.config.ai || {}, cap = Number(ai.cap) > 0 ? Number(ai.cap) : 10, month = stToday().slice(0, 7), use = ST.aiUsage || [];
+  var spent = use.filter(function(u){ return String(u.created_at).slice(0, 7) === month; }).reduce(function(a, u){ return a + Number(u.cost || 0); }, 0);
+  var reads = use.filter(function(u){ return String(u.created_at).slice(0, 7) === month; }).length, lay = Object.keys(state.config.importLayouts || {}).length;
+  return '<div class="card" style="margin-top:16px"><div class="card-h"><h2>AI file reading</h2><div class="sp"><span class="tag ' + (ai.on ? "ok" : "") + '">' + (ai.on ? "On" : "Off") + '</span></div></div><div class="card-b">' +
+    '<p class="muted small" style="max-width:76ch;margin-top:0">When an Excel file isn\'t recognised, or for a PDF or photo of a deal sheet, AI can work out where the data goes. You always see its proposal and approve it before anything is imported. Only the General Manager (and Master) can use it.</p>' +
+    '<div class="grid g2"><div>' +
+      '<label class="uc-feat ' + (ai.on ? "on" : "") + '"><span>AI file reading<small>Offer AI in Sales Tracker › Import</small></span><span class="uc-sw"><input type="checkbox" data-st="aion" ' + (ai.on ? "checked" : "") + '><i></i></span></label>' +
+      '<label class="f" style="margin-top:12px"><span>Monthly spending cap ($)</span><input type="number" min="1" step="1" value="' + cap + '" data-st-cap="1" style="max-width:140px"></label>' +
+      '<div class="small" style="margin-top:10px"><b>This month:</b> ' + stMoney2(spent) + ' of $' + cap + ' · ' + reads + ' file' + (reads === 1 ? "" : "s") + ' read</div>' +
+      '<div class="bar" style="margin-top:6px"><i style="width:' + Math.min(100, spent / cap * 100).toFixed(1) + '%"></i></div>' +
+      '<div class="tiny muted" style="margin-top:6px">A sales-log file usually costs a few cents to read; a PDF page a little more. AI stops for the month at the cap.</div>' +
+      (lay ? '<div class="small" style="margin-top:12px">' + lay + ' saved layout' + (lay === 1 ? "" : "s") + ' (files read without AI next time) <button type="button" class="btn sm ghost" data-st="aiforget">Forget them</button></div>' : '') +
+    '</div><div><div class="notice info" style="margin:0"><b>Privacy</b><br>For spreadsheets only the headings and a sample of rows are sent, with customer names, phone numbers and emails replaced in the browser first. A PDF or photo is sent as it is (a page can\'t be blanked out), and the screen says so before you send it. The AI service doesn\'t keep what it\'s sent or learn from it, and the AI key stays on the server.</div></div></div>' +
+    (use.length ? '<div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>When</th><th>Who</th><th>File</th><th>Sent</th><th>Result</th><th class="right">Cost</th></tr></thead><tbody>' +
+      use.slice(0, 12).map(function(u){ return '<tr><td class="nowrap">' + esc(new Date(u.created_at).toLocaleString("en-CA", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" })) + '</td><td>' + esc(u.user_name || "") + '</td><td>' + esc(u.file || "") + '</td><td class="small">' + esc(u.sent || "") + '</td><td class="small">' + esc(u.result || "") + '</td><td class="right num">' + stMoney2(u.cost) + '</td></tr>'; }).join("") +
+      '</tbody></table></div>' : '') + '</div></div>';
+}

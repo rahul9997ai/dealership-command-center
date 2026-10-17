@@ -572,6 +572,34 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   const forced = C.impLogSheet("Sheet1", odd, { headerRow:C.impGuessHeader(odd), headMap:{ who:"sp", unit:"stockNo", when:"soldDate", gross:"frontGross" } });
   eq("IMP a tab read by hand with the columns picked", forced.rows[0].deal.salespeople[0].name + ":" + forced.rows[0].deal.soldDate + ":" + forced.rows[0].deal.frontGross, "ARUN:2026-10-02:500");
   eq("IMP no type anywhere is flagged", forced.typeUnknown, true);
+  /* AI reading: what is sent, codes it worked out, rows it skipped */
+  const desk = [["NEW CAR DESK LOG · OCT 2026"], ["DT","STK","CUST","SLSP","FE","BE","N/U/D","MGR","STAT","PH"],
+    ["9-Oct","N24118","DANA WU","ARUN","1850","2100","N","RAHUL","DEL","416-555-0199"],
+    ["9-Oct","D0412","SAM KO","BILAL","-500","1450","D","SALMA","PEND","sam@example.com"],
+    ["10-Oct","N24121","PRIYA SHAH","THINH","0","2950","N","DAVID","CXL",""],
+    ["","TOTAL","","","1350","6500","","","",""]];
+  const mk = C.impMaskTab(desk, ["ARUN","BILAL","THINH","RAHUL","SALMA","DAVID"]);
+  const sentText = JSON.stringify(mk.lines);
+  eq("AI customer names never sent", /DANA|PRIYA|SAM KO/.test(sentText), false);
+  eq("AI phone and email never sent", /416-555|example\.com/.test(sentText), false);
+  eq("AI names replaced consistently", mk.lines[2][1][2], "Customer 1");
+  eq("AI salespeople still sent", mk.lines[2][1][3], "ARUN");
+  eq("AI headings still sent", mk.lines[1][1].join(","), "DT,STK,CUST,SLSP,FE,BE,N/U/D,MGR,STAT,PH");
+  eq("AI lines numbered as in the sheet", mk.lines[1][0], 2);
+  eq("AI masked column named", mk.masked.join(","), "CUST");
+  const ai = C.impLogSheet("OCT", desk, { type:"auto", file:"NEW CAR DESK LOG.xlsx", headerRow:1,
+    headMap:{ dt:"soldDate", stk:"stockNo", cust:"customer", slsp:"sp", fe:"frontGross", be:"fiGross", "n/u/d":"type", mgr:"fiManager", stat:"status", ph:"" },
+    typeMap:{ D:"Used" }, statusMap:{ PEND:"pending", CXL:"cancelled" }, skipLines:[6] });
+  eq("AI-read tab rows (totals row skipped)", ai.rows.length, 3);
+  eq("AI code D read as Used", ai.rows[1].deal.type, "Used");
+  eq("AI code CXL read as cancelled", ai.rows[2].deal.status, "cancelled");
+  eq("AI date 9-Oct uses the year from the file", ai.rows[0].deal.soldDate, "2026-10-09");
+  const docRows = C.impDocDeals({ deals:[{ soldDate:"2026-10-14", stockNo:"n24133", customer:"Patel", vehicle:"26 Kicks", salesperson:"keegan", salesperson2:"", fiManager:"Rahul", status:"delivered",
+    dealType:"finance", vehicleType:"", frontGross:"1150", fiGross:"2,400", lender:"RBC", deliveredDate:"", notes:"", unsure:["frontGross"], unsureNote:"1,150 or 1,190" }] }, { year:2026, file:"recap.pdf" });
+  eq("AI page deal read", docRows[0].deal.stockNo + ":" + docRows[0].deal.salespeople[0].name + ":" + docRows[0].deal.fiGross, "N24133:KEEGAN:2400");
+  eq("AI unsure fields kept", docRows[0].unsure.join(","), "frontGross");
+  eq("AI missing New/Used flagged", docRows[0].typeMissing, true);
+  eq("AI delivered deal gets its delivery date", docRows[0].deal.deliveredDate, "2026-10-14");
   const perf = C.impPerfSheet("SALES PERFORMANCE", [["AUGUST 2026 SALES PERFORMANCE","","","","","","","","","","","Current Selling Day",25], [],
     ["Salesperson","Target N","Target U","Target Total","Sold N","Sold U","Sold Total"], ["DEALERSHIP",50,40,90,56,39,95], ["ARUN",10,8,18,7,12,19], ["ABBAS",10,8,18,17,6,23], [], ["HOUSE",0,0,0,3,3,6]]);
   eq("IMP perf month from the title", perf.month, "2026-08");
