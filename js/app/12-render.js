@@ -41,6 +41,7 @@ function focusFingerprint(el){
   return parts.length > 1 ? parts.join("") : null;
 }
 function render(){
+  try { C.saleSetAliases(state.config && state.config.spAlias); } catch (e) {}
   try { document.documentElement.setAttribute("data-theme", state.ui.theme); } catch (e) {}
   var root = document.getElementById("root"), ov = document.getElementById("overlay");
   var y = window.scrollY;

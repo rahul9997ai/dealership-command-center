@@ -514,3 +514,23 @@ select.ai-sel{width:100%;text-align:left}
 .st-bb{display:flex;justify-content:flex-end;gap:6px;margin-top:2px}
 .st-bnote{font-size:11px;color:var(--muted);margin:2px 0 8px}
 .st-berr{font-size:11.5px;color:var(--danger);margin:0 0 8px}
+
+/* ---- Today and carry-over lists: one line per deal, click any part to change it ---- */
+.st-items{display:block}
+.st-item{display:flex;align-items:center;gap:8px;min-width:0;padding:6px 0;border-top:1px dashed var(--st-line);font-size:12.5px;white-space:nowrap}
+.st-items > .st-item:first-child{border-top:0}
+.st-item .st-lead{display:inline-flex;align-items:center;gap:4px;flex:none}
+.st-item .st-lead .st-pill.carryfrom{margin-left:0}
+.st-item .st-cust{flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis}
+.st-item .st-veh{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;color:var(--muted);font-size:11.5px}
+.st-item .st-note-c{flex:1 1 0;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:var(--text-2)}
+.st-item .st-when{font-size:11.5px;font-weight:700;color:var(--blue)}
+.st-item .st-days{flex:none;font-size:11px;color:var(--muted)}
+.st-item .st-sp{margin-left:auto;flex:none;max-width:130px;overflow:hidden;text-overflow:ellipsis;font-size:11.5px;color:var(--muted);font-weight:600}
+.st-item span.st-c{cursor:pointer;border-radius:5px;padding:1px 3px;margin:-1px -3px}
+.st-item span.st-c:hover{background:rgba(29,99,237,.08);box-shadow:inset 0 0 0 1px rgba(29,99,237,.25)}
+.st-item span.st-c.on{background:rgba(29,99,237,.12);box-shadow:inset 0 0 0 2px var(--blue)}
+.st-item .st-act{flex:none;border:0;background:none;color:var(--muted);cursor:pointer;font-size:12px;padding:2px 4px;border-radius:5px;line-height:1}
+.st-item .st-act:hover{color:var(--blue);background:rgba(29,99,237,.08)}
+
+.st-alias{border:0;background:none;padding:0;color:var(--blue);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}

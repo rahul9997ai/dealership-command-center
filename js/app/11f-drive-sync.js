@@ -162,6 +162,8 @@ function viewDriveSettings(){
       '<button type="button" class="btn primary" data-ds="add"' + (DS.adding ? " disabled" : "") + ' style="margin-bottom:12px">' + (DS.adding ? "Checking…" : "Add file") + '</button></div>' +
     (DS.msg ? '<div class="notice ' + DS.msg[0] + '">' + esc(DS.msg[1]) + '</div>' : '') +
     (c.on && files.length ? '<div style="margin-top:8px"><button type="button" class="btn" data-ds="sync"' + (DS.running ? " disabled" : "") + '>' + (DS.running ? "Syncing…" : "Sync now") + '</button>' + (DS.err ? ' <span class="small" style="color:var(--danger)">' + esc(DS.err) + '</span>' : '') + '</div>' : '') +
+    (function(){ var al = (state.config && state.config.spAlias) || {}, ks = Object.keys(al); return ks.length ? '<div style="margin-top:12px"><b style="font-size:12.5px">Same salesperson, two spellings</b><div class="tiny muted" style="margin:2px 0 6px">Deals logged under the spelling on the left count for the name on the right.</div>' +
+      ks.map(function(k){ return '<div style="display:flex;align-items:center;gap:8px;font-size:12.5px;padding:3px 0">' + esc(k) + ' → <b>' + esc(al[k]) + '</b><button type="button" class="btn sm" style="margin-left:auto" data-ds="unalias" data-k="' + esc(k) + '">Undo</button></div>'; }).join("") + '</div>' : ""; })() +
     '<p class="tiny muted" style="margin:12px 0 0">Tip: if a file\'s headings aren\'t recognised, import it once from Sales Tracker › Import (AI or matching by hand) with "Remember this layout" ticked; the sync then reads it the same way.</p>' +
     '</div></div>';
 }
@@ -171,6 +173,7 @@ document.addEventListener("click", function(ev){
   ev.preventDefault();
   var a = el.getAttribute("data-ds"), c = state.config.driveSync = Object.assign({ on:false, files:[] }, state.config.driveSync || {});
   if (a === "sync"){ dsSyncAll(true, false); return; }
+  if (a === "unalias"){ var ak = el.getAttribute("data-k"); state.config.spAlias = Object.assign({}, state.config.spAlias || {}); delete state.config.spAlias[ak]; C.saleSetAliases(state.config.spAlias); dsSave(); toast(ak + " counts on its own again.", "ok"); render(); return; }
   if (a === "remove"){ var f = c.files[Number(el.getAttribute("data-i"))]; if (!f) return;
     askConfirm("Stop syncing " + f.name + "?", "The deals already synced from it stay in the tracker. Add the file again to resume.", "Stop syncing", function(){ c.files.splice(c.files.indexOf(f), 1); dsSave(); toast("Removed " + f.name + " from the sync.", "ok"); }); return; }
   if (a === "add"){

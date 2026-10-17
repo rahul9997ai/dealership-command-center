@@ -675,7 +675,7 @@ function saleStatus(pct){ return pct === null ? null : pct >= 1 ? "ahead" : pct 
    day / total: selling day so far and selling days in the period. */
 function salesPerformance(deals, targets, range, day, total){
   targets = targets || {}; var countOn = targets.countOn === "delivered" ? "delivered" : "sold";
-  var rows = {}, order = [], key = function(n){ return String(n || "").trim().toUpperCase(); };
+  var rows = {}, order = [], key = saleKey;
   var row = function(name, storeOnly){
     var k = key(name);
     if (!rows[k]){ rows[k] = { name:k, tN:0, tU:0, sN:0, sU:0, front:0, fi:0, storeOnly:!!storeOnly }; order.push(k); }
@@ -720,9 +720,21 @@ function salesPerformance(deals, targets, range, day, total){
    year-end projections. A split deal splits its gross the same way it splits the unit. Losing money
    = a deal with front gross entered at $0 or less. */
 var SALE_OPEN = ["pending","approved","scheduled","carry"];
-function saleIsOpen(d){ return !!d && SALE_OPEN.indexOf(d.status) !== -1; }
+var SALE_CLOSED = ["delivered","rdr","cancelled","declined"];
+/* open = not delivered, cancelled or declined yet: it carries over month after month until it is */
+function saleIsOpen(d){ return !!d && SALE_CLOSED.indexOf(d.status) === -1; }
 function saleDelivered(d){ return !!d && (d.status === "delivered" || d.status === "rdr"); }
-function saleKey(n){ return String(n || "").trim().toUpperCase(); }
+/* One salesperson spelled two ways (e.g. KEAGAN in the Excel log, KEEGAN in the targets): the store's alias list maps the spelling to the name. */
+var SALE_ALIAS = {};
+function saleSetAliases(m){ SALE_ALIAS = {}; Object.keys(m || {}).forEach(function(k){ var a = String(k).trim().toUpperCase(), b = String(m[k] || "").trim().toUpperCase(); if (a && b && a !== b) SALE_ALIAS[a] = b; }); }
+function saleKey(n){ var k = String(n || "").trim().toUpperCase(); return SALE_ALIAS[k] || k; }
+/* A name with no target that's one or two letters off a name with one: likely the same person. */
+function saleNameLike(a, b){
+  a = String(a || ""); b = String(b || ""); if (!a || !b || a === b || Math.abs(a.length - b.length) > 2 || a[0] !== b[0] || a.length < 4) return false;
+  var prev = [], i, j; for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++){ var cur = [i]; for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1)); prev = cur; }
+  return prev[b.length] <= (a.length >= 6 ? 2 : 1);
+}
 function saleStoreOnly(k){ return /^(HOUSE|MOBILE)/.test(saleKey(k)); }
 function saleAmt(v){ if (v === null || v === undefined || v === "") return null; var n = Number(v); return isNaN(n) ? null : n; }
 /* Totals for one period (inclusive ISO dates). countOn: "sold" or "delivered" (see saleCountDate). */
@@ -1111,7 +1123,7 @@ function impDocDeals(result, opts){
   return out;
 }
 
-window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
+window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
   impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,

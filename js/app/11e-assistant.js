@@ -51,8 +51,8 @@ function aiFacts(){
       tradeIns:mine.filter(function(d){ return d.flags && d.flags.trade; }).length };
   });
   var deals = monthDeals.map(function(d){ return { sold:d.soldDate, stock:d.stockNo, vehicle:d.vehicle, type:d.type, deal:d.dealType, salespeople:(d.salespeople || []).map(function(q){ return q.name + (q.share < 1 ? " " + Math.round(q.share*100) + "%" : ""); }).join(" + "),
-    status:ST_LABEL[d.status], delivered:d.deliveredDate || "", front:d.frontGross, fi:d.fiGross, leadSource:d.leadSource || "", close:d.closeType || "" }; });
-  var carry = stCarry().map(function(d){ return { sold:d.soldDate, stock:d.stockNo, vehicle:d.vehicle, salesperson:(d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "", status:ST_LABEL[d.status], daysSinceSold:stDaysSince(d.soldDate), deliveryBooked:d.deliveryAt || "" }; });
+    status:stLbl(d.status), delivered:d.deliveredDate || "", front:d.frontGross, fi:d.fiGross, leadSource:d.leadSource || "", close:d.closeType || "" }; });
+  var carry = stCarry().map(function(d){ return { sold:d.soldDate, stock:d.stockNo, vehicle:d.vehicle, salesperson:(d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "", status:stLbl(d.status), daysSinceSold:stDaysSince(d.soldDate), deliveryBooked:d.deliveryAt || "" }; });
   var yd = aiAddDays(today, -1), sat = aiLastSaturday();
   return {
     store:state.config.name || "", today:today, weekday:new Date(today + "T12:00:00").toLocaleDateString("en-CA", { weekday:"long" }),
@@ -202,7 +202,7 @@ function aiMailHtml(D, note){
         (AIM.gross ? '<td ' + td.replace('font-size:13px"', 'font-size:13px;background:#f1f5ff"') + '>' + stMoney(D.store.front + D.store.fi) + '</td>' : '') + '<td ' + td.replace('font-size:13px"', 'font-size:13px;background:#f1f5ff"') + '>' + badge(D.store.status) + '</td></tr></table></td></tr>';
   } else if (D.deals.length){
     html += '<tr><td><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse"><tr><th ' + th + ' align="left">Sold</th><th ' + th + ' align="left">Vehicle</th><th ' + th + '>Type</th><th ' + th + '>Status</th>' + (AIM.gross ? '<th ' + th + '>Gross</th>' : '') + '</tr>' +
-      D.deals.map(function(d){ return '<tr><td ' + tdl.replace("font-weight:700", "font-weight:600") + '>' + esc(stDay(d.soldDate)) + '</td><td style="padding:8px 10px;border-bottom:1px solid #eef2f7;font-size:13px">' + esc(d.vehicle || d.stockNo || "") + '</td><td ' + td + '>' + esc(d.type || "") + '</td><td ' + td + '>' + esc(ST_LABEL[d.status]) + '</td>' + (AIM.gross ? '<td ' + td + '>' + stMoney((Number(d.frontGross) || 0) + (Number(d.fiGross) || 0)) + '</td>' : '') + '</tr>'; }).join("") + '</table></td></tr>';
+      D.deals.map(function(d){ return '<tr><td ' + tdl.replace("font-weight:700", "font-weight:600") + '>' + esc(stDay(d.soldDate)) + '</td><td style="padding:8px 10px;border-bottom:1px solid #eef2f7;font-size:13px">' + esc(d.vehicle || d.stockNo || "") + '</td><td ' + td + '>' + esc(d.type || "") + '</td><td ' + td + '>' + esc(stLbl(d.status)) + '</td>' + (AIM.gross ? '<td ' + td + '>' + stMoney((Number(d.frontGross) || 0) + (Number(d.fiGross) || 0)) + '</td>' : '') + '</tr>'; }).join("") + '</table></td></tr>';
   }
   html += '<tr><td style="padding:10px 20px;font-size:11px;color:#94a3b8">Selling day ' + D.store.day + ' of ' + D.store.total + ' · AXIOM Command Center · ' + esc(new Date().toLocaleString("en-CA", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" })) + '</td></tr></table></div>';
   return html;
@@ -213,7 +213,7 @@ function aiMailText(D, note){
   if (note){ out.push(note, "", (me.name || ""), ""); }
   out.push("Sold: " + stF(x.period) + " · Delivered: " + stF(x.delivered) + " · Month to date: " + stF(x.month) + (x.target ? " of " + x.target : "") + " · Tracking: " + (x.tracking === null || x.tracking === undefined ? "—" : x.tracking), "");
   if (!single) D.rows.forEach(function(r){ out.push(r.name + ": " + stF(r.period) + " (N " + stF(r.new) + " · U " + stF(r.used) + ") · month " + stF(r.month) + (r.target ? "/" + r.target : "") + (r.status ? " · " + r.status.toUpperCase() : "") + (AIM.gross ? " · gross " + stMoney(r.front + r.fi) : "")); });
-  else D.deals.forEach(function(d){ out.push(stDay(d.soldDate) + " · " + (d.vehicle || d.stockNo || "") + " · " + (d.type || "") + " · " + ST_LABEL[d.status]); });
+  else D.deals.forEach(function(d){ out.push(stDay(d.soldDate) + " · " + (d.vehicle || d.stockNo || "") + " · " + (d.type || "") + " · " + stLbl(d.status)); });
   return out.join("\n");
 }
 function aiMailNote(){

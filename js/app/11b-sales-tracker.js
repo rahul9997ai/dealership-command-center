@@ -31,7 +31,7 @@ function stDay(iso){ return iso ? new Date(iso.slice(0, 10) + "T12:00:00").toLoc
 /* whole dollars with a proper minus sign: −$1,500 */
 function stMoney(v){ var n = Number(v) || 0; return n < 0 ? "−" + money0(-n) : money0(n); }
 function stNum(v){ var n = parseFloat(String(v === null || v === undefined ? "" : v).replace(/[$,\s]/g, "")); return isNaN(n) ? null : n; }
-function stKey(n){ return String(n || "").trim().toUpperCase(); }
+function stKey(n){ return C.saleKey(n); }
 function stF(n){ return n === null || n === undefined ? "—" : (Math.round(n * 10) / 10 % 1 ? (Math.round(n * 10) / 10).toFixed(1) : String(Math.round(n))); }
 function stSync(){ if (ST.store !== state.activeDealershipId){ ST = stFresh(state.activeDealershipId); INS.loaded = {}; } if (!ST.month) ST.month = stToday().slice(0, 7); }
 function stAllDeals(){ return Object.keys(ST.deals).map(function(k){ return ST.deals[k]; }); }
@@ -102,8 +102,8 @@ function stLoadCarry(){
   if (!stOnline()){ ST.carryFor = cur; return; }
   ST.carryLoading = true;
   var store = ST.store;
-  var older = function(){ return sb.from("sales_log").select("id,data").eq("dealership_id", store).gte("sold_on", stShift(cur, -12) + "-01").lt("sold_on", cur + "-01"); };
-  Promise.all([fetchAllRows(function(){ return older().in("data->>status", C.SALE_OPEN).order("id"); }),
+  var older = function(){ return sb.from("sales_log").select("id,data").eq("dealership_id", store).lt("sold_on", cur + "-01"); };
+  Promise.all([fetchAllRows(function(){ return older().not("data->>status", "in", "(" + C.SALE_CLOSED.join(",") + ")").order("id"); }),
     fetchAllRows(function(){ return older().in("data->>status", ["delivered", "rdr"]).gte("data->>deliveredDate", cur + "-01").order("id"); })])
     .then(function(rs){ ST.carryLoading = false; if (ST.store !== store) return; rs[0].concat(rs[1]).forEach(function(r){ if (r.data && r.data.id) ST.deals[r.data.id] = r.data; }); ST.carryFor = cur; render(); },
       function(e){ ST.carryLoading = false; ST.carryFor = cur; ST.err = "Couldn't load carry-overs: " + (e && e.message ? e.message : e); render(); });
@@ -218,13 +218,13 @@ function stViewToday(){
   var deliveredY = all.filter(function(d){ return (d.status === "delivered" || d.status === "rdr") && d.deliveredDate === yesterday; });
   var todayList = all.filter(function(d){ return (d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today) || ((d.status === "delivered" || d.status === "rdr") && d.deliveredDate === today); })
     .sort(function(a, b){ return String(a.deliveryAt || "").localeCompare(String(b.deliveryAt || "")); });
-  var open = all.filter(function(d){ return ["pending","approved","scheduled","carry"].indexOf(d.status) !== -1; });
+  var open = all.filter(function(d){ return C.saleIsOpen(d); });
   var save = all.filter(function(d){ return d.status === "pending" || d.status === "declined" || d.status === "approved"; }).sort(function(a, b){ return a.status === "declined" ? -1 : b.status === "declined" ? 1 : 0; });
   var gross = s.front + s.fi, grossTrack = day ? gross/day*total : 0, left = total - day;
   var help = p.people.filter(function(x){ return !x.storeOnly && x.tT > 0 && x.pct !== null && x.pct < 0.9; }).sort(function(a, b){ return a.pct - b.pct; });
   var noTargets = !(t.people || []).length;
   var carry = stCarry();
-  var li = function(d, right){ return '<li data-st="edit" data-id="' + esc(d.id) + '" style="cursor:pointer">' + right + '<span><b>' + esc(d.customer || d.stockNo || "Deal") + '</b><br><span style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</span></span><span class="who">' + stSpText(d) + '</span></li>'; };
+  var li = function(d, lead){ return stItem(d, lead); };
   return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Morning meeting</div><h2>' +
       new Date(today + "T12:00:00").toLocaleDateString("en-CA", { weekday:"long", month:"long", day:"numeric" }) + '</h2><div class="st-hsub">' + esc(state.config.name || "") + ' · selling day ' + day + ' of ' + total + ' · ' + left + ' left</div></div>' +
       '<div class="st-actions"><button type="button" class="st-gbtn" data-st="add">+ Add a deal</button><button type="button" class="st-gbtn" data-st="email" data-what="today">Email</button><button type="button" class="st-gbtn primary" data-st="print" data-what="today">Print for the meeting</button></div></div>' +
@@ -240,17 +240,17 @@ function stViewToday(){
     (noTargets ? stNewMonth(month, carry) : '') + (carry.length ? stCarryCard(carry) : '') +
     '<div class="st-g2">' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico g">✓</span><h3>Delivered yesterday<small>' + stDay(yesterday) + '</small></h3><span class="cnt">' + deliveredY.length + '</span></div>' +
-        (deliveredY.length ? '<ul class="st-list">' + deliveredY.map(function(d){ return li(d, stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE")); }).join("") + '</ul>' : '<div class="st-empty">No deliveries recorded for yesterday.</div>') + '</div>' +
+        (deliveredY.length ? '<div class="st-items">' + deliveredY.map(function(d){ return li(d, ""); }).join("") + '</div>' : '<div class="st-empty">No deliveries recorded for yesterday.</div>') + '</div>' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico b">⏱</span><h3>Delivering today<small>booked and done</small></h3><span class="cnt">' + todayList.length + '</span></div>' +
-        (todayList.length ? '<ul class="st-list">' + todayList.map(function(d){ var done = d.status === "delivered" || d.status === "rdr", tm = String(d.deliveryAt || "").slice(11, 16);
-          return li(d, '<span class="st-time">' + (done ? "✓ done" : (tm ? new Date("2000-01-01T" + tm).toLocaleTimeString("en-CA", { hour:"numeric", minute:"2-digit" }) : "today")) + '</span>'); }).join("") + '</ul>' : '<div class="st-empty">Nothing booked for today.</div>') + '</div>' +
+        (todayList.length ? '<div class="st-items">' + todayList.map(function(d){ var done = d.status === "delivered" || d.status === "rdr", tm = String(d.deliveryAt || "").slice(11, 16);
+          return li(d, stE(d, done ? "status" : "delivery", '<span class="st-time">' + (done ? "✓ done" : (tm ? new Date("2000-01-01T" + tm).toLocaleTimeString("en-CA", { hour:"numeric", minute:"2-digit" }) : "today")) + '</span>')); }).join("") + '</div>' : '<div class="st-empty">Nothing booked for today.</div>') + '</div>' +
     '</div>' +
     '<div class="st-g3">' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico p">⏳</span><h3>Still to deliver<small>pending · approved · scheduled</small></h3><span class="cnt">' + open.length + '</span></div>' +
-        (open.length ? '<ul class="st-list">' + open.slice(0, 6).map(function(d){ return li(d, '<span class="st-pills"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + '</span>'); }).join("") + '</ul>' + (open.length > 6 ? '<div class="st-empty">and ' + (open.length - 6) + ' more in the Sales log</div>' : '') : '<div class="st-empty">Everything sold has been delivered.</div>') + '</div>' +
+      '<div class="st-card"><div class="st-ch"><span class="st-ico p">⏳</span><h3>Still to deliver<small>until delivered, cancelled or declined</small></h3><span class="cnt">' + open.length + '</span></div>' +
+        (open.length ? '<div class="st-items">' + open.slice(0, 6).map(function(d){ return li(d, stE(d, "status", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>') + stFromPill(d)); }).join("") + '</div>' + (open.length > 6 ? '<div class="st-empty">and ' + (open.length - 6) + ' more in the Sales log</div>' : '') : '<div class="st-empty">Everything sold has been delivered.</div>') + '</div>' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico o">⚑</span><h3>Save-a-deal<small>pending, declined and approved</small></h3><span class="cnt">' + save.length + '</span></div>' +
-        (save.length ? save.slice(0, 6).map(function(d){ return '<div class="st-row" data-st="edit" data-id="' + esc(d.id) + '">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") +
-          '<span><b>' + esc(d.customer || d.stockNo || "Deal") + '</b><br><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span></span><span class="nx">' + esc(d.notes || (d.status === "approved" ? "Book the delivery" : "")) + '</span></div>'; }).join("") : '<div class="st-empty">Nothing waiting.</div>') +
+        (save.length ? '<div class="st-items">' + save.slice(0, 6).map(function(d){ return stItem(d, stE(d, "status", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>'), { noVehicle:true,
+          after:stE(d, "notes", d.notes ? esc(d.notes) : '<span style="color:var(--muted)">' + (d.status === "approved" ? "Book the delivery" : "add a note") + '</span>', "st-note-c") }); }).join("") + '</div>' : '<div class="st-empty">Nothing waiting.</div>') +
         '</div>' +
       '<div class="st-card"><div class="st-ch"><span class="st-ico r">▲</span><h3>Who needs help<small>tracking under 90% of target</small></h3></div>' +
         (noTargets ? '<div class="st-empty">Set targets to see who\'s behind.</div>' : help.length ? help.map(function(h){
@@ -265,15 +265,24 @@ function stNewMonth(month, carry){
     '<div class="st-hsub">' + stMonthName(prev) + ' is closed off as it stands' + (carry.length ? ' · ' + carry.length + ' deal' + (carry.length === 1 ? "" : "s") + ' carr' + (carry.length === 1 ? "ies" : "y") + ' over into ' + stMonthName(month).split(" ")[0] : '') + '. Tracking, status and who needs help show once the targets are saved.</div></div>' +
     '<span class="acts"><button type="button" class="btn sm" data-st="view" data-v="tgt">Set the targets</button><button type="button" class="btn sm primary" data-st="newmonth">Copy ' + esc(stMonthName(prev).split(" ")[0]) + '\'s targets</button></span></div>';
 }
+/* one-line list item on Today: every part can be clicked to change it (✎ opens the whole deal) */
+function stE(d, f, html, cls){ return '<span class="st-c' + (cls ? " " + cls : "") + (ST.cell && ST.cell.id === d.id && ST.cell.f === f ? " on" : "") + '" data-st="cell" data-id="' + esc(d.id) + '" data-f="' + f + '">' + html + '</span>'; }
+function stItem(d, lead, o){
+  o = o || {};
+  return '<div class="st-item">' + (lead ? '<span class="st-lead">' + lead + '</span>' : '') + stE(d, "customer", '<b>' + esc(d.customer || d.stockNo || "Deal") + '</b>', "st-cust") +
+    (o.noVehicle ? '' : stE(d, "vehicle", esc(d.vehicle || "—"), "st-veh")) + (o.after || '') +
+    '<span class="st-sp">' + stE(d, "sp", stSpText(d)) + '</span><button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Open the whole deal" aria-label="Open the whole deal">✎</button></div>';
+}
 function stCarryCard(carry){
   var cur = stToday().slice(0, 7), from = {};
   carry.forEach(function(d){ var m = String(d.soldDate).slice(0, 7); from[m] = (from[m] || 0) + 1; });
   var front = 0; carry.forEach(function(d){ front += Number(d.frontGross) || 0; });
   var delivered = stCarryDelivered(cur).length;
-  return '<div class="st-card st-carry"><div class="st-ch"><span class="st-ico p">↻</span><h3>Carry-overs<small>sold in an earlier month, not delivered yet · each one counts in this month\'s deliveries when it\'s delivered</small></h3><span class="cnt">' + carry.length + '</span></div>' +
-    '<div class="st-carry-b"><div class="st-carry-l">' + carry.slice(0, 8).map(function(d){ var nx = d.status === "scheduled" && d.deliveryAt ? stDay(d.deliveryAt) + " " + String(d.deliveryAt).slice(11, 16) : d.notes || "";
-      return '<div class="st-row" data-st="edit" data-id="' + esc(d.id) + '">' + stAv((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "HOUSE") + '<span><b>' + esc(d.customer || d.stockNo || "Deal") + '</b> <span style="font-size:11.5px;color:var(--muted)">· ' + esc(d.vehicle || "") + '</span><br>' +
-        '<span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>' + stFromPill(d) + '</span><span class="nx">' + esc(nx) + '<br><span style="color:var(--muted)">' + stDaysSince(d.soldDate) + ' days since sold</span></span></div>'; }).join("") +
+  return '<div class="st-card st-carry"><div class="st-ch"><span class="st-ico p">↻</span><h3>Carry-overs<small>sold in an earlier month · they carry over every month until they\'re delivered, cancelled or declined</small></h3><span class="cnt">' + carry.length + '</span></div>' +
+    '<div class="st-carry-b"><div class="st-items st-carry-l">' + carry.slice(0, 8).map(function(d){
+      var when = d.status === "scheduled" && d.deliveryAt ? stDay(d.deliveryAt) + " " + String(d.deliveryAt).slice(11, 16) : "";
+      return stItem(d, stE(d, "status", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>') + stFromPill(d),
+        { after:(when ? stE(d, "delivery", '<span class="st-when">' + esc(when) + '</span>') : '') + '<span class="st-days">' + stDaysSince(d.soldDate) + ' d</span>' }); }).join("") +
       (carry.length > 8 ? '<div class="st-empty">and ' + (carry.length - 8) + ' more at the top of the Sales log</div>' : '') + '</div>' +
       '<div class="st-mini st-carry-s">' + Object.keys(from).sort().reverse().slice(0, 3).map(function(m){ return '<div>From ' + esc(new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"long" })) + '<b>' + from[m] + '</b></div>'; }).join("") +
         '<div>Delivered this month<b>' + delivered + '</b></div><div>Front gross<b>' + stMoney(front) + '</b></div><div>Oldest<b>' + stDaysSince(carry[0].soldDate) + ' days</b></div></div></div></div>';
@@ -414,12 +423,18 @@ function stViewMine(){
       '<div class="st-tw">' + (ST.mineLoading[month] ? '<div class="st-empty" style="padding:16px">Loading…</div>' : rows.length ? '<table><thead><tr><th class="l">Sold</th><th class="l">Customer · vehicle</th><th>Salesperson</th><th>Deal</th><th class="l">Status</th><th class="r">F&amp;I gross</th></tr></thead><tbody>' +
         rows.map(function(d){
           return '<tr><td class="l">' + stDay(d.soldDate) + '</td><td class="l"><b>' + esc(d.customer || d.stockNo || "") + '</b><div style="font-size:11.5px;color:var(--muted)">' + esc(d.vehicle || "") + '</div></td><td>' + stSpText(d) + '</td><td>' + esc(d.dealType || "") + '</td>' +
-            '<td class="l"><span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span></td>' +
+            '<td class="l"><span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span></td>' +
             '<td class="r num"><b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b></td></tr>'; }).join("") + '</tbody></table>' :
         '<div class="st-empty" style="padding:16px">No deals list you as the F&amp;I manager for ' + stMonthName(month) + '. Your Sales Manager picks you on the deal.</div>') + '</div></div>';
 }
 
 /* ---- Sales performance ---- */
+/* "no target" row spelled like a name that has one (KEAGAN / KEEGAN): the GM can make them one person */
+function stAliasBtn(name, p, forPrint){
+  if (forPrint || !V.isAdmin()) return "";
+  var to = (p.people || []).filter(function(x){ return x.tT > 0 && !x.storeOnly && C.saleNameLike(name, x.name); })[0];
+  return to ? ' · <button type="button" class="st-alias" data-st="spalias" data-from="' + esc(name) + '" data-to="' + esc(to.name) + '">same as ' + esc(to.name) + '?</button>' : "";
+}
 function stPerfTable(p, forPrint){
   var cell = function(cls, v){ return '<td class="' + cls + '">' + v + '</td>'; };
   var row = function(r, cls){
@@ -428,7 +443,7 @@ function stPerfTable(p, forPrint){
       cell("bn sep", tgt(r.tN)) + cell("bu", tgt(r.tU)) + cell("bt", tgt(r.tT)) +
       cell("bn sep", stF(r.sN)) + cell("bu", stF(r.sU)) + cell("bt", stF(r.sT)) +
       cell("bn sep", r.kN === null ? "—" : r.kN) + cell("bu", r.kU === null ? "—" : r.kU) + cell("bt", r.kT === null ? "—" : r.kT) +
-      '<td class="sep" style="min-width:' + (forPrint ? 90 : 130) + 'px">' + (house || !(r.tT > 0) ? '<span style="font-size:11.5px;color:var(--muted)">' + (house ? "store only" : "no target") + '</span>' :
+      '<td class="sep" style="min-width:' + (forPrint ? 90 : 130) + 'px">' + (house || !(r.tT > 0) ? '<span style="font-size:11.5px;color:var(--muted)">' + (house ? "store only" : "no target" + stAliasBtn(r.name, p, forPrint)) + '</span>' :
         '<div class="st-pc"><span>' + (r.pct === null ? "—" : Math.round(r.pct*100) + "%") + '</span>' + stTrack(r.sT, r.tT, p.day, p.total) + '</div>') + '</td>' +
       '<td>' + (house ? '<span class="st-badge store">House</span>' : r.tT > 0 && r.status ? stBadge(r.status) : '<span style="color:var(--muted)">—</span>') + '</td>' +
       '<td class="num"><b>' + (house || r.perDay === null ? "—" : r.perDay.toFixed(1)) + '</b></td></tr>';
@@ -458,11 +473,11 @@ function stViewLog(){
   var month = ST.month, f = ST.f, q = f.q.trim().toLowerCase();
   var list = stAllDeals().filter(function(d){ return String(d.soldDate || "").slice(0, 7) === month; });
   var counts = { all:list.length, open:0, del:0, neg:0, N:0, U:0, A:0 };
-  list.forEach(function(d){ if (["pending","approved","scheduled","carry"].indexOf(d.status) !== -1) counts.open++; else if (d.status === "delivered" || d.status === "rdr") counts.del++; else counts.neg++;
+  list.forEach(function(d){ if (C.saleIsOpen(d)) counts.open++; else if (d.status === "delivered" || d.status === "rdr") counts.del++; else counts.neg++;
     if (d.type === "As-is") counts.A++; else if (d.type === "Used") counts.U++; else counts.N++; });
   var keep = function(d){
     if (f.type !== "all" && (f.type === "Used" ? !C.saleIsUsed(d) : d.type !== f.type)) return false;
-    if (f.status === "open" && ["pending","approved","scheduled","carry"].indexOf(d.status) === -1) return false;
+    if (f.status === "open" && !C.saleIsOpen(d)) return false;
     if (f.status !== "all" && f.status !== "open" && d.status !== f.status) return false;
     if (f.sp !== "all" && !(d.salespeople || []).some(function(s){ return stKey(s.name) === f.sp; })) return false;
     if (q && [d.customer, d.stockNo, d.vehicle, d.customerNo].join(" ").toLowerCase().indexOf(q) === -1) return false;
@@ -486,10 +501,10 @@ function stViewLog(){
       c("source", "", '<span style="font-size:11.5px">' + (esc(d.leadSource || "") + (d.closeType ? '<span style="color:var(--muted)">' + (d.leadSource ? ' · ' : '') + esc(d.closeType) + '</span>' : '') || '<span style="color:var(--muted)">—</span>') + '</span>') +
       c("frontGross", "r num", '<b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : stMoney(d.frontGross)) + '</b>') +
       c("fiGross", "r num", '<b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b>') +
-      c("status", "l", '<span class="st-pill ' + d.status + '">' + ST_LABEL[d.status] + '</span>') +
+      c("status", "l", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>') +
       c("delivery", "l", '<span style="font-size:12px;color:var(--text-2)">' + (esc(del) || '<span style="color:var(--muted)">—</span>') + '</span>') +
       '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Open the whole deal" aria-label="Open the whole deal">✎</button>' +
-      (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + ST_LABEL[stNextStatus(d.status)] + '">→ ' + ST_LABEL[stNextStatus(d.status)] + '</button>' : '') +
+      (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + stLbl(stNextStatus(d.status)) + '">→ ' + stLbl(stNextStatus(d.status)) + '</button>' : '') +
       '<button type="button" class="st-act del" data-st="delrow" data-id="' + esc(d.id) + '" title="Delete" aria-label="Delete">✕</button></span></td></tr>'; };
   var sel = function(key, opts){ return '<select class="st-gsel" data-stf="f.' + key + '">' + opts.map(function(o){ return '<option value="' + esc(o[0]) + '" ' + (f[key] === o[0] ? "selected" : "") + '>' + esc(o[1]) + '</option>'; }).join("") + '</select>'; };
   var card = function(ico, cls, title, sub, n, foot){ return '<div class="st-card"><div class="st-ch"><span class="st-ico ' + cls + '">' + ico + '</span><h3>' + title + '<small>' + sub + '</small></h3><span class="cnt">' + n + '</span></div><div style="font-size:11.5px;color:var(--muted)">' + foot + '</div></div>'; };
@@ -513,7 +528,7 @@ function stViewLog(){
 
 /* ---- Changing one value in the Sales log (a small bubble next to it) ---- */
 var ST_CELL_TITLE = { soldDate:"Date sold", stockNo:"Stock #", customer:"Customer", vehicle:"Vehicle", type:"New / Used", sp:"Salesperson", dealType:"Deal",
-  source:"Lead source · close", frontGross:"Front gross", fiGross:"F&I gross", status:"Status", delivery:"Delivery" };
+  source:"Lead source · close", frontGross:"Front gross", fiGross:"F&I gross", status:"Status", delivery:"Delivery", notes:"Note" };
 function stCellOpen(el){
   var d = ST.deals[el.getAttribute("data-id")]; if (!d) return;
   var f = el.getAttribute("data-f"), r = el.getBoundingClientRect(), w = 290, sp = (d.salespeople || [])[0];
@@ -530,7 +545,7 @@ function stCellSave(opt){
   var d = C.clone(o), f = c.f, v = String(c.v || "").trim(), today = stToday();
   if (f === "soldDate"){ if (!v){ c.err = "Pick the date sold."; return render(); } d.soldDate = v; }
   else if (f === "stockNo") d.stockNo = v.toUpperCase();
-  else if (f === "customer" || f === "vehicle") d[f] = v;
+  else if (f === "customer" || f === "vehicle" || f === "notes") d[f] = v;
   else if (f === "type" || f === "dealType") d[f] = opt;
   else if (f === "sp"){ if (!v){ c.err = "Pick the salesperson (or HOUSE)."; return render(); }
     if ((d.salespeople || []).length > 1) d.salespeople[0] = { name:stKey(v), share:d.salespeople[0].share }; else d.salespeople = [{ name:stKey(v), share:1 }]; }
@@ -554,7 +569,7 @@ function stCellSave(opt){
     function(err){ ST.saving = false; c.err = "Couldn't save: " + (err && err.message ? err.message : err); render(); });
 }
 function stCellBubble(){
-  var c = ST.cell; if (!c || state.route !== "sales" || ST.view !== "log") return "";
+  var c = ST.cell; if (!c || state.route !== "sales" || (ST.view !== "log" && ST.view !== "today")) return "";
   var d = ST.deals[c.id]; if (!d){ ST.cell = null; return ""; }
   var f = c.f, body = "", save = true;
   var opts = function(list, cur){ save = false; return '<div class="st-bopts">' + list.map(function(o){ return '<button type="button" data-st="cellset" data-v="' + o[0] + '" class="' + (cur === o[0] ? "cur " : "") + (o[2] || "") + '">' + o[1] + '</button>'; }).join("") + '</div>'; };
@@ -596,6 +611,8 @@ function stOpen(d){
   ST.edit = e; ST.editErr = null;
   stLoadFms();
 }
+/* the label for a status (anything unexpected from an old file shows as written, not "undefined") */
+function stLbl(s){ return ST_LABEL[s] || (s ? String(s).charAt(0).toUpperCase() + String(s).slice(1) : "Pending"); }
 function stNextStatus(s){ return { pending:"approved", approved:"scheduled", carry:"approved", scheduled:"delivered" }[s] || null; }
 /* Adding or editing a deal: a centred window, deal details on the left, people and money on the right. */
 function stDrawer(){
@@ -616,7 +633,7 @@ function stDrawer(){
       '<div class="st-steps">' + ST_STEPS.map(function(s, i){ return '<button type="button" data-st="status" data-v="' + s + '" class="' + (e.status === s ? "cur" : idx > i ? "done" : "") + '">' + ST_LABEL[s] + '</button>'; }).join("") +
         ST_OTHER.map(function(s){ return '<button type="button" data-st="status" data-v="' + s + '" class="' + (e.status === s ? "cur" : "") + (s !== "carry" ? " neg" : "") + '">' + ST_LABEL[s] + '</button>'; }).join("") + '</div>' +
       (String(e.source || "").indexOf("drive:") === 0 ? '<div class="st-warn">This deal comes from the Google Drive sales log (' + esc(String(e.importedFrom || "").split(" · ")[0]) + '). Change it in the Excel file: edits made here are replaced at the next sync. Deleting it here keeps it out of later syncs.</div>' : '') +
-      (dup.length ? '<div class="st-warn">Stock # ' + esc(e.stockNo) + ' is already in the log (' + esc(dup[0].customer || "") + ', ' + stDay(dup[0].soldDate) + ', ' + ST_LABEL[dup[0].status] + '). Saving adds it again.</div>' : '') +
+      (dup.length ? '<div class="st-warn">Stock # ' + esc(e.stockNo) + ' is already in the log (' + esc(dup[0].customer || "") + ', ' + stDay(dup[0].soldDate) + ', ' + stLbl(dup[0].status) + '). Saving adds it again.</div>' : '') +
       '<div class="st-dcols"><div class="st-dcol"><div class="st-dsec">The deal</div>' +
         '<div class="st-r3"><label class="f"><span>Date sold</span><input type="date" data-stf="e.soldDate" value="' + esc(e.soldDate) + '"></label><label class="f"><span>Stock #</span><input data-stf="e.stockNo" value="' + esc(e.stockNo) + '"></label><label class="f"><span>Customer #</span><input data-stf="e.customerNo" value="' + esc(e.customerNo) + '"></label></div>' +
         '<label class="f"><span>Customer</span><input data-stf="e.customer" value="' + esc(e.customer) + '"></label>' +
@@ -764,7 +781,7 @@ function stCsv(){
   var head = ["Date sold","Stock #","Customer #","Customer","Vehicle","Type","Deal","Salesperson","Split with","Share","F&I manager","Front gross","F&I gross","Lender","Lead source","Close","Stock source","Status","Delivered","Appointment","Trade","2nd T.O.","Security pack","Tire","Posted","Notes"];
   var lines = [head.join(",")].concat(list.map(function(d){ var sp = d.salespeople || [], fl = d.flags || {};
     return [d.soldDate, d.stockNo, d.customerNo, d.customer, d.vehicle, d.type, d.dealType, sp[0] && sp[0].name, sp[1] && sp[1].name, sp.length > 1 ? Math.round(sp[0].share*100) + "/" + Math.round(sp[1].share*100) : "",
-      d.fiManager, d.frontGross, d.fiGross, d.lender, d.leadSource, d.closeType, d.stockSource, ST_LABEL[d.status], d.deliveredDate,
+      d.fiManager, d.frontGross, d.fiGross, d.lender, d.leadSource, d.closeType, d.stockSource, stLbl(d.status), d.deliveredDate,
       fl.appt ? "Y" : "", fl.trade ? "Y" : "", fl.secondTO ? "Y" : "", fl.secPack ? "Y" : "", fl.tire ? "Y" : "", fl.posted ? "Y" : "", d.notes].map(q).join(","); }));
   var a = document.createElement("a");
   a.href = URL.createObjectURL(new Blob([lines.join("\r\n")], { type:"text/csv" }));
@@ -810,6 +827,13 @@ function stAct(act, el){
     case "cell": stCellOpen(el); break;
     case "cellset": stCellSave(v); return;
     case "cellsave": stCellSave(); return;
+    case "spalias": {
+      var af = el.getAttribute("data-from"), at = el.getAttribute("data-to");
+      askConfirm("Count " + af + " as " + at + "?", "Every deal logged as " + af + " (including what the Google Drive sync and imports bring in) counts for " + at + ". You can undo it in Settings.", "Same person", function(){
+        state.config.spAlias = Object.assign({}, state.config.spAlias || {}); state.config.spAlias[af] = at; C.saleSetAliases(state.config.spAlias); commit();
+        toast(af + " now counts as " + at + ".", "ok"); render(); });
+      break;
+    }
     case "cellclose": ST.cell = null; break;
     case "railmini": state.ui.railMini = !state.ui.railMini; try { localStorage.setItem("dcc-rail-mini", state.ui.railMini ? "1" : "0"); } catch (x) {} break;
     case "aichat": AIC.open = !AIC.open; if (AIC.open){ AIC.scroll = true; setTimeout(function(){ var t = document.querySelector('[data-stf="aiDraft"]'); if (t) t.focus(); }, 30); } break;
@@ -884,7 +908,7 @@ function stAct(act, el){
       if (!nd || !ns) return;
       var upd = C.clone(nd); upd.status = ns; upd.statusDates = upd.statusDates || {}; if (!upd.statusDates[ns]) upd.statusDates[ns] = stToday();
       if ((ns === "delivered" || ns === "rdr") && !upd.deliveredDate) upd.deliveredDate = stToday();
-      stSaveDeal(upd).then(function(){ toast((upd.customer || "Deal") + " → " + ST_LABEL[ns] + ".", "ok"); render(); }, function(err){ toast("Couldn't update: " + (err && err.message ? err.message : err), "err"); });
+      stSaveDeal(upd).then(function(){ toast((upd.customer || "Deal") + " → " + stLbl(ns) + ".", "ok"); render(); }, function(err){ toast("Couldn't update: " + (err && err.message ? err.message : err), "err"); });
       return; }
     case "delrow": {
       var dd = ST.deals[el.getAttribute("data-id")]; if (!dd) return;
