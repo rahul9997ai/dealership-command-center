@@ -105,7 +105,7 @@ function insHero(I, mode){
         '<div><div class="l">Gross year to date</div><div class="v">' + insMoneyK(pj.gross.pace) + ' <small>year-end</small></div><div class="s">front ' + insMoneyK(y.front) + ' · F&amp;I ' + insMoneyK(y.fi) + '</div></div></div>' +
       '<div class="st-hk"><div class="l">Units</div><div class="v">' + stF(y.units) + '</div><div class="s">New ' + stF(y.N) + ' · Used ' + stF(y.U) + ' · ' + y.delivered + ' delivered</div></div>' +
       '<div class="st-hk"><div class="l">Year-end volume</div><div class="v">' + (pj.units.pace === null ? "—" : pj.units.pace) + '</div><div class="s">New ' + (pj.N.pace === null ? "—" : pj.N.pace) + ' · Used ' + (pj.U.pace === null ? "—" : pj.U.pace) + ' · this year\'s pace</div></div>' +
-      '<div class="st-hk"><div class="l">At the last 3 months\' pace</div><div class="v">' + (pj.units.last3 === null ? "—" : pj.units.last3) + '</div><div class="s">' + (diff === null ? "" : '<span style="color:' + (diff >= 0 ? "#86efac" : "#fca5a5") + '">' + (diff >= 0 ? "▲ " : "▼ ") + Math.abs(diff) + ' units</span> · ') + 'gross ' + insMoneyK(pj.gross.last3) + '</div></div></div></div>';
+      '<div class="st-hk"><div class="l">At the last 3 months\' pace</div><div class="v">' + (pj.units.last3 === null ? "—" : pj.units.last3) + '</div><div class="s">' + (diff === null ? "" : '<span style="color:' + (diff >= 0 ? "var(--ok)" : "var(--danger)") + '">' + (diff >= 0 ? "▲ " : "▼ ") + Math.abs(diff) + ' units</span> · ') + 'gross ' + insMoneyK(pj.gross.last3) + '</div></div></div></div>';
   }
   var ringPct = m.grossTarget ? m.gross/m.grossTarget : (m.trackGross ? m.gross/m.trackGross : 0);
   return '<div class="st-hero">' + top("Dashboard · Insights", stMonthName(I.cur) + " to date", esc(state.config.name || "") + ' · selling day ' + cur.used + ' of ' + cur.total) +
@@ -126,8 +126,8 @@ function insGrossChart(I){
   for (var g = 0; g <= mx; g += gs){ var gy = T + (H - T - B)*(1 - g/mx); grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + gy.toFixed(1) + '" y2="' + gy.toFixed(1) + '" stroke="var(--border)"/><text x="' + (L - 6) + '" y="' + (gy + 4).toFixed(1) + '" text-anchor="end" font-size="10" fill="var(--muted)">' + (g >= 1e6 ? "$" + +(g/1e6).toFixed(2) + "M" : g >= 1e3 ? "$" + +(g/1e3).toFixed(1) + "k" : "$" + g) + '</text>'; }
   vals.forEach(function(v, i){
     var x = L + i*step + 5, ha = (H - T - B)*v.a/mx, hp = (H - T - B)*v.p/mx, base = H - B;
-    if (v.a > 0) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - ha).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + ha.toFixed(1) + '" rx="4" fill="url(#insga)"><title>' + stMonthName(v.r.month) + ': ' + stMoney(v.a) + '</title></rect>';
-    if (v.p > 0) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - ha - hp).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hp.toFixed(1) + '" rx="4" fill="url(#insgp)" opacity=".45"><title>' + stMonthName(v.r.month) + ' projected: ' + stMoney(v.p) + '</title></rect>';
+    if (v.a > 0) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - ha).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + ha.toFixed(1) + '" rx="4" fill="#2563eb"><title>' + stMonthName(v.r.month) + ': ' + stMoney(v.a) + '</title></rect>';
+    if (v.p > 0) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - ha - hp).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hp.toFixed(1) + '" rx="4" fill="#a78bfa" opacity=".45"><title>' + stMonthName(v.r.month) + ' projected: ' + stMoney(v.p) + '</title></rect>';
     if (!v.r.future && !v.r.hasDeals && v.r.units > 0) bars += '<text x="' + (x + bw/2).toFixed(1) + '" y="' + (base - 6) + '" text-anchor="middle" font-size="9" fill="var(--muted)">units</text>';
     bars += '<text x="' + (x + bw/2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + new Date(+v.r.month.slice(0, 4), +v.r.month.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"short" }) + '</text>';
   });
@@ -140,8 +140,8 @@ function insUnitsChart(I){
   var W = 1180, H = 190, L = 20, R = 10, T = 16, B = 26, step = (W - L - R)/12, bw = Math.min(64, step - 22), bars = "";
   vals.forEach(function(r, i){
     var x = L + i*step + (step - bw)/2, base = H - B, hn = (H - T - B)*r.N/mx, hu = (H - T - B)*r.U/mx;
-    if (r.N) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - hn).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hn.toFixed(1) + '" fill="url(#insun)"><title>New ' + stF(r.N) + '</title></rect>';
-    if (r.U) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - hn - hu).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hu.toFixed(1) + '" fill="url(#insuu)"><title>Used ' + stF(r.U) + '</title></rect>';
+    if (r.N) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - hn).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hn.toFixed(1) + '" fill="#3b82f6"><title>New ' + stF(r.N) + '</title></rect>';
+    if (r.U) bars += '<rect x="' + x.toFixed(1) + '" y="' + (base - hn - hu).toFixed(1) + '" width="' + bw.toFixed(1) + '" height="' + hu.toFixed(1) + '" fill="#0f766e"><title>Used ' + stF(r.U) + '</title></rect>';
     if (r.target){ var ty = base - (H - T - B)*r.target/mx; bars += '<line x1="' + (x - 2).toFixed(1) + '" x2="' + (x + bw + 2).toFixed(1) + '" y1="' + ty.toFixed(1) + '" y2="' + ty.toFixed(1) + '" stroke="#f59e0b" stroke-width="2"/>'; }
     if (r.units) bars += '<text x="' + (x + bw/2).toFixed(1) + '" y="' + (base - hn - hu - 4).toFixed(1) + '" text-anchor="middle" font-size="10" font-weight="700" fill="currentColor">' + stF(r.units) + '</text>';
     bars += '<text x="' + (x + bw/2).toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="10" fill="var(--muted)">' + new Date(+r.month.slice(0, 4), +r.month.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"short" }) + '</text>';

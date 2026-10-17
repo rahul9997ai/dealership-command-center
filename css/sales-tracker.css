@@ -334,3 +334,67 @@ input.st-gsel::placeholder{color:#cbd5e1}
 .st-drop{padding:22px 14px;border-radius:var(--radius)}
 .st-plain{font-size:12px;line-height:1.55}
 .ins-sub{font-size:10.5px}
+
+/* Flat look: the Command Center's own cards (plain surface, thin border, light shadow), no gradients,
+   glows or bevels. The Showroom TV keeps its dark full-screen style. */
+.stx{--st-card:var(--surface);--st-shadow:var(--shadow)}
+:root[data-theme="dark"] .stx{--st-shadow:var(--shadow)}
+.st-sub button.on{box-shadow:none}
+.st-hero{background:var(--surface);color:var(--text);border:1px solid var(--border);box-shadow:var(--shadow)}
+.st-hero::after{display:none}
+.st-eyebrow{color:var(--blue);letter-spacing:.12em}
+.st-hero h2{color:var(--text)}
+.st-hero .st-hsub{color:var(--muted)}
+.st-gbtn{border:1px solid var(--border-strong);background:var(--surface);color:var(--text);box-shadow:none;font-weight:600}
+.st-gbtn:hover{background:var(--surface-2)}
+.st-gbtn.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+.st-gbtn.primary:hover{background:var(--blue-2,var(--blue))}
+.st-gbtn[disabled]{opacity:.55;cursor:not-allowed}
+.st-gsel{color:var(--text);border:1px solid var(--border-strong);background:var(--surface)}
+input.st-gsel::placeholder{color:var(--muted)}
+.st-hk{background:var(--surface-2);border:1px solid var(--border);box-shadow:none}
+.st-hk .l{color:var(--muted);font-weight:600}
+.st-hk .v{color:var(--text);font-weight:700}
+.st-hk .v small{color:var(--muted)}
+.st-hk .s{color:var(--muted)}
+.st-pace{background:var(--surface-3);box-shadow:none}
+.st-pace i{background:#f59e0b;box-shadow:none}
+.st-pace i.g{background:#16a34a;box-shadow:none}
+.st-pace i.b{background:var(--blue);box-shadow:none}
+.st-pace em{background:var(--text)}
+.st-badge{box-shadow:none;font-size:10.5px;padding:3px 9px;letter-spacing:.06em}
+.st-badge.ahead{background:#059669}.st-badge.pace{background:#f59e0b}.st-badge.behind{background:#dc2626}.st-badge.store{background:#94a3b8}
+.st-card,.st-table,.st-sc{box-shadow:var(--shadow)}
+.st-ico{box-shadow:none}
+.st-ico.b{background:rgba(37,99,235,.12);color:#2563eb}.st-ico.g{background:rgba(5,150,105,.12);color:#059669}.st-ico.p{background:rgba(124,58,237,.12);color:#7c3aed}
+.st-ico.o{background:rgba(217,119,6,.13);color:#b45309}.st-ico.r{background:rgba(220,38,38,.12);color:#dc2626}
+:root[data-theme="dark"] .st-ico.b{color:#93c5fd}:root[data-theme="dark"] .st-ico.g{color:#6ee7b7}:root[data-theme="dark"] .st-ico.p{color:#c4b5fd}:root[data-theme="dark"] .st-ico.o{color:#fcd34d}:root[data-theme="dark"] .st-ico.r{color:#fca5a5}
+.st-av{box-shadow:none}
+.st-pill{box-shadow:none;font-weight:700}
+.st-pill.pending{background:var(--surface-3);color:var(--text-2)}
+.st-pill.approved,.st-pill.New{background:rgba(37,99,235,.12);color:#1d4ed8}
+.st-pill.scheduled,.st-pill.As-is{background:rgba(245,158,11,.16);color:#92400e}
+.st-pill.delivered,.st-pill.Used{background:rgba(5,150,105,.13);color:#047857}
+.st-pill.rdr{background:#059669;color:#fff}
+.st-pill.carry,.st-pill.carryfrom{background:rgba(124,58,237,.12);color:#6d28d9}
+.st-pill.declined,.st-pill.cancelled{background:rgba(220,38,38,.12);color:#b91c1c}
+:root[data-theme="dark"] .st-pill.approved,:root[data-theme="dark"] .st-pill.New{color:#93c5fd}
+:root[data-theme="dark"] .st-pill.scheduled,:root[data-theme="dark"] .st-pill.As-is{color:#fcd34d}
+:root[data-theme="dark"] .st-pill.delivered,:root[data-theme="dark"] .st-pill.Used{color:#6ee7b7}
+:root[data-theme="dark"] .st-pill.carry,:root[data-theme="dark"] .st-pill.carryfrom{color:#c4b5fd}
+:root[data-theme="dark"] .st-pill.declined,:root[data-theme="dark"] .st-pill.cancelled{color:#fca5a5}
+.st-th{background:var(--surface);color:var(--text);border-bottom:1px solid var(--border)}
+.st-th h2{color:var(--text);font-size:13.5px;font-weight:700;letter-spacing:.02em}
+.st-th .st-hsub{color:var(--muted)}
+.st-table tr.store td{background:var(--info-bg);border-bottom:1px solid var(--border)}
+.st-track{box-shadow:none}
+.st-track i.ok{background:#059669}.st-track i.mid{background:#f59e0b}.st-track i.bad{background:#dc2626}
+.st-sc.dark{background:var(--surface);color:var(--text);border-color:var(--border)}
+.st-sc.dark .l{color:var(--muted)}.st-sc.dark .s{color:var(--muted)}.st-sc.dark .v{color:var(--text)}
+.st-cal div,.st-cal button{box-shadow:none}
+.st-cal .hol{background:rgba(245,158,11,.18);border-color:transparent}
+.st-cal .past{background:rgba(37,99,235,.08)}
+.st-cal .today{background:var(--blue)}
+.st-ai{background:var(--surface);border-color:rgba(124,58,237,.3)}
+.st-ai-tag{background:#7c3aed}
+.st-drop{box-shadow:none}
