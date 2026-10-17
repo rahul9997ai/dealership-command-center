@@ -455,3 +455,32 @@ select.ai-sel{width:100%;text-align:left}
 .ds-dot.bad{background:#dc2626}
 .ds-btn{margin-left:auto;font-size:11.5px;font-weight:600;padding:3px 9px;border-radius:7px;border:1px solid var(--border-strong);background:var(--surface);color:var(--text);cursor:pointer}
 .ds-btn[disabled]{opacity:.5}
+
+/* Left pane: narrower, and it folds down to icons (button at the top) */
+.rail{width:212px;flex:0 0 212px}
+.rail-brand{padding:14px 12px 12px;gap:9px}
+.rail-names{min-width:0;flex:1}
+.rail-names .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rail nav{padding:8px}
+.nav-item{padding:8px 9px;font-size:13px}
+.nav-group{padding:12px 9px 5px}
+.rail-fold{flex:0 0 auto;width:26px;height:26px;border-radius:7px;border:1px solid rgba(255,255,255,.14);background:transparent;color:#cbd5e1;cursor:pointer;font-size:13px;line-height:1}
+.rail-fold:hover{background:rgba(255,255,255,.08);color:#fff}
+.app.rail-mini .rail{width:60px;flex:0 0 60px}
+.app.rail-mini .rail-brand{flex-direction:column;padding:12px 8px;gap:8px}
+.app.rail-mini .rail-names,.app.rail-mini .nav-item span:not(.ic),.app.rail-mini .nav-item .tagx,.app.rail-mini .userchip > div:not(.avatar){display:none}
+.app.rail-mini .nav-group{font-size:0;padding:8px 0 4px;margin:0 10px;border-top:1px solid rgba(255,255,255,.08)}
+.app.rail-mini .nav-item{justify-content:center;padding:9px 0}
+.app.rail-mini .nav-item .ic{width:auto;font-size:15px}
+.app.rail-mini .rail-back{font-size:0;padding:6px 0;text-align:center}
+.app.rail-mini .rail-back::before{content:"←";font-size:14px}
+.app.rail-mini .rail-foot{padding:10px 8px}
+.app.rail-mini .userchip{justify-content:center;padding:6px 0}
+@media (max-width:900px){.rail{width:100%;flex:none}.rail-fold{display:none}.app.rail-mini .rail{width:100%;flex:none}}
+
+/* Sales log: one line per deal */
+.st-table td.st-ell{max-width:190px;overflow:hidden;text-overflow:ellipsis}
+.st-help{grid-template-columns:90px 1fr 86px}
+.st-help.ins-li{grid-template-columns:minmax(0,1fr) auto}
+.st-table td.st-ell{max-width:160px}
+.st-table td{padding-left:7px;padding-right:7px}

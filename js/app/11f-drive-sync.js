@@ -26,7 +26,7 @@ function dsLoadStatus(){
   dsSyncStore();
   if (!stOnline()) return Promise.resolve();
   var store = DS.store;
-  return sb.from("sales_sync").select("file_id,modified_time,synced_at,synced_by,result").eq("dealership_id", store).then(function(r){
+  return sb.from("sales_sync").select("file_id,modified_time,synced_at,synced_by,result,excluded").eq("dealership_id", store).then(function(r){
     if (DS.store !== store) return; DS.status = {}; (r.data || []).forEach(function(x){ DS.status[x.file_id] = x; }); DS.statusLoaded = true; });
 }
 /* saved layouts (from an import that used AI or matched columns by hand) apply to synced files too */
@@ -50,11 +50,12 @@ function dsParse(file, buf){
       headerRow:lay.forced[s.name], tabType:lay.tabTypes[s.name], leads:ST_LEAD, closes:["1st visit","Be-back"], stocks:ST_STOCK, store:ST.store, file:file.name });
     if (L && L.rows.length) logs.push(L);
   });
-  var byId = {};
+  var rows = [];
   logs.sort(function(a, b){ return String(a.month || "").localeCompare(String(b.month || "")); }).forEach(function(L){
-    L.rows.forEach(function(r){ if (r.bad){ bad++; return; } r.deal.importedFrom = file.name + " · " + L.name; byId[r.deal.id] = r.deal; });
+    L.rows.forEach(function(r){ if (r.bad){ bad++; return; } r.deal.importedFrom = file.name + " · " + L.name; rows.push(r); });
   });
-  return { deals:Object.keys(byId).map(function(k){ return byId[k]; }), bad:bad, tabs:logs.length };
+  var M = C.impMerge(rows);
+  return { deals:M.rows.map(function(r){ return r.deal; }), bad:bad, tabs:logs.length, merged:M.merged };
 }
 function dsSig(d){ var c = Object.assign({}, d); ["createdAt","createdBy","updatedAt","updatedBy","importBatch"].forEach(function(k){ delete c[k]; }); return JSON.stringify(c); }
 function dsSyncFile(file, force){
@@ -73,8 +74,9 @@ function dsSyncFile(file, force){
         var mine = {}, other = {}, typed = {}, now = new Date().toISOString(), fms = ST.fms || [];
         rs[0].forEach(function(x){ mine[x.id] = x.data; });
         rs[1].forEach(function(x){ var d = x.data || {}; if (d.source !== src){ other[x.id] = d; typed[stKey(d.stockNo) + "|" + d.soldDate] = x.id; } });
-        var write = [], keep = {}, skipped = 0, added = 0, updated = 0;
+        var write = [], keep = {}, skipped = 0, added = 0, updated = 0, excl = (DS.status[file.id] && DS.status[file.id].excluded) || [], kept = 0;
         P.deals.forEach(function(d){
+          if (excl.indexOf(d.id) !== -1){ kept++; return; }
           var tid = typed[stKey(d.stockNo) + "|" + d.soldDate];
           if (!mine[d.id] && tid && tid !== d.id){ skipped++; return; }
           keep[d.id] = 1; d.source = src;
@@ -91,9 +93,9 @@ function dsSyncFile(file, force){
           return sb.from("sales_log").upsert(chunk.map(function(d){ return { id:d.id, dealership_id:store, sold_on:d.soldDate, data:d }; })).then(function(x){ if (x.error) throw x.error; chunk.forEach(function(d){ ST.deals[d.id] = d; }); }); }); })(write.slice(i, i + 200));
         for (var j = 0; j < gone.length; j += 200) (function(chunk){ chain = chain.then(function(){
           return sb.from("sales_log").delete().eq("dealership_id", store).in("id", chunk).then(function(x){ if (x.error) throw x.error; chunk.forEach(function(id){ delete ST.deals[id]; }); }); }); })(gone.slice(j, j + 200));
-        var result = { added:added, updated:updated, removed:gone.length, skipped:skipped, unreadable:P.bad, deals:P.deals.length, tabs:P.tabs };
+        var result = { added:added, updated:updated, removed:gone.length, skipped:skipped, unreadable:P.bad, deals:P.deals.length, tabs:P.tabs, merged:P.merged, deletedInTracker:kept };
         return chain.then(function(){
-          var rec = { dealership_id:store, file_id:file.id, modified_time:r.meta.modifiedTime, synced_at:now, synced_by:me.name || "", result:result };
+          var rec = { dealership_id:store, file_id:file.id, modified_time:r.meta.modifiedTime, synced_at:now, synced_by:me.name || "", result:result, excluded:excl };
           return sb.from("sales_sync").upsert(rec).then(function(x){ if (x.error) throw x.error; DS.status[file.id] = rec; return { file:file, result:result }; });
         });
       });
@@ -118,6 +120,13 @@ function dsAuto(){
   if (!dsOn() || !stCan() || !stOnline() || DS.running || Date.now() - DS.lastAuto < 15*60*1000) return;
   DS.lastAuto = Date.now();
   setTimeout(function(){ dsSyncAll(false, true); }, 400);
+}
+/* a synced deal deleted in the tracker stays deleted, even though it's still in the Excel file */
+function dsExclude(d){
+  var fid = String(d && d.source || "").replace(/^drive:/, ""); if (!fid || !stOnline()) return Promise.resolve();
+  var st = DS.status[fid] || {}, ex = (st.excluded || []).slice(); if (ex.indexOf(d.id) === -1) ex.push(d.id);
+  st.excluded = ex; DS.status[fid] = st;
+  return sb.from("sales_sync").upsert({ dealership_id:ST.store, file_id:fid, excluded:ex, modified_time:st.modified_time || null, synced_at:st.synced_at || new Date().toISOString(), synced_by:st.synced_by || "", result:st.result || null });
 }
 function dsLastSync(){ var t = 0; Object.keys(DS.status).forEach(function(k){ var x = Date.parse(DS.status[k].synced_at || ""); if (x > t) t = x; }); return t; }
 function dsBanner(){
@@ -146,7 +155,7 @@ function viewDriveSettings(){
     (files.length ? '<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>File</th><th>New / Used</th><th>Last sync</th><th>Result</th><th></th></tr></thead><tbody>' +
       files.map(function(f, i){ var s = DS.status[f.id], r = s && s.result;
         return '<tr><td><b>' + esc(f.name) + '</b></td><td>' + typeSel(f.type || "auto", 'data-dsf="type" data-i="' + i + '"') + '</td><td class="nowrap small">' + (s ? esc(new Date(s.synced_at).toLocaleString("en-CA", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" })) + (s.synced_by ? ' · ' + esc(s.synced_by) : '') : '<span class="muted">not yet</span>') + '</td>' +
-          '<td class="small">' + (r ? r.deals + ' deals · ' + r.added + ' new · ' + r.updated + ' changed · ' + r.removed + ' removed' + (r.skipped ? ' · ' + r.skipped + ' already typed in' : '') + (r.unreadable ? ' · ' + r.unreadable + ' without a readable date' : '') : '') + '</td>' +
+          '<td class="small">' + (r ? r.deals + ' deals · ' + r.added + ' new · ' + r.updated + ' changed · ' + r.removed + ' removed' + (r.merged ? ' · ' + r.merged + ' re-logged rows merged' : '') + (r.skipped ? ' · ' + r.skipped + ' already typed in' : '') + ((s.excluded || []).length ? ' · ' + s.excluded.length + ' deleted here, kept out' : '') + (r.unreadable ? ' · ' + r.unreadable + ' without a readable date' : '') : '') + '</td>' +
           '<td class="right"><button type="button" class="btn sm ghost" data-ds="remove" data-i="' + i + '">Remove</button></td></tr>'; }).join("") + '</tbody></table></div>' : '') +
     '<div class="inline" style="margin-top:12px;align-items:flex-end"><label class="f" style="flex:2"><span>Google Drive link to an Excel sales log</span><input type="text" data-dsf="link" value="' + esc(DS.addLink) + '" placeholder="https://docs.google.com/spreadsheets/d/… or https://drive.google.com/file/d/…"></label>' +
       '<label class="f" style="flex:0 0 auto"><span>This file is</span>' + typeSel(DS.addType, 'data-dsf="addType"') + '</label>' +

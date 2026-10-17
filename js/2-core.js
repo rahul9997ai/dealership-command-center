@@ -895,7 +895,7 @@ var IMP_LOG_COLS = [
   ["soldDate", /^((sold|sale|deal|contract|purchase) )?date( sold| of sale)?$|^sold( on| date)?$|^dos$/],
   ["stockSource", /^stock source$|^source of stock$/],
   ["stockNo", /^(stock|stk)( ?(#|no|number))?$/],
-  ["customerNo", /^(customer|cust|client|buyer) ?(#|no|number|id)$/],
+  ["customerNo", /^(customer|cust|client|buyer) ?(#|no|number|id)$|^dms ?(#|no|number)?$|^deal ?(#|no|number)$/],
   ["customer", /^(customer|cust|client|buyer|purchaser)( name)?$|^(customer|client) full name$/],
   ["sp2", /^(sales ?(person|rep|consultant) ?2|2nd sales ?(person|rep|consultant)|split( with)?|second sales ?(person|rep)?)$/],
   ["sp", /^(sales ?(person|rep|consultant|man|associate|c)|consultant|salesman|sales)( 1| name)?$|^sp$/],
@@ -910,7 +910,7 @@ var IMP_LOG_COLS = [
   ["rdr", /^(rdr|scanned|del\/scanned|reported)$/],
   ["appt", /^app(t|ointment)?( y\/n)?$/],
   ["secPack", /^sec ?pack/], ["trade", /^trade( in)?( y\/n)?$/], ["tire", /^tire/], ["secondTO", /^2nd t ?o/], ["posted", /^posted$/],
-  ["type", /^(n\/u|new\/used|new or used|type|n\/u\/d|condition|new\/pre owned)$/], ["lender", /^(lender|bank|financed with)$/], ["notes", /^(notes?|comments?)$/]];
+  ["type", /^(n\/u|new\/used|new or used|type|n\/u\/d|condition|new\/pre owned)$/], ["lender", /^(lender|bank|financed with)$/], ["notes", /^(notes?|comments?|remarks?|dealership from|dealer from)$/]];
 var IMP_COL_LABEL = { soldDate:"Date sold", deliveredDate:"Date delivered", stockNo:"Stock #", customerNo:"Customer #", customer:"Customer", sp:"Salesperson", sp2:"Second salesperson (50/50 split)",
   fiManager:"F&I manager", vehicle:"Vehicle", status:"Status", dealType:"Deal (Finance / Lease / Cash)", frontGross:"Front gross", fiGross:"F&I gross", leadSource:"Lead source", closeType:"Close (1st visit / be-back)",
   stockSource:"Stock source", rdr:"Del / scanned (Y)", appt:"Appointment (Y)", secPack:"Security pack (Y)", trade:"Trade-in (Y)", tire:"Tire & wheel (Y)", secondTO:"2nd turnover (Y)", posted:"Posted (Y)",
@@ -957,7 +957,8 @@ function impPick(text, list, other){
   for (var i = 0; i < list.length; i++){ var l = list[i].toLowerCase().replace(/[^a-z0-9]/g, ""); if (l === t || l.indexOf(t) !== -1 || t.indexOf(l) !== -1) return list[i]; }
   return other === undefined ? "" : other;
 }
-var IMP_STATUS = { delivered:"delivered", del:"delivered", "delscanned":"rdr", scanned:"rdr", rdr:"rdr", reported:"rdr", declined:"declined", cancelled:"cancelled", canceled:"cancelled", unwound:"cancelled",
+/* "Del / scanned" (RDR) counts as Delivered: the tracker has no separate scanned status */
+var IMP_STATUS = { delivered:"delivered", del:"delivered", "delscanned":"delivered", scanned:"delivered", rdr:"delivered", reported:"delivered", declined:"declined", cancelled:"cancelled", canceled:"cancelled", unwound:"cancelled",
   carryover:"carry", carry:"carry", pending:"pending", sold:"pending", approved:"approved", schdelivery:"scheduled", scheduleddelivery:"scheduled", scheduled:"scheduled", sched:"scheduled", booked:"scheduled" };
 function impHash(s){ var h = 2166136261; for (var i = 0; i < s.length; i++){ h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h.toString(36); }
 function impLogNeed(c){ return c.sp !== undefined && (c.stockNo !== undefined || c.customer !== undefined) && Object.keys(c).length >= 3; }
@@ -985,7 +986,6 @@ function impLogSheet(name, rows, opts){
     var issues = [], sold = impDate(rawDate, tab.y, tab.m), st = impText(cell(r, "status")), status = smap[st.toUpperCase()] || IMP_STATUS[st.toLowerCase().replace(/[^a-z]/g, "")];
     if (!sold) issues.push(impText(rawDate) ? "Date not readable (" + impText(rawDate) + ")" : "No date");
     if (!status){ if (st) issues.push("Status \"" + st + "\" read as Pending"); else issues.push("No status · imported as Pending"); status = "pending"; }
-    if (status === "delivered" && impYes(cell(r, "rdr"))) status = "rdr";
     if (!sp){ issues.push("No salesperson · counted as HOUSE"); sp = "HOUSE"; }
     if (!cust) issues.push("No customer name");
     var tc = impText(cell(r, "type")), fromCol = tmap[tc.toUpperCase()] || (/^n(ew)?$/i.test(tc) ? "New" : /as.?is/i.test(tc) ? "As-is" : /^(u(sed)?|pre|cpo|demo)/i.test(tc) ? "Used" : null), type;
@@ -1003,8 +1003,8 @@ function impLogSheet(name, rows, opts){
       flags:{}, deliveryAt:"", deliveredDate:"", notes:impText(cell(r, "notes")), importedFrom:(opts.file ? opts.file + " · " : "") + name };
     if (!impText(cell(r, "leadSource"))) deal.leadSource = "";
     if (!impText(cell(r, "stockSource"))) deal.stockSource = "";
-    ["appt","trade","secondTO","secPack","tire","posted"].forEach(function(f){ if (impYes(cell(r, f))) deal.flags[f] = true; });
-    if (sold){ deal.statusDates[status] = sold; if (status === "delivered" || status === "rdr") deal.deliveredDate = delivered || sold; }
+    ["appt","trade","secondTO","secPack","tire","posted","rdr"].forEach(function(f){ if (impYes(cell(r, f))) deal.flags[f] = true; });
+    if (sold){ deal.statusDates[status] = sold; if (status === "delivered") deal.deliveredDate = delivered || sold; }
     out.push({ line:i + 1, deal:deal, issues:issues, bad:!sold });
   }
   return { name:name, month:tab.y && tab.m ? tab.y + "-" + ("0" + tab.m).slice(-2) : null, header:hdr, rows:out,
@@ -1068,6 +1068,21 @@ function impMaskTab(rows, roster, top, tail){
   });
   return { lines:lines, masked:masked, hidden:hidden };
 }
+/* One deal per sale across a workbook's tabs. Sales Managers often carry an unfinished deal onto next month's
+   tab (sometimes with the stock # filled in once the car is located), so rows with the same id, or the same
+   customer, sale date and salesperson, are one deal: the row from the latest tab wins.
+   rows: [{ deal, ... }] in tab order (oldest month first). Returns { rows, merged }. */
+function impMerge(rows){
+  var keyOf = function(d){ var c = String(d.customer || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return c && d.soldDate ? c + "|" + d.soldDate + "|" + saleKey((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "") : null; };
+  var byId = {}, byKey = {}, order = [], merged = 0;
+  rows.forEach(function(r){
+    var k = keyOf(r.deal), prev = byId[r.deal.id] || (k && byKey[k]);
+    if (prev){ merged++; var at = order.indexOf(prev); order[at] = r; delete byId[prev.deal.id]; }
+    else order.push(r);
+    byId[r.deal.id] = r; if (k) byKey[k] = r;
+  });
+  return { rows:order, merged:merged };
+}
 /* Deals the AI read from a PDF or photo → the same rows the sales-log reader returns.
    result.deals[]: strings (see the ai-read function); unsure: field names the AI wasn't sure of. */
 var IMP_DOC_FIELD = { soldDate:"soldDate", stockNo:"stockNo", customer:"customer", vehicle:"vehicle", salesperson:"sp", salesperson2:"sp2", fiManager:"fiManager",
@@ -1077,7 +1092,7 @@ function impDocDeals(result, opts){
   var out = [], year = opts.year || null;
   ((result && result.deals) || []).forEach(function(x, i){
     var sp = saleKey(x.salesperson) || "HOUSE", sp2 = saleKey(x.salesperson2), sold = impDate(x.soldDate, year, null), st = String(x.status || "").toLowerCase();
-    var status = SALE_STATUSES.indexOf(st) !== -1 ? st : (IMP_STATUS[st.replace(/[^a-z]/g, "")] || "pending");
+    var status = st === "rdr" ? "delivered" : SALE_STATUSES.indexOf(st) !== -1 ? st : (IMP_STATUS[st.replace(/[^a-z]/g, "")] || "pending");
     var type = /^new$/i.test(x.vehicleType) ? "New" : /as.?is/i.test(x.vehicleType) ? "As-is" : /^used$/i.test(x.vehicleType) ? "Used" : (opts.type || "");
     var stock = impText(x.stockNo).toUpperCase(), cust = impText(x.customer);
     var deal = { id:"X" + impHash([opts.store || "", stock, sold || "", cust.toUpperCase(), sp].join("|")) + impHash(stock + "|" + sold).slice(0, 3),
@@ -1096,7 +1111,7 @@ function impDocDeals(result, opts){
 }
 
 window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
-  impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
+  impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,

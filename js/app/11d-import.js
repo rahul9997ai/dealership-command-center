@@ -73,9 +73,10 @@ function stImpBuild(){
     tabs.push({ name:s.name, kind:filled ? "unknown" : "empty", rows:filled });
   });
   /* the same deal on more than one tab (tabs often repeat last month's undelivered deals): the latest tab wins */
-  logs.slice().sort(function(a, b){ return String(a.month || "").localeCompare(String(b.month || "")); }).forEach(function(L){
-    L.rows.forEach(function(r){ r.tab = L.name; if (!byId[r.deal.id]) order.push(r.deal.id); byId[r.deal.id] = r; });
-  });
+  /* a deal carried onto a later tab (same id, or same customer, date and salesperson) is one deal: the latest tab wins */
+  var all = [];
+  logs.slice().sort(function(a, b){ return String(a.month || "").localeCompare(String(b.month || "")); }).forEach(function(L){ L.rows.forEach(function(r){ r.tab = L.name; all.push(r); }); });
+  C.impMerge(all).rows.forEach(function(r){ order.push(r.deal.id); byId[r.deal.id] = r; });
   var ex = im.existing || {}, cur = stToday().slice(0, 7);
   var rows = order.map(function(id){ var r = byId[id], d = r.deal, k = stKey(d.stockNo) + "|" + d.soldDate;
     r.state = r.bad ? "bad" : (ST.deals[id] || ex[k]) ? "exists" : r.issues.length ? "note" : "ready"; return r; });

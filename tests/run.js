@@ -538,7 +538,15 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   eq("IMP an August row on the September tab keeps its date", d0.soldDate, "2026-08-18");
   eq("IMP negative front gross", d0.frontGross, -1000);
   eq("IMP salesperson upper-cased", d0.salespeople[0].name, "ABBAS");
-  eq("IMP RDR = Y on a delivered deal", d1.status, "rdr");
+  eq("IMP RDR = Y counts as delivered (no scanned status)", d1.status + ":" + !!d1.flags.rdr, "delivered:true");
+  const mr = C.impMerge([
+    { deal:{ id:"a", customer:"Kyle Thackwary", soldDate:"2026-08-22", stockNo:"LOCATE", status:"approved", salespeople:[{ name:"ABBAS", share:1 }] }, tab:"Aug" },
+    { deal:{ id:"b", customer:"Mashal Khan", soldDate:"2026-08-24", stockNo:"LOCATE", status:"approved", salespeople:[{ name:"ARUN", share:1 }] }, tab:"Aug" },
+    { deal:{ id:"c", customer:"KYLE THACKWARY", soldDate:"2026-08-22", stockNo:"T20980", status:"delivered", salespeople:[{ name:"ABBAS", share:1 }] }, tab:"Sep" },
+    { deal:{ id:"b", customer:"Mashal Khan", soldDate:"2026-08-24", stockNo:"LOCATE", status:"scheduled", salespeople:[{ name:"ARUN", share:1 }] }, tab:"Sep" },
+    { deal:{ id:"d", customer:"Kyle Thackwary", soldDate:"2026-10-02", stockNo:"T21100", status:"pending", salespeople:[{ name:"ABBAS", share:1 }] }, tab:"Oct" }]);
+  eq("IMP a re-logged deal is one deal (latest tab wins)", mr.rows.map((r) => r.deal.id + ":" + r.deal.status).join(","), "c:delivered,b:scheduled,d:pending");
+  eq("IMP merged count", mr.merged, 2);
   eq("IMP F&I dash = none", d1.fiGross, null);
   eq("IMP lead source matched", d1.leadSource, "Walk in");
   eq("IMP close type matched", d1.closeType, "Be-back");

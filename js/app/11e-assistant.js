@@ -38,18 +38,17 @@ function aiFacts(){
   var today = stToday(), month = aiMonth(), p = stPerf(month, "month"), s = p.store, t = stTargets(month), I = insData(Number(month.slice(0, 4)));
   var sc = {}; I.scores.mtd.forEach(function(x){ sc[x.name] = x; });
   var monthDeals = stAllDeals().filter(function(d){ return String(d.soldDate || "").slice(0, 7) === month; });
-  var appts = stApptTotals(month), cur = I.all.filter(function(r){ return r.month === month; })[0] || {}, prevM = stShift(month, -1);
+  var cur = I.all.filter(function(r){ return r.month === month; })[0] || {}, prevM = stShift(month, -1);
   var prev = I.all.filter(function(r){ return r.month === prevM; })[0];
   var people = p.people.filter(function(x){ return !x.storeOnly; }).map(function(x){
     var z = sc[x.name] || {}, mine = monthDeals.filter(function(d){ return C.saleCounts(d) && (d.salespeople || []).some(function(q){ return stKey(q.name) === x.name; }); });
     var cnt = function(f){ var o = {}; mine.forEach(function(d){ var v = f(d); if (v) o[v] = (o[v] || 0) + 1; }); return o; };
-    var ap = appts.people[x.name] || {};
     return { name:x.name, target:{ new:x.tN, used:x.tU, total:x.tT }, sold:{ new:x.sN, used:x.sU, total:x.sT }, tracking:x.kT, pctOfTarget:x.pct === null ? null : Math.round(x.pct*100), status:x.status,
       neededPerDay:x.perDay === null ? null : aiR1(x.perDay), lastMonthUnits:z.last === undefined ? null : aiR1(z.last), avgLast3Months:z.avg3 === undefined ? null : aiR1(z.avg3),
       paceVs3MonthAvgPct:z.growth === null || z.growth === undefined ? null : Math.round(z.growth*100), frontPerVehicle:aiR0(z.frontPvr), fiPerVehicle:aiR0(z.fiPvr), totalGross:aiR0(z.total),
       frontPerVehicleVsStore:aiR0(z.hold), dealsAtOrBelowZeroFront:z.losingN || 0, amountOnThoseDeals:aiR0(z.losingAmt), yearEndUnitsProjection:z.yearEnd || 0,
       closeTypes:cnt(function(d){ return d.closeType; }), leadSources:cnt(function(d){ return d.leadSource; }), dealTypes:cnt(function(d){ return d.dealType; }),
-      tradeIns:mine.filter(function(d){ return d.flags && d.flags.trade; }).length, appointmentsThisMonth:{ set:ap.set || 0, shown:ap.shown || 0, sold:ap.sold || 0 } };
+      tradeIns:mine.filter(function(d){ return d.flags && d.flags.trade; }).length };
   });
   var deals = monthDeals.map(function(d){ return { sold:d.soldDate, stock:d.stockNo, vehicle:d.vehicle, type:d.type, deal:d.dealType, salespeople:(d.salespeople || []).map(function(q){ return q.name + (q.share < 1 ? " " + Math.round(q.share*100) + "%" : ""); }).join(" + "),
     status:ST_LABEL[d.status], delivered:d.deliveredDate || "", front:d.frontGross, fi:d.fiGross, leadSource:d.leadSource || "", close:d.closeType || "" }; });
@@ -60,12 +59,10 @@ function aiFacts(){
     month:{ name:stMonthName(month), sellingDay:p.day, sellingDays:p.total, sellingDaysLeft:p.total - p.day, countsOn:p.countOn,
       target:{ new:s.tN, used:s.tU, total:s.tT }, sold:{ new:s.sN, used:s.sU, total:s.sT }, tracking:{ new:s.kN, used:s.kU, total:s.kT }, status:s.status, neededPerDay:s.perDay === null ? null : aiR1(s.perDay),
       gross:{ front:aiR0(s.front), fi:aiR0(s.fi), total:aiR0(s.front + s.fi), forecast:t.gross || null, tracking:I.mtd.trackGross }, perVehicle:{ front:aiR0(I.mtd.frontPvr), fi:aiR0(I.mtd.fiPvr), total:aiR0(I.mtd.pvr) },
-      delivered:I.mtd.delivered, dealsAtOrBelowZeroFront:I.mtd.losingN, rdr:{ target:t.rdr || null } },
+      delivered:I.mtd.delivered, dealsAtOrBelowZeroFront:I.mtd.losingN },
     lastMonth:prev ? { name:stMonthName(prevM), units:aiR1(prev.units), new:aiR1(prev.N), used:aiR1(prev.U), gross:aiR0(prev.gross), delivered:prev.delivered } : null,
     yesterday:Object.assign({ date:yd }, aiPeriod(yd, yd)), lastSaturday:Object.assign({ date:sat }, aiPeriod(sat, sat)), thisWeek:aiPeriod(aiWeekStart(), today),
-    today:{ deliveriesBooked:stAllDeals().filter(function(d){ return d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today; }).length,
-      appointments:Object.keys(((ST.appts[today] || {}).people) || {}).reduce(function(a, k){ var x = ST.appts[today].people[k]; return a + (Number(x.new) || 0) + (Number(x.used) || 0); }, 0) },
-    appointmentsThisMonth:{ set:appts.set, shown:appts.shown, sold:appts.sold },
+    today:{ deliveriesBooked:stAllDeals().filter(function(d){ return d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today; }).length },
     salespeople:people, carryOvers:carry, carryOversDeliveredThisMonth:stCarryDelivered(month).length, dealsThisMonth:deals,
     yearToDate:{ year:I.year, units:aiR1(I.ytd.units), gross:aiR0(I.ytd.gross), delivered:I.ytd.delivered,
       yearEndProjection:{ units:I.proj.units.pace, new:I.proj.N.pace, used:I.proj.U.pace, gross:I.proj.gross.pace, delivered:I.proj.delivered.pace, atLast3MonthsPaceUnits:I.proj.units.last3 } } };
@@ -121,7 +118,7 @@ function viewBrief(){
     (rec ? '<button type="button" class="st-gbtn" data-st="aibrief"' + (AIB.busy ? " disabled" : "") + '>' + (AIB.busy ? "Writing…" : "Write a new one") + '</button>' : '') + '</div></div></div>';
   if (AIB.err) head += '<div class="st-err">' + esc(AIB.err) + '</div>';
   if (!rec){
-    return head + '<div class="st-card ai-brief-empty"><span class="st-ico p">✦</span><div><b>Today\'s brief hasn\'t been written yet.</b><div class="ins-sub" style="font-size:12px;margin-top:2px">The AI reads this month\'s numbers (sales, pace, gross, appointments, carry-overs; never customer details) and writes what\'s working, what needs attention and who needs help today. It\'s saved for the day, so the GM and Master see the same one.</div></div>' +
+    return head + '<div class="st-card ai-brief-empty"><span class="st-ico p">✦</span><div><b>Today\'s brief hasn\'t been written yet.</b><div class="ins-sub" style="font-size:12px;margin-top:2px">The AI reads this month\'s numbers (sales, pace, gross, carry-overs; never customer details) and writes what\'s working, what needs attention and who needs help today. It\'s saved for the day, so the GM and Master see the same one.</div></div>' +
       '<button type="button" class="btn primary" data-st="aibrief"' + (AIB.busy || AIB.loading ? " disabled" : "") + '>' + (AIB.busy ? "Writing the brief…" : "✦ Write today's brief") + '</button></div>' +
       (AIB.busy ? '<div class="st-ai-prog"><i></i></div>' : '') + (aiReady() ? '' : '<div class="ins-sub" style="margin-top:6px">Loading the store\'s numbers…</div>');
   }
@@ -136,7 +133,7 @@ function viewBrief(){
     '<div class="st-card"><div class="st-ch"><span class="st-ico r">▲</span><h3>Needs help<small>from the brief</small></h3></div>' +
       ((b.help || []).length ? b.help.map(function(h){ return '<div class="st-help ins-li">' + stAv(h.name) + '<b>' + esc(h.name) + '</b><span></span></div>'; }).join("") : '<div class="st-empty">Nobody flagged.</div>') +
       '<div class="st-ch" style="margin-top:12px"><span class="st-ico b">⏱</span><h3>Today<small>from the Sales Tracker</small></h3></div>' +
-      '<div class="ins-sub" style="font-size:12px">' + (function(){ var f = aiFacts(); return f.today.deliveriesBooked + ' deliver' + (f.today.deliveriesBooked === 1 ? "y" : "ies") + ' booked · ' + f.carryOvers.length + ' carry-over' + (f.carryOvers.length === 1 ? "" : "s") + ' open · ' + f.today.appointments + ' appointment' + (f.today.appointments === 1 ? "" : "s") + ' entered'; })() + '</div></div></div>';
+      '<div class="ins-sub" style="font-size:12px">' + (function(){ var f = aiFacts(); return f.today.deliveriesBooked + ' deliver' + (f.today.deliveriesBooked === 1 ? "y" : "ies") + ' booked · ' + f.carryOvers.length + ' carry-over' + (f.carryOvers.length === 1 ? "" : "s") + ' open'; })() + '</div></div></div>';
 }
 
 /* ---- chat (right-hand panel) ---- */
@@ -154,7 +151,7 @@ function aiChatPanel(){
   if (!AIC.open || !aiCan() || !state.config) return "";
   aiEnsure();
   var body = !aiOn() ? aiOffNote() : (AIC.msgs.length ? AIC.msgs.map(function(m){ return '<div class="ai-msg ' + (m.role === "user" ? "u" : "a") + '">' + (m.role === "user" ? esc(m.content).replace(/\n/g, "<br>") : aiMd(m.content)) + '</div>'; }).join("") :
-    '<div class="ai-hello"><b>Ask about ' + esc(state.config.name || "the store") + '</b><div>Answers come from this store\'s Sales Tracker: units, pace, gross, appointments, lead sources and carry-overs. Customer details are never sent.</div></div>' +
+    '<div class="ai-hello"><b>Ask about ' + esc(state.config.name || "the store") + '</b><div>Answers come from this store\'s Sales Tracker: units, pace, gross, lead sources, close types and carry-overs. Customer details are never sent.</div></div>' +
     '<div class="ai-chips">' + AI_CHIPS.map(function(c){ return '<button type="button" data-st="aichip" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join("") + '</div>') +
     (AIC.busy ? '<div class="ai-msg a ai-typing"><i></i><i></i><i></i></div>' : '');
   if (AIC.scroll){ AIC.scroll = false; setTimeout(function(){ var l = document.querySelector(".ai-log"); if (l) l.scrollTop = l.scrollHeight; }, 0); }
