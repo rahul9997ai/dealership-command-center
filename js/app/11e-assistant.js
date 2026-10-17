@@ -117,7 +117,7 @@ function viewBrief(){
   var rec = AIB.rec, b = rec && rec.brief;
   var head = '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Dashboard · Morning brief</div><h2>' + esc(aiDayName(stToday())) + '</h2><div class="st-hsub">' + esc(state.config.name || "") +
     (rec ? ' · written ' + esc(new Date(rec.at).toLocaleTimeString("en-CA", { hour:"numeric", minute:"2-digit" })) + (rec.by ? ' by ' + esc(rec.by) : '') : ' · written by AI from the Sales Tracker\'s numbers when you ask') + '</div></div>' +
-    '<div class="st-actions"><button type="button" class="st-gbtn" data-st="aimail">✉ Morning email</button><button type="button" class="st-gbtn" data-st="aichat">✦ Ask AI</button>' +
+    '<div class="st-actions">' +
     (rec ? '<button type="button" class="st-gbtn" data-st="aibrief"' + (AIB.busy ? " disabled" : "") + '>' + (AIB.busy ? "Writing…" : "Write a new one") + '</button>' : '') + '</div></div></div>';
   if (AIB.err) head += '<div class="st-err">' + esc(AIB.err) + '</div>';
   if (!rec){
