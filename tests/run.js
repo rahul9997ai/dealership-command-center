@@ -549,6 +549,29 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   eq("IMP Sch. Delivery read", sh.rows[2].deal.status, "scheduled");
   eq("IMP the same row gives the same id", C.impLogSheet("September 2026", rows, { type:"Used" }).rows[0].deal.id, d0.id);
   eq("IMP a sheet without a sales log is ignored", C.impLogSheet("Read Me", [["Hello"], ["World"]], {}), null);
+  eq("IMP pre-owned file name = Used", C.impTypeFromName("2026 NISSAN PRE-OWNED LOG.xlsx"), "Used");
+  eq("IMP new car file name = New", C.impTypeFromName("2026 New Car Log.xlsx"), "New");
+  eq("IMP a neutral name decides nothing", C.impTypeFromName("Sales log.xlsx"), null);
+  eq("IMP auto type from the file name", C.impLogSheet("September 2026", rows, { type:"auto", file:"2026 NISSAN PRE-OWNED LOG.xlsx" }).rows[0].deal.type, "Used");
+  const nl = [["NEW VEHICLE SALES — OCTOBER 2026"], ["Deal Date","Stk","Buyer","Sales Person","Sales Person 2","Year Make Model","Front End Gross","F&I Income","Bank","Del Date","Status"],
+    ["10/03/2026","N24001","Dana Wu","Arun","Bilal","2026 Rogue SV","$1,850","1,200","TD","10/06/2026","Delivered"],
+    ["10/04/2026","N24002","Sam Ko","Thinh","","2026 Kicks","(300)","","","","Sold"]];
+  const ns = C.impLogSheet("Sheet1", nl, { type:"auto", file:"New Car Log 2026.xlsx" });
+  eq("IMP different headings recognised", ns && ns.rows.length, 2);
+  eq("IMP New from the file name", ns.rows[0].deal.type, "New");
+  eq("IMP a second salesperson splits 50/50", ns.rows[0].deal.salespeople.length + ":" + ns.rows[0].deal.salespeople[1].share, "2:0.5");
+  eq("IMP delivery date column used", ns.rows[0].deal.deliveredDate, "2026-10-06");
+  eq("IMP F&I income read as F&I gross", ns.rows[0].deal.fiGross, 1200);
+  eq("IMP Sold status = pending", ns.rows[1].deal.status, "pending");
+  eq("IMP year from the title row", ns.month, "2026-10");
+  const nm = C.impLogSheet("Sheet1", nl, { type:"auto", file:"New Car Log 2026.xlsx", headMap:{ "bank":"", "front end gross":"fiGross", "f&i income":"frontGross" } });
+  eq("IMP a corrected column wins", nm.rows[0].deal.frontGross + ":" + nm.rows[0].deal.fiGross, "1200:1850");
+  eq("IMP a column can be switched off", nm.rows[0].deal.lender, "");
+  const odd = [["Who","Unit","When","Gross"], ["Arun","N1","2026-10-02","500"]];
+  eq("IMP an unknown layout isn't guessed", C.impLogSheet("Sheet1", odd, {}), null);
+  const forced = C.impLogSheet("Sheet1", odd, { headerRow:C.impGuessHeader(odd), headMap:{ who:"sp", unit:"stockNo", when:"soldDate", gross:"frontGross" } });
+  eq("IMP a tab read by hand with the columns picked", forced.rows[0].deal.salespeople[0].name + ":" + forced.rows[0].deal.soldDate + ":" + forced.rows[0].deal.frontGross, "ARUN:2026-10-02:500");
+  eq("IMP no type anywhere is flagged", forced.typeUnknown, true);
   const perf = C.impPerfSheet("SALES PERFORMANCE", [["AUGUST 2026 SALES PERFORMANCE","","","","","","","","","","","Current Selling Day",25], [],
     ["Salesperson","Target N","Target U","Target Total","Sold N","Sold U","Sold Total"], ["DEALERSHIP",50,40,90,56,39,95], ["ARUN",10,8,18,7,12,19], ["ABBAS",10,8,18,17,6,23], [], ["HOUSE",0,0,0,3,3,6]]);
   eq("IMP perf month from the title", perf.month, "2026-08");

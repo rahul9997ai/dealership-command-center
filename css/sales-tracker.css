@@ -240,3 +240,7 @@ input.st-gsel::placeholder{color:#cbd5e1}
 .st-table .st-pill.carryfrom{display:table;margin:3px 0 0}
 .st-pills{display:inline-flex;flex-direction:column;align-items:flex-start;gap:3px}
 .st-pills .st-pill.carryfrom{margin-left:0}
+.st-colmap div{grid-template-columns:minmax(0,1fr) 18px minmax(0,1.25fr)}
+.stx .st-colmap select.st-mapsel{width:100%;text-align:left;font-size:12px;padding:4px 6px}
+.st-colmap div.off span{color:var(--muted)}
+.st-colmap div.off select.st-mapsel{color:var(--muted);border-style:dashed}
