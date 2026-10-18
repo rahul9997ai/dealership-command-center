@@ -534,3 +534,4 @@ select.ai-sel{width:100%;text-align:left}
 .st-item .st-act:hover{color:var(--blue);background:rgba(29,99,237,.08)}
 
 .st-alias{border:0;background:none;padding:0;color:var(--blue);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
+.st-pulse{display:inline-block;margin-left:5px;padding:0 5px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.02em;color:var(--blue);background:var(--info-bg);border:1px solid var(--border);vertical-align:1px}

@@ -273,6 +273,8 @@ function stItem(d, lead, o){
     (o.noVehicle ? '' : stE(d, "vehicle", esc(d.vehicle || "—"), "st-veh")) + (o.after || '') +
     '<span class="st-sp">' + stE(d, "sp", stSpText(d)) + '</span><button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Open the whole deal" aria-label="Open the whole deal">✎</button></div>';
 }
+/* delivered through Axiom Pulse (see 11g-pulse-link.js) */
+function stPulseTag(d){ return d && d.flags && d.flags.pulse && (d.status === "delivered" || d.status === "rdr") ? ' <span class="st-pulse" title="Delivered in Pulse">Pulse</span>' : ""; }
 function stCarryCard(carry){
   var cur = stToday().slice(0, 7), from = {};
   carry.forEach(function(d){ var m = String(d.soldDate).slice(0, 7); from[m] = (from[m] || 0) + 1; });
@@ -502,7 +504,7 @@ function stViewLog(){
       c("frontGross", "r num", '<b>' + (d.frontGross === null || d.frontGross === undefined ? "—" : stMoney(d.frontGross)) + '</b>') +
       c("fiGross", "r num", '<b>' + (d.fiGross === null || d.fiGross === undefined ? "—" : stMoney(d.fiGross)) + '</b>') +
       c("status", "l", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>') +
-      c("delivery", "l", '<span style="font-size:12px;color:var(--text-2)">' + (esc(del) || '<span style="color:var(--muted)">—</span>') + '</span>') +
+      c("delivery", "l", '<span style="font-size:12px;color:var(--text-2)">' + (esc(del) || '<span style="color:var(--muted)">—</span>') + '</span>' + stPulseTag(d)) +
       '<td class="r"><span class="st-acts">' + '<button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Open the whole deal" aria-label="Open the whole deal">✎</button>' +
       (stNextStatus(d.status) ? '<button type="button" class="st-act go" data-st="next" data-id="' + esc(d.id) + '" title="Move to ' + stLbl(stNextStatus(d.status)) + '">→ ' + stLbl(stNextStatus(d.status)) + '</button>' : '') +
       '<button type="button" class="st-act del" data-st="delrow" data-id="' + esc(d.id) + '" title="Delete" aria-label="Delete">✕</button></span></td></tr>'; };

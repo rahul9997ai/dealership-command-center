@@ -25,7 +25,7 @@ function routeView(){
     case "reports": return viewReports();
     case "users": return viewUsers();
     case "dealerships": return V.viewDashboard();
-    case "settings": return viewSettings() + viewAiSettings() + viewDriveSettings();
+    case "settings": return viewSettings() + viewAiSettings() + viewDriveSettings() + viewPulseSettings();
     default: return V.viewDashboard();
   }
 }

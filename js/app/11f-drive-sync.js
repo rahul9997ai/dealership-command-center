@@ -83,6 +83,9 @@ function dsSyncFile(file, force){
           var first = stKey(d.fiManager).split(/\s+/)[0], fm = first ? fms.filter(function(m){ return stKey(m.name).split(/\s+/)[0] === first; }) : [];
           if (fm.length === 1){ d.fiUserId = fm[0].id; d.fiManager = fm[0].name; }
           var old = mine[d.id] || other[d.id];
+          if (old && old.flags && old.flags.pulse && (old.status === "delivered" || old.status === "rdr") && C.saleIsOpen(d)){
+            d.status = "delivered"; d.deliveredDate = old.deliveredDate; d.statusDates = Object.assign({}, d.statusDates || {}, { delivered:old.deliveredDate });
+            d.flags = Object.assign({}, d.flags || {}, { pulse:old.flags.pulse }); }
           if (old && old.source === src && dsSig(old) === dsSig(Object.assign({}, d, { createdAt:old.createdAt }))) return;
           d.createdAt = old ? old.createdAt : now; d.createdBy = old ? old.createdBy : "Google Drive sync"; d.updatedAt = now; d.updatedBy = "Google Drive sync (" + (me.name || "") + ")";
           write.push(d); if (old) updated++; else added++;
@@ -130,6 +133,7 @@ function dsExclude(d){
 }
 function dsLastSync(){ var t = 0; Object.keys(DS.status).forEach(function(k){ var x = Date.parse(DS.status[k].synced_at || ""); if (x > t) t = x; }); return t; }
 function dsBanner(){
+  if (typeof plAuto === "function") plAuto();
   if (!dsOn()) return "";
   dsAuto();
   var t = dsLastSync();
