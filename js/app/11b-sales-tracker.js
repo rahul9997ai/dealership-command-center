@@ -171,6 +171,40 @@ function stPerf(month, mode){
 function stHue(name){ var k = stKey(name), h = 0; for (var i = 0; i < k.length; i++) h = (h*31 + k.charCodeAt(i)) >>> 0; return /^(HOUSE|MOBILE)/.test(k) ? "#64748b" : ST_HUES[h % ST_HUES.length]; }
 function stAv(name, big){ if (!big) return ""; var k = stKey(name), c = stHue(k), ini = k.split(/[\s/]+/).filter(Boolean).map(function(w){ return w[0]; }).join("").slice(0, 2) || "?";
   return '<span class="st-av" style="background:' + c + '">' + esc(ini) + '</span>'; }
+/* Salesperson photos (config.spPhotos[NAME], a small square JPEG): shown on the Showroom TV.
+   Added on Targets & selling days; without one, a monogram portrait is shown. */
+function stPhoto(name){ var ph = state.config && state.config.spPhotos; return (ph && ph[stKey(name)]) || null; }
+function stPortrait(name, size, ring){
+  var k = stKey(name), url = stPhoto(k), ini = k.split(/[\s/]+/).filter(Boolean).map(function(w){ return w[0]; }).join("").slice(0, 2) || "?";
+  return '<span class="st-por' + (url ? "" : " mono") + '" style="width:' + size + 'px;height:' + size + 'px;' + (ring ? "--ring:" + ring + ";" : "") + 'font-size:' + Math.round(size*0.36) + 'px">' +
+    (url ? '<img src="' + esc(url) + '" alt="' + esc(k) + '">' : '<span>' + esc(ini) + '</span>') + '</span>';
+}
+/* square-crop and shrink a picked photo to 320 px, then save it for that salesperson */
+function stPhotoPick(name, file){
+  if (!file || !/^image\//.test(file.type)){ toast("Choose a photo (JPG, PNG or WebP).", "err"); return; }
+  var fr = new FileReader();
+  fr.onload = function(){
+    var img = new Image();
+    img.onload = function(){
+      var side = Math.min(img.width, img.height), c = document.createElement("canvas"); c.width = c.height = 320;
+      /* keep the top of a portrait (faces sit high), centre a landscape */
+      var sx = (img.width - side)/2, sy = img.height > img.width ? Math.max(0, (img.height - side)*0.2) : (img.height - side)/2;
+      c.getContext("2d").drawImage(img, sx, sy, side, side, 0, 0, 320, 320);
+      state.config.spPhotos = Object.assign({}, state.config.spPhotos || {}); state.config.spPhotos[stKey(name)] = c.toDataURL("image/jpeg", 0.82);
+      commit(); toast("Photo saved for " + stKey(name) + ".", "ok"); render();
+    };
+    img.onerror = function(){ toast("That photo couldn't be read.", "err"); };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(file);
+}
+function stPhotoSlot(name){
+  if (!name) return "";
+  var has = !!stPhoto(name);
+  return '<span class="st-phslot"><label class="st-phup" title="' + (has ? "Change the photo (shown on the Showroom TV)" : "Add a photo for the Showroom TV") + '">' + (has ? stPortrait(name, 30) : '<span class="st-phcam">＋</span>') +
+    '<input type="file" accept="image/png,image/jpeg,image/webp" data-sphoto="' + esc(stKey(name)) + '" style="display:none"></label>' +
+    (has ? '<button type="button" class="st-phdel" data-st="sphotodel" data-v="' + esc(stKey(name)) + '" title="Remove the photo" aria-label="Remove the photo">✕</button>' : '') + '</span>';
+}
 function stBadge(status){ return status ? '<span class="st-badge ' + status + '">' + (status === "ahead" ? "Ahead" : status === "pace" ? "Pace" : "Behind") + '</span>' : '<span class="st-badge store">Store only</span>'; }
 function stRing(pct, size, c1, c2, label, sub, dark){
   dark = dark === "tv";
@@ -326,8 +360,8 @@ function stTV(){
   return '<div class="st-tv"><button type="button" class="st-gbtn st-tvx" data-st="tvexit">Exit TV view</button>' +
     '<div class="st-tvhead"><div><div class="st-eyebrow">' + esc(state.config.name || "") + ' · Showroom</div><div class="st-tvt">' + esc(stMonthName(month).toUpperCase()) + ' LEADERBOARD</div><div class="st-tvs">Selling day ' + p.day + ' of ' + p.total + ' · updates every 2 minutes</div></div>' +
       '<div style="display:flex;gap:14px;align-items:center">' + stRing(s.tT ? s.sT/s.tT : 0, 128, "#fde68a", "#f59e0b", stF(s.sT), s.tT ? "of " + s.tT : "sold", "tv") + '<div><div class="st-tvs">Store</div><div class="st-tvt" style="font-size:26px">' + (s.kT === null ? "" : "Tracking " + s.kT) + '</div>' + (s.status ? stBadge(s.status) : "") + '</div></div></div>' +
-    (people.length ? '<div class="st-podium">' + pod.map(function(r, i){ return r ? '<div class="st-pod"><div class="st-pav">' + stAv(r.name, true) + '</div><div class="st-pn">' + esc(r.name) + '</div><div class="st-ps">' + stF(r.sT) + ' <span>' + (r.tT ? "/ " + r.tT : "") + '</span></div><div class="st-pblk" style="height:' + h[i] + 'px;background:linear-gradient(180deg,' + medal[i] + ',rgba(255,255,255,.08))"><span>' + place[i] + '</span></div></div>' : '<div></div>'; }).join("") + '</div>' +
-      '<div class="st-tvlist">' + people.slice(3).map(function(r, i){ return '<div class="st-tvrow"><span class="st-rk">' + (i + 4) + '</span>' + stAv(r.name, true) + '<b>' + esc(r.name) + '</b><span class="st-tvn">' + stF(r.sT) + ' <span>' + (r.tT ? "/ " + r.tT : "") + '</span></span><div class="st-bar3"><i style="width:' + (r.tT ? Math.min(100, r.sT/r.tT*100) : 0) + '%"></i></div><span class="st-tvs">N ' + stF(r.sN) + ' · U ' + stF(r.sU) + '</span></div>'; }).join("") + '</div>' :
+    (people.length ? '<div class="st-podium">' + pod.map(function(r, i){ return r ? '<div class="st-pod"><div class="st-pav">' + stPortrait(r.name, i === 1 ? 132 : 104, ["#cbd5e1","#fcd34d","#f59e0b"][i]) + '</div><div class="st-pn">' + esc(r.name) + '</div><div class="st-ps">' + stF(r.sT) + ' <span>' + (r.tT ? "/ " + r.tT : "") + '</span></div><div class="st-pblk" style="height:' + h[i] + 'px;background:linear-gradient(180deg,' + medal[i] + ',rgba(255,255,255,.08))"><span>' + place[i] + '</span></div></div>' : '<div></div>'; }).join("") + '</div>' +
+      '<div class="st-tvlist">' + people.slice(3).map(function(r, i){ return '<div class="st-tvrow"><span class="st-rk">' + (i + 4) + '</span>' + stPortrait(r.name, 44) + '<b>' + esc(r.name) + '</b><span class="st-tvn">' + stF(r.sT) + ' <span>' + (r.tT ? "/ " + r.tT : "") + '</span></span><div class="st-bar3"><i style="width:' + (r.tT ? Math.min(100, r.sT/r.tT*100) : 0) + '%"></i></div><span class="st-tvs">N ' + stF(r.sN) + ' · U ' + stF(r.sU) + '</span></div>'; }).join("") + '</div>' :
       '<div class="st-tvs" style="margin-top:30px;font-size:18px">Set this month\'s targets and log deals to fill the leaderboard.</div>') + '</div>';
 }
 function stTvTick(){
@@ -632,7 +666,7 @@ function stViewTargets(){
     (ST.tDirty ? '<div class="st-warn">You have unsaved changes to ' + stMonthName(month) + '\'s targets.</div>' : '') +
     '<div class="st-g2"><div class="st-table" style="margin:0"><div class="st-th"><div><h2>SALESPERSON TARGETS</h2><div class="st-hsub">units · New and Used · HOUSE and MOBILE/HOUSE are always there (store only)</div></div></div>' +
       '<div class="st-tw"><table><thead><tr><th class="l">Salesperson</th><th>New</th><th>Used</th><th>Total</th><th>Weekly N · U</th><th></th></tr></thead><tbody>' +
-      (t.people.length ? t.people.map(function(p, i){ return '<tr><td class="l"><span class="st-who">' + stAv(p.name || "?") + '<input class="st-tin" style="width:150px;text-align:left" data-stt="name:' + i + '" value="' + esc(p.name || "") + '" placeholder="Name"></span></td>' +
+      (t.people.length ? t.people.map(function(p, i){ return '<tr><td class="l"><span class="st-who">' + stPhotoSlot(p.name) + '<input class="st-tin" style="width:150px;text-align:left" data-stt="name:' + i + '" value="' + esc(p.name || "") + '" placeholder="Name"></span></td>' +
           '<td class="bn"><input class="st-tin" inputmode="numeric" data-stt="n:' + i + '" value="' + esc(p.n === undefined ? "" : p.n) + '"></td><td class="bu"><input class="st-tin" inputmode="numeric" data-stt="u:' + i + '" value="' + esc(p.u === undefined ? "" : p.u) + '"></td>' +
           '<td class="bt">' + ((Number(p.n) || 0) + (Number(p.u) || 0)) + '</td><td style="font-size:11.5px;color:var(--muted)">' + weekly(Number(p.n) || 0) + ' · ' + weekly(Number(p.u) || 0) + '</td>' +
           '<td><button type="button" class="btn sm ghost" data-st="rmperson" data-v="' + i + '" title="Remove" aria-label="Remove ' + esc(p.name || "") + '">×</button></td></tr>'; }).join("") :
@@ -744,6 +778,10 @@ function stAct(act, el){
   switch (act){
     case "view": ST.view = v; ST.err = null; if (v !== "today" && !ST.month) ST.month = stToday().slice(0, 7); window.scrollTo(0, 0); break;
     case "perfmode": ST.perf = v; break;
+    case "sphotodel":
+      askConfirm("Remove " + v + "'s photo?", "The Showroom TV shows their initials instead.", "Remove", function(){
+        state.config.spPhotos = Object.assign({}, state.config.spPhotos || {}); delete state.config.spPhotos[v]; commit(); toast("Photo removed.", "ok"); render(); });
+      return;
     case "todaytab": ST.todayTab = v; ST.todayFilter = null; ST.todayAll = false; break;
     case "todayfilter": ST.todayFilter = v || null; ST.todayAll = false; break;
     case "todayall": ST.todayAll = !ST.todayAll; break;
@@ -868,6 +906,7 @@ function stField(ev){
   var el = ev.target; if (!el || !el.getAttribute) return;
   if (el.getAttribute("data-st") === "aion"){ if (ev.type !== "change") return; state.config.ai = Object.assign({ cap:10 }, state.config.ai || {}, { on:!!el.checked }); commit(); toast("AI features are " + (el.checked ? "on" : "off") + ".", "ok"); return; }
   if (el.getAttribute("data-st-cap")){ if (ev.type !== "change") return; var cv = Math.max(1, Math.round(Number(el.value) || 10)); state.config.ai = Object.assign({}, state.config.ai || {}, { cap:cv }); commit(); toast("Monthly AI cap set to $" + cv + ".", "ok"); return; }
+  if (el.getAttribute("data-sphoto")){ if (ev.type === "change" && el.files && el.files[0]) stPhotoPick(el.getAttribute("data-sphoto"), el.files[0]); el.value = ""; return; }
   if (el.getAttribute("data-stimp") === "file"){ if (ev.type === "change" && el.files && el.files[0]) stImpRead(el.files[0]); return; }
   var k = el.getAttribute("data-stf"), tk = el.getAttribute("data-stt");
   if (k){
