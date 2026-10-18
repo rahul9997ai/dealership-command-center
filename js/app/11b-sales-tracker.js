@@ -275,6 +275,13 @@ function stItem(d, lead, o){
 }
 /* delivered through Axiom Pulse (see 11g-pulse-link.js) */
 function stPulseTag(d){ return d && d.flags && d.flags.pulse && (d.status === "delivered" || d.status === "rdr") ? ' <span class="st-pulse" title="Delivered in Pulse">Pulse</span>' : ""; }
+/* caution: same stock # on another customer, or this customer on another stock # */
+function stConflictNote(e){
+  var cf = C.saleConflicts(e, stAllDeals()); if (!cf.length) return "";
+  return '<div class="st-warn"><b>Check before saving.</b> ' + cf.slice(0, 2).map(function(x){ var o = x.deal;
+    return x.why === "stock" ? 'Stock # ' + esc(o.stockNo) + ' is already on <b>' + esc(o.customer || "another customer") + '</b> (' + stDay(o.soldDate) + ', ' + stLbl(o.status) + ', ' + esc(stKey((o.salespeople && o.salespeople[0] && o.salespeople[0].name) || "")) + ').'
+      : '<b>' + esc(o.customer) + '</b> already has an open deal on stock # ' + esc(o.stockNo) + ' (' + stDay(o.soldDate) + ', ' + stLbl(o.status) + '). Is this the same deal?'; }).join(" ") + '</div>';
+}
 function stCarryCard(carry){
   var cur = stToday().slice(0, 7), from = {};
   carry.forEach(function(d){ var m = String(d.soldDate).slice(0, 7); from[m] = (from[m] || 0) + 1; });
@@ -593,6 +600,7 @@ function stCellBubble(){
     ((d.salespeople || []).length > 1 ? '<div class="st-bnote">Split deal: this changes the first salesperson. Use ✎ to change the split.</div>' : '');
   else body = '<label class="st-bf"><input ' + (f === "frontGross" || f === "fiGross" ? 'inputmode="decimal" placeholder="$"' : '') + ' data-stf="cell.v" value="' + esc(c.v) + '"></label>';
   var synced = String(d.source || "").indexOf("drive:") === 0;
+  if (f === "stockNo" || f === "customer"){ var tryD = Object.assign({}, d); tryD[f] = c.v; body += stConflictNote(tryD); }
   return '<div class="st-bubble" data-st-stop="1" style="top:' + Math.round(c.top) + 'px;left:' + Math.round(c.left) + 'px" role="dialog" aria-label="' + esc(ST_CELL_TITLE[f]) + '">' +
     '<div class="st-bh"><b>' + esc(ST_CELL_TITLE[f]) + '</b><span>' + esc(d.customer || d.stockNo || "") + '</span><button type="button" class="st-bx" data-st="cellclose" aria-label="Close">✕</button></div>' + body +
     (c.err ? '<div class="st-berr">' + esc(c.err) + '</div>' : '') + (synced ? '<div class="st-bnote">From the Google Drive sales log: the next sync replaces changes made here.</div>' : '') +
@@ -635,7 +643,7 @@ function stDrawer(){
       '<div class="st-steps">' + ST_STEPS.map(function(s, i){ return '<button type="button" data-st="status" data-v="' + s + '" class="' + (e.status === s ? "cur" : idx > i ? "done" : "") + '">' + ST_LABEL[s] + '</button>'; }).join("") +
         ST_OTHER.map(function(s){ return '<button type="button" data-st="status" data-v="' + s + '" class="' + (e.status === s ? "cur" : "") + (s !== "carry" ? " neg" : "") + '">' + ST_LABEL[s] + '</button>'; }).join("") + '</div>' +
       (String(e.source || "").indexOf("drive:") === 0 ? '<div class="st-warn">This deal comes from the Google Drive sales log (' + esc(String(e.importedFrom || "").split(" · ")[0]) + '). Change it in the Excel file: edits made here are replaced at the next sync. Deleting it here keeps it out of later syncs.</div>' : '') +
-      (dup.length ? '<div class="st-warn">Stock # ' + esc(e.stockNo) + ' is already in the log (' + esc(dup[0].customer || "") + ', ' + stDay(dup[0].soldDate) + ', ' + stLbl(dup[0].status) + '). Saving adds it again.</div>' : '') +
+      (dup.length && C.saleCustKey(dup[0]) === C.saleCustKey(e) ? '<div class="st-warn">Stock # ' + esc(e.stockNo) + ' is already in the log for this customer (' + stDay(dup[0].soldDate) + ', ' + stLbl(dup[0].status) + '). A deal is logged once and carries over until it\'s delivered: open that one instead of adding it again.</div>' : stConflictNote(e)) +
       '<div class="st-dcols"><div class="st-dcol"><div class="st-dsec">The deal</div>' +
         '<div class="st-r3"><label class="f"><span>Date sold</span><input type="date" data-stf="e.soldDate" value="' + esc(e.soldDate) + '"></label><label class="f"><span>Stock #</span><input data-stf="e.stockNo" value="' + esc(e.stockNo) + '"></label><label class="f"><span>Customer #</span><input data-stf="e.customerNo" value="' + esc(e.customerNo) + '"></label></div>' +
         '<label class="f"><span>Customer</span><input data-stf="e.customer" value="' + esc(e.customer) + '"></label>' +
@@ -945,7 +953,7 @@ function stField(ev){
     if (k === "apptDay"){ if (ev.type !== "change" || !val) return; ST.apptDay = val; render(); return; }
     if (k === "insYear"){ if (ev.type !== "change") return; INS.year = Number(val) || null; render(); return; }
     if (k === "impTab" || k === "impShow"){ if (ev.type !== "change") return; stImp()[k === "impTab" ? "tab" : "show"] = val; render(); return; }
-    if (k === "cell.v" || k === "cell.v2"){ if (ST.cell){ ST.cell[k === "cell.v" ? "v" : "v2"] = val; } return; }
+    if (k === "cell.v" || k === "cell.v2"){ if (ST.cell){ ST.cell[k === "cell.v" ? "v" : "v2"] = val; if (ST.cell.f === "stockNo" || ST.cell.f === "customer"){ clearTimeout(ST._cft); ST._cft = setTimeout(render, 400); } } return; }
     if (k === "aiDraft"){ AIC.draft = val; return; }
     if (k === "aiBriefQ"){ AIC.briefQ = val; return; }
     if (k === "aiNote"){ if (AIM) AIM.note = val; if (ev.type === "change") render(); return; }
@@ -958,7 +966,7 @@ function stField(ev){
     if (k.indexOf("e.") === 0 && ST.edit){
       ST.edit[k.slice(2)] = val;
       /* redraw only where the layout depends on it */
-      if (ev.type === "change" && (k === "e._split" || k === "e.stockNo" || k === "e._sp1" || k === "e._fiPick")) render();
+      if (ev.type === "change" && (k === "e._split" || k === "e.stockNo" || k === "e.customer" || k === "e._sp1" || k === "e._fiPick")) render();
     }
     return;
   }

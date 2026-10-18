@@ -547,6 +547,18 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
     { deal:{ id:"d", customer:"Kyle Thackwary", soldDate:"2026-10-02", stockNo:"T21100", status:"pending", salespeople:[{ name:"ABBAS", share:1 }] }, tab:"Oct" }]);
   eq("IMP a re-logged deal is one deal (latest tab wins)", mr.rows.map((r) => r.deal.id + ":" + r.deal.status).join(","), "c:delivered,b:scheduled,d:pending");
   eq("IMP merged count", mr.merged, 2);
+  const mr2 = C.impMerge([
+    { deal:{ id:"s1", customer:"Muhammad Suhaib", soldDate:"2026-09-26", stockNo:"20631", status:"pending", salespeople:[{ name:"ABBAS", share:1 }] } },
+    { deal:{ id:"n1", customer:"Rasha Abdul Amir", soldDate:"2026-08-10", stockNo:"LOCATE", status:"approved", salespeople:[{ name:"ABBAS", share:1 }] } },
+    { deal:{ id:"x1", customer:"Old Buyer", soldDate:"2026-08-01", stockNo:"20500", status:"delivered", salespeople:[{ name:"ARUN", share:1 }] } },
+    { deal:{ id:"s2", customer:"M. Suhaib", soldDate:"2026-10-01", stockNo:"20-631", status:"delivered", salespeople:[{ name:"ABBAS", share:1 }] } },
+    { deal:{ id:"n2", customer:"RASHA ABDUL-AMIR", soldDate:"2026-09-03", stockNo:"T21001", status:"approved", salespeople:[{ name:"ABBAS", share:1 }] } },
+    { deal:{ id:"x2", customer:"New Buyer", soldDate:"2026-09-15", stockNo:"20500", status:"pending", salespeople:[{ name:"ARUN", share:1 }] } }]);
+  eq("IMP re-logged with a new date: same stock # or same open customer = one deal; a delivered car's stock on a new customer stays separate",
+    mr2.rows.map((r) => r.deal.id).join(","), "s2,n2,x1,x2");
+  const cf = C.saleConflicts({ id:"z", customer:"Jane Roe", soldDate:"2026-10-05", stockNo:"20814" },
+    [{ id:"a", customer:"John Doe", soldDate:"2026-09-26", stockNo:"20814", status:"delivered" }, { id:"b", customer:"Jane Roe", soldDate:"2026-10-01", stockNo:"21000", status:"pending" }, { id:"c", customer:"Jane Roe", soldDate:"2025-01-01", stockNo:"1", status:"pending" }]);
+  eq("CONFLICT same stock other customer, same customer other stock", cf.map((x) => x.deal.id + ":" + x.why).join(","), "a:stock,b:customer");
   eq("IMP F&I dash = none", d1.fiGross, null);
   eq("IMP lead source matched", d1.leadSource, "Walk in");
   eq("IMP close type matched", d1.closeType, "Be-back");

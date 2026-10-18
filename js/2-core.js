@@ -1082,19 +1082,42 @@ function impMaskTab(rows, roster, top, tail){
   return { lines:lines, masked:masked, hidden:hidden };
 }
 /* One deal per sale across a workbook's tabs. Sales Managers often carry an unfinished deal onto next month's
-   tab (sometimes with the stock # filled in once the car is located), so rows with the same id, or the same
-   customer, sale date and salesperson, are one deal: the row from the latest tab wins.
+   tab, sometimes with a new date or with the stock # filled in once the car is located. A deal is logged once:
+   rows are the same deal when they have the same id; or the same customer, sale date and salesperson; or the
+   same stock # (unless the earlier row was closed for a different customer); or the same customer and salesperson
+   while the earlier row is still open. Re-logs must fall within 150 days. The row from the latest tab wins.
    rows: [{ deal, ... }] in tab order (oldest month first). Returns { rows, merged }. */
+function saleStockKey(s){ s = String(s || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return /\d/.test(s) && s.length >= 3 ? s : ""; }
+function saleCustKey(d){ return String((d && d.customer) || "").toUpperCase().replace(/[^A-Z]/g, ""); }
+function saleSpKey(d){ return saleKey((d && d.salespeople && d.salespeople[0] && d.salespeople[0].name) || ""); }
 function impMerge(rows){
-  var keyOf = function(d){ var c = String(d.customer || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return c && d.soldDate ? c + "|" + d.soldDate + "|" + saleKey((d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "") : null; };
-  var byId = {}, byKey = {}, order = [], merged = 0;
+  var keyOf = function(d){ var c = String(d.customer || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); return c && d.soldDate ? c + "|" + d.soldDate + "|" + saleSpKey(d) : null; };
+  var days = function(a, b){ return a && b ? (Date.parse(b) - Date.parse(a)) / 864e5 : 0; };
+  var near = function(p, d){ var g = days(p.soldDate, d.soldDate); return g >= -7 && g <= 150; };
+  var byId = {}, byKey = {}, byStock = {}, byName = {}, order = [], merged = 0;
   rows.forEach(function(r){
-    var k = keyOf(r.deal), prev = byId[r.deal.id] || (k && byKey[k]);
-    if (prev){ merged++; var at = order.indexOf(prev); order[at] = r; delete byId[prev.deal.id]; }
+    var d = r.deal, k = keyOf(d), stk = saleStockKey(d.stockNo), cu = saleCustKey(d), nm = cu.length >= 5 ? cu + "|" + saleSpKey(d) : "";
+    var prev = byId[d.id] || (k && byKey[k]);
+    if (!prev && stk && byStock[stk]){ var ps = byStock[stk].deal; if (near(ps, d) && (saleIsOpen(ps) || saleCustKey(ps) === cu)) prev = byStock[stk]; }
+    if (!prev && nm && byName[nm]){ var pn = byName[nm].deal; if (near(pn, d) && saleIsOpen(pn) && (!saleStockKey(pn.stockNo) || !stk || saleStockKey(pn.stockNo) === stk)) prev = byName[nm]; }
+    if (prev && order.indexOf(prev) !== -1){ merged++; order[order.indexOf(prev)] = r; delete byId[prev.deal.id]; }
     else order.push(r);
-    byId[r.deal.id] = r; if (k) byKey[k] = r;
+    byId[d.id] = r; if (k) byKey[k] = r; if (stk) byStock[stk] = r; if (nm) byName[nm] = r;
   });
   return { rows:order, merged:merged };
+}
+/* Caution before saving: the same stock # on a different customer, or the same customer on a different stock #
+   (open or recent deals only). Returns [{ deal, why }]. */
+function saleConflicts(d, all){
+  var stk = saleStockKey(d.stockNo), cu = saleCustKey(d), out = [];
+  (all || []).forEach(function(o){
+    if (!o || o.id === d.id) return;
+    var g = Math.abs((Date.parse(o.soldDate || "") - Date.parse(d.soldDate || "")) / 864e5); if (!(g <= 180)) return;
+    var ostk = saleStockKey(o.stockNo), ocu = saleCustKey(o);
+    if (stk && ostk === stk && cu && ocu && ocu !== cu && o.status !== "cancelled" && o.status !== "declined") out.push({ deal:o, why:"stock" });
+    else if (cu.length >= 5 && ocu === cu && stk && ostk && ostk !== stk && saleIsOpen(o)) out.push({ deal:o, why:"customer" });
+  });
+  return out;
 }
 /* Deals the AI read from a PDF or photo → the same rows the sales-log reader returns.
    result.deals[]: strings (see the ai-read function); unsure: field names the AI wasn't sure of. */
@@ -1124,7 +1147,7 @@ function impDocDeals(result, opts){
 }
 
 window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
-  impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
+  impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, saleConflicts:saleConflicts, saleStockKey:saleStockKey, saleCustKey:saleCustKey, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,
   productById:productById, priceFor:priceFor, taxRateFor:taxRateFor, payment:payment, periodsPerYear:periodsPerYear,
