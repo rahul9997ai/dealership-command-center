@@ -66,10 +66,20 @@ function aiFacts(){
     today:{ deliveriesBooked:stAllDeals().filter(function(d){ return d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today; }).length },
     salespeople:people, carryOvers:carry, carryOversDeliveredThisMonth:stCarryDelivered(month).length, dealsThisMonth:deals,
     pipeline:aiPipeline(),
+    weakLinks:(typeof stWeakLinks === "function" ? stWeakLinks(month) : []).map(function(w){ return w.who + ": " + w.text; }),
+    financialStatements:aiFinFacts(),
     byMonth:I.all.filter(function(r){ return r.month <= month; }).map(function(r){ return { month:r.month, units:aiR1(r.units), new:aiR1(r.N), used:aiR1(r.U), target:r.target || null, gross:aiR0(r.gross), delivered:r.delivered, logged:!!r.hasDeals }; }),
     salespeopleYearToDate:I.scores.ytd.filter(function(x){ return !C.saleStoreOnly(x.name); }).map(function(x){ return { name:x.name, units:aiR1(x.units), new:aiR1(x.N), used:aiR1(x.U), frontPerVehicle:aiR0(x.frontPvr), fiPerVehicle:aiR0(x.fiPvr), totalGross:aiR0(x.total), dealsAtOrBelowZeroFront:x.losingN || 0, yearEndUnits:x.yearEnd || 0 }; }),
     yearToDate:{ year:I.year, units:aiR1(I.ytd.units), gross:aiR0(I.ytd.gross), delivered:I.ytd.delivered,
       yearEndProjection:{ units:I.proj.units.pace, new:I.proj.N.pace, used:I.proj.U.pace, gross:I.proj.gross.pace, delivered:I.proj.delivered.pace, atLast3MonthsPaceUnits:I.proj.units.last3 } } };
+}
+/* the last 6 monthly financial statements (General Manager and Master only) */
+function aiFinFacts(){
+  if (!V.isAdmin() || typeof FIN === "undefined" || typeof finMonths !== "function") return null;
+  finLoad(); var ms = finMonths().slice(-6); if (!ms.length) return null;
+  return ms.map(function(m){ var r = FIN.rows[m], k = finKpis(r) || {};
+    return { month:m, totals:r.totals || {}, departments:(r.departments || []).map(function(d){ return { department:FIN_DEPT_LABEL[d.key] || d.name, sales:d.sales, gross:d.gross, expenses:d.expenses, net:d.net }; }),
+      operating:r.operating || {}, fixedAbsorptionPct:k.absorption === null || k.absorption === undefined ? null : Math.round(k.absorption*100), expensesPctOfGross:k.expPct === null || k.expPct === undefined ? null : Math.round(k.expPct*100) }; });
 }
 /* open deals by status and age, the ones waiting too long, and deliveries confirmed in Pulse this month */
 function aiPipeline(){

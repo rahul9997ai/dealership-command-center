@@ -188,7 +188,7 @@ function stTrack(done, target, day, total){
   return '<div class="st-track"><i class="' + cls + '" style="width:' + Math.min(100, pct*100) + '%"></i>' + (total ? '<em style="left:' + (pace*100) + '%"></em>' : '') + '</div>';
 }
 function stSubnav(){
-  return '<div class="st-sub">' + [["today","Today"],["perf","Sales performance"],["month","Month"],["log","Sales log"],["tgt","Targets & selling days"]].map(function(t){
+  return '<div class="st-sub">' + [["today","Today"],["month","Month at a glance"],["perf","Sales performance"],["log","Sales log"],["tgt","Targets & selling days"]].map(function(t){
     return '<button type="button" data-st="view" data-v="' + t[0] + '" class="' + (ST.view === t[0] ? "on" : "") + '">' + t[1] + '</button>'; }).join("") +
     '<button type="button" data-st="tv" style="margin-left:auto" title="Full-screen leaderboard for the sales office TV">▶ Showroom TV</button></div>';
 }
@@ -209,55 +209,7 @@ function stSpText(d){
   return sp.length ? esc(stKey(sp[0].name)) : '<span style="color:var(--muted)">—</span>';
 }
 
-/* ---- Today ---- */
-function stViewToday(){
-  var month = stToday().slice(0, 7), info = stInfo(month), day = stDayOf(month, info), total = info.total, t = stTargets(month);
-  var p = stPerf(month, "month"), s = p.store, today = stToday();
-  var yd = new Date(today + "T12:00:00"); yd.setDate(yd.getDate() - 1); var yesterday = C.localISO(yd);
-  var all = stAllDeals();
-  var deliveredY = all.filter(function(d){ return (d.status === "delivered" || d.status === "rdr") && d.deliveredDate === yesterday; });
-  var todayList = all.filter(function(d){ return (d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today) || ((d.status === "delivered" || d.status === "rdr") && d.deliveredDate === today); })
-    .sort(function(a, b){ return String(a.deliveryAt || "").localeCompare(String(b.deliveryAt || "")); });
-  var open = all.filter(function(d){ return C.saleIsOpen(d); });
-  var save = all.filter(function(d){ return d.status === "pending" || d.status === "declined" || d.status === "approved"; }).sort(function(a, b){ return a.status === "declined" ? -1 : b.status === "declined" ? 1 : 0; });
-  var gross = s.front + s.fi, grossTrack = day ? gross/day*total : 0, left = total - day;
-  var help = p.people.filter(function(x){ return !x.storeOnly && x.tT > 0 && x.pct !== null && x.pct < 0.9; }).sort(function(a, b){ return a.pct - b.pct; });
-  var noTargets = !(t.people || []).length;
-  var carry = stCarry();
-  var li = function(d, lead){ return stItem(d, lead); };
-  return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Morning meeting</div><h2>' +
-      new Date(today + "T12:00:00").toLocaleDateString("en-CA", { weekday:"long", month:"long", day:"numeric" }) + '</h2><div class="st-hsub">' + esc(state.config.name || "") + ' · selling day ' + day + ' of ' + total + ' · ' + left + ' left</div></div>' +
-      '<div class="st-actions"><button type="button" class="st-gbtn" data-st="add">+ Add a deal</button><button type="button" class="st-gbtn" data-st="email" data-what="today">Email</button><button type="button" class="st-gbtn primary" data-st="print" data-what="today">Print for the meeting</button></div></div>' +
-    '<div class="st-kpis first-wide">' +
-      '<div class="st-hk ring">' + stRing(s.tT ? s.sT/s.tT : 0, 104, "#fde68a", "#f59e0b", stF(s.sT), s.tT ? "of " + s.tT : "sold", true) +
-        '<div><div class="l">Month so far</div><div class="v">' + (s.kT === null ? "—" : s.kT) + ' <small>tracking</small></div><div style="margin-top:6px">' + (s.tT ? stBadge(s.status) : '<span class="st-badge store">No target</span>') + '</div></div></div>' +
-      '<div class="st-hk"><div class="l">New · Used sold</div><div class="v">' + stF(s.sN) + ' · ' + stF(s.sU) + '</div><div class="s">targets ' + s.tN + ' · ' + s.tU + (s.kN !== null ? ' · tracking ' + s.kN + ' · ' + s.kU : '') + '</div>' +
-        '<div class="st-pace"><i style="width:' + (s.tT ? Math.min(100, s.sT/s.tT*100) : 0) + '%"></i>' + (total ? '<em style="left:' + (day/total*100) + '%"></em>' : '') + '</div></div>' +
-      '<div class="st-hk"><div class="l">Needed per day</div><div class="v">' + (s.perDay === null ? "—" : s.perDay.toFixed(1)) + '</div><div class="s">' + (s.tT ? 'to reach ' + s.tT + ' in the ' + left + ' days left' : 'set targets to see this') + '</div></div>' +
-      '<div class="st-hk"><div class="l">Gross vs forecast</div><div class="v">' + stMoney(gross) + '</div><div class="s">' + (t.gross ? 'of ' + stMoney(t.gross) + ' · tracking ' + stMoney(grossTrack) : 'front ' + stMoney(s.front) + ' · F&amp;I ' + stMoney(s.fi)) + '</div>' +
-        (t.gross ? '<div class="st-pace"><i class="g" style="width:' + Math.min(100, gross/t.gross*100) + '%"></i><em style="left:' + (total ? day/total*100 : 0) + '%"></em></div>' : '') + '</div>' +
-    '</div></div>' +
-    (noTargets ? stNewMonth(month, carry) : '') + (carry.length ? stCarryCard(carry) : '') +
-    '<div class="st-g2">' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico g">✓</span><h3>Delivered yesterday<small>' + stDay(yesterday) + '</small></h3><span class="cnt">' + deliveredY.length + '</span></div>' +
-        (deliveredY.length ? '<div class="st-items">' + deliveredY.map(function(d){ return li(d, ""); }).join("") + '</div>' : '<div class="st-empty">No deliveries recorded for yesterday.</div>') + '</div>' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico b">⏱</span><h3>Delivering today<small>booked and done</small></h3><span class="cnt">' + todayList.length + '</span></div>' +
-        (todayList.length ? '<div class="st-items">' + todayList.map(function(d){ var done = d.status === "delivered" || d.status === "rdr", tm = String(d.deliveryAt || "").slice(11, 16);
-          return li(d, stE(d, done ? "status" : "delivery", '<span class="st-time">' + (done ? "✓ done" : (tm ? new Date("2000-01-01T" + tm).toLocaleTimeString("en-CA", { hour:"numeric", minute:"2-digit" }) : "today")) + '</span>')); }).join("") + '</div>' : '<div class="st-empty">Nothing booked for today.</div>') + '</div>' +
-    '</div>' +
-    '<div class="st-g3">' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico p">⏳</span><h3>Still to deliver<small>until delivered, cancelled or declined</small></h3><span class="cnt">' + open.length + '</span></div>' +
-        (open.length ? '<div class="st-items">' + open.slice(0, 6).map(function(d){ return li(d, stE(d, "status", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>') + stFromPill(d)); }).join("") + '</div>' + (open.length > 6 ? '<div class="st-empty">and ' + (open.length - 6) + ' more in the Sales log</div>' : '') : '<div class="st-empty">Everything sold has been delivered.</div>') + '</div>' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico o">⚑</span><h3>Save-a-deal<small>pending, declined and approved</small></h3><span class="cnt">' + save.length + '</span></div>' +
-        (save.length ? '<div class="st-items">' + save.slice(0, 6).map(function(d){ return stItem(d, stE(d, "status", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>'), { noVehicle:true,
-          after:stE(d, "notes", d.notes ? esc(d.notes) : '<span style="color:var(--muted)">' + (d.status === "approved" ? "Book the delivery" : "add a note") + '</span>', "st-note-c") }); }).join("") + '</div>' : '<div class="st-empty">Nothing waiting.</div>') +
-        '</div>' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico r">▲</span><h3>Who needs help<small>tracking under 90% of target</small></h3></div>' +
-        (noTargets ? '<div class="st-empty">Set targets to see who\'s behind.</div>' : help.length ? help.map(function(h){
-          return '<div class="st-help">' + stAv(h.name) + '<b>' + esc(h.name) + '</b><div>' + stTrack(h.sT, h.tT, day, total) + '<div class="t2">' + stF(h.sT) + ' sold · tracking ' + h.kT + ' of ' + h.tT + (h.perDay !== null ? ' · needs ' + h.perDay.toFixed(1) + '/day' : '') + '</div></div>' + stBadge(h.status) + '</div>'; }).join("") +
-          '<div class="st-legend"><span>Bar: sold so far</span><span>Line: where they should be today</span></div>' : '<div class="st-empty">Everyone is at 90% of target or better.</div>') + '</div>' +
-    '</div>';
-}
+/* ---- Today and Month at a glance: see 11j-glance.js ---- */
 /* The first days of a month (or any time a month has no targets): set them, starting from last month's. */
 function stNewMonth(month, carry){
   var prev = stShift(month, -1), early = Number(stToday().slice(8, 10)) <= 7;
@@ -281,20 +233,6 @@ function stConflictNote(e){
   return '<div class="st-warn"><b>Check before saving.</b> ' + cf.slice(0, 2).map(function(x){ var o = x.deal;
     return x.why === "stock" ? 'Stock # ' + esc(o.stockNo) + ' is already on <b>' + esc(o.customer || "another customer") + '</b> (' + stDay(o.soldDate) + ', ' + stLbl(o.status) + ', ' + esc(stKey((o.salespeople && o.salespeople[0] && o.salespeople[0].name) || "")) + ').'
       : '<b>' + esc(o.customer) + '</b> already has an open deal on stock # ' + esc(o.stockNo) + ' (' + stDay(o.soldDate) + ', ' + stLbl(o.status) + '). Is this the same deal?'; }).join(" ") + '</div>';
-}
-function stCarryCard(carry){
-  var cur = stToday().slice(0, 7), from = {};
-  carry.forEach(function(d){ var m = String(d.soldDate).slice(0, 7); from[m] = (from[m] || 0) + 1; });
-  var front = 0; carry.forEach(function(d){ front += Number(d.frontGross) || 0; });
-  var delivered = stCarryDelivered(cur).length;
-  return '<div class="st-card st-carry"><div class="st-ch"><span class="st-ico p">↻</span><h3>Carry-overs<small>sold in an earlier month · they carry over every month until they\'re delivered, cancelled or declined</small></h3><span class="cnt">' + carry.length + '</span></div>' +
-    '<div class="st-carry-b"><div class="st-items st-carry-l">' + carry.slice(0, 8).map(function(d){
-      var when = d.status === "scheduled" && d.deliveryAt ? stDay(d.deliveryAt) + " " + String(d.deliveryAt).slice(11, 16) : "";
-      return stItem(d, stE(d, "status", '<span class="st-pill ' + d.status + '">' + stLbl(d.status) + '</span>') + stFromPill(d),
-        { after:(when ? stE(d, "delivery", '<span class="st-when">' + esc(when) + '</span>') : '') + '<span class="st-days">' + stDaysSince(d.soldDate) + ' d</span>' }); }).join("") +
-      (carry.length > 8 ? '<div class="st-empty">and ' + (carry.length - 8) + ' more at the top of the Sales log</div>' : '') + '</div>' +
-      '<div class="st-mini st-carry-s">' + Object.keys(from).sort().reverse().slice(0, 3).map(function(m){ return '<div>From ' + esc(new Date(+m.slice(0, 4), +m.slice(5, 7) - 1, 1, 12).toLocaleDateString("en-CA", { month:"long" })) + '<b>' + from[m] + '</b></div>'; }).join("") +
-        '<div>Delivered this month<b>' + delivered + '</b></div><div>Front gross<b>' + stMoney(front) + '</b></div><div>Oldest<b>' + stDaysSince(carry[0].soldDate) + ' days</b></div></div></div></div>';
 }
 /* ---- Month dashboard ---- */
 function stMonthStats(month){
@@ -321,8 +259,8 @@ function stChart(cum, target, total, track){
   for (var v = 0; v <= mx; v += step) grid += '<line x1="' + L + '" x2="' + (W - R) + '" y1="' + y(v).toFixed(1) + '" y2="' + y(v).toFixed(1) + '" stroke="var(--border)"/><text x="' + (L - 6) + '" y="' + (y(v) + 4).toFixed(1) + '" text-anchor="end" font-size="10.5" fill="var(--muted)">' + v + '</text>';
   var pts = cum.map(function(c, i){ return x(i).toFixed(1) + "," + y(c).toFixed(1); }).join(" ");
   return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto" role="img" aria-label="Units sold against the target pace">' + grid +
-    (target ? '<line x1="' + x(0) + '" y1="' + y(0) + '" x2="' + x(total) + '" y2="' + y(target) + '" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 5"/><text x="' + (x(total) - 4) + '" y="' + (y(target) + 15) + '" text-anchor="end" font-size="10.5" fill="var(--muted)">target ' + target + '</text>' : '') +
-    (track !== null && day > 0 ? '<line x1="' + x(day) + '" y1="' + y(cum[day]) + '" x2="' + x(total) + '" y2="' + y(track) + '" stroke="#3b82f6" stroke-width="2" stroke-dasharray="2 4"/><circle cx="' + x(total) + '" cy="' + y(track) + '" r="4" fill="#3b82f6"/><text x="' + (x(total) - 4) + '" y="' + (y(track) - 8) + '" text-anchor="end" font-size="11" font-weight="700" fill="#3b82f6">' + track + ' projected</text>' : '') +
+    (target ? '<line x1="' + x(0) + '" y1="' + y(0) + '" x2="' + x(total) + '" y2="' + y(target) + '" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 5"/><text x="' + (x(total) - 4) + '" y="' + (track !== null && track < target ? y(target) - 7 : y(target) + 15) + '" text-anchor="end" font-size="10.5" fill="var(--muted)">target ' + target + '</text>' : '') +
+    (track !== null && day > 0 ? '<line x1="' + x(day) + '" y1="' + y(cum[day]) + '" x2="' + x(total) + '" y2="' + y(track) + '" stroke="#3b82f6" stroke-width="2" stroke-dasharray="2 4"/><circle cx="' + x(total) + '" cy="' + y(track) + '" r="4" fill="#3b82f6"/><text x="' + (x(total) - 4) + '" y="' + (target && track < target ? y(track) + 17 : y(track) - 8) + '" text-anchor="end" font-size="11" font-weight="700" fill="#3b82f6">' + track + ' projected</text>' : '') +
     '<polygon points="' + x(0) + ',' + y(0) + ' ' + pts + ' ' + x(day) + ',' + y(0) + '" fill="rgba(59,130,246,.14)"/><polyline points="' + pts + '" fill="none" stroke="#2563eb" stroke-width="3"/>' +
     '<circle cx="' + x(day) + '" cy="' + y(cum[day]) + '" r="5" fill="#2563eb"/></svg>' +
     '<div class="st-legend"><span><i style="background:#2563eb"></i>Sold so far</span><span><i style="background:#94a3b8"></i>Target pace</span><span><i style="background:#3b82f6;opacity:.6"></i>Projected finish</span></div>';
@@ -336,26 +274,6 @@ function stDonut(parts, label){
   return '<div style="display:flex;gap:14px;align-items:center"><svg viewBox="0 0 124 124" width="124" height="124" style="flex:0 0 auto" aria-hidden="true"><defs>' + defs + '</defs><circle cx="62" cy="62" r="' + r + '" fill="none" stroke="var(--surface-3)" stroke-width="18"/>' + seg +
     '<text x="62" y="60" text-anchor="middle" font-size="18" font-weight="800" fill="currentColor">' + tot + '</text><text x="62" y="76" text-anchor="middle" font-size="9.5" fill="#64748b" font-weight="600">' + esc(label) + '</text></svg>' +
     '<div style="flex:1;min-width:0">' + (tot ? parts.map(function(p, i){ return '<div style="display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px"><i style="width:11px;height:11px;border-radius:4px;flex:0 0 auto;background:linear-gradient(135deg,' + cols[i % 7][0] + ',' + cols[i % 7][1] + ')"></i><span>' + esc(p[0]) + '</span><b style="margin-left:auto">' + p[1] + '</b><span style="width:36px;text-align:right;color:var(--muted);font-size:11.5px">' + (tot ? Math.round(p[1]/tot*100) : 0) + '%</span></div>'; }).join("") : '<div class="st-empty">No deals yet.</div>') + '</div></div>';
-}
-function stViewMonth(){
-  var month = ST.month, t = stTargets(month), p = stPerf(month, "month"), s = p.store, m = stMonthStats(month), gross = s.front + s.fi;
-  var gTrack = p.day ? gross/p.day*p.total : 0, pv = function(v){ return s.deals ? stMoney(v/s.deals) : "—"; };
-  var bar = function(label, v, c1, c2){ return '<div style="margin-top:11px"><div style="display:flex;font-size:12.5px;font-weight:600"><span>' + label + '</span><b style="margin-left:auto">' + Math.round(v*100) + '%</b></div><div class="st-track" style="margin-top:5px"><i style="width:' + Math.round(v*100) + '%;background:linear-gradient(90deg,' + c1 + ',' + c2 + ')"></i></div></div>'; };
-  return '<div class="st-hero"><div class="st-hero-top"><div><div class="st-eyebrow">Sales Tracker · Month dashboard</div><h2>' + stMonthName(month) + '</h2><div class="st-hsub">' + esc(state.config.name || "") + ' · selling day ' + p.day + ' of ' + p.total + '</div></div>' +
-      '<div class="st-actions">' + stMonthSelect() + '</div></div>' +
-    '<div class="st-kpis first-wide"><div class="st-hk ring">' + stRing(s.tT ? s.sT/s.tT : 0, 104, "#fde68a", "#f59e0b", stF(s.sT), s.tT ? "of " + s.tT : "sold", true) +
-        '<div><div class="l">Sold vs target</div><div class="v">' + (s.kT === null ? "—" : s.kT) + ' <small>projected</small></div><div class="s">New ' + (s.kN === null ? "—" : s.kN) + ' · Used ' + (s.kU === null ? "—" : s.kU) + '</div><div style="margin-top:6px">' + (s.tT ? stBadge(s.status) : "") + '</div></div></div>' +
-      '<div class="st-hk"><div class="l">Gross so far</div><div class="v">' + stMoney(gross) + '</div><div class="s">front ' + stMoney(s.front) + ' · F&amp;I ' + stMoney(s.fi) + '</div></div>' +
-      '<div class="st-hk"><div class="l">Gross forecast</div><div class="v">' + (t.gross ? stMoney(t.gross) : "—") + '</div><div class="s">' + (t.gross ? 'tracking ' + stMoney(gTrack) + ' · ' + stMoney(Math.max(0, t.gross - gross)) + ' to go' : 'set it in Targets') + '</div>' +
-        (t.gross ? '<div class="st-pace"><i class="g" style="width:' + Math.min(100, gross/t.gross*100) + '%"></i><em style="left:' + (p.total ? p.day/p.total*100 : 0) + '%"></em></div>' : '') + '</div>' +
-      '<div class="st-hk"><div class="l">Delivered</div><div class="v">' + stDeliveredIn(month).length + '</div><div class="s">in ' + stMonthName(month).split(" ")[0] + ', whenever it was sold</div></div></div></div></div>' +
-    '<div class="st-g2" style="grid-template-columns:1.5fr 1fr"><div class="st-card"><div class="st-ch"><span class="st-ico b">↗</span><h3>Sold vs target pace<small>' + stMonthName(month) + ' · counted on ' + (p.countOn === "delivered" ? "delivery" : "sold") + '</small></h3><span style="margin-left:auto">' + (s.tT ? stBadge(s.status) : "") + '</span></div>' + stChart(m.cum, s.tT, p.total, s.kT) + '</div>' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico g">$</span><h3>Per vehicle<small>' + s.deals + ' deals counted</small></h3></div>' +
-        '<div class="st-mini" style="margin-top:0"><div>Front<b>' + pv(s.front) + '</b></div><div>F&amp;I<b>' + pv(s.fi) + '</b></div><div>Total<b>' + pv(gross) + '</b></div></div>' +
-        bar("Finance &amp; lease", m.finPct, "#60a5fa", "#2563eb") + bar("Trade-ins", m.trade, "#5eead4", "#0f766e") + bar("Security pack", m.secPack, "#c4b5fd", "#7c3aed") + bar("Tire &amp; wheel", m.tire, "#fcd34d", "#d97706") + bar("Be-back closes", m.beback, "#fca5a5", "#dc2626") + '</div></div>' +
-    '<div class="st-g3"><div class="st-card"><div class="st-ch"><span class="st-ico b">◐</span><h3>New / Used / As-is<small>deals this month</small></h3></div>' + stDonut(m.nu, "deals") + '</div>' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico p">◑</span><h3>Finance / Lease / Cash<small>deals this month</small></h3></div>' + stDonut(m.flc, "deals") + '</div>' +
-      '<div class="st-card"><div class="st-ch"><span class="st-ico o">◒</span><h3>Lead source<small>deals with a source entered</small></h3></div>' + stDonut(m.lead, "deals") + '</div></div>';
 }
 /* ---- Appointment board ---- */
 function stApptTotals(month){
@@ -826,7 +744,11 @@ function stAct(act, el){
   switch (act){
     case "view": ST.view = v; ST.err = null; if (v !== "today" && !ST.month) ST.month = stToday().slice(0, 7); window.scrollTo(0, 0); break;
     case "perfmode": ST.perf = v; break;
-    case "insview": INS.view = v; INS.err = null; window.scrollTo(0, 0); break;
+    case "todaytab": ST.todayTab = v; ST.todayFilter = null; ST.todayAll = false; break;
+    case "todayfilter": ST.todayFilter = v || null; ST.todayAll = false; break;
+    case "todayall": ST.todayAll = !ST.todayAll; break;
+    case "insfinset": state.route = "settings"; state.ui.setTab = "financials"; window.scrollTo(0, 0); break;
+    case "insview": INS.view = v; INS.picked = true; INS.err = null; window.scrollTo(0, 0); break;
     case "newmonth": ST.month = stToday().slice(0, 7); ST.view = "tgt"; ST.tDraft = null; ST.tDirty = false; window.scrollTo(0, 0); stAct("copytargets", el); return;
     case "imptype": stImp().type = v; stImpBuild(); break;
     case "imptab": stImp().tab = v; break;

@@ -87,9 +87,12 @@ Deno.serve(async (req) => {
       return json({ ok: true, meta });
     }
     if (action === "fetch"){
+      // the GM dashboard's linked financial statement (General Manager / Master only)
+      const finLink = d.data && d.data.financials && d.data.financials.link && d.data.financials.link.id;
+      const isFin = gm && !!finLink && finLink === fileId;
       const canSync = gm || (me.role === "Sales Manager" && me.dealership_id === dealer && switched("sales"));
       if (!canSync) return json({ error: "Not allowed to sync this dealership's sales log." }, 403);
-      if (!sync.on || !(sync.files || []).some((f: { id: string }) => f.id === fileId)) return json({ error: "That file isn't set up for Google Drive sync." }, 403);
+      if (!isFin && (!sync.on || !(sync.files || []).some((f: { id: string }) => f.id === fileId))) return json({ error: "That file isn't set up for Google Drive sync." }, 403);
       const meta = await driveMeta(gtoken, fileId, sa.client_email);
       if (body.since && body.since === meta.modifiedTime) return json({ ok: true, unchanged: true, meta });
       if (Number(meta.size || 0) > MAX_BYTES) return json({ error: "That file is over 15 MB." }, 400);

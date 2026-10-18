@@ -48,8 +48,8 @@ function insGrowthPill(g){
   return '<span class="st-pill ' + (g >= 1 ? "delivered" : g >= 0.9 ? "scheduled" : "declined") + '">' + (g >= 1 ? "▲ " : "▼ ") + Math.round(g*100) + '%</span>';
 }
 function insSubnav(){
-  var tabs = (V.isAdmin() ? [["brief","Morning brief"]] : []).concat([["mtd","Month to date"],["ytd","Year to date"]]);
-  if (V.isAdmin()) tabs.push(["fi","F&I office"]);
+  var tabs = (V.isAdmin() ? [["overview","Overview"],["money","Financials"]] : []).concat([["mtd","Sales · month"],["ytd","Sales · year"]]);
+  if (V.isAdmin()) tabs.push(["fi","F&I office"], ["brief","Morning brief"]);
   return '<div class="st-sub">' + tabs.map(function(t){ return '<button type="button" data-st="insview" data-v="' + t[0] + '" class="' + (INS.view === t[0] ? "on" : "") + '">' + t[1] + '</button>'; }).join("") +
     (aiCan() ? '<span style="margin-left:auto;display:flex;gap:5px"><button type="button" data-st="aimail">✉ Morning email</button><button type="button" data-st="aichat">✦ Ask AI</button></span>' : '') + '</div>';
 }
@@ -194,12 +194,12 @@ function viewInsights(){
   if (!insCan()) return '<div class="card"><div class="card-b">The dashboard needs the Insights switch. Ask your General Manager.</div></div>';
   if (INS.view === "fi" && V.isAdmin()) return '<div class="stx">' + insSubnav() + '</div>' + V.viewDashboard();
   if (INS.view === "brief" && V.isAdmin()) return '<div class="stx">' + insSubnav() + dsBanner() + viewBrief() + stModal() + '</div>';
-  if (INS.view === "brief") INS.view = "mtd";
-  if (INS.view === "fi") INS.view = "mtd";
+  if (INS.view === "brief" || INS.view === "fi" || ((INS.view === "overview" || INS.view === "money") && !V.isAdmin())) INS.view = "mtd";
+  if (!INS.picked && V.isAdmin() && INS.view === "mtd"){ INS.view = "overview"; INS.picked = true; }
   var year = insYear(); insLoad(year);
   var loading = INS.loading[ST.store + ":" + year];
   var I = insData(year);
   return '<div class="stx">' + insSubnav() + dsBanner() + (INS.err ? '<div class="st-err">' + esc(INS.err) + '</div>' : '') +
     (loading ? '<div class="st-warn" style="background:var(--info-bg);border-color:var(--blue);color:var(--blue)">Loading the year\'s sales…</div>' : '') +
-    (INS.view === "ytd" ? insViewYtd(I) : insViewMtd(I)) + stModal() + '</div>';
+    (INS.view === "ytd" ? insViewYtd(I) : INS.view === "overview" ? insViewOverview(I) : INS.view === "money" ? insViewMoney() : insViewMtd(I)) + stModal() + '</div>';
 }
