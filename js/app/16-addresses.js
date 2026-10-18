@@ -2,7 +2,7 @@
 /* ---------------- ADDRESSES ----------------
    Every screen has its own link in the address bar (#/401-dixie-nissan/users, #/dealerships), so the
    browser's Back and Forward buttons, bookmarks and refresh all land on the right screen. */
-var ROUTE_SLUG = { dashboard:"dashboard", finance:"finance", cashadv:"cash-conversion", sales:"sales-tracker", coupons:"coupons", worksheet:"worksheet",
+var ROUTE_SLUG = { dashboard:"dashboard", assistant:"ai-assistant", finance:"finance", cashadv:"cash-conversion", sales:"sales-tracker", coupons:"coupons", worksheet:"worksheet",
   products:"products", reports:"reports", users:"users", settings:"settings" };
 var SLUG_ROUTE = {}; Object.keys(ROUTE_SLUG).forEach(function(k){ SLUG_ROUTE[ROUTE_SLUG[k]] = k; });
 var navSync = { last:null, boot:/^#\/[a-z0-9-]/i.test(location.hash) ? location.hash : null };

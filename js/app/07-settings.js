@@ -7,10 +7,53 @@ function viewSalespersonRedirect(){
     <button class="btn" data-act="logout" style="margin-top:12px">Sign out</button>
   </div></div></div>`;
 }
+/* Dealership settings: a grid of tiles; each opens that setting on its own page (state.ui.setTab). */
+var SET_TILES = [
+  { key:"dealer", ic:"◈", title:"This dealership", sub:"Name, brand, address and contact details" },
+  { key:"finance", ic:"％", title:"Tax and finance defaults", sub:"Tax rates, default rate, term, frequency and fees" },
+  { key:"cash", ic:"$", title:"Cash Conversion rates", sub:"Today's bank rates, offered as one-tap choices" },
+  { key:"logo", ic:"▣", title:"Dealership logo", sub:"On coupons and the printed worksheet" },
+  { key:"colours", ic:"◐", title:"Customer display colours", sub:"Brand colours or a colour of your choice" },
+  { key:"offers", ic:"✦", title:"Promotional offers", sub:"One-tap offers for the Finance Managers" },
+  { key:"ai", ic:"✧", title:"AI", sub:"Assistant, morning brief, email writing and file reading" },
+  { key:"drive", ic:"⇅", title:"Google Drive sync", sub:"Read the Excel sales logs kept on Google Drive" },
+  { key:"pulse", ic:"⟲", title:"Pulse deliveries", sub:"Deliveries in Axiom Pulse show as Delivered" },
+  { key:"financials", ic:"▤", title:"Financial statements", sub:"Upload or link the monthly financial statement for the GM dashboard" }
+];
+function setTileStatus(k){
+  var c = state.config || {};
+  if (k === "ai") return c.ai && c.ai.on ? ["On", "ok"] : ["Off", ""];
+  if (k === "drive"){ var d = c.driveSync || {}; return d.on ? [(d.files || []).length + " file" + ((d.files || []).length === 1 ? "" : "s"), "ok"] : ["Off", ""]; }
+  if (k === "pulse") return c.pulseLink && c.pulseLink.on ? ["Linked", "ok"] : ["Off", ""];
+  if (k === "logo") return c.logo ? ["Set", "ok"] : ["None", ""];
+  if (k === "offers") return [(c.gifts || []).length + " offer" + ((c.gifts || []).length === 1 ? "" : "s"), ""];
+  if (k === "colours") return [V.colorMode() === "brand" ? "Brand" : "Custom", ""];
+  if (k === "financials"){ var f = c.financials || {}; return f.link && f.link.id ? ["Linked", "ok"] : ["", ""]; }
+  if (k === "dealer") return [c.dealerCode || "", ""];
+  return ["", ""];
+}
 function viewSettings(){
-  var canEdit = V.isAdmin(), dis = canEdit ? "" : "disabled", b = V.brand();
-  return `<div class="grid g2">
-    <div class="card"><div class="card-h"><h2>This dealership</h2><div class="sp"><span class="tag">${esc(state.config.dealerCode)}</span></div></div><div class="card-b">
+  var canEdit = V.isAdmin(), dis = canEdit ? "" : "disabled", b = V.brand(), tab = state.ui.setTab;
+  var tiles = SET_TILES.filter(function(t){ return t.key !== "financials" || typeof viewFinSettings === "function"; });
+  var cur = tiles.filter(function(t){ return t.key === tab; })[0];
+  if (!cur){
+    return `<div class="set-head"><h2>Dealership settings</h2><p class="muted small">${esc(state.config.name || "")} · pick a setting to open it.</p></div>
+      <div class="set-tiles">${tiles.map(function(t){ var st = setTileStatus(t.key);
+        return `<button type="button" class="set-tile" data-setp="${t.key}"><span class="set-ic">${t.ic}</span><span class="set-tx"><b>${esc(t.title)}</b><small>${esc(t.sub)}</small></span>${st[0] ? `<span class="tag ${st[1]}">${esc(st[0])}</span>` : ""}<span class="set-go">›</span></button>`; }).join("")}</div>`;
+  }
+  var html = cur.key === "dealer" ? setSecDealer(canEdit, dis, b) : cur.key === "finance" ? setSecFinance(canEdit, dis, b) : cur.key === "cash" ? setSecCash(canEdit, dis, b) :
+    cur.key === "logo" ? setSecLogo(canEdit, dis, b) : cur.key === "colours" ? setSecColours(canEdit, dis, b) : cur.key === "offers" ? setSecOffers(canEdit, dis, b) :
+    cur.key === "ai" ? viewAiSettings() : cur.key === "drive" ? viewDriveSettings() : cur.key === "pulse" ? viewPulseSettings() : cur.key === "financials" ? viewFinSettings() : "";
+  return `<div class="set-crumb"><button type="button" class="btn sm ghost" data-setp="">‹ All settings</button><span class="muted small">Dealership settings · ${esc(cur.title)}</span></div>
+    <div class="set-one">${html}</div>`;
+}
+document.addEventListener("click", function(ev){
+  var el = ev.target && ev.target.closest ? ev.target.closest("[data-setp]") : null; if (!el) return;
+  ev.preventDefault(); state.ui.setTab = el.getAttribute("data-setp") || null; window.scrollTo(0, 0); render();
+});
+
+function setSecDealer(canEdit, dis, b){
+  return `<div class="card"><div class="card-h"><h2>This dealership</h2><div class="sp"><span class="tag">${esc(state.config.dealerCode)}</span></div></div><div class="card-b">
       <div class="inline">
         <label class="f"><span>Dealership name</span><input type="text" value="${esc(state.config.name)}" data-bind="config.name" ${dis}></label>
         <label class="f"><span>Brand</span><select data-bind="config.brandKey" ${dis}>
@@ -28,8 +71,10 @@ function viewSettings(){
         <label class="f"><span>Phone</span><input type="text" value="${esc(state.config.phone)}" data-bind="config.phone" ${dis}></label>
         <label class="f"><span>Email</span><input type="text" value="${esc(state.config.email)}" data-bind="config.email" ${dis}></label>
       </div>
-    </div></div>
-    <div class="card"><div class="card-h"><h2>Tax and finance defaults</h2></div><div class="card-b">
+    </div></div>`;
+}
+function setSecFinance(canEdit, dis, b){
+  return `<div class="card"><div class="card-h"><h2>Tax and finance defaults</h2></div><div class="card-b">
       <div class="inline">
         <label class="f"><span>Standard tax rate (%)</span><input type="number" step="0.01" value="${esc(state.config.tax.standard)}" data-bind="config.tax.standard" data-type="num" ${dis}></label>
         <label class="f"><span>VRC coverage tax rate (%)</span><input type="number" step="0.01" value="${esc(state.config.tax.vrc)}" data-bind="config.tax.vrc" data-type="num" ${dis}></label>
@@ -48,19 +93,25 @@ function viewSettings(){
       </div>
       <div class="notice info">Tax changes apply immediately to the open deal, both prints, the emailed presentation and every report, because all of them call the same calculation engine.</div>
 
-    </div></div>
-    <div class="card"><div class="card-h"><h2>Cash Conversion rates</h2></div><div class="card-b">
+    </div></div>`;
+}
+function setSecCash(canEdit, dis, b){
+  return `<div class="card"><div class="card-h"><h2>Cash Conversion rates</h2></div><div class="card-b">
       <p class="muted small" style="max-width:66ch">Today's rates, offered to Finance Managers as one-tap choices in Cash Conversion. Update them when the banks change their rates; leave a box empty to hide it.</p>
       <div class="inline">${CA_PRESETS.map(function(cp){ var cr = (state.config.caRates || {})[cp[0]];
         return `<label class="f"><span>${esc(cp[1])} (%)</span><input type="number" step="0.01" min="0" value="${esc(cr === undefined || cr === null ? "" : cr)}" data-carate="${cp[0]}" ${dis}></label>`; }).join("")}</div>
-    </div></div>
-    <div class="card"><div class="card-h"><h2>Dealership logo</h2></div><div class="card-b">
+    </div></div>`;
+}
+function setSecLogo(canEdit, dis, b){
+  return `<div class="card"><div class="card-h"><h2>Dealership logo</h2></div><div class="card-b">
       <p class="muted small" style="max-width:66ch">Shown on every coupon and on the printed worksheet. Use the dealership's own logo (a PNG with a transparent background looks best). Without one, the coupon shows the dealership name there instead.</p>
       <div class="logo-up">${state.config.logo && /^data:image\//.test(state.config.logo) ? `<div class="logo-prev"><img src="${esc(state.config.logo)}" alt="Dealership logo"></div>` : `<div class="logo-prev empty">No logo yet</div>`}
         <div style="display:flex;gap:8px;flex-wrap:wrap"><label class="btn ${canEdit ? "" : "disabled"}" style="cursor:${canEdit ? "pointer" : "not-allowed"}">${state.config.logo ? "Replace logo" : "Upload logo"}<input type="file" accept="image/png,image/jpeg,image/webp" data-act="dealer-logo" style="display:none" ${dis}></label>
         ${state.config.logo ? `<button type="button" class="btn danger" data-act="dealer-logo-remove" ${dis}>Remove</button>` : ""}</div></div>
-    </div></div>
-    <div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
+    </div></div>`;
+}
+function setSecColours(canEdit, dis, b){
+  return `<div class="card"><div class="card-h"><h2>Customer display colours</h2></div><div class="card-b">
       <p class="muted small" style="max-width:66ch">Used on the customer display, the full-screen view, the pop-out window, the printed customer copy, the Cash Conversion printout and the emailed package. Works in light and dark mode.</p>
       ${(function(){
         var mode = V.colorMode(), pal = b.pal;
@@ -81,8 +132,10 @@ function viewSettings(){
             <label class="f"><span>Custom colour</span><input type="color" value="${esc(/^#[0-9a-f]{6}$/i.test(state.config.brandColor||"") ? state.config.brandColor : (b.color || "#2c5a9b"))}" data-act="brand-color-input" ${dis} style="height:40px;padding:2px"></label>
           </div>`;
       })()}
-    </div></div>
-    <div class="card"><div class="card-h"><h2>Promotional offers</h2>
+    </div></div>`;
+}
+function setSecOffers(canEdit, dis, b){
+  return `<div class="card"><div class="card-h"><h2>Promotional offers</h2>
       <div class="sp"><button type="button" class="btn sm primary" data-act="gift-preset-add" ${dis}>Add an offer</button></div></div><div class="card-b">
       <div class="notice info" style="margin-bottom:12px">Which Finance Managers can add these offers to a deal is now set per person in <a href="#" data-act="route" data-route="users">Users &amp; access</a>.</div>
       <p class="muted small" style="max-width:60ch">Offers you list here appear as one-tap choices for the Finance Manager on each deal. Dealer cost is optional; it comes off the deal's gross in reports.</p>
@@ -93,6 +146,6 @@ function viewSettings(){
         <div class="gphoto" style="grid-column:1 / -1">${g.image && /^data:image\//.test(g.image) ? `<img src="${esc(g.image)}" alt="">` : ""}
           <label class="btn sm" style="cursor:pointer">${g.image ? "Change photo" : "Add photo (optional)"}<input type="file" accept="image/*" data-act="gift-photo" data-idx="${i}" style="display:none" ${dis}></label>
           ${g.image ? `<button type="button" class="btn sm" data-act="gift-photo-remove" data-idx="${i}" ${dis}>Remove photo</button>` : `<span class="tiny muted">No photo: a drawn illustration is used. Use your own photo or the maker's press image.</span>`}</div></div>`; }).join("") || `<div class="tiny muted">No offers yet. Add one, for example an oil change or a remote starter.</div>`}
-    </div></div></div>`;
+    </div></div>`;
 }
 

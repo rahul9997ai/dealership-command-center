@@ -36,7 +36,7 @@ function plAuto(){
 function viewPulseSettings(){
   if (!V.isAdmin() || !state.config) return "";
   var on = plOn(), x = PL.store === state.activeDealershipId ? PL.res : null;
-  return '<div class="card" style="margin-top:16px"><div class="card-h"><h2>Pulse deliveries</h2><div class="sp"><span class="tag ' + (on ? "ok" : "") + '">' + (on ? "Linked" : "Off") + '</span></div></div><div class="card-b">' +
+  return '<div class="card"><div class="card-h"><h2>Pulse deliveries</h2><div class="sp"><span class="tag ' + (on ? "ok" : "") + '">' + (on ? "Linked" : "Off") + '</span></div></div><div class="card-b">' +
     '<p class="muted small" style="max-width:80ch;margin-top:0">When a vehicle is delivered in <b>Axiom Pulse</b>, the Sales Tracker marks the deal <b>Delivered</b> with Pulse\'s delivery date and a small "Pulse" tag. ' +
     'Read-only: nothing in Pulse is changed. Deals are matched on the stock #, or the customer\'s name when there\'s no stock #, and only when exactly one open deal fits. ' +
     'A deal you change back by hand stays as you set it, and the Google Drive sync won\'t move a Pulse-delivered deal back to open.</p>' +

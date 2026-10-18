@@ -446,7 +446,7 @@ select.ai-sel{width:100%;text-align:left}
 .ai-mail-prev{background:var(--surface-3);border-radius:10px;padding:14px;overflow:auto;max-height:70vh}
 .ai-mail-prev > div{background:#fff;margin:0 auto}
 @media (max-width:900px){.ai-brief-grid,.ai-mail-b{grid-template-columns:1fr}.ai-figs{grid-template-columns:1fr 1fr}}
-@media (min-width:1100px){body:has(.ai-panel) .app{padding-right:420px}}
+/* (the chat now floats; the page is no longer padded for it) */
 
 /* Google Drive sync status strip */
 .ds-strip{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px;color:var(--text-2);background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:6px 10px;margin:-4px 0 12px}
@@ -535,3 +535,63 @@ select.ai-sel{width:100%;text-align:left}
 
 .st-alias{border:0;background:none;padding:0;color:var(--blue);font:inherit;font-weight:700;cursor:pointer;text-decoration:underline}
 .st-pulse{display:inline-block;margin-left:5px;padding:0 5px;border-radius:5px;font-size:10px;font-weight:700;letter-spacing:.02em;color:var(--blue);background:var(--info-bg);border:1px solid var(--border);vertical-align:1px}
+
+/* AI Assistant: floating button and window, full page */
+.ai-fab{position:fixed;right:22px;bottom:22px;z-index:64;width:54px;height:54px;border-radius:50%;border:0;cursor:pointer;color:#fff;font-size:22px;
+  background:linear-gradient(135deg,#4f46e5,#1d63ed);box-shadow:0 10px 24px rgba(29,99,237,.35),0 2px 6px rgba(16,24,40,.18);display:grid;place-items:center;transition:transform .15s ease}
+.ai-fab:hover{transform:translateY(-2px) scale(1.04)}
+.ai-panel.ai-float{top:auto;left:auto;right:22px;bottom:22px;width:400px;height:min(620px,calc(100vh - 44px));border:1px solid var(--border);border-radius:16px;box-shadow:0 18px 48px rgba(16,24,40,.24);overflow:hidden}
+@media (max-width:520px){.ai-panel.ai-float{right:8px;left:8px;bottom:8px;width:auto;height:calc(100vh - 16px)}}
+.ai-mem-tag{margin-top:6px;font-size:11px;color:var(--ok);font-weight:600}
+.aip-head{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin:0 0 14px}
+.aip-head h2{margin:2px 0 2px;font-size:20px}
+.aip-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;align-items:start}
+.aip-chat{display:flex;flex-direction:column;padding:0;height:calc(100vh - 210px);min-height:460px;overflow:hidden}
+.aip-ch{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-bottom:1px solid var(--border)}
+.aip-chat .ai-log{padding:16px 18px}
+.aip-chat .ai-msg{max-width:78%;font-size:13.5px}
+.aip-chat .ai-chips{flex-direction:row;flex-wrap:wrap}
+.aip-chat .ai-chips button{flex:1 1 260px}
+.aip-side{display:flex;flex-direction:column;gap:12px}
+.aip-side .st-card{margin:0}
+.aip-figs{display:grid;grid-template-columns:1fr;gap:0}
+.aip-figs > div{display:grid;grid-template-columns:1fr auto;gap:0 8px;padding:7px 0;border-top:1px dashed var(--st-line)}
+.aip-figs > div:first-child{border-top:0}
+.aip-figs span{font-size:12px;color:var(--muted);font-weight:600}.aip-figs b{font-size:15px;text-align:right}
+.aip-figs em{grid-column:1/-1;font-style:normal;font-size:11px;color:var(--muted)}
+.aip-quick{display:block;width:100%;text-align:left;border:0;background:none;color:var(--blue);font:inherit;font-size:12.5px;font-weight:600;padding:6px 0;cursor:pointer;border-top:1px dashed var(--st-line)}
+.aip-quick:hover{text-decoration:underline}
+.aip-mail{display:grid;grid-template-columns:320px minmax(0,1fr);gap:14px;align-items:start}
+.aip-form .ai-lab:first-child{margin-top:0}
+.aip-seg{display:flex;flex-wrap:wrap;gap:5px}
+.aip-seg button{border:1px solid var(--border-strong);background:var(--surface);color:var(--text-2);border-radius:999px;padding:5px 10px;font:inherit;font-size:12px;font-weight:600;cursor:pointer}
+.aip-seg button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.aip-form input.ai-sel{box-sizing:border-box}
+.aip-prev{padding:0;overflow:hidden}
+.aip-prev .aip-ch{align-items:flex-start;flex-wrap:wrap}
+.aip-subj{font-weight:700;font-size:14px;margin-top:2px}
+.aip-prev .ai-mail-prev{border-radius:0;max-height:none}
+.aip-prev > .ins-sub{padding:0 14px 12px}
+.aip-empty{display:flex;gap:12px;align-items:center;padding:28px 22px}
+.aip-memwrap{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:14px;align-items:start}
+.aip-add{display:flex;gap:8px;margin:2px 0 12px}
+.aip-add input{flex:1}
+.aip-mems{display:flex;flex-direction:column}
+.aip-mem{display:flex;gap:10px;align-items:flex-start;justify-content:space-between;padding:9px 0;border-top:1px dashed var(--st-line);font-size:13px}
+.aip-mem:first-child{border-top:0}
+.aip-how p{margin:0 0 10px;font-size:12.5px;line-height:1.55}
+@media (max-width:980px){.aip-grid,.aip-mail,.aip-memwrap{grid-template-columns:1fr}.aip-chat{height:70vh}}
+.aip-add input.st-tin{flex:1;width:auto;text-align:left;padding:8px 10px;font-size:13px}
+.aip-form input.st-tin.ai-sel{width:100%;text-align:left;padding:7px 9px}
+
+/* Dealership settings: tiles */
+.set-head h2{margin:0 0 2px;font-size:20px}.set-head p{margin:0 0 14px}
+.set-tiles{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px}
+.set-tile{display:flex;align-items:center;gap:12px;text-align:left;padding:14px 16px;border:1px solid var(--border);border-radius:12px;background:var(--surface);color:var(--text);font:inherit;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.set-tile:hover{border-color:var(--blue);box-shadow:0 4px 14px rgba(29,99,237,.1)}
+.set-ic{flex:0 0 38px;height:38px;border-radius:10px;display:grid;place-items:center;background:var(--info-bg);color:var(--blue);font-size:17px;font-weight:700}
+.set-tx{flex:1;min-width:0}.set-tx b{display:block;font-size:14px}.set-tx small{display:block;color:var(--muted);font-size:12px;margin-top:2px}
+.set-go{color:var(--muted);font-size:20px;line-height:1}
+.set-crumb{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+.set-one > .grid{grid-template-columns:1fr}
+.set-one .card{max-width:1100px}

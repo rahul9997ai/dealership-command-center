@@ -821,6 +821,7 @@ function viewSalesTracker(){
 
 /* ---- events (Sales Tracker elements carry data-st / data-stf / data-stt, so the app's own handlers ignore them) ---- */
 function stAct(act, el){
+  if (typeof aipAct === "function" && aipAct(act, el)) return;
   var v = el.getAttribute("data-v"), e = ST.edit;
   switch (act){
     case "view": ST.view = v; ST.err = null; if (v !== "today" && !ST.month) ST.month = stToday().slice(0, 7); window.scrollTo(0, 0); break;

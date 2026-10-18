@@ -6,7 +6,12 @@
 // PDFs and photos: the page itself is sent (it can't be masked first) and Claude reads the deals on it,
 // listing every field it isn't sure of so the GM confirms those before importing.
 //
-// Guards: signed in, Command Center on, GM of that dealership (or Master), AI switched on for the dealership
+// AI Assistant (kinds chat / email / note): the GM, Master, and anyone the GM switched the Assistant on for
+// (dealerships.data.fmAccess[userId].ai). The assistant keeps a memory per dealership (sales_ai_memory, server
+// only): it saves lasting facts with the "remember" tool, and every answer reads them. Kinds memory_list /
+// memory_add / memory_delete manage it (delete: GM / Master or the person who saved it).
+//
+// Guards: signed in, Command Center on, GM of that dealership (or Master) for files and the brief, AI switched on for the dealership
 // (dealerships.data.ai.on) and under its monthly cap (data.ai.cap, default $10). Every read is logged to
 // sales_ai_usage. The Anthropic key lives only here (secret ANTHROPIC_API_KEY).
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -115,9 +120,22 @@ const BRIEF_SYSTEM = `You write the General Manager's morning brief for a car de
 ${COMMON}
 headline: one sentence on where the month stands. working: 1-3 sentences on what is going well. attention: 1-3 sentences on what needs attention. help: up to 3 salespeople who most need help, each one or two sentences quoting the numbers that show it and one specific coaching action for today (use their name exactly as in the facts). today: the single most useful thing to do today, one or two sentences.`;
 const BRIEF_SCHEMA = obj({ headline: str, working: str, attention: str, help: { type: "array", items: obj({ name: str, text: str }) }, today: str });
-const CHAT_SYSTEM = `You are the assistant inside a car dealership's Command Center, talking with the General Manager or the owner. You answer questions about this store's sales and day-to-day sales operations: each salesperson's results and how to coach them, targets and pace, gross, lead sources, close types, appointments, carry-overs, planning a weekend or an event, running the morning meeting.
+const CHAT_SYSTEM = `You are the General Manager's assistant inside a car dealership's Command Center (the person may also be a manager the GM gave the assistant to; "asker" in the facts says who). You make their day-to-day easier: what is happening at the dealership, who needs help and how to coach them, targets and pace, gross and where it is lost, lead sources and close types, carry-overs and deliveries (some confirmed in Axiom Pulse), the month and year so far, the morning meeting, planning a weekend or an event, and drafting messages and emails. When asked to draft an email, write it in full: a "Subject:" line first, then the email, ready to copy.
 ${COMMON}
-Ground every statement about this store in the facts and quote the numbers you rely on. When the data doesn't cover a question, say what is missing, then give general dealership best practice clearly labelled as general advice. Answer first in one or two sentences, then at most 5 short points. Plain text; you may use **bold**, numbered lists and "- " bullets. Never write tables or headings.`;
+Ground every statement about this store in the facts and quote the numbers you rely on. When the data doesn't cover a question, say what is missing, then give general dealership best practice clearly labelled as general advice. Answer first in one or two sentences, then at most 5 short points (an email draft can be longer). Plain text; you may use **bold**, numbered lists and "- " bullets. Never write tables or headings.
+${MEMORY_RULE}`;
+const EMAIL_SYSTEM = `You draft emails for a car dealership's General Manager (or a manager they've given the assistant to), from the dealership's own sales tracker data.
+${COMMON}
+The person tells you the purpose, who it goes to, the tone and any extra points. Write a complete, polished, ready-to-send email: professional, warm where it suits, specific, and short enough to read on a phone. Use the real numbers from the facts and the salespeople's names exactly as given. For an email to ownership or head office: lead with the result against target, then what is driving it, the risks, and the plan, in a confident and factual executive tone. For the sales team: recognise results by name, be clear about what is needed and by when, and motivate without hype. For one salesperson: respectful, specific coaching with their numbers and one or two concrete actions. Never mention AI. Respect anything in the store notes (memory), such as how the GM signs off.
+subject: the email subject line. greeting: e.g. "Team," or "Hi Paras,". paragraphs: 2-5 short paragraphs of body text (no greeting or sign-off in them). highlights: 0-5 short bullet points worth setting apart (key numbers, actions or deadlines), or an empty list. closing: the sign-off line such as "Thanks," (the sender's name is added for you).`;
+const EMAIL_SCHEMA = obj({ subject: str, greeting: str, paragraphs: { type: "array", items: str }, highlights: { type: "array", items: str }, closing: str });
+const MEMORY_RULE = `Store notes (memory): the "notes" list below holds lasting facts people have told you about this dealership (who is on leave, goals, preferences, how the GM likes things written). Use them. When someone tells you something lasting that would help in future conversations, save it with the remember tool in one short, self-contained sentence (with a date when it matters), then carry on and answer. Don't save numbers that are already in the data, passing remarks, or anything about customers. If a note is out of date, say so and save the corrected fact.`;
+const REMEMBER_TOOL = {
+  name: "remember",
+  description: "Save one lasting fact or preference about this dealership, its people or how the General Manager likes things done, so future conversations know it. One short sentence.",
+  strict: true,
+  input_schema: { type: "object", properties: { note: { type: "string", description: "The fact, as one short self-contained sentence." } }, required: ["note"], additionalProperties: false },
+};
 const NOTE_SYSTEM = `You write the short note at the top of a car dealership's sales report email from the General Manager.
 ${COMMON}
 Write 2-4 sentences. Start with a greeting on its own like "Team," (or the salesperson's first name, capitalised normally, when the report covers one person). No sign-off, it is added for you. Mention the period's result, who stood out (by name, from the facts), and what is needed next, using the numbers given.`;
@@ -137,11 +155,33 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const dealer = String(body.dealershipId || "");
     const master = me.role === "Master Administrator";
-    if (!(master || (me.role === "General Manager" && me.dealership_id === dealer))) return json({ error: "Only the General Manager can use the AI features." }, 403);
-
+    const gm = master || (me.role === "General Manager" && me.dealership_id === dealer);
     const { data: d } = await admin.from("dealerships").select("data").eq("id", dealer).single();
+    const assistantKinds = ["chat", "email", "note", "memory_list", "memory_add", "memory_delete"];
+    const switchedOn = me.dealership_id === dealer && !!(d?.data?.fmAccess?.[me.id]?.ai);
+    if (!(gm || (switchedOn && assistantKinds.includes(body.kind)))) return json({ error: gm ? "Not allowed." : "The AI Assistant isn't switched on for you. Ask your General Manager." }, 403);
     const ai = (d?.data && d.data.ai) || {};
     if (!ai.on) return json({ error: "AI is switched off for this dealership. The General Manager can turn it on in Dealership settings › AI." }, 403);
+
+    // the assistant's memory for this store (no AI call)
+    if (body.kind === "memory_list"){
+      const { data: rows } = await admin.from("sales_ai_memory").select("id,note,created_by,created_by_name,created_at,source").eq("dealership_id", dealer).order("created_at", { ascending: false }).limit(200);
+      return json({ ok: true, notes: rows || [] });
+    }
+    if (body.kind === "memory_add"){
+      const note = String(body.note || "").trim().slice(0, 400);
+      if (!note) return json({ error: "Type the note first." }, 400);
+      const { data: row, error } = await admin.from("sales_ai_memory").insert({ dealership_id: dealer, note, created_by: me.id, created_by_name: me.name, source: "typed" }).select("id,note,created_by,created_by_name,created_at,source").single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ ok: true, note: row });
+    }
+    if (body.kind === "memory_delete"){
+      const { data: row } = await admin.from("sales_ai_memory").select("id,created_by").eq("id", String(body.id || "")).eq("dealership_id", dealer).single();
+      if (!row) return json({ error: "That note is already gone." }, 404);
+      if (!gm && row.created_by !== me.id) return json({ error: "Only the General Manager can remove a note someone else saved." }, 403);
+      await admin.from("sales_ai_memory").delete().eq("id", row.id);
+      return json({ ok: true });
+    }
     const cap = Number(ai.cap) > 0 ? Number(ai.cap) : DEFAULT_CAP;
     const start = new Date(); start.setUTCDate(1); start.setUTCHours(0, 0, 0, 0);
     const { data: used } = await admin.from("sales_ai_usage").select("cost").eq("dealership_id", dealer).gte("created_at", start.toISOString());
@@ -152,18 +192,25 @@ Deno.serve(async (req) => {
     if (!key) return json({ error: "AI isn't set up on the server yet (no Anthropic API key)." }, 503);
     const client = new Anthropic({ apiKey: key });
 
-    const kind = ["document", "brief", "chat", "note"].includes(body.kind) ? body.kind : "sheet";
+    const kind = ["document", "brief", "chat", "note", "email"].includes(body.kind) ? body.kind : "sheet";
+    // store notes (memory) go with every assistant answer
+    let notes: { note: string; created_by_name: string; created_at: string }[] = [];
+    if (["brief", "chat", "note", "email"].includes(kind)){
+      const { data: rows } = await admin.from("sales_ai_memory").select("note,created_by_name,created_at").eq("dealership_id", dealer).order("created_at", { ascending: false }).limit(80);
+      notes = (rows || []).reverse();
+    }
+    const notesText = JSON.stringify(notes.map((n) => ({ note: n.note, by: n.created_by_name, on: String(n.created_at).slice(0, 10) })));
     const file = String(body.file || "").slice(0, 200);
     // deno-lint-ignore no-explicit-any
     let content: unknown[] = [], system = "", schema: unknown = null, sent = "", messages: any[] | null = null, effort = "medium";
-    const factsText = kind === "brief" || kind === "chat" || kind === "note" ? JSON.stringify(body.facts || {}) : "";
+    const factsText = kind === "brief" || kind === "chat" || kind === "note" || kind === "email" ? JSON.stringify(Object.assign({}, body.facts || {}, { asker: { name: me.name, role: me.role } })) : "";
     if (factsText.length > 150000) return json({ error: "Too much data to send in one go." }, 400);
     if (kind === "brief"){
       system = BRIEF_SYSTEM; schema = BRIEF_SCHEMA; sent = "the store's sales numbers (no customer details)";
-      content = [{ type: "text", text: "Facts:\n" + factsText + "\n\nWrite today's brief." }];
+      content = [{ type: "text", text: "Facts:\n" + factsText + "\n\nStore notes:\n" + notesText + "\n\nWrite today's brief." }];
     } else if (kind === "chat"){
       sent = "the store's sales numbers and the question (no customer details)";
-      system = CHAT_SYSTEM + "\n\nFacts:\n" + factsText;
+      system = CHAT_SYSTEM + "\n\nFacts:\n" + factsText + "\n\nStore notes:\n" + notesText;
       const raw = Array.isArray(body.messages) ? body.messages.slice(-20) : [];
       messages = [];
       for (const m of raw){
@@ -176,7 +223,13 @@ Deno.serve(async (req) => {
       if (!messages.length || messages[messages.length - 1].role !== "user") return json({ error: "Ask a question first." }, 400);
     } else if (kind === "note"){
       effort = "low"; system = NOTE_SYSTEM; sent = "the report's numbers (no customer details)";
-      content = [{ type: "text", text: "Tone: " + String(body.tone || "encouraging").slice(0, 40) + "\nFacts:\n" + factsText + "\n\nWrite the note." }];
+      content = [{ type: "text", text: "Tone: " + String(body.tone || "encouraging").slice(0, 40) + "\nFacts:\n" + factsText + "\n\nStore notes:\n" + notesText + "\n\nWrite the note." }];
+    } else if (kind === "email"){
+      system = EMAIL_SYSTEM; schema = EMAIL_SCHEMA; sent = "the store's sales numbers and the request (no customer details)";
+      const req2 = body.request || {};
+      content = [{ type: "text", text: "Facts:\n" + factsText + "\n\nStore notes:\n" + notesText + "\n\nEmail request:\n" + JSON.stringify({
+        purpose: String(req2.purpose || "").slice(0, 120), to: String(req2.to || "").slice(0, 120), tone: String(req2.tone || "").slice(0, 60),
+        points: String(req2.points || "").slice(0, 2000), sender: me.name }) + "\n\nWrite the email." }];
     } else if (kind === "sheet"){
       const tabs = Array.isArray(body.tabs) ? body.tabs.slice(0, 20) : [];
       if (!tabs.length) return json({ error: "Nothing to read." }, 400);
@@ -213,19 +266,38 @@ Deno.serve(async (req) => {
       output_config: schema ? { effort, format: { type: "json_schema", schema } } : { effort },
       messages: messages || [{ role: "user", content }],
     };
-    if (kind === "chat") params.cache_control = { type: "ephemeral" };
+    if (kind === "chat"){ params.cache_control = { type: "ephemeral" }; params.tools = [REMEMBER_TOOL]; }
     // deno-lint-ignore no-explicit-any
-    const res: any = await client.beta.messages.create(params as any);
-    const usage = res.usage || {};
-    const inTok = Number(usage.input_tokens || 0) + Number(usage.cache_creation_input_tokens || 0) + Number(usage.cache_read_input_tokens || 0);
-    const outTok = Number(usage.output_tokens || 0);
-    const price = PRICES[res.model] || PRICES[MODEL];
-    const cost = money(inTok / 1e6 * price[0] + outTok / 1e6 * price[1]);
+    let res: any = null, inTok = 0, outTok = 0, cost = 0;
+    const saved: string[] = [];
+    for (let turn = 0; turn < 4; turn++){
+      // deno-lint-ignore no-explicit-any
+      res = await client.beta.messages.create(params as any);
+      const usage = res.usage || {};
+      const i1 = Number(usage.input_tokens || 0) + Number(usage.cache_creation_input_tokens || 0) + Number(usage.cache_read_input_tokens || 0), o1 = Number(usage.output_tokens || 0);
+      const price = PRICES[res.model] || PRICES[MODEL];
+      inTok += i1; outTok += o1; cost = money(cost + i1 / 1e6 * price[0] + o1 / 1e6 * price[1]);
+      if (res.stop_reason !== "tool_use" || kind !== "chat") break;
+      // deno-lint-ignore no-explicit-any
+      const uses = (res.content || []).filter((b: any) => b.type === "tool_use");
+      // deno-lint-ignore no-explicit-any
+      const results: any[] = [];
+      for (const u of uses){
+        const note = typeof u.input?.note === "string" ? u.input.note.trim().slice(0, 400) : "";
+        if (u.name === "remember" && note){
+          const { error } = await admin.from("sales_ai_memory").insert({ dealership_id: dealer, note, created_by: me.id, created_by_name: me.name, source: "assistant" });
+          if (!error) saved.push(note);
+          results.push({ type: "tool_result", tool_use_id: u.id, content: error ? "Couldn't save: " + error.message : "Saved.", ...(error ? { is_error: true } : {}) });
+        } else results.push({ type: "tool_result", tool_use_id: u.id, content: "Unknown tool or empty note.", is_error: true });
+      }
+      params.messages = params.messages.concat([{ role: "assistant", content: res.content }, { role: "user", content: results }]);
+    }
     let result: unknown = null, failure = "";
     const outText = (res.content || []).filter((b: { type: string }) => b.type === "text").map((b: { text: string }) => b.text).join("");
     const isFile = kind === "sheet" || kind === "document";
     if (res.stop_reason === "refusal") failure = isFile ? "The AI declined to read this file." : "The AI declined to answer that.";
     else if (res.stop_reason === "max_tokens") failure = isFile ? "The file was too long for one AI read. Split it into smaller files." : "The answer ran too long. Try a narrower question.";
+    else if (res.stop_reason === "tool_use") failure = "The assistant didn't finish its answer. Ask again.";
     else if (schema){ try { result = JSON.parse(outText); } catch { failure = "The AI's answer couldn't be read. Try again."; } }
     else result = outText.trim();
     if (!failure && kind === "brief"){
@@ -235,11 +307,11 @@ Deno.serve(async (req) => {
     }
     await admin.from("sales_ai_usage").insert({
       dealership_id: dealer, user_id: me.id, user_name: me.name, file, kind, sent,
-      result: failure || (kind === "sheet" ? "proposal" : kind === "document" ? ((result as { deals?: unknown[] })?.deals?.length ?? 0) + " deals read" : kind === "brief" ? "morning brief" : kind === "chat" ? "answer" : "email note"),
+      result: failure || (kind === "sheet" ? "proposal" : kind === "document" ? ((result as { deals?: unknown[] })?.deals?.length ?? 0) + " deals read" : kind === "brief" ? "morning brief" : kind === "chat" ? "answer" + (saved.length ? " · remembered " + saved.length : "") : kind === "email" ? "email draft" : "email note"),
       input_tokens: inTok, output_tokens: outTok, cost,
     });
     if (failure) return json({ error: failure, cost }, 422);
-    return json({ ok: true, kind, result, cost, model: res.model, spent: money(spent + cost), cap });
+    return json({ ok: true, kind, result, cost, model: res.model, spent: money(spent + cost), cap, remembered: saved });
   } catch (e) {
     if (e instanceof Anthropic.RateLimitError) return json({ error: "The AI service is busy. Try again in a minute." }, 429);
     if (e instanceof Anthropic.AuthenticationError) return json({ error: "The server's Anthropic API key was rejected." }, 503);

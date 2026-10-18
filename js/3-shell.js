@@ -168,17 +168,18 @@ function allDeals(){ return state.history.concat(state.completed); }
 var FM_FEATURES = [
   { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Conversion" }, { key:"coupons", label:"Coupons" },
   { key:"worksheet", label:"Worksheet" }, { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" },
-  { key:"sales", label:"Sales Tracker (own F&I)" }, { key:"insights", label:"Dashboard (Insights)" }
+  { key:"sales", label:"Sales Tracker (own F&I)" }, { key:"insights", label:"Dashboard (Insights)" }, { key:"ai", label:"AI Assistant" }
 ];
 /* A Sales Manager's switches (Sales Tracker and the Insights dashboard are off until turned on). */
 var SM_FEATURES = [
   { key:"sales", label:"Sales Tracker", sub:"Log deals, Today, Sales performance, Appointments, Targets" },
   { key:"insights", label:"Dashboard (Insights)", sub:"Month and year to date gross, scorecards, year-end projections" },
-  { key:"worksheet", label:"Worksheet", sub:"Print the Purchase Proposal" }
+  { key:"worksheet", label:"Worksheet", sub:"Print the Purchase Proposal" },
+  { key:"ai", label:"AI Assistant", sub:"Chat and email drafting from the Sales Tracker (needs AI on in Dealership settings)" }
 ];
 function featureLabel(key){ var f = SM_FEATURES.concat(FM_FEATURES).filter(function(x){ return x.key === key; })[0]; return f ? f.label : key; }
 /* Off unless a Master or GM turns it on for that person (everything else is on unless turned off). */
-var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales", "insights"];
+var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales", "insights", "ai"];
 function featureOn(u, key){
   u = u || currentUser();
   if (u.role === "Master Administrator" || u.role === "General Manager") return true;
@@ -211,10 +212,11 @@ function allowedRouteKeys(){
   if (role === "Master Administrator") return null;
   if (role === "General Manager") return ["dashboard","assistant","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
   if (role === "Salesperson") return [];
-  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users","dashboard"].filter(function(k){
-    return k === "products" || k === "users" || featureOn(currentUser(), k === "dashboard" ? "insights" : k); });
-  /* A Sales Manager sees only what's switched on for them: Sales Tracker, the Dashboard (Insights), Worksheet. */
-  if (role === "Sales Manager") return ["sales","dashboard","worksheet"].filter(function(k){ return featureOn(currentUser(), k === "dashboard" ? "insights" : k); });
+  var fk = function(k){ return k === "dashboard" ? "insights" : k === "assistant" ? "ai" : k; };
+  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users","dashboard","assistant"].filter(function(k){
+    return k === "products" || k === "users" || featureOn(currentUser(), fk(k)); });
+  /* A Sales Manager sees only what's switched on for them: Sales Tracker, the Dashboard (Insights), Worksheet, AI Assistant. */
+  if (role === "Sales Manager") return ["sales","dashboard","assistant","worksheet"].filter(function(k){ return featureOn(currentUser(), fk(k)); });
   return ["finance","cashadv","sales","worksheet","products","reports","dashboard"].filter(function(k){
     if (k === "sales") return role === "Sales Manager" && featureOn(currentUser(), "sales");
     if (k === "dashboard") return featureOn(currentUser(), "insights");
@@ -228,7 +230,7 @@ function navItems(){
     { key:"hqusers", label:"Head-office users", ic:"◍", grp:"Head office" }];
   var items = [
     { key:"dashboard", label:"Dashboard", ic:"▤", grp:"Tools" },
-    { key:"assistant", label:"AI Assistant", ic:"✦", grp:"Tools", st:"aichat" },
+    { key:"assistant", label:"AI Assistant", ic:"✦", grp:"Tools" },
     { key:"finance", label:"Finance", ic:"◧", grp:"Tools" },
     { key:"cashadv", label:"Cash Conversion", ic:"$", grp:"Tools" },
     { key:"sales", label:"Sales Tracker", ic:"◆", grp:"Tools" },
@@ -241,6 +243,8 @@ function navItems(){
   ];
   var allowed = allowedRouteKeys();
   if (allowed) items = items.filter(function(n){ return allowed.indexOf(n.key) !== -1; });
+  /* the AI Assistant shows once AI is on for the store (the GM and Master always see it, to find the switch) */
+  if (!isAdmin() && !(state.config && state.config.ai && state.config.ai.on)) items = items.filter(function(n){ return n.key !== "assistant"; });
   return items;
 }
 function routeTitle(){

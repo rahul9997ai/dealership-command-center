@@ -10,7 +10,8 @@
 var AIC = { open:false, msgs:[], busy:false, draft:"", err:null };
 var AIB = { store:null, day:null, rec:null, loading:false, busy:false, err:null };
 var AIM = null;
-function aiCan(){ return V.isAdmin(); }
+/* the GM and Master always; anyone else the GM switches on (AI Assistant on their user card) */
+function aiCan(){ return V.featureOn(V.currentUser(), "ai"); }
 function aiOn(){ return !!(state.config && state.config.ai && state.config.ai.on); }
 function aiMonth(){ return stToday().slice(0, 7); }
 function aiAddDays(iso, n){ var d = new Date(iso + "T12:00:00"); d.setDate(d.getDate() + n); return C.localISO(d); }
@@ -64,8 +65,22 @@ function aiFacts(){
     yesterday:Object.assign({ date:yd }, aiPeriod(yd, yd)), lastSaturday:Object.assign({ date:sat }, aiPeriod(sat, sat)), thisWeek:aiPeriod(aiWeekStart(), today),
     today:{ deliveriesBooked:stAllDeals().filter(function(d){ return d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today; }).length },
     salespeople:people, carryOvers:carry, carryOversDeliveredThisMonth:stCarryDelivered(month).length, dealsThisMonth:deals,
+    pipeline:aiPipeline(),
+    byMonth:I.all.filter(function(r){ return r.month <= month; }).map(function(r){ return { month:r.month, units:aiR1(r.units), new:aiR1(r.N), used:aiR1(r.U), target:r.target || null, gross:aiR0(r.gross), delivered:r.delivered, logged:!!r.hasDeals }; }),
+    salespeopleYearToDate:I.scores.ytd.filter(function(x){ return !C.saleStoreOnly(x.name); }).map(function(x){ return { name:x.name, units:aiR1(x.units), new:aiR1(x.N), used:aiR1(x.U), frontPerVehicle:aiR0(x.frontPvr), fiPerVehicle:aiR0(x.fiPvr), totalGross:aiR0(x.total), dealsAtOrBelowZeroFront:x.losingN || 0, yearEndUnits:x.yearEnd || 0 }; }),
     yearToDate:{ year:I.year, units:aiR1(I.ytd.units), gross:aiR0(I.ytd.gross), delivered:I.ytd.delivered,
       yearEndProjection:{ units:I.proj.units.pace, new:I.proj.N.pace, used:I.proj.U.pace, gross:I.proj.gross.pace, delivered:I.proj.delivered.pace, atLast3MonthsPaceUnits:I.proj.units.last3 } } };
+}
+/* open deals by status and age, the ones waiting too long, and deliveries confirmed in Pulse this month */
+function aiPipeline(){
+  var open = stAllDeals().filter(function(d){ return C.saleIsOpen(d); }), month = aiMonth(), byStatus = {}, aging = { "0-7 days":0, "8-30 days":0, "31-60 days":0, "over 60 days":0 };
+  open.forEach(function(d){ var k = stLbl(d.status); byStatus[k] = (byStatus[k] || 0) + 1; var a = stDaysSince(d.soldDate);
+    aging[a <= 7 ? "0-7 days" : a <= 30 ? "8-30 days" : a <= 60 ? "31-60 days" : "over 60 days"]++; });
+  var waiting = open.filter(function(d){ return d.status === "approved" && stDaysSince((d.statusDates && d.statusDates.approved) || d.soldDate) > 3; })
+    .map(function(d){ return { stock:d.stockNo, vehicle:d.vehicle, salesperson:(d.salespeople && d.salespeople[0] && d.salespeople[0].name) || "", approvedDaysAgo:stDaysSince((d.statusDates && d.statusDates.approved) || d.soldDate) }; });
+  var pulse = stAllDeals().filter(function(d){ return d.flags && d.flags.pulse && String(d.deliveredDate || "").slice(0, 7) === month; }).length;
+  return { open:open.length, byStatus:byStatus, aging:aging, approvedNotBookedOver3Days:waiting.slice(0, 15), deliveriesConfirmedInPulseThisMonth:pulse,
+    declinedThisMonth:stAllDeals().filter(function(d){ return d.status === "declined" && String(d.soldDate || "").slice(0, 7) === month; }).length };
 }
 /* tiny, safe formatting for AI text: **bold**, numbered and "- " lists, paragraphs */
 function aiMd(t){
@@ -144,22 +159,18 @@ function aiSend(q){
   if (!aiReady()){ toast("Still loading the store's numbers. Try again in a moment.", "err"); return; }
   AIC.msgs.push({ role:"user", content:q }); AIC.draft = ""; AIC.busy = true; AIC.err = null; AIC.scroll = true; render();
   stAiCall({ dealershipId:ST.store, kind:"chat", facts:aiFacts(), messages:AIC.msgs.map(function(m){ return { role:m.role, content:m.content }; }) }).then(function(r){
-    AIC.busy = false; AIC.msgs.push({ role:"assistant", content:String(r.result || ""), cost:r.cost }); AIC.scroll = true; render();
+    AIC.busy = false; AIC.msgs.push({ role:"assistant", content:String(r.result || ""), cost:r.cost, remembered:r.remembered || [] }); AIC.scroll = true;
+    if ((r.remembered || []).length && typeof AIP !== "undefined") AIP.mem = null; render();
   }).catch(function(e){ AIC.busy = false; AIC.err = e.message; AIC.msgs.pop(); AIC.draft = q; render(); });
 }
 function aiChatPanel(){
-  if (!AIC.open || !aiCan() || !state.config) return "";
+  if (!AIC.open || !aiCan() || !state.config || state.route === "assistant") return "";
   aiEnsure();
-  var body = !aiOn() ? aiOffNote() : (AIC.msgs.length ? AIC.msgs.map(function(m){ return '<div class="ai-msg ' + (m.role === "user" ? "u" : "a") + '">' + (m.role === "user" ? esc(m.content).replace(/\n/g, "<br>") : aiMd(m.content)) + '</div>'; }).join("") :
-    '<div class="ai-hello"><b>Ask about ' + esc(state.config.name || "the store") + '</b><div>Answers come from this store\'s Sales Tracker: units, pace, gross, lead sources, close types and carry-overs. Customer details are never sent.</div></div>' +
-    '<div class="ai-chips">' + AI_CHIPS.map(function(c){ return '<button type="button" data-st="aichip" data-v="' + esc(c) + '">' + esc(c) + '</button>'; }).join("") + '</div>') +
-    (AIC.busy ? '<div class="ai-msg a ai-typing"><i></i><i></i><i></i></div>' : '');
+  var body = aiChatBody(true);
   if (AIC.scroll){ AIC.scroll = false; setTimeout(function(){ var l = document.querySelector(".ai-log"); if (l) l.scrollTop = l.scrollHeight; }, 0); }
-  return '<aside class="ai-panel" role="dialog" aria-label="AI Assistant"><div class="ai-ph"><span class="st-ico p">✦</span><div><b>AI Assistant</b><div class="ai-sub">' + esc(state.config.name || "") + ' · GM and Master only</div></div>' +
-    '<span class="ai-pa">' + (AIC.msgs.length ? '<button type="button" class="btn sm ghost" data-st="aiclear">New chat</button>' : '') + '<button type="button" class="btn sm" data-st="aichat" aria-label="Close">✕</button></span></div>' +
-    '<div class="ai-log">' + body + '</div>' + (AIC.err ? '<div class="st-err" style="margin:0 12px 8px">' + esc(AIC.err) + '</div>' : '') +
-    (aiOn() ? '<div class="ai-pf"><textarea rows="2" data-stf="aiDraft" placeholder="Ask about the store, a salesperson or the month…">' + esc(AIC.draft) + '</textarea><button type="button" class="btn primary" data-st="aisend"' + (AIC.busy ? " disabled" : "") + '>Send</button></div>' +
-      '<div class="ai-foot">' + (aiReady() ? 'Sends salespeople\'s names and the store\'s numbers only. Each question is a few cents.' : 'Loading the store\'s numbers…') + '</div>' : '') + '</aside>';
+  return '<aside class="ai-panel ai-float" role="dialog" aria-label="AI Assistant"><div class="ai-ph"><span class="st-ico p">✦</span><div><b>AI Assistant</b><div class="ai-sub">' + esc(state.config.name || "") + '</div></div>' +
+    '<span class="ai-pa">' + (AIC.msgs.length ? '<button type="button" class="btn sm ghost" data-st="aiclear">New chat</button>' : '') + '<button type="button" class="btn sm ghost" data-st="aiptab" data-v="chat" title="Open the full page">⤢</button><button type="button" class="btn sm" data-st="aichat" aria-label="Close">✕</button></span></div>' +
+    '<div class="ai-log">' + body + '</div>' + (AIC.err ? '<div class="st-err" style="margin:0 12px 8px">' + esc(AIC.err) + '</div>' : '') + aiComposer() + '</aside>';
 }
 
 /* ---- morning email (copy, formatted) ---- */

@@ -14,8 +14,10 @@ function routeView(){
     return '<div class="card"><div class="card-b"><h2 style="margin:0 0 6px">Nothing is switched on for you yet</h2><p class="muted" style="margin:0">Your General Manager turns on the Sales Tracker (and the Dashboard or Worksheet) from your user card in Users &amp; access.</p></div></div>';
   if (allowed && allowed.length === 0) return viewSalespersonRedirect();
   if (allowed && allowed.indexOf(state.route) === -1) state.route = allowed[0] || "finance";
+  if (state.route !== "settings") state.ui.setTab = null;
   switch (state.route){
     case "dashboard": return viewInsights();
+    case "assistant": return viewAssistant();
     case "finance": return V.viewFinance();
     case "cashadv": return viewCashAdv();
     case "sales": return viewSalesTracker();
@@ -25,7 +27,7 @@ function routeView(){
     case "reports": return viewReports();
     case "users": return viewUsers();
     case "dealerships": return V.viewDashboard();
-    case "settings": return viewSettings() + viewAiSettings() + viewDriveSettings() + viewPulseSettings();
+    case "settings": return viewSettings();
     default: return V.viewDashboard();
   }
 }

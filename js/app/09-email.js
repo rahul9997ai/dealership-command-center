@@ -240,6 +240,6 @@ function renderOverlay(){
       <button class="btn dark present-exit" data-act="exit-present">Exit full screen</button>`;
   }
   /* The confirm dialog goes last so it always sits on top of whatever opened it (e.g. Saved deals). */
-  return userCardModal() + printModal() + emailModal() + caEmailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer() + aiChatPanel() + aiMailModal() + stCellBubble() + confirmModal();
+  return (typeof aiFab === "function" ? aiFab() : "") + userCardModal() + printModal() + emailModal() + caEmailModal() + productModal() + userModal() + dealerModal() + extendModal() + demoChip() + demoNoticeModal() + tourHtml() + resetPwModal() + historyModal() + inviteModal() + savedModal() + cdDrawer() + aiChatPanel() + aiMailModal() + stCellBubble() + confirmModal();
 }
 

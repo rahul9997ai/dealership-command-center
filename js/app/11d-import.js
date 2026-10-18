@@ -441,8 +441,8 @@ function viewAiSettings(){
   var ai = state.config.ai || {}, cap = Number(ai.cap) > 0 ? Number(ai.cap) : 10, month = stToday().slice(0, 7), use = ST.aiUsage || [];
   var spent = use.filter(function(u){ return String(u.created_at).slice(0, 7) === month; }).reduce(function(a, u){ return a + Number(u.cost || 0); }, 0);
   var reads = use.filter(function(u){ return String(u.created_at).slice(0, 7) === month; }).length, lay = Object.keys(state.config.importLayouts || {}).length;
-  return '<div class="card" style="margin-top:16px"><div class="card-h"><h2>AI</h2><div class="sp"><span class="tag ' + (ai.on ? "ok" : "") + '">' + (ai.on ? "On" : "Off") + '</span></div></div><div class="card-b">' +
-    '<p class="muted small" style="max-width:80ch;margin-top:0">One switch for the AI features, all for the General Manager and Master only: the <b>AI Assistant</b> chat (left pane), the <b>morning brief</b> and the <b>morning email note</b> on the Dashboard, and <b>AI file reading</b> in Sales Tracker › Import. The AI is sent the store\'s numbers and salespeople\'s names, never customer details (a PDF or photo is the exception, and the screen says so before sending). Every use is listed below.</p>' +
+  return '<div class="card"><div class="card-h"><h2>AI</h2><div class="sp"><span class="tag ' + (ai.on ? "ok" : "") + '">' + (ai.on ? "On" : "Off") + '</span></div></div><div class="card-b">' +
+    '<p class="muted small" style="max-width:80ch;margin-top:0">One switch for the AI features: the <b>AI Assistant</b> (its own page in the left pane and the ✦ chat button, with the email writer and its memory), the <b>morning brief</b> on the Dashboard and <b>AI file reading</b> in Sales Tracker › Import. Choose below who else gets the Assistant. The AI is sent the store\'s numbers and salespeople\'s names, never customer details (a PDF or photo is the exception, and the screen says so before sending). Every use is listed below.</p>' +
     '<div class="grid g2"><div>' +
       '<label class="uc-feat ' + (ai.on ? "on" : "") + '"><span>AI features<small>Assistant, morning brief, email note, file reading</small></span><span class="uc-sw"><input type="checkbox" data-st="aion" ' + (ai.on ? "checked" : "") + '><i></i></span></label>' +
       '<label class="f" style="margin-top:12px"><span>Monthly spending cap ($)</span><input type="number" min="1" step="1" value="' + cap + '" data-st-cap="1" style="max-width:140px"></label>' +
@@ -453,5 +453,13 @@ function viewAiSettings(){
     '</div><div><div class="notice info" style="margin:0"><b>Privacy</b><br>For spreadsheets only the headings and a sample of rows are sent, with customer names, phone numbers and emails replaced in the browser first. A PDF or photo is sent as it is (a page can\'t be blanked out), and the screen says so before you send it. The AI service doesn\'t keep what it\'s sent or learn from it, and the AI key stays on the server.</div></div></div>' +
     (use.length ? '<div class="tablewrap" style="margin-top:14px"><table><thead><tr><th>When</th><th>Who</th><th>File</th><th>Sent</th><th>Result</th><th class="right">Cost</th></tr></thead><tbody>' +
       use.slice(0, 12).map(function(u){ return '<tr><td class="nowrap">' + esc(new Date(u.created_at).toLocaleString("en-CA", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" })) + '</td><td>' + esc(u.user_name || "") + '</td><td>' + esc(u.file || "") + '</td><td class="small">' + esc(u.sent || "") + '</td><td class="small">' + esc(u.result || "") + '</td><td class="right num">' + stMoney2(u.cost) + '</td></tr>'; }).join("") +
-      '</tbody></table></div>' : '') + '</div></div>';
+      '</tbody></table></div>' : '') + stAiWho() + '</div></div>';
+}
+/* who gets the AI Assistant (the GM and Master always do); the same switch is on each person's user card */
+function stAiWho(){
+  var staff = state.users.filter(function(u){ return u.dealershipId === state.activeDealershipId && u.active !== false && (u.role === "Sales Manager" || V.isFinanceRole(u.role)); });
+  return '<div class="uc-sec" style="margin-top:16px"><h3 style="margin:0 0 4px;font-size:14px">Who can use the AI Assistant</h3><p class="tiny muted" style="margin:0 0 10px">The General Manager and Master always can. Switch it on for anyone else here (or on their card in Users &amp; access). They get "AI Assistant" in the left pane and the ✦ chat button. The morning brief and file reading stay with the GM.</p>' +
+    (staff.length ? '<div class="uc-feats">' + staff.map(function(u){ var on = V.featureOn(u, "ai");
+      return '<label class="uc-feat ' + (on ? "on" : "") + '"><span>' + esc(u.name) + '<small>' + esc(V.roleLabel ? V.roleLabel(u.role) : u.role) + '</small></span><span class="uc-sw"><input type="checkbox" data-act="fm-feature" data-user="' + esc(u.id) + '" data-feature="ai" ' + (on ? "checked" : "") + '><i></i></span></label>'; }).join("") + '</div>'
+      : '<div class="tiny muted">No managers at this store yet.</div>') + '</div>';
 }
