@@ -265,14 +265,14 @@ function renderShell(inner){
   }).join("");
   var hq = inHQ(), store = !hq && state.config;
   var brandName = hq ? "Mahanex" : store ? esc(state.config.name) : "Dealership Command";
-  var brandMark = hq ? "MX" : store ? esc(state.config.logoMark||b.mark) : "DCC";
+  var brandMark = hq ? mhMark({ label:"" }) : store ? esc(state.config.logoMark||b.mark) : "DCC";
   var brandSub = hq ? "Head office" : store ? esc(b.label) + " · Dealership Command" : "No dealership yet";
   /* the left pane can be folded down to icons (remembered in this browser) */
   if (state.ui.railMini === undefined){ try { state.ui.railMini = localStorage.getItem("dcc-rail-mini") === "1"; } catch (e) { state.ui.railMini = false; } }
   return `<div class="app ${state.ui.railMini ? "rail-mini" : ""}">
     <aside class="rail ${state.ui.railOpen?"open":""}">
       <div class="rail-brand">
-        <div class="badge-logo" title="${brandName}">${brandMark}</div>
+        <div class="badge-logo${hq ? " mh" : ""}" title="${brandName}">${brandMark}</div>
         <div class="rail-names"><div class="nm">${brandName}</div><div class="sb">${brandSub}</div></div>
         <button type="button" class="rail-fold" data-st="railmini" title="${state.ui.railMini ? "Show the menu" : "Fold the menu to icons"}" aria-label="${state.ui.railMini ? "Show the menu" : "Fold the menu"}">${state.ui.railMini ? "»" : "«"}</button>
         <button class="btn sm ghost menu-btn" data-act="toggle-rail" style="color:#cbd5e1">Menu</button>

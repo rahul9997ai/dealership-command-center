@@ -150,9 +150,12 @@ function axLanding(cardHtml){
     <div class="axl-bg" aria-hidden="true">${axGeoA()}</div>
     <header class="axl-head">
       <div class="axl-brand" aria-label="Mahanex">
-        <div class="axl-lockup">${axLogo("blue")}</div>
-        <p class="axl-desc">Management AI for Human Advancement &amp; Next-gen EXecution</p>
-        <div class="axl-sig" role="img" aria-label="by Rahul Champaneri"><span>by Rahul Champaneri</span></div>
+        <span class="axl-mhmark">${mhMark({ traces:true })}</span>
+        <div class="axl-bt">
+          <div class="axl-lockup">${axLogo("blue")}</div>
+          <p class="axl-desc">Machine-Augmented Human Intelligence &amp; eXecution</p>
+          <div class="axl-sig" role="img" aria-label="by Rahul Champaneri"><span>by Rahul Champaneri</span></div>
+        </div>
       </div>
       <nav class="axl-nav" aria-label="Principles"><span>People</span><i></i><span>Process</span><i></i><span>Performance</span><i></i><span>Profit</span></nav>
     </header>

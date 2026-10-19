@@ -35,7 +35,7 @@ function mailShell(appName: string, inner: string) {
 <tr><td style="background:#0b1430;padding:26px 30px"><div style="font-size:26px;font-weight:800;letter-spacing:.16em;color:#ffffff">MAHAN<span style="color:#f0b94a">-EX</span></div>
 <div style="font-size:11px;letter-spacing:.14em;color:#c9d9f0;margin-top:6px;text-transform:uppercase">${esc(appName)}</div></td></tr>
 ${inner}
-<tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4"><div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahanex · Management AI for Human Advancement &amp; Next-gen EXecution</div></td></tr>
+<tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4"><div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahanex · Machine-Augmented Human Intelligence &amp; eXecution</div></td></tr>
 </table></td></tr></table></body></html>`;
 }
 async function setPasswordLink(admin: any, email: string, appUrl: string): Promise<string | null> {

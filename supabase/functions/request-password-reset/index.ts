@@ -35,7 +35,7 @@ function emailHtml(appName: string, link: string, first: string) {
   <div style="font-size:12.5px;line-height:1.6;color:#5a6b88">This link works for 24 hours and can be used once. If you didn't ask for this, you can ignore this email — your password won't change.</div>
 </td></tr>
 <tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4">
-  <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahanex · Management AI for Human Advancement &amp; Next-gen EXecution</div>
+  <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahanex · Machine-Augmented Human Intelligence &amp; eXecution</div>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }
