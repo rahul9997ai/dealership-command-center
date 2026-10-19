@@ -5,7 +5,7 @@ function renderOnboarding(){
   return `<div class="card"><div class="card-b"><div class="uc">
     <div class="bigtag">GET STARTED</div>
     <h2>No dealership has been set up yet</h2>
-    <p class="muted" style="max-width:54ch">The Command Center is ready, but no dealership exists yet. ${canCreate
+    <p class="muted" style="max-width:54ch">Dealership Command is ready, but no dealership exists yet. ${canCreate
       ? "Create your first dealership to pick its brand, taxes and finance defaults — the Finance module and customer display unlock as soon as it exists."
       : "Your account isn't linked to a dealership that exists yet. Ask your administrator to check that your account is assigned to the right dealership."}</p>
     ${canCreate ? `<button class="btn primary" data-act="dealer-new">Create a dealership</button>` : ""}
@@ -17,7 +17,7 @@ function axiomMarkSvg(size){
   /* An "A" whose crossbar is a rising arrow — see, understand, act — in a
      graphite tile with a champagne rim. Two solid legs, one gold accent. */
   var u = "m" + Math.random().toString(36).slice(2,8);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="AXIOM">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mahanex">
     <defs>
       <linearGradient id="${u}bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#23262e"/><stop offset="1" stop-color="#0e1014"/></linearGradient>
       <linearGradient id="${u}rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#efdcae"/><stop offset=".5" stop-color="#b8965a"/><stop offset="1" stop-color="#e6cf98"/></linearGradient>
@@ -115,8 +115,9 @@ function axMark(tone){
       <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="${w}"/>
     </svg>`;
 }
+/* Mahanex wordmark: MAHAN in steel (chrome on dark), EX in gold. tone = "blue"/"dark" (light page) or "light" (dark page). */
 function axLogo(tone){
-  return `<div class="lp2-logo ${tone}" role="img" aria-label="AXIOM">${axMark(tone)}<span class="lp2-xiom">XIOM</span></div>`;
+  return `<div class="lp2-logo mx-wm ${tone === "light" ? "on-dark" : "on-light"}" role="img" aria-label="Mahanex"><span class="mx-mahan">MAHAN</span><span class="mx-ex">EX</span></div>`;
 }
 /* Decorative geometric "A" — pure SVG, no raster image. */
 function axGeoA(){
@@ -148,16 +149,16 @@ function axLanding(cardHtml){
   return `<div class="axl">
     <div class="axl-bg" aria-hidden="true">${axGeoA()}</div>
     <header class="axl-head">
-      <div class="axl-brand" aria-label="AXIOM">
+      <div class="axl-brand" aria-label="Mahanex">
         <div class="axl-lockup">${axLogo("blue")}</div>
-        <p class="axl-desc">AI eXecutive Intelligence &amp; Operations Management</p>
+        <p class="axl-desc">Management AI for Human Advancement &amp; Next-gen EXecution</p>
         <div class="axl-sig" role="img" aria-label="by Rahul Champaneri"><span>by Rahul Champaneri</span></div>
       </div>
       <nav class="axl-nav" aria-label="Principles"><span>People</span><i></i><span>Process</span><i></i><span>Performance</span><i></i><span>Profit</span></nav>
     </header>
     <main class="axl-main">
       <section class="axl-hero">
-        <div class="axl-label"><span>Dealership Command Center</span><i></i></div>
+        <div class="axl-label"><span>Dealership Command</span><i></i></div>
         <h1>Smarter Tools.<br><em>Stronger Dealerships.</em></h1>
         <p class="axl-lead">Everything you need to manage F&amp;I, track performance and empower your team — in one place.</p>
       </section>
@@ -189,7 +190,7 @@ function renderLogin(){
     : state.ui.forgot ? forgotCard
     : `<div class="axl-card">
         <h2>Welcome Back</h2>
-        <p class="axl-sub">Sign in to your Command Center</p>
+        <p class="axl-sub">Sign in to Dealership Command</p>
         ${err ? `<div class="axl-err" role="alert">${esc(err)}</div>` : ""}
         <div class="axl-field">${axi("user")}<input type="text" id="loginEmail" placeholder="Email or username" autocomplete="username" spellcheck="false" aria-label="Email or username"></div>
         <div class="axl-field">${axi("lock")}<input type="password" id="loginPassword" placeholder="Password" autocomplete="current-password" aria-label="Password">

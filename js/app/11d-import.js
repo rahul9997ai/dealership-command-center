@@ -291,7 +291,7 @@ document.addEventListener("drop", function(ev){
 /* ---- AI file reading (General Manager; switched on per dealership in Dealership settings) ---- */
 function stAiOn(){ return stImpCan() && !!(state.config && state.config.ai && state.config.ai.on); }
 function stAiCall(body){
-  if (!stOnline()) return Promise.reject(new Error("AI file reading needs the live Command Center (it isn't available offline)."));
+  if (!stOnline()) return Promise.reject(new Error("AI file reading needs the live Dealership Command (it isn't available offline)."));
   return sb.auth.getSession().then(function(r){
     var sess = r.data && r.data.session;
     if (!sess) throw new Error("You're signed out. Sign in again.");

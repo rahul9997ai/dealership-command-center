@@ -25,7 +25,7 @@ function syncHash(){
   }
   navSync.last = h;
 }
-/* Open a store's Command Center on a given screen (loads its deals first if needed). */
+/* Open a store's Dealership Command on a given screen (loads its deals first if needed). */
 function openStore(id, route){
   var enter = function(){ state.ui.hq = false; state.route = route || "dashboard"; state.ui.railOpen = false; state.ui.userCard = null; window.scrollTo(0, 0); commit(); };
   if (id === state.activeDealershipId && state.config) return ensureStoreDeals(id).then(enter, function(){});

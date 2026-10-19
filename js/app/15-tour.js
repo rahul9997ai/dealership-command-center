@@ -8,7 +8,7 @@ var TOUR_STEPS = [
   { sel:"#step-4", title:"4 · Products & packages", text:"Type a price beside each product — it stays until you change it. Tick it into the Preferred, Essential or Basic column to place it in that package, or Decline to show the customer what they're waiving. Each column shows its running total. Tab jumps straight to the next price box. At the top of this card, record the package the customer chose." },
   { sel:"#step-5", title:"5 · Present & close", text:"Compare every package at every term, choose whether the customer sees payments and prices, check what's left, then complete the deal." },
   { sel:".fin-toolbar", title:"Your action bar", text:"This bar stays pinned while you scroll: the customer display, Print & send (email, internal print, customer copy), Deal (new, save, saved deals), what's left to finish, and Complete transaction." },
-  { sel:null, title:"You're all set", text:"That's the core flow. Reports (left menu) lists your completed deals, and you can reopen or edit any of them. Enjoy AXIOM." }
+  { sel:null, title:"You're all set", text:"That's the core flow. Reports (left menu) lists your completed deals, and you can reopen or edit any of them. Enjoy Mahanex." }
 ];
 function maybeStartTour(){
   if (!state.auth || state.auth.onboarded || state.ui.tour || !state.config) return;

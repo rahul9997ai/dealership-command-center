@@ -1,5 +1,5 @@
 /* =====================================================================
-   AXIOM DEALERSHIP COMMAND CENTER
+   MAHANEX DEALERSHIP COMMAND
    Layer 1: DATA — brands, colour presets, packages, product template
    ===================================================================== */
 (function () {

@@ -225,7 +225,7 @@ function aiMailHtml(D, note){
     html += '<tr><td><table role="presentation" cellpadding="0" cellspacing="0" width="100%" style="border-collapse:collapse"><tr><th ' + th + ' align="left">Sold</th><th ' + th + ' align="left">Vehicle</th><th ' + th + '>Type</th><th ' + th + '>Status</th>' + (AIM.gross ? '<th ' + th + '>Gross</th>' : '') + '</tr>' +
       D.deals.map(function(d){ return '<tr><td ' + tdl.replace("font-weight:700", "font-weight:600") + '>' + esc(stDay(d.soldDate)) + '</td><td style="padding:8px 10px;border-bottom:1px solid #eef2f7;font-size:13px">' + esc(d.vehicle || d.stockNo || "") + '</td><td ' + td + '>' + esc(d.type || "") + '</td><td ' + td + '>' + esc(stLbl(d.status)) + '</td>' + (AIM.gross ? '<td ' + td + '>' + stMoney((Number(d.frontGross) || 0) + (Number(d.fiGross) || 0)) + '</td>' : '') + '</tr>'; }).join("") + '</table></td></tr>';
   }
-  html += '<tr><td style="padding:10px 20px;font-size:11px;color:#94a3b8">Selling day ' + D.store.day + ' of ' + D.store.total + ' · AXIOM Command Center · ' + esc(new Date().toLocaleString("en-CA", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" })) + '</td></tr></table></div>';
+  html += '<tr><td style="padding:10px 20px;font-size:11px;color:#94a3b8">Selling day ' + D.store.day + ' of ' + D.store.total + ' · Mahanex Dealership Command · ' + esc(new Date().toLocaleString("en-CA", { month:"short", day:"numeric", hour:"numeric", minute:"2-digit" })) + '</td></tr></table></div>';
   return html;
 }
 function aiMailText(D, note){

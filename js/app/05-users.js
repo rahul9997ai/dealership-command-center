@@ -5,17 +5,17 @@
 function userAccessTags(u){
   var pulse = `<span class="tag ${u.pulseOn ? "ok" : ""}">Pulse · ${u.pulseOn ? "Full" : "Off"}</span>`;
   if (u.role === "Salesperson") return pulse;
-  var cc = !u.ccOn ? `<span class="tag">Command Center · Off</span>`
-    : u.demo ? `<span class="tag demo">Command Center · Demo${u.expiresAt ? " until " + esc(new Date(u.expiresAt).toLocaleDateString("en-CA",{month:"short",day:"numeric"})) : ""}</span>`
-    : `<span class="tag ok">Command Center · Full</span>`;
+  var cc = !u.ccOn ? `<span class="tag">Dealership Command · Off</span>`
+    : u.demo ? `<span class="tag demo">Dealership Command · Demo${u.expiresAt ? " until " + esc(new Date(u.expiresAt).toLocaleDateString("en-CA",{month:"short",day:"numeric"})) : ""}</span>`
+    : `<span class="tag ok">Dealership Command · Full</span>`;
   return cc + " " + pulse;
 }
-/* Account status across both apps: Command Center (ccOn) and Axiom Pulse (pulseOn). */
+/* Account status across both apps: Dealership Command (ccOn) and Mahanex Pulse (pulseOn). */
 function userStatus(u){
   if (u.role === "Master Administrator") return { cls:"ok", txt:"Active" };
   if (u.role === "Salesperson") return u.pulseOn ? { cls:"ok", txt:"Active" } : { cls:"danger", txt:"No access" };
   if (u.ccOn && u.pulseOn) return { cls:"ok", txt:"Active" };
-  if (u.ccOn) return { cls:"ok", txt:"Command Center only" };
+  if (u.ccOn) return { cls:"ok", txt:"Dealership Command only" };
   if (u.pulseOn) return { cls:"warn", txt:"Pulse only" };
   return { cls:"danger", txt:"No access" };
 }
@@ -100,7 +100,7 @@ function userCardModal(){
         <p class="tiny muted" style="margin:8px 0 0">Off until you turn it on. The database checks the same switches, so a hidden screen can't be reached another way.</p>`
         : `<p class="small muted" style="margin:0">Open ${esc(dealer)} from Dealerships to change what they can use there.</p>`}</div>`;
   } else if (u.role === "General Manager" || master){
-    features = `<div class="uc-sec"><h3>What they can use</h3><p class="small muted" style="margin:0">Everything in the Command Center for ${master ? "every dealership" : esc(dealer)}.</p></div>`;
+    features = `<div class="uc-sec"><h3>What they can use</h3><p class="small muted" style="margin:0">Everything in Dealership Command for ${master ? "every dealership" : esc(dealer)}.</p></div>`;
   }
   var accessBtns = (u.demo && V.isMaster() ? `<button class="btn sm" data-act="demo-extend" data-user="${u.id}">Extend demo</button>
       <button class="btn sm primary" data-act="demo-convert" data-user="${u.id}">Make full access</button>` : "");
@@ -110,10 +110,10 @@ function userCardModal(){
   var ccSub = !u.ccOn ? "Off" : u.demo ? "Demo" + (u.expiresAt ? " until " + new Date(u.expiresAt).toLocaleDateString("en-CA",{month:"short",day:"numeric"}) : "") : "Full access";
   var appSwitches = master ? `<p class="small muted" style="margin:0">The Master Administrator always has both apps.</p>`
     : `<div class="uc-feats">
-        ${u.role === "Salesperson" ? "" : u.role === "Sales Manager" ? sw("cc", "Command Center", u.ccOn, (u.ccOn ? "On" : "Off") + " · follows the switches above (on while Sales Tracker, Dashboard or Worksheet is on)", false) : sw("cc", "Command Center", u.ccOn, ccSub, canEdit && !isFsmOnly && !me)}
-        ${sw("pulse", "Axiom Pulse", u.pulseOn, u.pulseOn ? "Full access" : "Off", canEdit && !me && (!isFsmOnly || u.role === "Salesperson"))}</div>
+        ${u.role === "Salesperson" ? "" : u.role === "Sales Manager" ? sw("cc", "Dealership Command", u.ccOn, (u.ccOn ? "On" : "Off") + " · follows the switches above (on while Sales Tracker, Dashboard or Worksheet is on)", false) : sw("cc", "Dealership Command", u.ccOn, ccSub, canEdit && !isFsmOnly && !me)}
+        ${sw("pulse", "Mahanex Pulse", u.pulseOn, u.pulseOn ? "Full access" : "Off", canEdit && !me && (!isFsmOnly || u.role === "Salesperson"))}</div>
       ${!u.ccOn && !u.pulseOn && u.role !== "Salesperson" ? `<p class="tiny" style="margin:8px 0 0;color:var(--danger)">Both apps are off, so they can't sign in at all.</p>`
-        : `<p class="tiny muted" style="margin:8px 0 0">Each app is separate: turning Command Center off leaves Pulse working, and the other way round.</p>`}`;
+        : `<p class="tiny muted" style="margin:8px 0 0">Each app is separate: turning Dealership Command off leaves Pulse working, and the other way round.</p>`}`;
   return `<div class="modal-bg" data-act="user-card-close"><div class="modal ucard" role="dialog" aria-label="${esc(u.name)}">
     <div class="modal-h"><div class="uc-who"><div class="avatar">${esc(u.initials || "?")}</div><div><h2>${esc(u.name)}</h2>
       <div class="tiny muted">${u.username ? "@" + esc(u.username) : esc(u.email)}</div></div></div>
@@ -122,7 +122,7 @@ function userCardModal(){
       <div class="uc-grid"><label class="f"><span>Role</span>${roleField}</label><label class="f"><span>Dealership</span>${dealerField}</label></div>
       ${features}
       <div class="uc-sec"><h3>Apps they can sign in to</h3>${appSwitches}
-        ${accessBtns ? `<div class="uc-btns">${accessBtns}${u.demo && u.expiresAt ? ` <span class="tiny muted">Command Center demo ends ${esc(new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}))}</span>` : ""}</div>` : ""}</div>
+        ${accessBtns ? `<div class="uc-btns">${accessBtns}${u.demo && u.expiresAt ? ` <span class="tiny muted">Dealership Command demo ends ${esc(new Date(u.expiresAt).toLocaleString("en-CA",{dateStyle:"medium",timeStyle:"short"}))}</span>` : ""}</div>` : ""}</div>
       <div class="uc-sec"><h3>Account</h3><div class="uc-btns">
         <button class="btn sm" data-act="user-setpw" data-user="${u.id}" ${canEdit?"":"disabled"}>Reset password</button>
         <span style="flex:1"></span>
@@ -153,7 +153,7 @@ function userModal(){
         <div class="inline" style="gap:8px"><input type="text" data-uf="password" placeholder="At least 8 characters" autocomplete="off" spellcheck="false"><button type="button" class="btn sm" data-act="uf-genpw">Generate</button></div></label>
       <div id="ufAccessBox">
         <div class="divider"></div>
-        <div class="f"><span>Command Center access</span>
+        <div class="f"><span>Dealership Command access</span>
           <div class="chiprow">
             <button type="button" class="btn sm on" data-act="uf-access" data-val="full">Full access</button>
             <button type="button" class="btn sm" data-act="uf-access" data-val="demo">Demo (time limited)</button>
@@ -161,7 +161,7 @@ function userModal(){
         <div id="ufDemoBox" class="f" style="display:none"><span>Demo ends</span>
           ${wheelPicker(state.ui.inviteSel || (state.ui.inviteSel = defaultWheelSel(Date.now() + 7*86400000)), "invite")}
         </div>
-        <label class="switch" style="margin:10px 0 6px"><input type="checkbox" data-uf="pulse" checked> Also give Axiom Pulse access (same login)</label>
+        <label class="switch" style="margin:10px 0 6px"><input type="checkbox" data-uf="pulse" checked> Also give Mahanex Pulse access (same login)</label>
         <label class="switch"><input type="checkbox" data-uf="invite" checked> Email them an invite with a link to set their own password</label>
       </div>
       <p class="small muted" id="ufNote" style="margin-bottom:0"></p>
@@ -178,7 +178,7 @@ function syncUserForm(){
   show("#ufEmailBox", !sp); show("#ufUserBox", sp); show("#ufPwBox", !emailing); show("#ufAccessBox", !sp);
   var note = root.querySelector("#ufNote");
   if (note) note.textContent = sp
-    ? "A Salesperson signs in to Axiom Pulse with a username and this password. Share both with them yourself; they can't be emailed."
+    ? "A Salesperson signs in to Mahanex Pulse with a username and this password. Share both with them yourself; they can't be emailed."
     : emailing ? "They'll get an email with a button to set their own password, then sign in and get a short welcome walkthrough."
     : "No email will be sent. Share the temporary password with them; they'll choose their own the first time they sign in.";
 }

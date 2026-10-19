@@ -222,7 +222,7 @@ function allowedRouteKeys(){
     if (k === "dashboard") return featureOn(currentUser(), "insights");
     return k !== "worksheet" || featureOn(currentUser(), k); });
 }
-/* A Master starts at head office (the dealership list); opening a store gives its own Command Center. */
+/* A Master starts at head office (the dealership list); opening a store gives its own Dealership Command. */
 function inHQ(){ return isMaster() && !!state.ui.hq; }
 function navItems(){
   if (inHQ()) return [
@@ -249,7 +249,7 @@ function navItems(){
 }
 function routeTitle(){
   var n = navItems().filter(function(x){ return x.key === state.route; })[0];
-  return n ? n.label : "Dealership Command Center";
+  return n ? n.label : "Dealership Command";
 }
 function renderShell(inner){
   var b = brand(), u = currentUser();
@@ -264,9 +264,9 @@ function renderShell(inner){
       <span class="ic">${n.ic}</span><span>${esc(n.label)}</span>${n.tag?`<span class="tagx">${n.tag}</span>`:""}</button>`;
   }).join("");
   var hq = inHQ(), store = !hq && state.config;
-  var brandName = hq ? "AXIOM" : store ? esc(state.config.name) : "Dealership Command Center";
-  var brandMark = hq ? "AX" : store ? esc(state.config.logoMark||b.mark) : "DCC";
-  var brandSub = hq ? "Head office" : store ? esc(b.label) + " · Command Center" : "No dealership yet";
+  var brandName = hq ? "Mahanex" : store ? esc(state.config.name) : "Dealership Command";
+  var brandMark = hq ? "MX" : store ? esc(state.config.logoMark||b.mark) : "DCC";
+  var brandSub = hq ? "Head office" : store ? esc(b.label) + " · Dealership Command" : "No dealership yet";
   /* the left pane can be folded down to icons (remembered in this browser) */
   if (state.ui.railMini === undefined){ try { state.ui.railMini = localStorage.getItem("dcc-rail-mini") === "1"; } catch (e) { state.ui.railMini = false; } }
   return `<div class="app ${state.ui.railMini ? "rail-mini" : ""}">

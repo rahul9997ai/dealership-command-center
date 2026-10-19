@@ -18,7 +18,7 @@ function viewDealerships(){
   return `<div class="card"><div class="card-h"><h2>Dealerships</h2>
     <div class="sp"><button class="btn primary" data-act="dealer-new">Create a dealership</button></div></div>
     <div class="card-b">
-      <p class="muted small" style="max-width:76ch;margin:0 0 14px"><strong>Click a dealership to open its own Command Center.</strong> Each one carries its own brand, taxes, finance defaults, products and people; you manage its users and settings from inside it.</p>
+      <p class="muted small" style="max-width:76ch;margin:0 0 14px"><strong>Click a dealership to open its own Dealership Command.</strong> Each one carries its own brand, taxes, finance defaults, products and people; you manage its users and settings from inside it.</p>
       <div class="dgrid">${cards}<button type="button" class="dcard add" data-act="dealer-new">+ Create a dealership</button></div></div></div>`;
 }
 function dealerModal(){

@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-/* Branded password-reset email for AXIOM apps (sent through Resend, not Supabase's default mailer).
+/* Branded password-reset email for Mahanex apps (sent through Resend, not Supabase's default mailer).
    Public endpoint: it never says whether an address is registered. */
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +10,8 @@ const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const APPS = {
-  command: { name: "AXIOM Command Center", url: "https://finance.rahulchamp.ca/" },
-  pulse: { name: "AXIOM Pulse", url: "https://pulse.rahulchamp.ca/" },
+  command: { name: "Mahanex Dealership Command", url: "https://finance.rahulchamp.ca/" },
+  pulse: { name: "Mahanex Pulse", url: "https://pulse.rahulchamp.ca/" },
 } as const;
 const FROM_ADDRESS = "no-reply@rahulchamp.ca";
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
@@ -20,8 +20,8 @@ function emailHtml(appName: string, link: string, first: string) {
   return `<!doctype html><html><body style="margin:0;background:#eef2f8;font-family:Arial,Helvetica,sans-serif;color:#0b1b3a">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f8;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dbe4f0">
-<tr><td style="background:#1f4a86;padding:26px 30px">
-  <div style="font-size:26px;font-weight:800;letter-spacing:.16em;color:#ffffff">AXIOM</div>
+<tr><td style="background:#0b1430;padding:26px 30px">
+  <div style="font-size:26px;font-weight:800;letter-spacing:.16em;color:#ffffff">MAHAN<span style="color:#f0b94a">EX</span></div>
   <div style="font-size:11px;letter-spacing:.14em;color:#c9d9f0;margin-top:6px;text-transform:uppercase">${esc(appName)}</div>
 </td></tr>
 <tr><td style="padding:30px 30px 8px">
@@ -35,7 +35,7 @@ function emailHtml(appName: string, link: string, first: string) {
   <div style="font-size:12.5px;line-height:1.6;color:#5a6b88">This link works for 24 hours and can be used once. If you didn't ask for this, you can ignore this email — your password won't change.</div>
 </td></tr>
 <tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4">
-  <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">AXIOM · AI eXecutive Intelligence &amp; Operations Management</div>
+  <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahanex · Management AI for Human Advancement &amp; Next-gen EXecution</div>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -77,9 +77,9 @@ Deno.serve(async (req) => {
       body: JSON.stringify({
         from: `${APPS[app].name} <${FROM_ADDRESS}>`,
         to: [uu.user.email],
-        subject: "Reset your AXIOM password",
+        subject: `Reset your ${APPS[app].name} password`,
         html: emailHtml(APPS[app].name, actionLink, first),
-        text: `Hi ${first},\n\nReset your ${APPS[app].name} password: ${actionLink}\n\nThis link works for 24 hours. If you didn't ask for this, ignore this email.\n\nAXIOM`,
+        text: `Hi ${first},\n\nReset your ${APPS[app].name} password: ${actionLink}\n\nThis link works for 24 hours. If you didn't ask for this, ignore this email.\n\nMahanex`,
       }),
     });
     if (!res.ok) console.error("Resend rejected the email", res.status, await res.text());
