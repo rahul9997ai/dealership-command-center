@@ -1334,8 +1334,9 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 /* Mahanex wordmark: MAHAN in steel (chrome on dark), EX in gold */
 .mx-wm{display:inline-flex;align-items:baseline;font-family:"Sora","Montserrat",system-ui,sans-serif;font-weight:800;letter-spacing:.09em;line-height:1}
 .mx-wm .mx-mahan,.mx-wm .mx-ex{-webkit-background-clip:text;background-clip:text;color:transparent}
-.mx-wm.on-light .mx-mahan{background-image:linear-gradient(180deg,#5d6f96 0%,#1e2b4d 50%,#0b1430 100%)}
-.mx-wm.on-light .mx-ex{background-image:linear-gradient(180deg,#e7b24a 0%,#b7790f 52%,#7a4d06 100%)}
+/* on the light landing page MAHAN takes the headline's navy ink, EX a clean gold */
+.mx-wm.on-light .mx-mahan{background-image:linear-gradient(180deg,#1d3263 0%,#0b1b3a 100%)}
+.mx-wm.on-light .mx-ex{background-image:linear-gradient(180deg,#f6c560 0%,#e3a52f 55%,#c98a12 100%)}
 .mx-wm.on-dark .mx-mahan{background-image:linear-gradient(180deg,#ffffff 0%,#d4e1f7 42%,#4f6c9c 52%,#e7efff 100%)}
 .mx-wm.on-dark .mx-ex{background-image:linear-gradient(180deg,#fff6d6 0%,#ffd27a 42%,#a6650a 53%,#ffe29a 100%)}
 .axl-lockup .lp2-logo.mx-wm{display:inline-flex;gap:0;font-size:clamp(34px,3.6vw,66px)}
