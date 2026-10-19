@@ -1339,4 +1339,8 @@ html.cd-docked .main{padding-right:min(520px,94vw)}
 .mx-wm.on-light .mx-ex{background-image:linear-gradient(180deg,#1a86ff 0%,#0a6cf0 100%)}
 .mx-wm.on-dark .mx-mahan{background-image:linear-gradient(180deg,#ffffff 0%,#d4e1f7 42%,#4f6c9c 52%,#e7efff 100%)}
 .mx-wm.on-dark .mx-ex{background-image:linear-gradient(180deg,#fff6d6 0%,#ffd27a 42%,#a6650a 53%,#ffe29a 100%)}
+/* the visual hyphen in MAHAN-EX: a short bar in the EX colour, centred on the capitals */
+.mx-wm .mx-dash{display:inline-block;width:.34em;height:.11em;margin:0 .1em 0 .02em;border-radius:.06em;align-self:center;transform:translateY(-.04em)}
+.mx-wm.on-light .mx-dash{background:linear-gradient(90deg,#1a86ff,#0a6cf0)}
+.mx-wm.on-dark .mx-dash{background:linear-gradient(90deg,#ffd27a,#e3a52f)}
 .axl-lockup .lp2-logo.mx-wm{display:inline-flex;gap:0;font-size:clamp(34px,3.6vw,66px);line-height:.92}

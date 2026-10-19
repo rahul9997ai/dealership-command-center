@@ -21,7 +21,7 @@ function emailHtml(appName: string, link: string, first: string) {
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#eef2f8;padding:28px 12px"><tr><td align="center">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#ffffff;border-radius:12px;overflow:hidden;border:1px solid #dbe4f0">
 <tr><td style="background:#0b1430;padding:26px 30px">
-  <div style="font-size:26px;font-weight:800;letter-spacing:.16em;color:#ffffff">MAHAN<span style="color:#f0b94a">EX</span></div>
+  <div style="font-size:26px;font-weight:800;letter-spacing:.16em;color:#ffffff">MAHAN<span style="color:#f0b94a">-EX</span></div>
   <div style="font-size:11px;letter-spacing:.14em;color:#c9d9f0;margin-top:6px;text-transform:uppercase">${esc(appName)}</div>
 </td></tr>
 <tr><td style="padding:30px 30px 8px">

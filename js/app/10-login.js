@@ -115,9 +115,9 @@ function axMark(tone){
       <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="${w}"/>
     </svg>`;
 }
-/* Mahanex wordmark: MAHAN in steel (chrome on dark), EX in gold. tone = "blue"/"dark" (light page) or "light" (dark page). */
+/* Mahanex wordmark, shown as MAHAN-EX (the name itself is written Mahanex): MAHAN in steel (chrome on dark), EX in the accent. tone = "blue"/"dark" (light page) or "light" (dark page). */
 function axLogo(tone){
-  return `<div class="lp2-logo mx-wm ${tone === "light" ? "on-dark" : "on-light"}" role="img" aria-label="Mahanex"><span class="mx-mahan">MAHAN</span><span class="mx-ex">EX</span></div>`;
+  return `<div class="lp2-logo mx-wm ${tone === "light" ? "on-dark" : "on-light"}" role="img" aria-label="Mahanex"><span class="mx-mahan">MAHAN</span><span class="mx-dash" aria-hidden="true"></span><span class="mx-ex">EX</span></div>`;
 }
 /* Decorative geometric "A" — pure SVG, no raster image. */
 function axGeoA(){
