@@ -663,7 +663,7 @@ function stViewTargets(){
       '<div class="st-hk"><div class="l">Selling days</div><div class="v">' + info.total + '</div><div class="s">' + day + ' used · ' + (info.total - day) + ' left</div><div class="st-pace"><i class="b" style="width:' + (info.total ? day/info.total*100 : 0) + '%"></i></div></div>' +
       '<div class="st-hk"><div class="l">Gross forecast</div><div class="v">' + (t.gross ? stMoney(t.gross) : "—") + '</div><div class="s">' + (t.gross && totN + totU ? "about " + stMoney(t.gross/(totN + totU)) + " per vehicle" : "optional") + '</div></div>' +
       '<div class="st-hk"><div class="l">Per salesperson</div><div class="v">' + (t.people.length ? stF((totN + totU)/t.people.length) : "—") + '</div><div class="s">average target</div></div></div></div>' +
-    (ST.tDirty ? '<div class="st-warn">You have unsaved changes to ' + stMonthName(month) + '\'s targets.</div>' : '') +
+    (ST.tDirty ? '<div class="st-warn">You have unsaved changes to ' + stMonthName(month) + '\'s targets.</div>' : '') + phCard() +
     '<div class="st-g2"><div class="st-table" style="margin:0"><div class="st-th"><div><h2>SALESPERSON TARGETS</h2><div class="st-hsub">units · New and Used · HOUSE and MOBILE/HOUSE are always there (store only)</div></div></div>' +
       '<div class="st-tw"><table><thead><tr><th class="l">Salesperson</th><th>New</th><th>Used</th><th>Total</th><th>Weekly N · U</th><th></th></tr></thead><tbody>' +
       (t.people.length ? t.people.map(function(p, i){ return '<tr><td class="l"><span class="st-who">' + stPhotoSlot(p.name) + '<input class="st-tin" style="width:150px;text-align:left" data-stt="name:' + i + '" value="' + esc(p.name || "") + '" placeholder="Name"></span></td>' +
@@ -672,7 +672,7 @@ function stViewTargets(){
           '<td><button type="button" class="btn sm ghost" data-st="rmperson" data-v="' + i + '" title="Remove" aria-label="Remove ' + esc(p.name || "") + '">×</button></td></tr>'; }).join("") :
         '<tr><td colspan="6" class="st-empty" style="padding:16px">No salespeople yet. Add them below, or copy last month\'s targets.</td></tr>') +
       '<tr class="store"><td class="l">Store</td><td>' + totN + '</td><td>' + totU + '</td><td>' + (totN + totU) + '</td><td>' + weekly(totN) + ' · ' + weekly(totU) + '</td><td></td></tr></tbody></table></div>' +
-      '<div class="st-note" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"><button type="button" class="btn sm" data-st="addperson">+ Add a salesperson</button>' +
+      '<div class="st-note" style="display:flex;gap:12px;flex-wrap:wrap;align-items:center"><button type="button" class="btn sm" data-st="addperson">+ Add a salesperson</button>' + (phCan() ? '<button type="button" class="btn sm" data-st="phopen" title="Find the team photos on the dealership\'s staff page">Import photos from a staff page</button>' : '') +
         '<span>Gross forecast <input class="st-tin" style="width:100px" inputmode="numeric" data-stt="gross" value="' + esc(t.gross || "") + '" placeholder="$"></span>' +
         '<span>Counts toward target <select class="st-tin" style="width:auto" data-stt="countOn"><option value="sold" ' + (t.countOn !== "delivered" ? "selected" : "") + '>Sold</option><option value="delivered" ' + (t.countOn === "delivered" ? "selected" : "") + '>Delivered</option></select></span></div></div>' +
     '<div class="st-card"><div class="st-ch"><span class="st-ico b">▦</span><h3>Selling days<small>' + stMonthName(month) + ' · click a day to open or close it</small></h3><span class="cnt">' + info.total + '</span></div>' +
@@ -774,6 +774,7 @@ function viewSalesTracker(){
 /* ---- events (Sales Tracker elements carry data-st / data-stf / data-stt, so the app's own handlers ignore them) ---- */
 function stAct(act, el){
   if (typeof aipAct === "function" && aipAct(act, el)) return;
+  if (typeof phAct === "function" && phAct(act, el)) return;
   var v = el.getAttribute("data-v"), e = ST.edit;
   switch (act){
     case "view": ST.view = v; ST.err = null; if (v !== "today" && !ST.month) ST.month = stToday().slice(0, 7); window.scrollTo(0, 0); break;
@@ -911,6 +912,7 @@ function stField(ev){
   var k = el.getAttribute("data-stf"), tk = el.getAttribute("data-stt");
   if (k){
     var val = el.type === "checkbox" ? el.checked : el.value;
+    if (k === "phUrl" || k.indexOf("phUse:") === 0){ phField(k, el, ev); return; }
     if (k === "month"){ if (ev.type !== "change") return; ST.month = val; ST.tDraft = null; ST.tDirty = false; render(); return; }
     if (k === "apptDay"){ if (ev.type !== "change" || !val) return; ST.apptDay = val; render(); return; }
     if (k === "insYear"){ if (ev.type !== "change") return; INS.year = Number(val) || null; render(); return; }
