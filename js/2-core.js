@@ -791,9 +791,23 @@ function salesInsights(opts){
   var yearDays = sum(yearMonths, "total"), usedDays = sum(sofar, "used"), leftDays = yearDays - usedDays;
   /* months with something recorded: units come from deals or imported totals, gross and deliveries from deals.
      A month with nothing recorded (before the tracker, nothing imported) is left out of the pace, not counted as 0. */
-  var dataMonths = sofar.filter(function(r){ return r.hasDeals; }), dataDays = sum(dataMonths, "used");
-  var unitMonths = sofar.filter(function(r){ return r.hasDeals || r.fromHistory; }), unitDays = sum(unitMonths, "used");
-  var last3 = sofar.slice(-3), last3Data = last3.filter(function(r){ return r.hasDeals; }), last3Units = last3.filter(function(r){ return r.hasDeals || r.fromHistory; });
+  /* A leading month with only a handful of deals (a few carried-over rows that sit on a later month's sheet, or the day a log
+     was first started) isn't a real month of sales: counting it as a full month drags the pace down. Leading months below 30%
+     of the median of the full months after them are left out of the pace, like months with nothing recorded. Imported totals
+     and the current month are never dropped. */
+  var trimLead = function(list, f){
+    var l = list.slice();
+    while (l.length > 2 && l[0].month < cur && !l[0].fromHistory){
+      var rest = l.slice(1).filter(function(r){ return r.month < cur; }).map(f).sort(function(x, y){ return x - y; });
+      if (rest.length < 2) break;
+      var med = rest.length % 2 ? rest[(rest.length - 1)/2] : (rest[rest.length/2 - 1] + rest[rest.length/2])/2;
+      if (f(l[0]) < 0.3*med) l.shift(); else break;
+    }
+    return l;
+  };
+  var dataMonths = trimLead(sofar.filter(function(r){ return r.hasDeals; }), function(r){ return r.agg.store.units; }), dataDays = sum(dataMonths, "used");
+  var unitMonths = trimLead(sofar.filter(function(r){ return r.hasDeals || r.fromHistory; }), function(r){ return r.units; }), unitDays = sum(unitMonths, "used");
+  var last3 = sofar.slice(-3), last3Data = last3.filter(function(r){ return dataMonths.indexOf(r) !== -1; }), last3Units = last3.filter(function(r){ return unitMonths.indexOf(r) !== -1; });
   var gapU = unitMonths.length < sofar.length, gapG = dataMonths.length < sofar.length;
   /* year-end: this year's pace (so far ÷ selling days used × selling days in the year) and the last 3 months' pace */
   var paceAll = function(f, list, days){ return days > 0 ? sum(list, f)/days*yearDays : null; };

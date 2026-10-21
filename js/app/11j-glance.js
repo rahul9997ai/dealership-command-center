@@ -114,7 +114,7 @@ function stViewToday(){
   var deliveredY = all.filter(function(d){ return (d.status === "delivered" || d.status === "rdr") && d.deliveredDate === yesterday; });
   var todayList = all.filter(function(d){ return (d.status === "scheduled" && String(d.deliveryAt || "").slice(0, 10) === today) || ((d.status === "delivered" || d.status === "rdr") && d.deliveredDate === today); })
     .sort(function(a, b){ return String(a.deliveryAt || "").localeCompare(String(b.deliveryAt || "")); });
-  var save = all.filter(function(d){ return d.status === "pending" || d.status === "declined" || d.status === "approved"; }).sort(function(a, b){ return a.status === "declined" ? -1 : b.status === "declined" ? 1 : 0; });
+  var save = all.filter(function(d){ return d.status === "pending" || d.status === "approved" || (d.status === "declined" && String(d.soldDate || "").slice(0, 7) === month); }).sort(function(a, b){ return a.status === "declined" ? -1 : b.status === "declined" ? 1 : 0; });
   var gross = s.front + s.fi, pvr = s.deals ? gross/s.deals : null, left = p.total - p.day, noTargets = !(t.people || []).length;
   var delivered = stDeliveredIn(month).length, carryDel = stCarryDelivered(month).length;
   var att = stAttention(month), help = p.people.filter(function(x){ return !x.storeOnly && x.tT > 0 && x.pct !== null && x.pct < 0.9; }).sort(function(a, b){ return a.pct - b.pct; });

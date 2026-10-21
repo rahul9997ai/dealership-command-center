@@ -512,6 +512,20 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   const nb = late.scores.ytd.filter((p) => p.name === "NEWBIE")[0];
   eq("INS a new hire is projected from their first month", nb.yearEnd, Math.round(1/day*late.months.filter((m) => m.month >= "2026-10").reduce((t, m) => t + m.total, 0)));
 }
+/* --- Insights: a leading month with only a few carried-over deals isn't a real month of sales --- */
+{
+  const sp = (n) => [{ name:n, share:1 }];
+  const mk = (month, n, st) => Array.from({ length:n }, (_, i) => ({ soldDate:month + "-" + String(1 + (i % 27)).padStart(2, "0"), status:st || "delivered", type:i % 2 ? "Used" : "New", salespeople:sp("ARUN"), frontGross:1000, fiGross:500 }));
+  const deals = [].concat(mk("2026-04", 1), mk("2026-07", 12), mk("2026-08", 75), mk("2026-09", 75), mk("2026-10", 36, "approved"));
+  const ins = C.salesInsights({ deals, targets:{}, year:2026, today:"2026-10-21" });
+  const days = (m) => C.sellingDays(m).total, used = C.sellingDayOf(C.sellingDays("2026-10"), "2026-10-21");
+  eq("INS sparse leading months are left out of the unit pace", ins.proj.units.pace, Math.round((75 + 75 + 36)/(days("2026-08") + days("2026-09") + used)*ins.yearDays));
+  eq("INS the unit pace says where it starts", ins.proj.unitsFrom, "2026-08");
+  eq("INS gross pace starts at the same month", ins.proj.dataFrom, "2026-08");
+  eq("INS year to date still shows every logged deal", ins.ytd.units, 1 + 12 + 75 + 75 + 36);
+  const solid = C.salesInsights({ deals:[].concat(mk("2026-07", 60), mk("2026-08", 75), mk("2026-09", 75), mk("2026-10", 36, "approved")), targets:{}, year:2026, today:"2026-10-21" });
+  eq("INS a real month of sales is kept in the pace", solid.proj.unitsFrom, "2026-07");
+}
 /* --- Excel import: dates as typed, headers found anywhere, statuses and money read --- */
 {
   eq("IMP 9TH SEP on a September 2026 tab", C.impDate("9TH SEP", 2026, 9), "2026-09-09");
