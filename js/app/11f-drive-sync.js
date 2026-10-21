@@ -70,19 +70,22 @@ function dsSyncFile(file, force){
         dates.length ? fetchAllRows(function(){ return sb.from("sales_log").select("id,data").eq("dealership_id", store).gte("sold_on", dates[0]).lte("sold_on", dates[dates.length - 1]).order("id"); }) : Promise.resolve([])
       ]).then(function(rs){
         /* deals already in the tracker: this file's own (by source), the same deal imported before (same id: adopted),
-           or one typed in by hand with the same stock # and date (left alone, counted as skipped) */
-        var mine = {}, other = {}, typed = {}, now = new Date().toISOString(), fms = ST.fms || [];
+           or one typed in by hand with the same stock # and date (left alone, counted as skipped). A row that came from an
+           earlier Excel upload (importBatch, no source) under a different id (e.g. a salesperson spelled another way) is the
+           same deal: the file's row takes its place (adopted) so it keeps following the Excel. */
+        var mine = {}, other = {}, typed = {}, uploaded = {}, adoptIds = [], now = new Date().toISOString(), fms = ST.fms || [];
         rs[0].forEach(function(x){ mine[x.id] = x.data; });
-        rs[1].forEach(function(x){ var d = x.data || {}; if (d.source !== src){ other[x.id] = d; typed[stKey(d.stockNo) + "|" + d.soldDate] = x.id; } });
+        rs[1].forEach(function(x){ var d = x.data || {}; if (d.source !== src){ other[x.id] = d; var tk = stKey(d.stockNo) + "|" + d.soldDate; if (!d.source && d.importBatch) uploaded[tk] = x.id; else typed[tk] = x.id; } });
         var write = [], keep = {}, skipped = 0, added = 0, updated = 0, excl = (DS.status[file.id] && DS.status[file.id].excluded) || [], kept = 0;
         P.deals.forEach(function(d){
           if (excl.indexOf(d.id) !== -1){ kept++; return; }
-          var tid = typed[stKey(d.stockNo) + "|" + d.soldDate];
+          var dk = stKey(d.stockNo) + "|" + d.soldDate, tid = typed[dk], upId = !mine[d.id] && uploaded[dk] && uploaded[dk] !== d.id && !typed[dk] ? uploaded[dk] : null;
           if (!mine[d.id] && tid && tid !== d.id){ skipped++; return; }
+          if (upId && adoptIds.indexOf(upId) === -1) adoptIds.push(upId);
           keep[d.id] = 1; d.source = src;
           var first = stKey(d.fiManager).split(/\s+/)[0], fm = first ? fms.filter(function(m){ return stKey(m.name).split(/\s+/)[0] === first; }) : [];
           if (fm.length === 1){ d.fiUserId = fm[0].id; d.fiManager = fm[0].name; }
-          var old = mine[d.id] || other[d.id];
+          var old = mine[d.id] || other[d.id] || (upId ? other[upId] : null);
           if (old && old.flags && old.flags.pulse && (old.status === "delivered" || old.status === "rdr") && C.saleIsOpen(d)){
             d.status = "delivered"; d.deliveredDate = old.deliveredDate; d.statusDates = Object.assign({}, d.statusDates || {}, { delivered:old.deliveredDate });
             d.flags = Object.assign({}, d.flags || {}, { pulse:old.flags.pulse }); }
@@ -90,13 +93,13 @@ function dsSyncFile(file, force){
           d.createdAt = old ? old.createdAt : now; d.createdBy = old ? old.createdBy : "Google Drive sync"; d.updatedAt = now; d.updatedBy = "Google Drive sync (" + (me.name || "") + ")";
           write.push(d); if (old) updated++; else added++;
         });
-        var gone = Object.keys(mine).filter(function(id){ return !keep[id]; });
+        var gone = Object.keys(mine).filter(function(id){ return !keep[id]; }), adopted = adoptIds.length; gone = gone.concat(adoptIds);
         var chain = Promise.resolve();
         for (var i = 0; i < write.length; i += 200) (function(chunk){ chain = chain.then(function(){
           return sb.from("sales_log").upsert(chunk.map(function(d){ return { id:d.id, dealership_id:store, sold_on:d.soldDate, data:d }; })).then(function(x){ if (x.error) throw x.error; chunk.forEach(function(d){ ST.deals[d.id] = d; }); }); }); })(write.slice(i, i + 200));
         for (var j = 0; j < gone.length; j += 200) (function(chunk){ chain = chain.then(function(){
           return sb.from("sales_log").delete().eq("dealership_id", store).in("id", chunk).then(function(x){ if (x.error) throw x.error; chunk.forEach(function(id){ delete ST.deals[id]; }); }); }); })(gone.slice(j, j + 200));
-        var result = { added:added, updated:updated, removed:gone.length, skipped:skipped, unreadable:P.bad, deals:P.deals.length, tabs:P.tabs, merged:P.merged, deletedInTracker:kept };
+        var result = { added:added, updated:updated, removed:gone.length - adopted, adopted:adopted, skipped:skipped, unreadable:P.bad, deals:P.deals.length, tabs:P.tabs, merged:P.merged, deletedInTracker:kept };
         return chain.then(function(){
           var rec = { dealership_id:store, file_id:file.id, modified_time:r.meta.modifiedTime, synced_at:now, synced_by:me.name || "", result:result, excluded:excl };
           return sb.from("sales_sync").upsert(rec).then(function(x){ if (x.error) throw x.error; DS.status[file.id] = rec; return { file:file, result:result }; });
