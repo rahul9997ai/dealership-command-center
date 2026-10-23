@@ -310,7 +310,7 @@ function loadProfileAndEnter(){
       var ccOn = p.cc_enabled !== false && p.role !== "Salesperson";
       var ccType = p.cc_access_type || p.access_type, ccExp = p.cc_expires_at !== undefined ? p.cc_expires_at : p.expires_at;
       if (!ccOn) return failLogin(p.role === "Salesperson" || p.pulse_enabled !== false
-        ? "This account doesn't have Dealership Command access. Sign in to Mahanex Pulse instead, or ask your administrator."
+        ? "This account doesn't have Dealership Command access. Sign in to Mahan-EX Pulse instead, or ask your administrator."
         : "This account isn't active. Contact your administrator.");
       if (ccType === "demo" && ccExp && new Date(ccExp) <= new Date())
         return failLogin("Your Dealership Command demo access has expired. Contact your administrator.");
@@ -411,18 +411,18 @@ function demoNoticeModal(){
       <div class="big">${esc(fmtExpiry(a.expiresAt))}</div>
       <div class="wc-count"><span class="muted small">Time remaining</span><span class="wc-timer" id="welcomeTimer">${fmtRemaining(new Date(a.expiresAt).getTime() - Date.now())}</span></div></div>
     <p class="small muted">A countdown stays at the top of your screen and you'll be signed out automatically when it reaches zero. Need more time? Ask your administrator.</p>` : "";
-  var themeBlock = w.first ? `<div class="wc-theme"><div class="lbl">Choose how Mahanex looks</div>
+  var themeBlock = w.first ? `<div class="wc-theme"><div class="lbl">Choose how Mahan-EX looks</div>
       <div class="wc-themes">
         <button type="button" class="wc-tile ${state.ui.theme==="dark"?"on":""}" data-act="set-theme" data-theme="dark"><span class="sw sw-dark"><i></i><i></i></span>Dark</button>
         <button type="button" class="wc-tile ${state.ui.theme!=="dark"?"on":""}" data-act="set-theme" data-theme="light"><span class="sw sw-light"><i></i><i></i></span>Normal</button>
       </div><div class="tiny muted">You can change this any time from the top bar.</div></div>` : "";
   return `<div class="welcome-bg"><div class="welcome-card">
     <div class="wc-glow"></div>
-    ${w.demo ? `<div class="wc-badge"><span class="dc-dot"></span>Demo access</div>` : `<div class="wc-badge wc-badge-ok">Mahanex</div>`}
+    ${w.demo ? `<div class="wc-badge"><span class="dc-dot"></span>Demo access</div>` : `<div class="wc-badge wc-badge-ok">Mahan-EX</div>`}
     <h2>Welcome, ${esc(first)}</h2>
-    <p class="wc-lead">${w.demo ? "You're exploring Mahanex with the full functionality of your role. Everything you build here is yours to try." : "Your account is ready. Let's get you set up in a few seconds."}</p>
+    <p class="wc-lead">${w.demo ? "You're exploring Mahan-EX with the full functionality of your role. Everything you build here is yours to try." : "Your account is ready. Let's get you set up in a few seconds."}</p>
     ${themeBlock}${demoBlock}
-    <button class="btn primary wc-btn" data-act="demo-ack">${w.first ? "Continue" : "Continue to Mahanex"}</button>
+    <button class="btn primary wc-btn" data-act="demo-ack">${w.first ? "Continue" : "Continue to Mahan-EX"}</button>
   </div></div>`;
 }
 var WHEEL_H = 44;
@@ -470,7 +470,7 @@ function genTempPassword(){
 }
 var inviteSecret = null;
 function inviteMessage(i){
-  return ["Hi " + i.first + ",", "", "You've been given access to Mahanex Dealership Command.", "", "Sign in: " + i.url, "Email: " + i.email,
+  return ["Hi " + i.first + ",", "", "You've been given access to Mahan-EX Dealership Command.", "", "Sign in: " + i.url, "Email: " + i.email,
     "Temporary password: " + i.password, "", "You'll choose your own password the first time you sign in."].join(String.fromCharCode(10));
 }
 function inviteModal(){

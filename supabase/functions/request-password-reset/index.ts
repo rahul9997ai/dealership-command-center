@@ -1,6 +1,6 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-/* Branded password-reset email for Mahanex apps (sent through Resend, not Supabase's default mailer).
+/* Branded password-reset email for Mahan-EX apps (sent through Resend, not Supabase's default mailer).
    Public endpoint: it never says whether an address is registered. */
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -10,8 +10,8 @@ const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 
 const APPS = {
-  command: { name: "Mahanex Dealership Command", url: "https://finance.rahulchamp.ca/" },
-  pulse: { name: "Mahanex Pulse", url: "https://pulse.rahulchamp.ca/" },
+  command: { name: "Mahan-EX Dealership Command", url: "https://finance.rahulchamp.ca/" },
+  pulse: { name: "Mahan-EX Pulse", url: "https://pulse.rahulchamp.ca/" },
 } as const;
 const FROM_ADDRESS = "no-reply@rahulchamp.ca";
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]!));
@@ -35,7 +35,7 @@ function emailHtml(appName: string, link: string, first: string) {
   <div style="font-size:12.5px;line-height:1.6;color:#5a6b88">This link works for 24 hours and can be used once. If you didn't ask for this, you can ignore this email — your password won't change.</div>
 </td></tr>
 <tr><td style="background:#f5f8fc;padding:16px 30px;border-top:1px solid #e3eaf4">
-  <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahanex · Machine-Augmented Human Intelligence &amp; eXecution</div>
+  <div style="font-size:11px;color:#7a8aa6;letter-spacing:.04em">Mahan-EX · Machine-Augmented Human Intelligence &amp; eXecution</div>
 </td></tr>
 </table></td></tr></table></body></html>`;
 }
@@ -79,7 +79,7 @@ Deno.serve(async (req) => {
         to: [uu.user.email],
         subject: `Reset your ${APPS[app].name} password`,
         html: emailHtml(APPS[app].name, actionLink, first),
-        text: `Hi ${first},\n\nReset your ${APPS[app].name} password: ${actionLink}\n\nThis link works for 24 hours. If you didn't ask for this, ignore this email.\n\nMahanex`,
+        text: `Hi ${first},\n\nReset your ${APPS[app].name} password: ${actionLink}\n\nThis link works for 24 hours. If you didn't ask for this, ignore this email.\n\nMahan-EX`,
       }),
     });
     if (!res.ok) console.error("Resend rejected the email", res.status, await res.text());

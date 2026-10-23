@@ -1,7 +1,7 @@
 "use strict";
 /* ---------------- SETTINGS ---------------- */
 function viewSalespersonRedirect(){
-  return `<div class="grid g2"><div class="card"><div class="card-h"><h2>Mahanex Pulse</h2></div><div class="card-b">
+  return `<div class="grid g2"><div class="card"><div class="card-h"><h2>Mahan-EX Pulse</h2></div><div class="card-b">
     <div class="notice info">Your account is set up for deliveries, not Dealership Command. Sign in at
       <strong>pulse.rahulchamp.ca</strong> to see your assigned deliveries and enable notifications.</div>
     <button class="btn" data-act="logout" style="margin-top:12px">Sign out</button>
@@ -17,7 +17,7 @@ var SET_TILES = [
   { key:"offers", ic:"✦", title:"Promotional offers", sub:"One-tap offers for the Finance Managers" },
   { key:"ai", ic:"✧", title:"AI", sub:"Assistant, morning brief, email writing and file reading" },
   { key:"drive", ic:"⇅", title:"Google Drive sync", sub:"Read the Excel sales logs kept on Google Drive" },
-  { key:"pulse", ic:"⟲", title:"Pulse deliveries", sub:"Deliveries in Mahanex Pulse show as Delivered" },
+  { key:"pulse", ic:"⟲", title:"Pulse deliveries", sub:"Deliveries in Mahan-EX Pulse show as Delivered" },
   { key:"financials", ic:"▤", title:"Financial statements", sub:"Upload or link the monthly financial statement for the GM dashboard" },
   { key:"payout", ic:"✎", title:"Payout requests", sub:"Accounting email, subject lines and bank PAD form details" }
 ];

@@ -267,7 +267,7 @@ function renderShell(inner){
       <span class="ic">${n.ic}</span><span>${esc(n.label)}</span>${n.tag?`<span class="tagx">${n.tag}</span>`:""}</button>`;
   }).join("");
   var hq = inHQ(), store = !hq && state.config;
-  var brandName = hq ? "Mahanex" : store ? esc(state.config.name) : "Dealership Command";
+  var brandName = hq ? "Mahan-EX" : store ? esc(state.config.name) : "Dealership Command";
   var brandMark = hq ? mhMark({ label:"" }) : store ? esc(state.config.logoMark||b.mark) : "DCC";
   var brandSub = hq ? "Head office" : store ? esc(b.label) + " · Dealership Command" : "No dealership yet";
   /* the left pane can be folded down to icons (remembered in this browser) */

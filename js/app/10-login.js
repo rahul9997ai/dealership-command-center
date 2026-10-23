@@ -17,7 +17,7 @@ function axiomMarkSvg(size){
   /* An "A" whose crossbar is a rising arrow — see, understand, act — in a
      graphite tile with a champagne rim. Two solid legs, one gold accent. */
   var u = "m" + Math.random().toString(36).slice(2,8);
-  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mahanex">
+  return `<svg width="${size}" height="${size}" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Mahan-EX">
     <defs>
       <linearGradient id="${u}bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#23262e"/><stop offset="1" stop-color="#0e1014"/></linearGradient>
       <linearGradient id="${u}rim" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#efdcae"/><stop offset=".5" stop-color="#b8965a"/><stop offset="1" stop-color="#e6cf98"/></linearGradient>
@@ -115,9 +115,9 @@ function axMark(tone){
       <path d="M14 92L74 70l-8-9 62-24-42 32 12 4-56 24z" fill="${w}"/>
     </svg>`;
 }
-/* Mahanex wordmark, shown as MAHAN-EX (the name itself is written Mahanex): MAHAN in steel (chrome on dark), EX in the accent. tone = "blue"/"dark" (light page) or "light" (dark page). */
+/* Mahan-EX wordmark, shown as MAHAN-EX (the name itself is written Mahan-EX): MAHAN in steel (chrome on dark), EX in the accent. tone = "blue"/"dark" (light page) or "light" (dark page). */
 function axLogo(tone){
-  return `<div class="lp2-logo mx-wm ${tone === "light" ? "on-dark" : "on-light"}" role="img" aria-label="Mahanex"><span class="mx-mahan">MAHAN</span><span class="mx-dash" aria-hidden="true"></span><span class="mx-ex">EX</span></div>`;
+  return `<div class="lp2-logo mx-wm ${tone === "light" ? "on-dark" : "on-light"}" role="img" aria-label="Mahan-EX"><span class="mx-mahan">MAHAN</span><span class="mx-dash" aria-hidden="true"></span><span class="mx-ex">EX</span></div>`;
 }
 /* Decorative geometric "A" — pure SVG, no raster image. */
 function axGeoA(){
@@ -149,7 +149,7 @@ function axLanding(cardHtml){
   return `<div class="axl">
     <div class="axl-bg" aria-hidden="true">${axGeoA()}</div>
     <header class="axl-head">
-      <div class="axl-brand" aria-label="Mahanex">
+      <div class="axl-brand" aria-label="Mahan-EX">
         <span class="axl-mhmark">${mhMark({ traces:true })}</span>
         <div class="axl-bt">
           <div class="axl-lockup">${axLogo("blue")}</div>

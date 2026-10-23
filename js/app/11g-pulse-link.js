@@ -1,6 +1,6 @@
 "use strict";
 /* ---------------- SALES TRACKER · PULSE DELIVERIES (read-only) ----------------
-   For stores that also use Mahanex Pulse: a vehicle delivered in Pulse shows as Delivered in the sales log
+   For stores that also use Mahan-EX Pulse: a vehicle delivered in Pulse shows as Delivered in the sales log
    (with Pulse's delivery date and a small "Pulse" tag). Pulse is never changed. Switched on per dealership in
    Dealership settings (General Manager / Master): config.pulseLink = { on }.
    The matching runs in the database (sales_pulse_apply): same stock #, else the same customer name, only when
@@ -37,7 +37,7 @@ function viewPulseSettings(){
   if (!V.isAdmin() || !state.config) return "";
   var on = plOn(), x = PL.store === state.activeDealershipId ? PL.res : null;
   return '<div class="card"><div class="card-h"><h2>Pulse deliveries</h2><div class="sp"><span class="tag ' + (on ? "ok" : "") + '">' + (on ? "Linked" : "Off") + '</span></div></div><div class="card-b">' +
-    '<p class="muted small" style="max-width:80ch;margin-top:0">When a vehicle is delivered in <b>Mahanex Pulse</b>, the Sales Tracker marks the deal <b>Delivered</b> with Pulse\'s delivery date and a small "Pulse" tag. ' +
+    '<p class="muted small" style="max-width:80ch;margin-top:0">When a vehicle is delivered in <b>Mahan-EX Pulse</b>, the Sales Tracker marks the deal <b>Delivered</b> with Pulse\'s delivery date and a small "Pulse" tag. ' +
     'Read-only: nothing in Pulse is changed. Deals are matched on the stock #, or the customer\'s name when there\'s no stock #, and only when exactly one open deal fits. ' +
     'A deal you change back by hand stays as you set it, and the Google Drive sync won\'t move a Pulse-delivered deal back to open.</p>' +
     '<div class="grid g2"><div>' +

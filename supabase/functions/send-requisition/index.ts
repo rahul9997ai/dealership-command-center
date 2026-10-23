@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const res = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from: `${safeName} via Mahanex <${FROM_ADDRESS}>`, to: [to], reply_to: to, subject, html, text, attachments: attachments.length ? attachments : undefined }),
+      body: JSON.stringify({ from: `${safeName} via Mahan-EX <${FROM_ADDRESS}>`, to: [to], reply_to: to, subject, html, text, attachments: attachments.length ? attachments : undefined }),
     });
     if (!res.ok) { console.error("Resend rejected the email", res.status, await res.text()); return json({ error: "The email couldn't be sent. Try again in a minute." }, 502); }
 

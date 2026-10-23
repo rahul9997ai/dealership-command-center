@@ -58,43 +58,43 @@ function poPadOn(tab){ var s = poState(tab); return s.pay === "PAD" && (tab === 
 
 /* ---- the email (all styles inline, so it survives Outlook, Gmail and forwarding) ---- */
 function poEmailHtml(tab){
-  var T = poT(tab), s = poState(tab), tt = C.payoutTotals(s.amount, s.hst), ds = poDocs(tab), cf = String(s.carfax || "").trim(), cfg = state.config || {};
-  var td1 = "padding:7px 22px;width:38%;color:#64748b;font-size:13px;vertical-align:top;border-top:1px solid #f0f4f9", td2 = "padding:7px 22px 7px 0;font-size:13px;font-weight:700;vertical-align:top;border-top:1px solid #f0f4f9";
-  var rows = "", add = function(k, v){ if (v) rows += '<tr><td style="' + td1 + '">' + esc(k) + '</td><td style="' + td2 + '">' + esc(v) + '</td></tr>'; };
-  var f = s.f;
-  add("Payable to", s.payee); add("Payment method", s.pay === "PAD" ? "PAD (bank debits the dealership account)" : s.pay); if (s.pay === "Cheque") add("Cheque release", poReleaseLabel(s.release));
+  var T = poT(tab), s = poState(tab), tt = C.payoutTotals(s.amount, s.hst), ds = poDocs(tab), cf = String(s.carfax || "").trim(), cfg = state.config || {}, f = s.f, pad = poPadOn(tab);
+  /* Built from nested tables with every style on the cell, so Outlook (which ignores padding on <div>) shows it the same as Gmail. */
+  var F = "font-family:Arial,Helvetica,sans-serif;color:#0b1b3a;";
+  var td = function(style, inner, attrs){ return '<td ' + (attrs || "") + ' style="' + F + style + '">' + inner + '</td>'; };
+  var tr = function(inner){ return '<tr>' + inner + '</tr>'; };
+  var table = function(inner, attrs, style){ return '<table role="presentation" ' + (attrs || 'width="100%"') + ' cellpadding="0" cellspacing="0" border="0" style="border-collapse:collapse;' + (style || "") + '">' + inner + '</table>'; };
+  var sec = function(label){ return tr(td("padding:18px 22px 6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748b;font-weight:bold", esc(label))); };
   var has = function(k){ return T.f.some(function(x){ return x[0] === k; }); };
+  var rows = "", add = function(k, v){ if (v) rows += tr(td("padding:8px 8px 8px 22px;color:#64748b;font-size:13px;border-top:1px solid #eef2f7", esc(k), 'width="38%" valign="top"') + td("padding:8px 22px 8px 0;font-size:13px;font-weight:bold;border-top:1px solid #eef2f7", esc(v), 'valign="top"')); };
+  add("Payable to", s.payee); add("Payment method", s.pay === "PAD" ? "PAD (bank debits the dealership account)" : s.pay); if (s.pay === "Cheque") add("Cheque release", poReleaseLabel(s.release));
   add(tab === "used" ? "DMS vendor #" : "DMS #", f.dms); add("Stock #", f.stk); if (has("name")) add("Customer", f.name);
   if (has("veh")) add("Vehicle", f.veh); if (has("sellerType")) add("Seller is", f.sellerType); add("Original payment", f.orig); add("Reason", f.reason);
   if (f.gt) add("Payout good through", poFmtDate(f.gt) + (f.pd ? " · per diem " + f.pd + " after" : ""));
   add("Requested by", poMe().name + (poRoleLabel() ? " · " + poRoleLabel() : ""));
-  var pad = poPadOn(tab);
-  var h = '<div style="max-width:600px;margin:0 auto;background:#ffffff;border:1px solid #dbe4f0;border-radius:10px;overflow:hidden;font-family:Arial,Helvetica,sans-serif;color:#0b1b3a">' +
-    '<div style="background:#0b1430;padding:18px 22px"><div style="font-size:11px;letter-spacing:.14em;color:#c9d9f0;text-transform:uppercase">' + esc(cfg.name || "Dealership") + '</div>' +
-      '<div style="font-size:18px;font-weight:700;letter-spacing:.04em;color:#ffffff;margin-top:3px">' + (s.pay === "Cheque" ? "CHEQUE REQUISITION" : "PAYMENT REQUISITION") + '</div></div>' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-bottom:1px solid #e3eaf4"><tr><td style="padding:16px 22px;vertical-align:bottom">' +
-      '<div style="display:inline-block;background:#e8f1ff;color:#0a54c0;border-radius:6px;padding:3px 9px;font-size:12px;font-weight:700">' + esc(T.title.toUpperCase()) + '</div>' +
-      '<div style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;margin-top:6px">Amount to pay</div><div style="font-size:28px;font-weight:800">' + poMoney(tt.total) + '</div></td>' +
-      '<td style="padding:16px 22px;text-align:right;vertical-align:bottom;font-size:12px;color:#64748b">Required by<div style="color:#b45309;font-size:14px;font-weight:700">' + esc(poFmtDate(f.req)) + '</div></td></tr></table>' +
-    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0">' + rows + '</table>';
-  if (T.carfax && cf) h += '<div style="margin:12px 22px;border:1.5px solid #f0b94a;background:#fff8e6;border-radius:9px;padding:11px 13px;font-size:13px"><b>Carfax report</b> (lien check)<br>' +
-    '<a href="' + esc(cf) + '" style="display:inline-block;margin-top:7px;background:#0a6cf0;color:#ffffff;text-decoration:none;border-radius:7px;padding:7px 14px;font-weight:700;font-size:12.5px">Open the Carfax report</a>' +
-    '<div style="color:#7a5a10;font-size:11px;margin-top:6px;word-break:break-all">' + esc(cf) + '</div></div>';
-  var sec = 'style="padding:12px 22px 4px;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:#64748b;font-weight:700"';
-  h += '<div ' + sec + '>Amount</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px"><tr><td style="padding:6px 22px">' + esc(T.amtLbl) + '</td><td style="padding:6px 22px;text-align:right">' + poMoney(tt.amount) + '</td></tr>' +
-    (tt.hst ? '<tr><td style="padding:6px 22px">HST (13%)</td><td style="padding:6px 22px;text-align:right">' + poMoney(tt.hst) + '</td></tr>' : '') +
-    '<tr><td style="padding:9px 22px;border-top:2px solid #0b1b3a;font-weight:800;font-size:15px">' + (s.pay === "Cheque" ? "Cheque amount" : "Total to pay") + '</td><td style="padding:9px 22px;border-top:2px solid #0b1b3a;text-align:right;font-weight:800;font-size:15px">' + poMoney(tt.total) + '</td></tr></table>';
-  h += '<div ' + sec + '>Backup documents</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px">' +
-    '<tr><td style="padding:5px 22px;color:#047857">&#128206; Cheque requisition (Excel) <span style="color:#64748b">attached</span></td></tr>' +
-    (pad ? '<tr><td style="padding:5px 22px;color:#047857">&#128206; Pre-filled bank PAD form (PDF) <span style="color:#64748b">attached to this email</span></td></tr>' : '') +
-    ds.on.map(function(d){ return '<tr><td style="padding:5px 22px;color:#047857">&#10003; ' + esc(d[0]) + ' <span style="color:#64748b">attached</span></td></tr>'; }).join("") +
-    ds.off.map(function(d){ return '<tr><td style="padding:5px 22px;color:#b45309;font-weight:700">&#10007; ' + esc(d[0]) + ' <span style="font-weight:400">not attached</span></td></tr>'; }).join("") + '</table>';
-  if (String(s.notes || "").trim()) h += '<div ' + sec + '>Notes</div><div style="margin:6px 22px 10px;font-size:13px;background:#f8fafc;border-radius:8px;padding:9px 11px">' + esc(String(s.notes).trim()).replace(/\n/g, "<br>") + '</div>';
-  h += '<div ' + sec + '>Approval</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px">' + poApprovers().map(function(a, i){
-    return '<tr><td style="padding:9px 22px;font-weight:700;width:40%;border-top:1px solid #f0f4f9">' + esc(a) + '<div style="color:#64748b;font-weight:400;font-size:11.5px">' + (i === 0 ? 'Reply "APPROVED" to this email' : 'Required on every request') + '</div></td>' +
-      '<td style="padding:9px 22px;border-top:1px solid #f0f4f9">&#9744; Approved &nbsp; Date: ________</td></tr>'; }).join("") + '</table>';
-  h += '<div style="padding:12px 22px;background:#f5f8fc;border-top:1px solid #e3eaf4;font-size:11px;color:#7a8aa6">Prepared in Mahanex · Dealership Command · ' + esc(poFmtDate(C.todayISO())) + '</div></div>';
-  return h;
+  var badge = '<p style="margin:0;font-size:12px;font-weight:bold;letter-spacing:1px;color:#0a54c0;font-family:Arial,Helvetica,sans-serif">' + esc(T.title.toUpperCase()) + '</p>';
+  var h = tr(td("padding:20px 22px;background:#0b1430", '<p style="margin:0;font-size:11px;letter-spacing:2px;color:#c9d9f0;text-transform:uppercase;font-family:Arial,Helvetica,sans-serif">' + esc(cfg.name || "Dealership") + '</p>' +
+      '<p style="margin:6px 0 0;font-size:20px;font-weight:bold;letter-spacing:1px;color:#ffffff;font-family:Arial,Helvetica,sans-serif">' + (s.pay === "Cheque" ? "CHEQUE REQUISITION" : "PAYMENT REQUISITION") + '</p>', 'bgcolor="#0b1430"')) +
+    tr(td("padding:18px 22px;border-bottom:1px solid #e3eaf4", table(tr(
+      td("", badge + '<p style="margin:8px 0 0;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748b;font-family:Arial,Helvetica,sans-serif">Amount to pay</p><p style="margin:2px 0 0;font-size:30px;font-weight:bold;color:#0b1b3a;font-family:Arial,Helvetica,sans-serif">' + poMoney(tt.total) + '</p>', 'valign="bottom"') +
+      td("text-align:right;font-size:12px;color:#64748b", 'Required by<br><span style="font-size:15px;font-weight:bold;color:#b45309">' + esc(poFmtDate(f.req)) + '</span>', 'align="right" valign="bottom"')))) ) +
+    tr(td("padding:4px 0 0", table(rows)));
+  if (T.carfax && cf) h += tr(td("padding:14px 22px 4px", table(tr(td("padding:12px 14px;font-size:13px;border:1px solid #f0b94a;background:#fff8e6",
+      '<b>Carfax report</b> (lien check)<br><br>' + table(tr(td("padding:9px 18px", '<a href="' + esc(cf) + '" style="color:#ffffff;text-decoration:none;font-weight:bold;font-size:13px;font-family:Arial,Helvetica,sans-serif">Open the Carfax report</a>', 'bgcolor="#0a6cf0"')), 'cellpadding="0"', "") +
+      '<p style="margin:8px 0 0;font-size:11px;color:#7a5a10;word-break:break-all;font-family:Arial,Helvetica,sans-serif">' + esc(cf) + '</p>', 'bgcolor="#fff8e6"')))));
+  h += sec("Amount") + tr(td("padding:0", table(
+    tr(td("padding:7px 22px;font-size:13px", esc(T.amtLbl)) + td("padding:7px 22px;font-size:13px", poMoney(tt.amount), 'align="right"')) +
+    (tt.hst ? tr(td("padding:7px 22px;font-size:13px", "HST (13%)") + td("padding:7px 22px;font-size:13px", poMoney(tt.hst), 'align="right"')) : "") +
+    tr(td("padding:10px 22px;font-size:15px;font-weight:bold;border-top:2px solid #0b1b3a", s.pay === "Cheque" ? "Cheque amount" : "Total to pay") + td("padding:10px 22px;font-size:15px;font-weight:bold;border-top:2px solid #0b1b3a", poMoney(tt.total), 'align="right"')))));
+  var docRow = function(color, weight, glyph, name, note){ return tr(td("padding:5px 22px;font-size:13px;color:" + color + ";font-weight:" + weight, glyph + " " + esc(name) + ' <span style="color:#64748b;font-weight:normal">' + note + '</span>')); };
+  h += sec("Backup documents") + tr(td("padding:0", table(
+    docRow("#047857", "normal", "&#10003;", "Cheque requisition (Excel)", "attached") + (pad ? docRow("#047857", "normal", "&#10003;", "Pre-filled bank PAD form (PDF)", "attached") : "") +
+    ds.on.map(function(d){ return docRow("#047857", "normal", "&#10003;", d[0], "attached"); }).join("") + ds.off.map(function(d){ return docRow("#b45309", "bold", "&#10007;", d[0], "not attached"); }).join(""))));
+  if (String(s.notes || "").trim()) h += sec("Notes") + tr(td("padding:4px 22px 8px", table(tr(td("padding:10px 12px;font-size:13px;background:#f8fafc", esc(String(s.notes).trim()).replace(/\n/g, "<br>"), 'bgcolor="#f8fafc"')))));
+  h += sec("Approval") + tr(td("padding:0", table(poApprovers().map(function(a, i){
+    return tr(td("padding:9px 22px;font-size:13px;border-top:1px solid #eef2f7", '<b>' + esc(a) + '</b><br><span style="font-size:11.5px;color:#64748b">' + (i === 0 ? 'Reply "APPROVED" to this email' : 'Required on every request') + '</span>')); }).join(""))));
+  h += tr(td("padding:14px 22px;background:#f5f8fc;border-top:1px solid #e3eaf4;font-size:11px;color:#7a8aa6", "Mahan-EX Dealership Command", 'bgcolor="#f5f8fc"'));
+  return table(h, 'width="600" align="center"', "width:600px;max-width:600px;border:1px solid #dbe4f0;background:#ffffff");
 }
 function poEmailText(tab){
   var T = poT(tab), s = poState(tab), tt = C.payoutTotals(s.amount, s.hst), ds = poDocs(tab), cf = String(s.carfax || "").trim(), f = s.f, L = [];
@@ -109,7 +109,7 @@ function poEmailText(tab){
   L.push("Attached: cheque requisition (Excel)"); if (poPadOn(tab)) L.push("Attached: pre-filled bank PAD form (PDF)");
   L.push("Attached: " + (ds.on.map(function(d){ return d[0]; }).join(", ") || "none")); if (ds.off.length) L.push("NOT attached: " + ds.off.map(function(d){ return d[0]; }).join(", "));
   if (String(s.notes || "").trim()) L.push("", "Notes: " + String(s.notes).trim());
-  L.push("", "Approvals: " + poApprovers().map(function(a){ return a + " ____"; }).join("   "), "", "Requested by " + poMe().name + (poRoleLabel() ? " · " + poRoleLabel() : ""));
+  L.push("", "Approval: " + poApprovers().join(" and ") + ' (reply "APPROVED")', "", "Requested by " + poMe().name + (poRoleLabel() ? " · " + poRoleLabel() : ""), "", "Mahan-EX Dealership Command");
   return L.join("\n");
 }
 

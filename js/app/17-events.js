@@ -412,7 +412,7 @@ document.addEventListener("click", function(ev){
     case "user-pulse": {
       var up = userById(el.getAttribute("data-user"));
       adminCall({ action:"update", id:up.id, pulse_enabled:!up.pulseOn, app:"command" })
-        .then(function(){ toast(up.name + (up.pulseOn ? " no longer has Mahanex Pulse access." : " now has Mahanex Pulse access."),"ok"); refreshUsers(); })
+        .then(function(){ toast(up.name + (up.pulseOn ? " no longer has Mahan-EX Pulse access." : " now has Mahan-EX Pulse access."),"ok"); refreshUsers(); })
         .catch(function(e){ toast(e.message,"err"); });
       break; }
     case "user-delete": {
@@ -421,8 +421,8 @@ document.addEventListener("click", function(ev){
       if (ud.role === "Master Administrator") { toast("A master administrator can't be removed.","err"); break; }
       if (uid2 === state.currentUserId) { toast("You can't remove your own account.","err"); break; }
       askConfirm("Remove " + ud.name + "?", ud.role === "Salesperson"
-        ? "This deletes their account, including their Mahanex Pulse sign-in. This can't be undone."
-        : "They lose Dealership Command access. If they also use Mahanex Pulse they keep that login; otherwise the account is deleted. This can't be undone.", "Remove user", function(){
+        ? "This deletes their account, including their Mahan-EX Pulse sign-in. This can't be undone."
+        : "They lose Dealership Command access. If they also use Mahan-EX Pulse they keep that login; otherwise the account is deleted. This can't be undone.", "Remove user", function(){
         if (!/^[0-9a-f]{8}-[0-9a-f]{4}-/.test(uid2)){
           /* A leftover from before real accounts existed — it only lives in this browser, so there's nothing on the server to delete. */
           state.users = state.users.filter(function(u){ return u.id !== uid2; }); toast("User removed.","ok"); commit(); return;
@@ -431,7 +431,7 @@ document.addEventListener("click", function(ev){
         adminCall({ action:"delete", id:uid2, app:"command" }).then(function(r){
           if (r && r.kept){
             ud.ccOn = false; if (ud.role !== "Salesperson") ud.active = false; commit(); refreshUsers();
-            showNotice(ud.name + " removed from Dealership Command", "They no longer have Dealership Command access. Their Mahanex Pulse login is unchanged.");
+            showNotice(ud.name + " removed from Dealership Command", "They no longer have Dealership Command access. Their Mahan-EX Pulse login is unchanged.");
             return;
           }
           if (r && r.deactivated){
@@ -719,7 +719,7 @@ document.addEventListener("change", function(ev){
   }
   if (act === "uc-app"){
     var au = userById(el.getAttribute("data-user")), aapp = el.getAttribute("data-app"), aon = !!el.checked;
-    var aName = aapp === "cc" ? "Dealership Command" : "Mahanex Pulse";
+    var aName = aapp === "cc" ? "Dealership Command" : "Mahan-EX Pulse";
     var go = function(){
       var body = { action:"update", id:au.id, app:"command" };
       body[aapp === "cc" ? "cc_enabled" : "pulse_enabled"] = aon;

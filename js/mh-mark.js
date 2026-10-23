@@ -1,5 +1,5 @@
 "use strict";
-/* Mahanex mark: a chrome hexagon holding a neon M and H that share a stem (the M in cyan, the H in amber, joined by a
+/* Mahan-EX mark: a chrome hexagon holding a neon M and H that share a stem (the M in cyan, the H in amber, joined by a
    glowing node on the crossbar). One source for the landing page, the side menu and the icon files (see
    tools/build-icons.js). mhMark({ traces, icon, label }): traces = circuit lines running out of the hexagon (landing
    page); icon = on a midnight rounded square (favicon / app icon). Each call gets its own gradient ids. */
@@ -27,7 +27,7 @@ function mhMark(o){
     [[148,64],[148,138]].map(function(p){ return node(p[0], p[1], am, 3.6); }).join("") + node(124, 104, am, 4.6);
   var defs = '<defs><linearGradient id="' + id + 'f" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f9ff"/><stop offset=".38" stop-color="#a8b9d8"/><stop offset=".62" stop-color="#5d7198"/><stop offset="1" stop-color="#2a3a5e"/></linearGradient>' +
     '<radialGradient id="' + id + 'r" cx=".5" cy=".38" r=".75"><stop offset="0" stop-color="#18376a"/><stop offset="1" stop-color="#071326"/></radialGradient></defs>';
-  var label = o.label === undefined ? "Mahanex" : o.label, a = label ? 'role="img" aria-label="' + label + '"' : 'aria-hidden="true"';
+  var label = o.label === undefined ? "Mahan-EX" : o.label, a = label ? 'role="img" aria-label="' + label + '"' : 'aria-hidden="true"';
   if (o.icon) return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" ' + a + '>' + defs + '<rect width="200" height="200" rx="44" fill="#0b1430"/>' + hex + '</svg>';
   var vb = o.traces ? "-30 -14 260 214" : "0 0 200 200";
   return '<svg xmlns="http://www.w3.org/2000/svg" class="mh-mark" viewBox="' + vb + '" ' + a + '>' + defs + traces + hex + '</svg>';

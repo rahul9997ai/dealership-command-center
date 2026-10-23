@@ -259,7 +259,7 @@ function stItem(d, lead, o){
     (o.noVehicle ? '' : stE(d, "vehicle", esc(d.vehicle || "—"), "st-veh")) + (o.after || '') +
     '<span class="st-sp">' + stE(d, "sp", stSpText(d)) + '</span><button type="button" class="st-act" data-st="edit" data-id="' + esc(d.id) + '" title="Open the whole deal" aria-label="Open the whole deal">✎</button></div>';
 }
-/* delivered through Mahanex Pulse (see 11g-pulse-link.js) */
+/* delivered through Mahan-EX Pulse (see 11g-pulse-link.js) */
 function stPulseTag(d){ return d && d.flags && d.flags.pulse && (d.status === "delivered" || d.status === "rdr") ? ' <span class="st-pulse" title="Delivered in Pulse">Pulse</span>' : ""; }
 /* caution: same stock # on another customer, or this customer on another stock # */
 function stConflictNote(e){
