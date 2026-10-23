@@ -746,6 +746,51 @@ function payoutTotals(amount, hstOn, rate){
   return { amount:a, hst:h, total:Math.round((a + h)*100)/100 };
 }
 
+/* The dealership's Excel cheque requisition (forms/cheque-requisition.xlsx), filled from a payout request.
+   chequeSpec: which cells get what (null clears a cell, a number or text fills it, {f, v} keeps a formula with its result).
+   chequeXml: writes those cells into the sheet's XML, keeping every cell's style. Sections by request:
+   used purchase -> USED VEHICLE PURCHASE (rows 27-41), trade lien -> LIEN PAYOUT (44-49), refund -> REFUND (52-56),
+   ETO payout and dealer lease buyout -> OTHER - MISCELLANEOUS (60-65). The Excel's own checklists are ticked with an X. */
+function xlsxSerial(iso){ var m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? Math.round((Date.UTC(+m[1], +m[2] - 1, +m[3]) - Date.UTC(1899, 11, 30))/864e5) : null; }
+function chequeSpec(r){
+  var c = {}, up = function(x){ return String(x === undefined || x === null ? "" : x).toUpperCase().trim(); }, amt = Number(r.amount) || 0, hst = Number(r.hst) || 0;
+  var num = function(x){ x = String(x || "").trim(); return /^\d{1,12}$/.test(x) ? Number(x) : up(x); };
+  ["C3", "E3", "C5", "C7", "F7", "F44", "E46", "E47", "E48", "E49", "H68"].forEach(function(k){ c[k] = null; });   /* the sample content in the file */
+  c.C3 = xlsxSerial(r.date); c.E3 = xlsxSerial(r.req); c.C5 = up(r.requestedBy); c.C7 = up(r.payee); c.F7 = num(r.dms);
+  if (r.pay === "Cheque"){ var rel = { hold:"B13", "return":"E13", mail:"B14", courier:"E14" }[r.release]; if (rel) c[rel] = "X"; }
+  var marks = function(rows){ (r.docsOn || []).forEach(function(i){ if (rows[i]) c["E" + rows[i]] = "X"; }); };
+  var hstOrNone = function(v){ return v > 0 ? v : null; };
+  if (r.type === "used"){ c.E27 = up(r.stk); c.H27 = amt; c.H28 = hstOrNone(hst); marks([30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40]); }
+  else if (r.type === "lien" && r.kind !== "buyout"){ c.F44 = up(r.stk); c.H44 = amt; c.H45 = hstOrNone(hst); marks([46, null, 47, 48, 49]); }
+  else if (r.type === "refund"){ c.C52 = num(r.dms); c.E52 = up(r.stk); c.H52 = amt; c.H53 = hstOrNone(hst); marks([54, 55, 56]); }
+  else {
+    var title = r.type === "eto" ? "ETO PAYOUT" : "DEALER LEASE BUYOUT", l1 = title + (r.stk ? " - STK # " + up(r.stk) : ""), lines = [];
+    if (r.gt){ var g = " - GOOD THROUGH " + up(r.gt); if ((l1 + g).length <= 66) l1 += g; if (r.pd && (l1 + " (PER DIEM " + up(r.pd) + ")").length <= 66) l1 += " (PER DIEM " + up(r.pd) + ")"; }
+    lines.push(l1);
+    var cur = "ATTACHED: ", names = (r.docNames || []).map(up);
+    names.forEach(function(n, i){ var piece = n + (i < names.length - 1 ? "," : ""); if ((cur + piece).length > 64 && cur !== "ATTACHED: " && cur !== ""){ lines.push(cur.replace(/\s+$/, "")); cur = ""; } cur += piece + " "; });
+    if (names.length) lines.push(cur.replace(/\s+$/, ""));
+    lines = lines.slice(0, 3); c.H60 = amt; c.H61 = hstOrNone(hst); c.B63 = lines[0]; c.B64 = lines[1] || null; c.B65 = lines[2] || null;
+  }
+  c.H68 = amt;
+  c.H70 = { f:hst > 0 ? "H68*13%" : "H68*0%", v:hst }; c.H71 = { f:"H68+H69+H70", v:Math.round((amt + hst)*100)/100 };
+  return c;
+}
+function chequeXml(xml, cells){
+  var esc = function(t){ return String(t).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); };
+  Object.keys(cells).forEach(function(ref){
+    var re = new RegExp('<c r="' + ref + '"([^>]*?)(?:/>|>[\\s\\S]*?</c>)'), m = xml.match(re);
+    if (!m) throw new Error("Cell " + ref + " isn't in the Excel template.");
+    var attrs = m[1].replace(/\s+t="[^"]*"/, ""), v = cells[ref], out;
+    if (v === null || v === undefined || v === "") out = '<c r="' + ref + '"' + attrs + '/>';
+    else if (typeof v === "number") out = '<c r="' + ref + '"' + attrs + '><v>' + v + '</v></c>';
+    else if (typeof v === "object") out = '<c r="' + ref + '"' + attrs + '><f>' + esc(v.f) + '</f><v>' + v.v + '</v></c>';
+    else out = '<c r="' + ref + '"' + attrs + ' t="inlineStr"><is><t xml:space="preserve">' + esc(v) + '</t></is></c>';
+    xml = xml.replace(re, function(){ return out; });
+  });
+  return xml;
+}
+
 /* ---------------- SALES INSIGHTS ----------------
    The GM dashboard: gross, units and deliveries for a period, each salesperson's scorecard, and
    year-end projections. A split deal splits its gross the same way it splits the unit. Losing money
@@ -1191,7 +1236,7 @@ function impDocDeals(result, opts){
   return out;
 }
 
-window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights, PAYOUT_SUBJECTS:PAYOUT_SUBJECTS, payoutSubjectKey:payoutSubjectKey, payoutSubject:payoutSubject, payoutTotals:payoutTotals,
+window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights, PAYOUT_SUBJECTS:PAYOUT_SUBJECTS, payoutSubjectKey:payoutSubjectKey, payoutSubject:payoutSubject, payoutTotals:payoutTotals, xlsxSerial:xlsxSerial, chequeSpec:chequeSpec, chequeXml:chequeXml,
   impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, saleConflicts:saleConflicts, saleStockKey:saleStockKey, saleCustKey:saleCustKey, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,

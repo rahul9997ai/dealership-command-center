@@ -42,11 +42,12 @@ function poMoney(v){ return "$" + (Number(v) || 0).toLocaleString("en-CA", { min
 function poCan(){ return V.featureOn(V.currentUser(), "payout"); }
 function poState(tab){
   var T = PO_TYPES[tab], cfg = poCfg();
-  if (!PO.s[tab]) PO.s[tab] = { pay:T.pays[0], f:{ req:poPlusDays(3) }, payee:"", amount:"", hst:!!T.hst, carfax:"", notes:"", docs:{}, to:cfg.accountingEmail || "", cc:cfg.defaultCc || "", bank:"CIBC", loan:"", phone:"", dob:"", kind:"lien", padName:"", padVeh:"", padVin:"" };
+  if (!PO.s[tab]) PO.s[tab] = { pay:T.pays[0], f:{ req:poPlusDays(3) }, payee:"", amount:"", hst:!!T.hst, carfax:"", notes:"", docs:{}, to:cfg.accountingEmail || "", cc:cfg.defaultCc || "", bank:"CIBC", loan:"", phone:"", dob:"", kind:"lien", padName:"", padVeh:"", padVin:"", release:"hold" };
   return PO.s[tab];
 }
 function poMe(){ var u = V.currentUser(); return { name:u.name || "", email:u.email || "" }; }
 function poRoleLabel(){ var r = V.currentUser().role; return r === "FSM" || r === "FSM Manager" ? "Finance Manager" : r; }
+function poReleaseLabel(k){ var r = PO_RELEASE.filter(function(x){ return x[0] === k; })[0]; return r ? r[1] : ""; }
 function poSubject(tab){
   var s = poState(tab), key = tab === "lien" && s.kind === "buyout" ? (s.pay === "Cheque" ? "lien_chq" : "lien_ach") : C.payoutSubjectKey(tab, s.pay), tpl = (poCfg().subjects && poCfg().subjects[key]) || C.PAYOUT_SUBJECTS[key];
   return C.payoutSubject(tpl, { dms:s.f.dms, stk:s.f.stk, bank:s.payee, name:tab === "used" ? s.payee : s.f.name });
@@ -61,7 +62,7 @@ function poEmailHtml(tab){
   var td1 = "padding:7px 22px;width:38%;color:#64748b;font-size:13px;vertical-align:top;border-top:1px solid #f0f4f9", td2 = "padding:7px 22px 7px 0;font-size:13px;font-weight:700;vertical-align:top;border-top:1px solid #f0f4f9";
   var rows = "", add = function(k, v){ if (v) rows += '<tr><td style="' + td1 + '">' + esc(k) + '</td><td style="' + td2 + '">' + esc(v) + '</td></tr>'; };
   var f = s.f;
-  add("Payable to", s.payee); add("Payment method", s.pay === "PAD" ? "PAD (bank debits the dealership account)" : s.pay);
+  add("Payable to", s.payee); add("Payment method", s.pay === "PAD" ? "PAD (bank debits the dealership account)" : s.pay); if (s.pay === "Cheque") add("Cheque release", poReleaseLabel(s.release));
   var has = function(k){ return T.f.some(function(x){ return x[0] === k; }); };
   add(tab === "used" ? "DMS vendor #" : "DMS #", f.dms); add("Stock #", f.stk); if (has("name")) add("Customer", f.name);
   if (has("veh")) add("Vehicle", f.veh); if (has("sellerType")) add("Seller is", f.sellerType); add("Original payment", f.orig); add("Reason", f.reason);
@@ -84,6 +85,7 @@ function poEmailHtml(tab){
     (tt.hst ? '<tr><td style="padding:6px 22px">HST (13%)</td><td style="padding:6px 22px;text-align:right">' + poMoney(tt.hst) + '</td></tr>' : '') +
     '<tr><td style="padding:9px 22px;border-top:2px solid #0b1b3a;font-weight:800;font-size:15px">' + (s.pay === "Cheque" ? "Cheque amount" : "Total to pay") + '</td><td style="padding:9px 22px;border-top:2px solid #0b1b3a;text-align:right;font-weight:800;font-size:15px">' + poMoney(tt.total) + '</td></tr></table>';
   h += '<div ' + sec + '>Backup documents</div><table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-size:13px">' +
+    '<tr><td style="padding:5px 22px;color:#047857">&#128206; Cheque requisition (Excel) <span style="color:#64748b">attached</span></td></tr>' +
     (pad ? '<tr><td style="padding:5px 22px;color:#047857">&#128206; Pre-filled bank PAD form (PDF) <span style="color:#64748b">attached to this email</span></td></tr>' : '') +
     ds.on.map(function(d){ return '<tr><td style="padding:5px 22px;color:#047857">&#10003; ' + esc(d[0]) + ' <span style="color:#64748b">attached</span></td></tr>'; }).join("") +
     ds.off.map(function(d){ return '<tr><td style="padding:5px 22px;color:#b45309;font-weight:700">&#10007; ' + esc(d[0]) + ' <span style="font-weight:400">not attached</span></td></tr>'; }).join("") + '</table>';
@@ -97,14 +99,14 @@ function poEmailHtml(tab){
 function poEmailText(tab){
   var T = poT(tab), s = poState(tab), tt = C.payoutTotals(s.amount, s.hst), ds = poDocs(tab), cf = String(s.carfax || "").trim(), f = s.f, L = [];
   L.push((s.pay === "Cheque" ? "CHEQUE REQUISITION" : "PAYMENT REQUISITION") + " · " + T.title.toUpperCase(), "", "Amount to pay: " + poMoney(tt.total) + "   Required by: " + poFmtDate(f.req), "",
-    "Payable to: " + (s.payee || ""), "Payment method: " + s.pay, (tab === "used" ? "DMS vendor #: " : "DMS #: ") + (f.dms || ""), "Stock #: " + (f.stk || ""));
+    "Payable to: " + (s.payee || ""), "Payment method: " + s.pay + (s.pay === "Cheque" ? " (" + poReleaseLabel(s.release).toLowerCase() + ")" : ""), (tab === "used" ? "DMS vendor #: " : "DMS #: ") + (f.dms || ""), "Stock #: " + (f.stk || ""));
   var has = function(k){ return T.f.some(function(x){ return x[0] === k; }); };
   if (has("name") && f.name) L.push("Customer: " + f.name);
   if (has("veh") && f.veh) L.push("Vehicle: " + f.veh);
   if (f.gt) L.push("Payout good through: " + poFmtDate(f.gt) + (f.pd ? " · per diem " + f.pd + " after" : ""));
   if (T.carfax && cf) L.push("", "CARFAX REPORT: " + cf);
   L.push("", "Amount: " + poMoney(tt.amount) + (tt.hst ? "   HST: " + poMoney(tt.hst) : "") + "   TOTAL: " + poMoney(tt.total), "");
-  if (poPadOn(tab)) L.push("Attached: pre-filled bank PAD form (PDF)");
+  L.push("Attached: cheque requisition (Excel)"); if (poPadOn(tab)) L.push("Attached: pre-filled bank PAD form (PDF)");
   L.push("Attached: " + (ds.on.map(function(d){ return d[0]; }).join(", ") || "none")); if (ds.off.length) L.push("NOT attached: " + ds.off.map(function(d){ return d[0]; }).join(", "));
   if (String(s.notes || "").trim()) L.push("", "Notes: " + String(s.notes).trim());
   L.push("", "Approvals: " + poApprovers().map(function(a){ return a + " ____"; }).join("   "), "", "Requested by " + poMe().name + (poRoleLabel() ? " · " + poRoleLabel() : ""));
@@ -114,6 +116,8 @@ function poEmailText(tab){
 /* ---- bank PAD forms: the bank's own blank PDF (forms/pad), filled from the request ---- */
 var PO_PDF_LIB = { src:"https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js", sri:"sha384-weMABwrltA6jWR8DDe9Jp5blk+tZQh7ugpCsF3JwSA53WZM9/14PjS5LAJNHNjAI" };
 var PO_PDF_JS = { src:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", sri:"sha384-/1qUCSGwTur9vjf/z9lmu/eCUYbpOTgSjmpbMQZ1/CtX2v/WcAIKqRv+U1DUCG6e", worker:"https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js" };
+var PO_JSZIP = { src:"https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js", sri:"sha384-+mbV2IY1Zk/X1p/nWllGySJSUN8uMs+gUAN10Or95UBH0fpj6GfKgPmgC5EXieXG" };
+var PO_RELEASE = [["hold", "Hold for pickup"], ["return", "Return to manager"], ["mail", "Mail out"], ["courier", "Courier out"]];
 var PO_LIBP = {};
 function poScript(lib, name, ready){
   if (ready()) return Promise.resolve();
@@ -182,6 +186,34 @@ function poPadPdf(tab){
   });
 }
 function poBase64(bytes){ var s = "", u = new Uint8Array(bytes); for (var i = 0; i < u.length; i += 0x8000) s += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(s); }
+/* the dealership's Excel cheque requisition, filled from the request (forms/cheque-requisition.xlsx) */
+function poChequeInput(tab){
+  var s = poState(tab), T = poT(tab), tt = C.payoutTotals(s.amount, s.hst), idx = [], names = [];
+  T.docs.forEach(function(d, i){ if (s.docs[i]){ idx.push(i); names.push(d[0]); } });
+  return { type:tab, kind:s.kind, pay:s.pay, release:s.release, payee:s.payee, dms:s.f.dms, stk:s.f.stk, amount:tt.amount, hst:tt.hst, date:C.todayISO(), req:s.f.req, requestedBy:poMe().name, gt:s.f.gt ? poFmtDate(s.f.gt) : "", pd:s.f.pd, docsOn:idx, docNames:names };
+}
+function poXlsxBytes(tab){
+  var input = poChequeInput(tab);
+  return Promise.all([poScript(PO_JSZIP, "zip", function(){ return !!window.JSZip; }), fetch("forms/cheque-requisition.xlsx").then(function(r){ if (!r.ok) throw new Error("The Excel requisition couldn't be loaded."); return r.arrayBuffer(); })]).then(function(rs){
+    return window.JSZip.loadAsync(rs[1]).then(function(zip){
+      return zip.file("xl/worksheets/sheet1.xml").async("string").then(function(xml){
+        zip.file("xl/worksheets/sheet1.xml", C.chequeXml(xml, C.chequeSpec(input)));
+        return zip.file("xl/workbook.xml").async("string");
+      }).then(function(wb){
+        zip.file("xl/workbook.xml", wb.replace('<calcPr calcId="191029"/>', '<calcPr calcId="191029" fullCalcOnLoad="1"/>'));
+        return zip.generateAsync({ type:"uint8array", compression:"DEFLATE" });
+      });
+    });
+  });
+}
+function poXlsxName(tab){ var s = poState(tab); return "Cheque-Requisition-" + String(s.f.stk || s.payee || "request").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".xlsx"; }
+function poXlsxDownload(){
+  var tab = PO.tab; if (!poCheck(tab) || PO.busy) return;
+  poXlsxBytes(tab).then(function(bytes){
+    var url = URL.createObjectURL(new Blob([bytes], { type:"application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" })), a = document.createElement("a");
+    a.href = url; a.download = poXlsxName(tab); document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); }, 60000); toast("Excel downloaded. Attach it to your email.", "ok");
+  }, function(e){ toast(e.message || "Couldn't make the Excel.", "err"); });
+}
 function poPadName(tab){ var s = poState(tab); return "PAD-" + s.bank + "-" + String(s.padName || "customer").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".pdf"; }
 
 /* ---- the page ---- */
@@ -199,6 +231,7 @@ function poFormHtml(){
   var tab = PO.tab, s = poState(tab), T = poT(tab), pad = poPadOn(tab);
   var fields = (tab === "lien" ? '<div class="po-w"><label class="po-l">What kind of lien payout?</label><div class="po-radios"><button type="button" data-po="kind" data-v="lien" class="' + (s.kind !== "buyout" ? "on" : "") + '">Trade lien payout</button><button type="button" data-po="kind" data-v="buyout" class="' + (s.kind === "buyout" ? "on" : "") + '">Dealer lease buyout</button></div></div>' : '') +
     '<div class="po-w"><label class="po-l">Payment method</label><div class="po-radios">' + T.pays.map(function(p){ return '<button type="button" data-po="pay" data-v="' + p + '" class="' + (s.pay === p ? "on" : "") + '">' + (p === "PAD" ? "PAD (bank debits us)" : p) + '</button>'; }).join("") + '</div></div>' +
+    (s.pay === "Cheque" ? '<div class="po-w"><label class="po-l">Cheque release</label><div class="po-radios">' + PO_RELEASE.map(function(r){ return '<button type="button" data-po="rel" data-v="' + r[0] + '" class="' + (s.release === r[0] ? "on" : "") + '">' + r[1] + '</button>'; }).join("") + '</div></div>' : '') +
     '<div class="po-w"><label class="po-l" for="po-x-payee">' + esc(T.payeeLbl) + '</label><input id="po-x-payee" data-pox="payee" type="text" value="' + esc(s.payee) + '" autocomplete="off"' + (T.payeeFixed ? ' readonly' : '') + '></div>' +
     T.f.map(function(f){ return poField(f[0], f[1], s.f[f[0]], f[2]); }).join("");
   var html = '<div class="po-card"><h3>' + esc(T.title) + '</h3><div class="po-hint">' + esc(T.hint) + '</div><div class="po-f">' + fields + '</div>' + poLookHtml(tab) + '</div>';
@@ -229,8 +262,8 @@ function poMailHtml(){
   var tab = PO.tab, s = poState(tab), me = poMe();
   return '<div class="po-mail"><div class="po-mh"><div class="po-r"><span>Sent to</span><b>you' + (me.email ? ' · ' + esc(me.email) : '') + '</b></div><div class="po-r"><span>Then forward to</span><b id="po-m-to">' + esc(s.to) + '</b></div><div class="po-r"><span>Cc</span><b id="po-m-cc">' + esc(s.cc) + '</b></div><div class="po-r po-subj"><span>Subject</span><b id="po-m-subj">' + esc(poSubject(tab)) + '</b></div></div>' +
     '<div class="po-mb"><div id="po-em">' + poEmailHtml(tab) + '</div></div>' +
-    '<div class="po-mh po-ma"><div class="po-row"><button type="button" class="po-btn p" data-po="sendme"' + (PO.busy ? " disabled" : "") + '>' + (PO.busy ? "Sending…" : "✉ Email it to me") + '</button><button type="button" class="po-btn" data-po="copy">Copy email</button><button type="button" class="po-btn" data-po="draft">Open email draft</button><button type="button" class="po-btn" data-po="copysubj">Copy subject</button><button type="button" class="po-btn" data-po="copyaddr">Copy forward addresses</button></div>' +
-    '<div class="po-msg" id="po-msg">' + (PO.msg || '"Email it to me" sends this to your own inbox with the subject already set' + (poPadOn(tab) ? ", and the pre-filled PAD form attached" : "") + '. Open it, press Forward, add accounting and your scans, and send.') + '</div></div></div>';
+    '<div class="po-mh po-ma"><div class="po-row"><button type="button" class="po-btn p" data-po="sendme"' + (PO.busy ? " disabled" : "") + '>' + (PO.busy ? "Sending…" : "✉ Email it to me") + '</button><button type="button" class="po-btn" data-po="xlsx">Download Excel</button><button type="button" class="po-btn" data-po="copy">Copy email</button><button type="button" class="po-btn" data-po="draft">Open email draft</button><button type="button" class="po-btn" data-po="copysubj">Copy subject</button><button type="button" class="po-btn" data-po="copyaddr">Copy forward addresses</button></div>' +
+    '<div class="po-msg" id="po-msg">' + (PO.msg || '"Email it to me" sends this to your own inbox with the subject already set, your cheque requisition Excel filled in and attached' + (poPadOn(tab) ? ", plus the pre-filled PAD form" : "") + '. Open it, press Forward, add accounting and your scans, and send.') + '</div></div></div>';
 }
 function poLogHtml(){
   poLoadLog();
@@ -303,7 +336,10 @@ function poSendMe(){
   var id = "pr-" + C.uid(), tt = C.payoutTotals(s.amount, s.hst), subject = poSubject(tab), store = state.activeDealershipId, me = V.currentUser();
   PO.busy = true; PO.msg = null; render();
   var snap = { type:tab, sub:tab === "lien" ? s.kind : "", pay:s.pay, payee:s.payee, stk:s.f.stk || "", dms:s.f.dms || "", name:s.f.name || "", total:tt.total, subject:subject, to:s.to, cc:s.cc, bank:poPadOn(tab) ? s.bank : "" };
-  var attach = poPadOn(tab) ? poPadPdf(tab).then(function(b){ return [{ filename:poPadName(tab), content:poBase64(b) }]; }) : Promise.resolve([]);
+  var attach = poXlsxBytes(tab).then(function(x){
+    var list = [{ filename:poXlsxName(tab), content:poBase64(x) }];
+    return poPadOn(tab) ? poPadPdf(tab).then(function(b){ list.push({ filename:poPadName(tab), content:poBase64(b) }); return list; }) : list;
+  });
   attach.then(function(attachments){
     return sb.from("payout_requests").insert({ id:id, dealership_id:store, created_by_name:me.name || "", status:"draft", kind:tab, data:snap }).then(function(ins){
       if (ins.error) throw new Error("Couldn't save the request: " + ins.error.message);
@@ -323,7 +359,7 @@ function poCopy(){
   var tab = PO.tab; if (!poCheck(tab)) return;
   var html = document.getElementById("po-em").innerHTML, txt = poEmailText(tab);
   if (navigator.clipboard && window.ClipboardItem){
-    navigator.clipboard.write([new ClipboardItem({ "text/html":new Blob([html], { type:"text/html" }), "text/plain":new Blob([txt], { type:"text/plain" }) })]).then(function(){ poSay("Copied. Paste it into a new Outlook or Gmail message, attach your scans and send."); toast("Email copied.", "ok"); },
+    navigator.clipboard.write([new ClipboardItem({ "text/html":new Blob([html], { type:"text/html" }), "text/plain":new Blob([txt], { type:"text/plain" }) })]).then(function(){ poSay("Copied. Paste it into a new Outlook or Gmail message, attach the Excel (Download Excel) and your scans, and send."); toast("Email copied.", "ok"); },
       function(){ navigator.clipboard.writeText(txt).then(function(){ poSay("Copied as plain text."); }, function(){ poSay("Your browser blocked copying."); }); });
   } else if (navigator.clipboard){ navigator.clipboard.writeText(txt).then(function(){ poSay("Copied as plain text."); }); }
 }
@@ -348,6 +384,8 @@ document.addEventListener("click", function(ev){
     case "tab": PO.tab = v; PO.msg = null; if (v === "log") poLoadLog(true); window.scrollTo(0, 0); break;
     case "pay": s.pay = v; PO.msg = null; break;
     case "padopen": poPadOpen(); return;
+    case "xlsx": poXlsxDownload(); return;
+    case "rel": s.release = v; break;
     case "sendme": poSendMe(); return;
     case "copy": poCopy(); return;
     case "draft": poDraft(); return;

@@ -540,6 +540,36 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   eq("PO totals round to cents", C.payoutTotals(100.555, true).total, 113.63);
   eq("PO no amount is zero", C.payoutTotals("", true).total, 0);
 }
+/* --- Payout Request: the Excel cheque requisition --- */
+{
+  eq("PO Excel date serial", C.xlsxSerial("2026-10-23"), 46318);
+  const base = { date:"2026-10-23", req:"2026-10-26", requestedBy:"Rahul C.", payee:"Bank of Montreal", dms:"996626", stk:"20849a", amount:9520, hst:0, pay:"Cheque", release:"mail" };
+  const lien = C.chequeSpec(Object.assign({}, base, { type:"lien", kind:"lien", docsOn:[0, 2, 3] }));
+  eq("PO Excel payee and DMS", lien.C7 + "|" + lien.F7, "BANK OF MONTREAL|996626");
+  eq("PO Excel lien stock and amount", lien.F44 + "|" + lien.H44, "20849A|9520");
+  eq("PO Excel lien checklist ticks payout copy, bill of sale and ownership", [lien.E46, lien.E47, lien.E48, lien.E49].join(","), "X,X,X,");
+  eq("PO Excel cheque release", lien.B14, "X");
+  eq("PO Excel no HST keeps the formula at zero", JSON.stringify(lien.H70), JSON.stringify({ f:"H68*0%", v:0 }));
+  const used = C.chequeSpec(Object.assign({}, base, { type:"used", docsOn:[0, 4, 10], amount:15000, hst:1950 }));
+  eq("PO Excel used purchase section", used.E27 + "|" + used.H27 + "|" + used.H28, "20849A|15000|1950");
+  eq("PO Excel used purchase checklist rows", used.E30 + used.E34 + used.E40, "XXX");
+  eq("PO Excel HST total and cheque amount", used.H70.v + "|" + used.H71.v, "1950|16950");
+  const ref = C.chequeSpec(Object.assign({}, base, { type:"refund", docsOn:[0, 1, 2], dms:"412233", pay:"ACH" }));
+  eq("PO Excel refund section", ref.C52 + "|" + ref.E52 + "|" + ref.H52 + "|" + ref.E56, "412233|20849A|9520|X");
+  eq("PO Excel ACH has no release mark", [ref.B13, ref.E13, ref.B14, ref.E14].join(""), "");
+  const eto = C.chequeSpec(Object.assign({}, base, { type:"eto", docNames:["Lender payout letter", "T.O. sheet"], gt:"Oct 30, 2026", pd:"$14.20", pay:"ACH" }));
+  eq("PO Excel ETO goes in Other - Miscellaneous", eto.H60 + "|" + eto.B63, "9520|ETO PAYOUT - STK # 20849A - GOOD THROUGH OCT 30, 2026");
+  eq("PO Excel ETO description lines", eto.B64 + "|" + (eto.B65 || ""), "ATTACHED: LENDER PAYOUT LETTER, T.O. SHEET|");
+  const bo = C.chequeSpec(Object.assign({}, base, { type:"lien", kind:"buyout", docNames:["Wholesale bill of sale", "Payout quote from the lender", "Proof of funds"] }));
+  eq("PO Excel long document lists wrap onto the next line", bo.B64 + "|" + bo.B65, "ATTACHED: WHOLESALE BILL OF SALE, PAYOUT QUOTE FROM THE LENDER,|PROOF OF FUNDS");
+  eq("PO Excel buyout is Other too", C.chequeSpec(Object.assign({}, base, { type:"lien", kind:"buyout" })).B63, "DEALER LEASE BUYOUT - STK # 20849A");
+  const xml = '<row r="3"><c r="C3" s="7"><v>46280</v></c><c r="C5" s="12" t="s"><v>52</v></c><c r="C8" s="100"/><c r="H70" s="102"><f>H68*13%</f><v>1237.6</v></c></row>';
+  const out = C.chequeXml(xml, { C3:46318, C5:"A & B", C8:null, H70:{ f:"H68*0%", v:0 } });
+  eq("PO Excel number cell", /<c r="C3" s="7"><v>46318<\/v><\/c>/.test(out), true);
+  eq("PO Excel text cell is inline, escaped, keeps its style", /<c r="C5" s="12" t="inlineStr"><is><t xml:space="preserve">A &amp; B<\/t><\/is><\/c>/.test(out), true);
+  eq("PO Excel formula cell keeps its formula", /<c r="H70" s="102"><f>H68\*0%<\/f><v>0<\/v><\/c>/.test(out), true);
+  eq("PO Excel a missing cell is an error", (function(){ try { C.chequeXml(xml, { Z9:1 }); return "no"; } catch (e) { return "error"; } })(), "error");
+}
 /* --- Excel import: dates as typed, headers found anywhere, statuses and money read --- */
 {
   eq("IMP 9TH SEP on a September 2026 tab", C.impDate("9TH SEP", 2026, 9), "2026-09-09");
