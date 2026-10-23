@@ -715,6 +715,37 @@ function salesPerformance(deals, targets, range, day, total){
   return { store:finish(store), people:people, countOn:countOn, day:day, total:total };
 }
 
+/* ---------------- PAYOUT REQUEST ----------------
+   The subject line of a payout email is built from a pattern the dealership sets once, e.g. "ODC - PAD - {bank} - DMS # {dms} - STK # {stk}".
+   Parts are separated by " - "; a part whose {token} has nothing filled in drops out. Values are shown in capitals. */
+var PAYOUT_SUBJECTS = {
+  eto_ach:"ODC - ACH - ETO PAYOUT - DMS # {dms}",
+  eto_pad:"ODC - PAD - {bank} - ETO PAYOUT - DMS # {dms} - STK # {stk}",
+  lien_ach:"ODC - ACH - DMS # {dms} - STK # {stk}",
+  lien_pad:"ODC - PAD - {bank} - DMS # {dms} - STK # {stk}",
+  lien_chq:"ODC - CHEQUE - {bank} - DMS # {dms} - STK # {stk}",
+  used:"ODC - USED VEHICLE PURCHASE - {name} - STK # {stk}",
+  refund:"ODC - REFUND TO CUSTOMER {name} - DMS # {dms} - STK # {stk}"
+};
+function payoutSubjectKey(type, pay){
+  if (type === "eto") return pay === "PAD" ? "eto_pad" : "eto_ach";
+  if (type === "lien") return pay === "PAD" ? "lien_pad" : pay === "ACH" ? "lien_ach" : "lien_chq";
+  return type;
+}
+function payoutSubject(tpl, vals){
+  vals = vals || {};
+  return String(tpl || "").split(" - ").map(function(seg){
+    var empty = false;
+    var out = seg.replace(/\{(\w+)\}/g, function(m, k){ var v = String(vals[k] === undefined || vals[k] === null ? "" : vals[k]).trim(); if (!v) empty = true; return v.toUpperCase(); });
+    return empty ? null : out;
+  }).filter(function(x){ return x; }).join(" - ");
+}
+/* amount, optional HST on it (rate in %), all rounded to cents */
+function payoutTotals(amount, hstOn, rate){
+  var a = Math.round((Number(amount) || 0)*100)/100, h = hstOn ? Math.round(a*(rate === undefined ? 13 : Number(rate))/100*100)/100 : 0;
+  return { amount:a, hst:h, total:Math.round((a + h)*100)/100 };
+}
+
 /* ---------------- SALES INSIGHTS ----------------
    The GM dashboard: gross, units and deliveries for a period, each salesperson's scorecard, and
    year-end projections. A split deal splits its gross the same way it splits the unit. Losing money
@@ -1160,7 +1191,7 @@ function impDocDeals(result, opts){
   return out;
 }
 
-window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights,
+window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights, PAYOUT_SUBJECTS:PAYOUT_SUBJECTS, payoutSubjectKey:payoutSubjectKey, payoutSubject:payoutSubject, payoutTotals:payoutTotals,
   impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, saleConflicts:saleConflicts, saleStockKey:saleStockKey, saleCustKey:saleCustKey, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,

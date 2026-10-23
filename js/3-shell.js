@@ -168,18 +168,20 @@ function allDeals(){ return state.history.concat(state.completed); }
 var FM_FEATURES = [
   { key:"finance", label:"Finance" }, { key:"cashadv", label:"Cash Conversion" }, { key:"coupons", label:"Coupons" },
   { key:"worksheet", label:"Worksheet" }, { key:"offers", label:"Promotional offers" }, { key:"reports", label:"Reports" },
-  { key:"sales", label:"Sales Tracker (own F&I)" }, { key:"insights", label:"Dashboard (Insights)" }, { key:"ai", label:"AI Assistant" }
+  { key:"sales", label:"Sales Tracker (own F&I)" }, { key:"insights", label:"Dashboard (Insights)" }, { key:"ai", label:"AI Assistant" },
+  { key:"payout", label:"Payout Request" }
 ];
 /* A Sales Manager's switches (Sales Tracker and the Insights dashboard are off until turned on). */
 var SM_FEATURES = [
   { key:"sales", label:"Sales Tracker", sub:"Log deals, Today, Sales performance, Appointments, Targets" },
   { key:"insights", label:"Dashboard (Insights)", sub:"Month and year to date gross, scorecards, year-end projections" },
   { key:"worksheet", label:"Worksheet", sub:"Print the Purchase Proposal" },
-  { key:"ai", label:"AI Assistant", sub:"Chat and email drafting from the Sales Tracker (needs AI on in Dealership settings)" }
+  { key:"ai", label:"AI Assistant", sub:"Chat and email drafting from the Sales Tracker (needs AI on in Dealership settings)" },
+  { key:"payout", label:"Payout Request", sub:"Cheque requisition emails: ETO payouts, trade liens, used purchases, refunds" }
 ];
 function featureLabel(key){ var f = SM_FEATURES.concat(FM_FEATURES).filter(function(x){ return x.key === key; })[0]; return f ? f.label : key; }
 /* Off unless a Master or GM turns it on for that person (everything else is on unless turned off). */
-var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales", "insights", "ai"];
+var FEATURES_OFF_BY_DEFAULT = ["worksheet", "sales", "insights", "ai", "payout"];
 function featureOn(u, key){
   u = u || currentUser();
   if (u.role === "Master Administrator" || u.role === "General Manager") return true;
@@ -210,17 +212,17 @@ function dealsForStore(){
 function allowedRouteKeys(){
   var role = currentUser().role;
   if (role === "Master Administrator") return null;
-  if (role === "General Manager") return ["dashboard","assistant","finance","cashadv","sales","coupons","worksheet","products","reports","users","settings"];
+  if (role === "General Manager") return ["dashboard","assistant","finance","cashadv","sales","coupons","worksheet","payout","products","reports","users","settings"];
   if (role === "Salesperson") return [];
   var fk = function(k){ return k === "dashboard" ? "insights" : k === "assistant" ? "ai" : k; };
-  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","products","reports","users","dashboard","assistant"].filter(function(k){
+  if (isFinanceRole(role)) return ["finance","cashadv","sales","coupons","worksheet","payout","products","reports","users","dashboard","assistant"].filter(function(k){
     return k === "products" || k === "users" || featureOn(currentUser(), fk(k)); });
   /* A Sales Manager sees only what's switched on for them: Sales Tracker, the Dashboard (Insights), Worksheet, AI Assistant. */
-  if (role === "Sales Manager") return ["sales","dashboard","assistant","worksheet"].filter(function(k){ return featureOn(currentUser(), fk(k)); });
-  return ["finance","cashadv","sales","worksheet","products","reports","dashboard"].filter(function(k){
+  if (role === "Sales Manager") return ["sales","dashboard","assistant","worksheet","payout"].filter(function(k){ return featureOn(currentUser(), fk(k)); });
+  return ["finance","cashadv","sales","worksheet","payout","products","reports","dashboard"].filter(function(k){
     if (k === "sales") return role === "Sales Manager" && featureOn(currentUser(), "sales");
     if (k === "dashboard") return featureOn(currentUser(), "insights");
-    return k !== "worksheet" || featureOn(currentUser(), k); });
+    return (k !== "worksheet" && k !== "payout") || featureOn(currentUser(), k); });
 }
 /* A Master starts at head office (the dealership list); opening a store gives its own Dealership Command. */
 function inHQ(){ return isMaster() && !!state.ui.hq; }
@@ -236,6 +238,7 @@ function navItems(){
     { key:"sales", label:"Sales Tracker", ic:"◆", grp:"Tools" },
     { key:"coupons", label:"Coupons", ic:"✂", grp:"Tools" },
     { key:"worksheet", label:"Worksheet", ic:"☰", grp:"Tools" },
+    { key:"payout", label:"Payout Request", ic:"✎", grp:"Tools" },
     { key:"products", label:"Products", ic:"▦", grp:"Tools" },
     { key:"reports", label:"Reports", ic:"▥", grp:"Tools" },
     { key:"users", label:"Users & access", ic:"◍", grp:"Manage" },

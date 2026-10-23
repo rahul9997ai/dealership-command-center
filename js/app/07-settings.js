@@ -18,7 +18,8 @@ var SET_TILES = [
   { key:"ai", ic:"✧", title:"AI", sub:"Assistant, morning brief, email writing and file reading" },
   { key:"drive", ic:"⇅", title:"Google Drive sync", sub:"Read the Excel sales logs kept on Google Drive" },
   { key:"pulse", ic:"⟲", title:"Pulse deliveries", sub:"Deliveries in Mahanex Pulse show as Delivered" },
-  { key:"financials", ic:"▤", title:"Financial statements", sub:"Upload or link the monthly financial statement for the GM dashboard" }
+  { key:"financials", ic:"▤", title:"Financial statements", sub:"Upload or link the monthly financial statement for the GM dashboard" },
+  { key:"payout", ic:"✎", title:"Payout requests", sub:"Accounting email, subject lines and bank PAD form details" }
 ];
 function setTileStatus(k){
   var c = state.config || {};
@@ -29,12 +30,13 @@ function setTileStatus(k){
   if (k === "offers") return [(c.gifts || []).length + " offer" + ((c.gifts || []).length === 1 ? "" : "s"), ""];
   if (k === "colours") return [V.colorMode() === "brand" ? "Brand" : "Custom", ""];
   if (k === "financials"){ var f = c.financials || {}; return f.link && f.link.id ? ["Linked", "ok"] : ["", ""]; }
+  if (k === "payout"){ var p = c.payout || {}; return p.accountingEmail ? ["Set", "ok"] : ["", ""]; }
   if (k === "dealer") return [c.dealerCode || "", ""];
   return ["", ""];
 }
 function viewSettings(){
   var canEdit = V.isAdmin(), dis = canEdit ? "" : "disabled", b = V.brand(), tab = state.ui.setTab;
-  var tiles = SET_TILES.filter(function(t){ return t.key !== "financials" || typeof viewFinSettings === "function"; });
+  var tiles = SET_TILES.filter(function(t){ return (t.key !== "financials" || typeof viewFinSettings === "function") && (t.key !== "payout" || typeof viewPayoutSettings === "function"); });
   var cur = tiles.filter(function(t){ return t.key === tab; })[0];
   if (!cur){
     return `<div class="set-head"><h2>Dealership settings</h2><p class="muted small">${esc(state.config.name || "")} · pick a setting to open it.</p></div>
@@ -43,7 +45,7 @@ function viewSettings(){
   }
   var html = cur.key === "dealer" ? setSecDealer(canEdit, dis, b) : cur.key === "finance" ? setSecFinance(canEdit, dis, b) : cur.key === "cash" ? setSecCash(canEdit, dis, b) :
     cur.key === "logo" ? setSecLogo(canEdit, dis, b) : cur.key === "colours" ? setSecColours(canEdit, dis, b) : cur.key === "offers" ? setSecOffers(canEdit, dis, b) :
-    cur.key === "ai" ? viewAiSettings() : cur.key === "drive" ? viewDriveSettings() : cur.key === "pulse" ? viewPulseSettings() : cur.key === "financials" ? viewFinSettings() : "";
+    cur.key === "ai" ? viewAiSettings() : cur.key === "drive" ? viewDriveSettings() : cur.key === "pulse" ? viewPulseSettings() : cur.key === "financials" ? viewFinSettings() : cur.key === "payout" ? viewPayoutSettings() : "";
   return `<div class="set-crumb"><button type="button" class="btn sm ghost" data-setp="">‹ All settings</button><span class="muted small">Dealership settings · ${esc(cur.title)}</span></div>
     <div class="set-one">${html}</div>`;
 }

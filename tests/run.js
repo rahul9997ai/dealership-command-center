@@ -526,6 +526,20 @@ eq("localISO pads month and day", C.localISO(new Date(2026, 0, 5, 0, 5)), "2026-
   const solid = C.salesInsights({ deals:[].concat(mk("2026-07", 60), mk("2026-08", 75), mk("2026-09", 75), mk("2026-10", 36, "approved")), targets:{}, year:2026, today:"2026-10-21" });
   eq("INS a real month of sales is kept in the pace", solid.proj.unitsFrom, "2026-07");
 }
+/* --- Payout Request: subject lines and totals --- */
+{
+  const P = C.PAYOUT_SUBJECTS;
+  eq("PO ETO by ACH subject", C.payoutSubject(P.eto_ach, { dms:"996626" }), "ODC - ACH - ETO PAYOUT - DMS # 996626");
+  eq("PO trade lien by ACH subject", C.payoutSubject(P.lien_ach, { dms:"996626", stk:"20849a" }), "ODC - ACH - DMS # 996626 - STK # 20849A");
+  eq("PO bank PAD subject", C.payoutSubject(P.lien_pad, { bank:"Bank of Montreal", dms:"996626", stk:"20849A" }), "ODC - PAD - BANK OF MONTREAL - DMS # 996626 - STK # 20849A");
+  eq("PO refund subject", C.payoutSubject(P.refund, { name:"J. Sample", dms:"412233", stk:"20803" }), "ODC - REFUND TO CUSTOMER J. SAMPLE - DMS # 412233 - STK # 20803");
+  eq("PO a part with nothing filled in drops out", C.payoutSubject(P.refund, { name:"J. Sample", dms:"412233", stk:"" }), "ODC - REFUND TO CUSTOMER J. SAMPLE - DMS # 412233");
+  eq("PO subject key by type and payment", [C.payoutSubjectKey("eto", "ACH"), C.payoutSubjectKey("eto", "PAD"), C.payoutSubjectKey("lien", "PAD"), C.payoutSubjectKey("lien", "ACH"), C.payoutSubjectKey("lien", "Cheque"), C.payoutSubjectKey("used", "Cheque"), C.payoutSubjectKey("refund", "Cheque")].join(","), "eto_ach,eto_pad,lien_pad,lien_ach,lien_chq,used,refund");
+  eq("PO totals without HST", C.payoutTotals("9520", false).total, 9520);
+  eq("PO totals with 13% HST", C.payoutTotals(15000, true).hst, 1950);
+  eq("PO totals round to cents", C.payoutTotals(100.555, true).total, 113.63);
+  eq("PO no amount is zero", C.payoutTotals("", true).total, 0);
+}
 /* --- Excel import: dates as typed, headers found anywhere, statuses and money read --- */
 {
   eq("IMP 9TH SEP on a September 2026 tab", C.impDate("9TH SEP", 2026, 9), "2026-09-09");
