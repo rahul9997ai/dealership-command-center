@@ -7,9 +7,10 @@
    Nothing is read by AI and there are no extra costs. Each email is logged (payout_requests) so its status can be followed.
    Access: General Manager and Master always; anyone else when the GM switches "Payout Request" on (fmAccess[user].payout).
    Settings (config.payout): accounting email, default Cc, approval lines, subject lines, PAD form details. */
-var PO_PAD_BANKS = [["BNS","Scotiabank (BNS)"],["SDA","Scotia Dealer Advantage"],["CIBC","CIBC Auto Finance"],["RBC","Royal Bank (RBC)"],["TD","TD Auto Finance"],["DESJARDINS","Desjardins"]];
+/* Lenders with a bank PAD form in forms/pad: choosing one on a PAD request picks its form. Other lenders can be added in settings (cheques). */
+var PO_LENDERS = [["BNS","Scotiabank"],["SDA","Scotia Dealer Advantage"],["CIBC","CIBC Auto Finance"],["RBC","Royal Bank of Canada"],["TD","TD Auto Finance"],["DESJARDINS","Desjardins"]];
 var PO_TYPES = {
-  eto:{ label:"ETO Payout", title:"ETO payout", hint:"Early termination payoff of a customer's lease, paid to the lessor.", pays:["ACH","PAD"], payeeLbl:"Lessor / lender", carfax:true, amtLbl:"ETO payout amount", hst:false,
+  eto:{ label:"ETO Payout", title:"ETO payout", hint:"Early termination payoff of a customer's lease. Always paid by ACH to the lender.", pays:["ACH"], payeeLbl:"Lender", achPayee:true, carfax:true, amtLbl:"ETO payout amount", hst:false,
     f:[["dms","DMS #"],["stk","Stock # (ETO vehicle)"],["gt","Payout good through","date"],["pd","Per diem after that date"],["req","Required by","date"]],
     docs:[["Lender payout letter","Early termination payout letter from the lender"],["T.O. sheet","Turnover sheet prepared by the sales manager"],["Ownership of the ETO vehicle",""],["Bill of sale",""]] },
   lien:{ label:"Trade Lien Payout", title:"Trade lien payout", hint:"Paying off the lien on a customer's trade-in, or a lease payout, to the lienholder.", pays:["ACH","PAD","Cheque"], payeeLbl:"Lienholder", carfax:true, amtLbl:"Lien payout amount", hst:false,
@@ -23,11 +24,11 @@ var PO_TYPES = {
     docs:[["Receipt showing the original pay method",""],["Bill of sale",""],["A/R schedule","Showing the payment posted to the DMS"]] }
 };
 /* Dealer lease buyout lives on the Trade Lien Payout tab (s.kind === "buyout"): the lender is always Nissan Canada Inc. */
-var PO_BUYOUT = { label:"Trade Lien Payout", title:"Dealer lease buyout", hint:"Buying out a dealer's lease from Nissan Canada Inc.", pays:["ACH","Cheque"], payeeLbl:"Lender", payeeFixed:"Nissan Canada Inc.", carfax:false, amtLbl:"Buyout amount", hst:false,
+var PO_BUYOUT = { label:"Trade Lien Payout", title:"Dealer lease buyout", hint:"Buying out a dealer's lease from the manufacturer's finance company.", pays:["ACH","Cheque"], payeeLbl:"Lender", achPayee:true, carfax:false, amtLbl:"Buyout amount", hst:false,
   f:[["dms","DMS #"],["stk","Stock #"],["gt","Payout good through","date"],["pd","Per diem after that date"],["req","Required by","date"]],
   docs:[["Wholesale bill of sale",""],["Payout quote from the lender",""],["Proof of funds",""]] };
 var PO_TYPE_KEYS = ["eto", "lien", "used", "refund"];
-var PO_SUBJECT_LABEL = { eto_ach:"ETO payout, manufacturer (ACH)", eto_pad:"ETO payout, bank (PAD)", lien_ach:"Trade lien, manufacturer (ACH)", lien_pad:"Trade lien, bank (PAD)", lien_chq:"Trade lien, cheque", used:"Used vehicle purchase", refund:"Refund to customer" };
+var PO_SUBJECT_LABEL = { eto_ach:"ETO payout, manufacturer (ACH)", lien_ach:"Trade lien, manufacturer (ACH)", lien_pad:"Trade lien, bank (PAD)", lien_chq:"Trade lien, cheque", used:"Used vehicle purchase", refund:"Refund to customer" };
 var PO_STATUS = { draft:"Not sent", sent:"Sent", approved:"Approved", paid:"Paid", returned:"Returned" };
 var PO = { tab:"eto", s:{}, log:null, logLoading:false, logStore:null, logErr:null, busy:false, msg:null, look:{} };
 
@@ -42,19 +43,32 @@ function poMoney(v){ return "$" + (Number(v) || 0).toLocaleString("en-CA", { min
 function poCan(){ return V.featureOn(V.currentUser(), "payout"); }
 function poState(tab){
   var T = PO_TYPES[tab], cfg = poCfg();
-  if (!PO.s[tab]) PO.s[tab] = { pay:T.pays[0], f:{ req:poPlusDays(3) }, payee:"", amount:"", hst:!!T.hst, carfax:"", notes:"", docs:{}, to:cfg.accountingEmail || "", cc:cfg.defaultCc || "", bank:"CIBC", loan:"", phone:"", dob:"", kind:"lien", padName:"", padVeh:"", padVin:"", release:"hold" };
+  if (!PO.s[tab]) PO.s[tab] = { pay:T.pays[0], f:{ req:poPlusDays(3) }, payee:"", amount:"", hst:!!T.hst, carfax:"", notes:"", docs:{}, to:cfg.accountingEmail || "", cc:cfg.defaultCc || "", bank:"CIBC", loan:"", phone:"", dob:"", kind:"lien", padName:"", padVeh:"", padVin:"", release:"hold", lender:"", payeeOther:"" };
   return PO.s[tab];
 }
 function poMe(){ var u = V.currentUser(); return { name:u.name || "", email:u.email || "" }; }
 function poRoleLabel(){ var r = V.currentUser().role; return r === "FSM" || r === "FSM Manager" ? "Finance Manager" : r; }
 function poReleaseLabel(k){ var r = PO_RELEASE.filter(function(x){ return x[0] === k; })[0]; return r ? r[1] : ""; }
+/* Who gets paid. ACH goes to the dealership's default ACH payee (ETO payouts, lease buyouts and trade liens paid by ACH);
+   a PAD or cheque trade lien goes to the lender picked from the list; everything else is typed. */
+function poAchPayee(){ return String(poCfg().achPayee || "").trim() || "Nissan Canada Inc."; }
+function poExtraLenders(){ return (poCfg().lenders || []).filter(function(x){ return String(x || "").trim(); }); }
+function poPayeeAuto(tab){ var s = poState(tab); return tab === "eto" || (tab === "lien" && (s.kind === "buyout" || s.pay === "ACH")); }
+function poLenderLabel(tab){
+  var s = poState(tab), k = s.lender || "";
+  if (k === "OTHER") return String(s.payeeOther || "").trim();
+  if (k.indexOf("X:") === 0) return k.slice(2);
+  var l = PO_LENDERS.filter(function(x){ return x[0] === k; })[0]; return l ? l[1] : "";
+}
+function poPayee(tab){ var s = poState(tab); return poPayeeAuto(tab) ? poAchPayee() : tab === "lien" ? poLenderLabel(tab) : String(s.payee || "").trim(); }
 function poSubject(tab){
   var s = poState(tab), key = tab === "lien" && s.kind === "buyout" ? (s.pay === "Cheque" ? "lien_chq" : "lien_ach") : C.payoutSubjectKey(tab, s.pay), tpl = (poCfg().subjects && poCfg().subjects[key]) || C.PAYOUT_SUBJECTS[key];
-  return C.payoutSubject(tpl, { dms:s.f.dms, stk:s.f.stk, bank:s.payee, name:tab === "used" ? s.payee : s.f.name });
+  return C.payoutSubject(tpl, { dms:s.f.dms, stk:s.f.stk, bank:poPayee(tab), name:tab === "used" ? poPayee(tab) : s.f.name });
 }
 function poDocs(tab){ var T = poT(tab), s = poState(tab); return { on:T.docs.filter(function(d, i){ return s.docs[i]; }), off:T.docs.filter(function(d, i){ return !s.docs[i]; }) }; }
 function poApprovers(){ var a = poCfg().approvers; return (a && a.length ? a : ["General Manager", "Regional Controller"]).filter(function(x){ return String(x || "").trim(); }); }
-function poPadOn(tab){ var s = poState(tab); return s.pay === "PAD" && (tab === "eto" || tab === "lien"); }
+function poPadOn(tab){ var s = poState(tab); return s.pay === "PAD" && tab === "lien" && s.kind !== "buyout"; }
+function poPadKey(tab){ var k = poState(tab).lender; return PO_LENDERS.some(function(x){ return x[0] === k; }) ? k : ""; }
 
 /* ---- the email (all styles inline, so it survives Outlook, Gmail and forwarding) ---- */
 function poEmailHtml(tab){
@@ -67,7 +81,7 @@ function poEmailHtml(tab){
   var sec = function(label){ return tr(td("padding:18px 22px 6px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:#64748b;font-weight:bold", esc(label))); };
   var has = function(k){ return T.f.some(function(x){ return x[0] === k; }); };
   var rows = "", add = function(k, v){ if (v) rows += tr(td("padding:8px 8px 8px 22px;color:#64748b;font-size:13px;border-top:1px solid #eef2f7", esc(k), 'width="38%" valign="top"') + td("padding:8px 22px 8px 0;font-size:13px;font-weight:bold;border-top:1px solid #eef2f7", esc(v), 'valign="top"')); };
-  add("Payable to", s.payee); add("Payment method", s.pay === "PAD" ? "PAD (bank debits the dealership account)" : s.pay); if (s.pay === "Cheque") add("Cheque release", poReleaseLabel(s.release));
+  add("Payable to", poPayee(tab)); add("Payment method", s.pay === "PAD" ? "PAD (bank debits the dealership account)" : s.pay); if (s.pay === "Cheque") add("Cheque release", poReleaseLabel(s.release));
   add(tab === "used" ? "DMS vendor #" : "DMS #", f.dms); add("Stock #", f.stk); if (has("name")) add("Customer", f.name);
   if (has("veh")) add("Vehicle", f.veh); if (has("sellerType")) add("Seller is", f.sellerType); add("Original payment", f.orig); add("Reason", f.reason);
   if (f.gt) add("Payout good through", poFmtDate(f.gt) + (f.pd ? " · per diem " + f.pd + " after" : ""));
@@ -99,7 +113,7 @@ function poEmailHtml(tab){
 function poEmailText(tab){
   var T = poT(tab), s = poState(tab), tt = C.payoutTotals(s.amount, s.hst), ds = poDocs(tab), cf = String(s.carfax || "").trim(), f = s.f, L = [];
   L.push((s.pay === "Cheque" ? "CHEQUE REQUISITION" : "PAYMENT REQUISITION") + " · " + T.title.toUpperCase(), "", "Amount to pay: " + poMoney(tt.total) + "   Required by: " + poFmtDate(f.req), "",
-    "Payable to: " + (s.payee || ""), "Payment method: " + s.pay + (s.pay === "Cheque" ? " (" + poReleaseLabel(s.release).toLowerCase() + ")" : ""), (tab === "used" ? "DMS vendor #: " : "DMS #: ") + (f.dms || ""), "Stock #: " + (f.stk || ""));
+    "Payable to: " + poPayee(tab), "Payment method: " + s.pay + (s.pay === "Cheque" ? " (" + poReleaseLabel(s.release).toLowerCase() + ")" : ""), (tab === "used" ? "DMS vendor #: " : "DMS #: ") + (f.dms || ""), "Stock #: " + (f.stk || ""));
   var has = function(k){ return T.f.some(function(x){ return x[0] === k; }); };
   if (has("name") && f.name) L.push("Customer: " + f.name);
   if (has("veh") && f.veh) L.push("Vehicle: " + f.veh);
@@ -140,7 +154,8 @@ function poPadData(tab){
     custPhone:s.phone || "", dob:s.dob || "" };
 }
 function poPadPdf(tab){
-  var s = poState(tab), bank = s.bank, d = poPadData(tab);
+  var s = poState(tab), bank = poPadKey(tab), d = poPadData(tab);
+  if (!bank) return Promise.reject(new Error("Choose the lender first. Its PAD form fills in automatically."));
   var needPdfJs = bank === "DESJARDINS";
   return Promise.all([poScript(PO_PDF_LIB, "lib", function(){ return !!window.PDFLib; }), needPdfJs ? poScript(PO_PDF_JS, "js", function(){ return !!window.pdfjsLib; }) : Promise.resolve(),
     fetch("forms/pad/" + bank + ".pdf").then(function(r){ if (!r.ok) throw new Error("The " + bank + " form couldn't be loaded."); return r.arrayBuffer(); })]).then(function(rs){
@@ -190,7 +205,7 @@ function poBase64(bytes){ var s = "", u = new Uint8Array(bytes); for (var i = 0;
 function poChequeInput(tab){
   var s = poState(tab), T = poT(tab), tt = C.payoutTotals(s.amount, s.hst), idx = [], names = [];
   T.docs.forEach(function(d, i){ if (s.docs[i]){ idx.push(i); names.push(d[0]); } });
-  return { type:tab, kind:s.kind, pay:s.pay, release:s.release, payee:s.payee, dms:s.f.dms, stk:s.f.stk, amount:tt.amount, hst:tt.hst, date:C.todayISO(), req:s.f.req, requestedBy:poMe().name, gt:s.f.gt ? poFmtDate(s.f.gt) : "", pd:s.f.pd, docsOn:idx, docNames:names };
+  return { type:tab, kind:s.kind, pay:s.pay, release:s.release, payee:poPayee(tab), dms:s.f.dms, stk:s.f.stk, amount:tt.amount, hst:tt.hst, date:C.todayISO(), req:s.f.req, requestedBy:poMe().name, gt:s.f.gt ? poFmtDate(s.f.gt) : "", pd:s.f.pd, docsOn:idx, docNames:names };
 }
 function poXlsxBytes(tab){
   var input = poChequeInput(tab);
@@ -206,7 +221,7 @@ function poXlsxBytes(tab){
     });
   });
 }
-function poXlsxName(tab){ var s = poState(tab); return "Cheque-Requisition-" + String(s.f.stk || s.payee || "request").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".xlsx"; }
+function poXlsxName(tab){ var s = poState(tab); return "Cheque-Requisition-" + String(s.f.stk || poPayee(tab) || "request").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".xlsx"; }
 function poXlsxDownload(){
   var tab = PO.tab; if (!poCheck(tab) || PO.busy) return;
   poXlsxBytes(tab).then(function(bytes){
@@ -214,7 +229,7 @@ function poXlsxDownload(){
     a.href = url; a.download = poXlsxName(tab); document.body.appendChild(a); a.click(); a.remove(); setTimeout(function(){ URL.revokeObjectURL(url); }, 60000); toast("Excel downloaded. Attach it to your email.", "ok");
   }, function(e){ toast(e.message || "Couldn't make the Excel.", "err"); });
 }
-function poPadName(tab){ var s = poState(tab); return "PAD-" + s.bank + "-" + String(s.padName || "customer").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".pdf"; }
+function poPadName(tab){ var s = poState(tab); return "PAD-" + poPadKey(tab) + "-" + String(s.padName || "customer").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".pdf"; }
 
 /* ---- the page ---- */
 function poTabsHtml(){
@@ -227,21 +242,32 @@ function poLookHtml(tab){
   return '<div class="po-deal">' + L.deals.slice(0, 3).map(function(d, i){ return '<div><b>Found in the Sales Tracker:</b> ' + esc(d.customer || "") + ' · ' + esc(d.vehicle || "") + (d.soldDate ? ' · sold ' + esc(poFmtDate(d.soldDate)) : '') +
     ' <button type="button" class="po-btn sm" data-po="usedeal" data-v="' + i + '">Use customer and vehicle</button></div>'; }).join("") + '</div>';
 }
+function poPayeeField(tab, s, T){
+  var lbl = '<label class="po-l" for="po-x-payee">' + esc(T.payeeLbl) + '</label>';
+  if (poPayeeAuto(tab)) return '<div class="po-w">' + lbl + '<input id="po-x-payee" type="text" value="' + esc(poPayee(tab)) + '" readonly><div class="po-note">ACH payments always go to this payee. The General Manager sets it in Dealership settings.</div></div>';
+  if (tab === "lien"){
+    var cheque = s.pay === "Cheque", opts = '<option value="">Choose a lender…</option>' + PO_LENDERS.map(function(l){ return '<option value="' + l[0] + '" ' + (s.lender === l[0] ? "selected" : "") + '>' + esc(l[1]) + '</option>'; }).join("") +
+      (cheque ? poExtraLenders().map(function(n){ return '<option value="X:' + esc(n) + '" ' + (s.lender === "X:" + n ? "selected" : "") + '>' + esc(n) + '</option>'; }).join("") + '<option value="OTHER" ' + (s.lender === "OTHER" ? "selected" : "") + '>Other lender…</option>' : "");
+    return '<div class="po-w">' + lbl + '<select id="po-x-payee" data-pox="lender">' + opts + '</select>' + (s.pay === "PAD" ? '<div class="po-note">Its bank PAD form fills in automatically.</div>' : "") + '</div>' +
+      (s.lender === "OTHER" && cheque ? '<div class="po-w"><label class="po-l" for="po-x-payeeOther">Lender name</label><input id="po-x-payeeOther" data-pox="payeeOther" type="text" value="' + esc(s.payeeOther) + '" autocomplete="off"></div>' : "");
+  }
+  return '<div class="po-w">' + lbl + '<input id="po-x-payee" data-pox="payee" type="text" value="' + esc(s.payee) + '" autocomplete="off"></div>';
+}
 function poFormHtml(){
   var tab = PO.tab, s = poState(tab), T = poT(tab), pad = poPadOn(tab);
   var fields = (tab === "lien" ? '<div class="po-w"><label class="po-l">What kind of lien payout?</label><div class="po-radios"><button type="button" data-po="kind" data-v="lien" class="' + (s.kind !== "buyout" ? "on" : "") + '">Trade lien payout</button><button type="button" data-po="kind" data-v="buyout" class="' + (s.kind === "buyout" ? "on" : "") + '">Dealer lease buyout</button></div></div>' : '') +
-    '<div class="po-w"><label class="po-l">Payment method</label><div class="po-radios">' + T.pays.map(function(p){ return '<button type="button" data-po="pay" data-v="' + p + '" class="' + (s.pay === p ? "on" : "") + '">' + (p === "PAD" ? "PAD (bank debits us)" : p) + '</button>'; }).join("") + '</div></div>' +
+    '<div class="po-w"><label class="po-l">Payment method</label><div class="po-radios">' + T.pays.map(function(p){ return '<button type="button" ' + (T.pays.length > 1 ? 'data-po="pay" data-v="' + p + '" ' : 'disabled ') + 'class="' + (s.pay === p ? "on" : "") + '">' + (p === "PAD" ? "PAD (bank debits us)" : p) + '</button>'; }).join("") + '</div></div>' +
     (s.pay === "Cheque" ? '<div class="po-w"><label class="po-l">Cheque release</label><div class="po-radios">' + PO_RELEASE.map(function(r){ return '<button type="button" data-po="rel" data-v="' + r[0] + '" class="' + (s.release === r[0] ? "on" : "") + '">' + r[1] + '</button>'; }).join("") + '</div></div>' : '') +
-    '<div class="po-w"><label class="po-l" for="po-x-payee">' + esc(T.payeeLbl) + '</label><input id="po-x-payee" data-pox="payee" type="text" value="' + esc(s.payee) + '" autocomplete="off"' + (T.payeeFixed ? ' readonly' : '') + '></div>' +
+    poPayeeField(tab, s, T) +
     T.f.map(function(f){ return poField(f[0], f[1], s.f[f[0]], f[2]); }).join("");
   var html = '<div class="po-card"><h3>' + esc(T.title) + '</h3><div class="po-hint">' + esc(T.hint) + '</div><div class="po-f">' + fields + '</div>' + poLookHtml(tab) + '</div>';
   if (T.carfax) html += '<div class="po-card"><h3>Carfax link</h3><div class="po-hint">Shown as a highlighted button in the email, so accounting opens the lien check in one click.</div><input id="po-x-carfax" data-pox="carfax" type="url" value="' + esc(s.carfax) + '" placeholder="Paste the Carfax report link"></div>';
   html += '<div class="po-card"><h3>Amount</h3><div class="po-f"><div><label class="po-l" for="po-x-amount">' + esc(T.amtLbl) + '</label><input id="po-x-amount" data-pox="amount" type="number" step="0.01" min="0" value="' + esc(s.amount) + '"></div>' +
     '<div><label class="po-l">HST</label><label class="po-chk"><input type="checkbox" data-pox="hst" ' + (s.hst ? "checked" : "") + '> Add 13% HST to this amount</label></div></div></div>';
   if (pad){
-    var b = s.bank;
+    var b = poPadKey(tab), lname = poLenderLabel(tab);
     html += '<div class="po-card"><h3>Bank PAD form</h3><div class="po-hint">The bank\'s own form, filled in from your request. The customer and vehicle go on the form only. They aren\'t in the email.</div><div class="po-f">' +
-      '<div><label class="po-l" for="po-x-bank">Bank form</label><select id="po-x-bank" data-pox="bank">' + PO_PAD_BANKS.map(function(x){ return '<option value="' + x[0] + '" ' + (b === x[0] ? "selected" : "") + '>' + esc(x[1]) + '</option>'; }).join("") + '</select></div>' +
+      '<div class="po-w"><div class="' + (b ? "po-info" : "po-warn") + '" style="margin:0">' + (b ? '<b>' + esc(lname) + '</b> PAD form, picked from the lender above.' : 'Choose the lender above and its PAD form fills in automatically.') + '</div></div>' +
       '<div><label class="po-l" for="po-x-padName">Customer name</label><input id="po-x-padName" data-pox="padName" type="text" value="' + esc(s.padName) + '" autocomplete="off"></div>' +
       '<div><label class="po-l" for="po-x-padVeh">Vehicle (year, make, model)</label><input id="po-x-padVeh" data-pox="padVeh" type="text" value="' + esc(s.padVeh) + '" autocomplete="off"></div>' +
       '<div><label class="po-l" for="po-x-padVin">VIN</label><input id="po-x-padVin" data-pox="padVin" type="text" value="' + esc(s.padVin) + '" autocomplete="off"></div>' +
@@ -249,7 +275,7 @@ function poFormHtml(){
       (b === "CIBC" ? '<div><label class="po-l" for="po-x-phone">Customer phone (CIBC asks for it)</label><input id="po-x-phone" data-pox="phone" type="text" value="' + esc(s.phone) + '"></div>' : '') +
       (b === "DESJARDINS" ? '<div><label class="po-l" for="po-x-dob">Customer date of birth (optional)</label><input id="po-x-dob" data-pox="dob" type="text" value="' + esc(s.dob) + '" placeholder="YYYY-MM-DD"></div>' : '') +
       '</div><div class="po-info"><b>Filled in for you:</b> the details above, plus amount, date, and the dealership name, contact, phone and fax (set once in Dealership settings).<br><b>Left blank on purpose:</b> the dealer\'s transit, institution and account numbers (accounting adds those) and the signature.</div>' +
-      '<div class="po-row"><button type="button" class="po-btn p" data-po="padopen"' + (PO.busy ? " disabled" : "") + '>Open pre-filled PAD form (PDF)</button></div></div>';
+      '<div class="po-row"><button type="button" class="po-btn p" data-po="padopen"' + (PO.busy || !b ? " disabled" : "") + '>Open pre-filled PAD form (PDF)</button></div></div>';
   }
   html += '<div class="po-card"><h3>Documents you are attaching</h3><div class="po-hint">Tick what you\'ll attach to the email. The email lists what is attached and flags anything missing.</div>' +
     T.docs.map(function(d, i){ return '<label class="po-doc"><input type="checkbox" data-pod="' + i + '" ' + (s.docs[i] ? "checked" : "") + '><span>' + esc(d[0]) + (d[1] ? '<small>' + esc(d[1]) + '</small>' : '') + '</span></label>'; }).join("") + '</div>';
@@ -313,7 +339,8 @@ function poRefresh(){
 function poSay(msg){ PO.msg = msg; var m = document.getElementById("po-msg"); if (m) m.textContent = msg; }
 function poCheck(tab){
   var s = poState(tab), tt = C.payoutTotals(s.amount, s.hst);
-  if (!String(s.payee || "").trim()){ toast("Who is the payment to? Fill in the " + poT(tab).payeeLbl.toLowerCase() + ".", "err"); return false; }
+  if (poPadOn(tab) && !poPadKey(tab)){ toast("Choose the lender. Its PAD form fills in automatically.", "err"); return false; }
+  if (!poPayee(tab)){ toast("Who is the payment to? Choose or fill in the " + poT(tab).payeeLbl.toLowerCase() + ".", "err"); return false; }
   if (!(tt.total > 0)){ toast("Enter the amount.", "err"); return false; }
   return true;
 }
@@ -335,7 +362,7 @@ function poSendMe(){
   if (!stOnline()){ toast("Sign in online to send email. You can still copy it.", "err"); return; }
   var id = "pr-" + C.uid(), tt = C.payoutTotals(s.amount, s.hst), subject = poSubject(tab), store = state.activeDealershipId, me = V.currentUser();
   PO.busy = true; PO.msg = null; render();
-  var snap = { type:tab, sub:tab === "lien" ? s.kind : "", pay:s.pay, payee:s.payee, stk:s.f.stk || "", dms:s.f.dms || "", name:s.f.name || "", total:tt.total, subject:subject, to:s.to, cc:s.cc, bank:poPadOn(tab) ? s.bank : "" };
+  var snap = { type:tab, sub:tab === "lien" ? s.kind : "", pay:s.pay, payee:poPayee(tab), stk:s.f.stk || "", dms:s.f.dms || "", name:s.f.name || "", total:tt.total, subject:subject, to:s.to, cc:s.cc, bank:poPadOn(tab) ? s.bank : "" };
   var attach = poXlsxBytes(tab).then(function(x){
     var list = [{ filename:poXlsxName(tab), content:poBase64(x) }];
     return poPadOn(tab) ? poPadPdf(tab).then(function(b){ list.push({ filename:poPadName(tab), content:poBase64(b) }); return list; }) : list;
@@ -382,7 +409,7 @@ document.addEventListener("click", function(ev){
   var act = el.getAttribute("data-po"), v = el.getAttribute("data-v"), s = PO_TYPES[PO.tab] ? poState(PO.tab) : null;
   switch (act){
     case "tab": PO.tab = v; PO.msg = null; if (v === "log") poLoadLog(true); window.scrollTo(0, 0); break;
-    case "pay": s.pay = v; PO.msg = null; break;
+    case "pay": s.pay = v; if (v === "PAD" && !poPadKey(PO.tab)) s.lender = ""; PO.msg = null; break;
     case "padopen": poPadOpen(); return;
     case "xlsx": poXlsxDownload(); return;
     case "rel": s.release = v; break;
@@ -392,7 +419,7 @@ document.addEventListener("click", function(ev){
     case "copysubj": if (navigator.clipboard) navigator.clipboard.writeText(poSubject(PO.tab)); poSay("Subject copied: " + poSubject(PO.tab)); return;
     case "copyaddr": if (navigator.clipboard) navigator.clipboard.writeText((s.to || "") + (s.cc ? "  Cc: " + s.cc : "")); poSay("Addresses copied. Paste them into the forward."); return;
     case "usedeal": { var L = PO.look[PO.tab], d = L && L.deals[Number(v)]; if (d){ if (PO.tab === "refund"){ s.f.name = d.customer || s.f.name; s.f.veh = d.vehicle || s.f.veh; } else { s.padName = d.customer || s.padName; s.padVeh = d.vehicle || s.padVeh; } } break; }
-    case "kind": s.kind = v; s.docs = {}; s.carfax = v === "buyout" ? "" : s.carfax; s.pay = poT("lien").pays[0]; s.payee = v === "buyout" ? PO_BUYOUT.payeeFixed : ""; PO.msg = null; break;
+    case "kind": s.kind = v; s.docs = {}; s.carfax = v === "buyout" ? "" : s.carfax; s.pay = poT("lien").pays[0]; s.lender = ""; PO.msg = null; break;
     case "mark": poMark(el.getAttribute("data-id"), v); return;
     default: return;
   }
@@ -406,7 +433,7 @@ function poField2(ev){
   if (kf){ s.f[kf] = el.value; if (ev.type === "change" && kf === "stk") poLookup(tab, el.value); poRefresh(); return; }
   if (kd !== null){ if (ev.type !== "change") return; s.docs[kd] = !!el.checked; poRefresh(); return; }
   if (kx === "hst"){ if (ev.type !== "change") return; s.hst = !!el.checked; poRefresh(); return; }
-  if (kx === "bank"){ if (ev.type !== "change") return; s.bank = el.value; render(); return; }
+  if (kx === "lender"){ if (ev.type !== "change") return; s.lender = el.value; render(); return; }
   s[kx] = el.value; poRefresh();
 }
 document.addEventListener("input", poField2);
@@ -420,6 +447,8 @@ function viewPayoutSettings(){
   return '<div class="card"><div class="card-h"><h2>Payout requests</h2></div><div class="card-b">' +
     '<p class="muted small" style="margin:0 0 10px">The requisition email is built from these. Nothing here costs anything, and no AI reads your documents.</p>' +
     '<div class="inline">' + inp("Accounting email (forward to)", "accountingEmail", "accounting@yourdealership.ca") + inp("Default Cc", "defaultCc", "gm@…; regional.controller@…", "Separate several addresses with a semicolon") + '</div>' +
+    '<div class="inline">' + inp("Default ACH payee", "achPayee", "Nissan Canada Inc.", "ETO payouts, dealer lease buyouts and trade liens paid by ACH always go to this payee. Leave blank for Nissan Canada Inc.") +
+      '<label class="f"><span>Other lenders for cheques (one per line)</span><textarea data-posf="lendersText" rows="3" ' + dis + ' placeholder="Bank of Montreal&#10;Honda Financial Services">' + esc((cfg.lenders || []).join("\n")) + '</textarea><small class="muted">Added to the lender list on trade lien cheques. The six lenders with bank PAD forms are always there.</small></label></div>' +
     '<div class="inline"><label class="f"><span>First approval line</span><input type="text" data-posf="approver0" value="' + esc(ap[0] || "") + '" ' + dis + '></label><label class="f"><span>Second approval line</span><input type="text" data-posf="approver1" value="' + esc(ap[1] || "") + '" ' + dis + '></label></div>' +
     '<h3 style="margin:16px 0 4px;font-size:14px">Subject lines</h3><p class="muted small" style="margin:0 0 6px">Use {dms}, {stk}, {bank} and {name}. A part with nothing filled in, such as "STK # {stk}", drops out of the subject.</p>' +
     Object.keys(PO_SUBJECT_LABEL).map(function(k){ var cur = (cfg.subjects && cfg.subjects[k]) || C.PAYOUT_SUBJECTS[k];
@@ -433,7 +462,8 @@ function viewPayoutSettings(){
 document.addEventListener("change", function(ev){
   var el = ev.target; if (!el || !el.getAttribute || !el.getAttribute("data-posf") || !V.isAdmin()) return;
   var path = el.getAttribute("data-posf"), c = state.config; c.payout = c.payout || {};
-  if (path === "approver0" || path === "approver1"){
+  if (path === "lendersText"){ c.payout.lenders = el.value.split(/\n/).map(function(x){ return x.trim(); }).filter(Boolean); }
+  else if (path === "approver0" || path === "approver1"){
     var a = (c.payout.approvers && c.payout.approvers.length ? c.payout.approvers : ["General Manager", "Regional Controller"]).slice(); a[path === "approver0" ? 0 : 1] = el.value.trim(); c.payout.approvers = a;
   } else {
     var parts = path.split("."), o = c.payout; for (var i = 0; i < parts.length - 1; i++){ o[parts[i]] = o[parts[i]] || {}; o = o[parts[i]]; }
