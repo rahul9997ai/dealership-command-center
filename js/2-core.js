@@ -791,6 +791,83 @@ function chequeXml(xml, cells){
   return xml;
 }
 
+
+/* The cheque requisition as a PDF page (page 1 of the payout package), drawn from the same request as the Excel.
+   It mirrors the Excel's sections and ticks, so accounting reads the same form whether they open the Excel or the PDF.
+   PL is pdf-lib; fonts = { reg, bold } (Helvetica). Pure drawing: no network, no document access. */
+function pdfSafe(t){ return String(t === undefined || t === null ? "" : t).replace(/[–—]/g, "-").replace(/[‘’]/g, "'").replace(/[“”]/g, '"').replace(/[^\x20-\x7E\xA0-\xFF]/g, "?"); }
+var CHEQUE_LISTS = {
+  used:{ title:"USED VEHICLE PURCHASE", items:["PALIDIN SCAN (SHOWING \"PASSED\")", "2ND PIECE OF ID", "ARTICLES OF INCORPORATION / BUSINESS LICENCE", "COPY OF OMVIC LICENCE (IF BUYING FROM A DEALER)", "COPY OF OWNERSHIP", "CARFAX REPORT", "LIEN CHECK REPORT (FOR ALL PROVINCES)", "LIEN RELEASE LETTER", "V-AUTO REPORT", "UCDA OFFER TO PURCHASE", "SOLD UNIT - CUSTOMER BILL OF SALE"], docs:[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10] },
+  lien:{ title:"LIEN PAYOUT", items:["PAYOUT SHEET", "COPY OF BILL OF SALE", "COPY OF OWNERSHIP IN CUSTOMERS NAME", "COPY OF LIEN SEARCH"], docs:[0, 2, 3, 4] },
+  refund:{ title:"REFUND", items:["COPY OF RECEIPT W. ORIGINAL PAY METHOD", "COPY OF BILL OF SALE", "A/R SCHEDULE SHOWING PAYMENT POSTED TO DMS"], docs:[0, 1, 2] }
+};
+function chequePdfPage(PL, doc, fonts, input, ctx){
+  ctx = ctx || {};
+  var page = doc.addPage([612, 792]), W = 612, M = 36, navy = PL.rgb(0.043, 0.078, 0.188), ink = PL.rgb(0.04, 0.1, 0.22), grey = PL.rgb(0.42, 0.48, 0.57), rule = PL.rgb(0.78, 0.82, 0.89), tint = PL.rgb(0.93, 0.95, 0.98), white = PL.rgb(1, 1, 1);
+  var money = function(n){ return "$" + (Number(n) || 0).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ","); };
+  var day = function(iso){ var m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); if (!m) return String(iso || ""); return ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"][+m[2] - 1] + " " + (+m[3]) + ", " + m[1]; };
+  var text = function(t, x, y, size, bold, color, align, maxW){
+    t = pdfSafe(t); var f = bold ? fonts.bold : fonts.reg, sz = size;
+    if (maxW) while (sz > 6 && f.widthOfTextAtSize(t, sz) > maxW) sz -= 0.5;
+    var w = f.widthOfTextAtSize(t, sz); if (align === "right") x -= w; else if (align === "center") x -= w / 2;
+    page.drawText(t, { x:x, y:y, size:sz, font:f, color:color || ink });
+  };
+  var hline = function(x1, x2, y, c, t){ page.drawLine({ start:{ x:x1, y:y }, end:{ x:x2, y:y }, thickness:t || 0.6, color:c || rule }); };
+  /* header */
+  page.drawRectangle({ x:0, y:792 - 74, width:W, height:74, color:navy });
+  text(ctx.dealer || "Dealership", M, 792 - 26, 9, true, PL.rgb(0.79, 0.85, 0.94));
+  text("CHEQUE REQUISITION", M, 792 - 54, 21, true, white);
+  text(input.kind === "buyout" ? "DEALER LEASE BUYOUT" : (CHEQUE_LISTS[input.type] ? CHEQUE_LISTS[input.type].title : "ETO PAYOUT"), W - M, 792 - 54, 10, true, PL.rgb(0.94, 0.73, 0.29), "right");
+  var y = 792 - 74 - 30;
+  var field = function(label, value, x, w){ text(label.toUpperCase(), x, y, 7.5, true, grey); text(value || "", x, y - 14, 11.5, true, ink, "left", w - 10); hline(x, x + w - 10, y - 19); };
+  field("Request date", day(input.date), M, 250); field("Required by date", day(input.req), 310, 266); y -= 44;
+  field("Requested by", input.requestedBy, M, 250); field("DMS", input.dms, 310, 266); y -= 44;
+  field("Payable to", input.payee, M, W - 2 * M + 10); y -= 44;
+  /* how the payment is made / released */
+  var bar = function(label){ page.drawRectangle({ x:M, y:y - 5, width:W - 2 * M, height:19, color:tint }); text(label, M + 8, y, 8.5, true, ink); y -= 16; };
+  var box = function(label, x, on){ page.drawRectangle({ x:x, y:y - 3, width:12, height:12, borderColor:ink, borderWidth:0.9, color:white }); if (on) text("X", x + 3, y - 0.5, 10, true, ink); text(label, x + 19, y, 9.5, false, ink); };
+  if (input.pay === "Cheque"){
+    bar("INSTRUCTIONS FOR RELEASE OF CHEQUE"); y -= 8;
+    box("HOLD FOR PICKUP", M + 8, input.release === "hold"); box("RETURN TO MANAGER", 310, input.release === "return"); y -= 20;
+    box("MAIL OUT", M + 8, input.release === "mail"); box("COURIER OUT", 310, input.release === "courier"); y -= 26;
+  } else {
+    bar("PAYMENT METHOD"); y -= 8;
+    text(input.pay === "PAD" ? "PAD - the bank debits the dealership account (the bank's PAD form is attached separately)" : input.pay + " - paid electronically", M + 8, y, 9.5, false, ink); y -= 26;
+  }
+  /* what is being paid for */
+  var list = CHEQUE_LISTS[input.type === "lien" && input.kind === "buyout" ? "none" : input.type];
+  bar(list ? list.title : "OTHER - MISCELLANEOUS"); y -= 8;
+  if (list){
+    if (input.stk){ text("STOCK #", M + 8, y, 7.5, true, grey); text(input.stk, M + 60, y, 11, true, ink); y -= 20; }
+    var on = {}; (input.docsOn || []).forEach(function(i){ on[i] = true; });
+    list.items.forEach(function(it, k){ box(it, M + 8, !!on[list.docs[k]]); y -= 19; });
+  } else {
+    var cells = chequeSpec(input);
+    [cells.B63, cells.B64, cells.B65].filter(Boolean).forEach(function(l){ text(l, M + 8, y, 9.5, false, ink, "left", W - 2 * M - 16); y -= 15; });
+  }
+  y -= 14;
+  /* totals */
+  var amt = Number(input.amount) || 0, hst = Number(input.hst) || 0, tx = W - M - 12;
+  var tot = function(label, value, strong){ if (strong){ page.drawRectangle({ x:300, y:y - 8, width:W - M - 300, height:26, color:navy }); text(label, 310, y, 9, true, white); text(value, tx, y, 12.5, true, white, "right"); } else { text(label, 310, y, 9, false, grey); text(value, tx, y, 10.5, true, ink, "right"); hline(300, W - M, y - 6); } y -= strong ? 34 : 19; };
+  tot("SUBTOTAL", money(amt)); tot("HST TOTAL", money(hst)); y -= 2; tot("GRAND TOTAL - CHEQUE AMOUNT", money(amt + hst), true);
+  /* approval */
+  y -= 26; bar("APPROVAL"); y -= 24;
+  var ap = ctx.approvers && ctx.approvers.length ? ctx.approvers : ["General Manager", "Department Manager"];
+  [ap[0] || "General Manager", ap[1] || "Department Manager"].forEach(function(a, i){ var x = i ? 310 : M + 8; hline(x, x + 230, y); text(a, x, y - 12, 8.5, true, grey); });
+  text("Prepared in Mahan-EX Dealership Command. Matches the cheque requisition Excel attached to the email.", M, 28, 7.5, false, grey);
+  return page;
+}
+/* One document photo, labelled, on its own page of the package. img is a pdf-lib embedded image. */
+function chequePhotoPage(PL, doc, fonts, label, n, total, img){
+  var page = doc.addPage([612, 792]), M = 36, ink = PL.rgb(0.04, 0.1, 0.22), grey = PL.rgb(0.42, 0.48, 0.57);
+  page.drawText(pdfSafe(label), { x:M, y:792 - 46, size:14, font:fonts.bold, color:ink });
+  page.drawText("Document photo " + n + " of " + total, { x:M, y:792 - 62, size:8.5, font:fonts.reg, color:grey });
+  page.drawLine({ start:{ x:M, y:792 - 70 }, end:{ x:612 - M, y:792 - 70 }, thickness:0.6, color:PL.rgb(0.78, 0.82, 0.89) });
+  var boxW = 612 - 2 * M, boxH = 792 - 70 - 40 - 24, k = Math.min(boxW / img.width, boxH / img.height), w = img.width * k, h = img.height * k;
+  page.drawImage(img, { x:M + (boxW - w) / 2, y:40 + (boxH - h) / 2 + 0, width:w, height:h });
+  return page;
+}
+
 /* ---------------- SALES INSIGHTS ----------------
    The GM dashboard: gross, units and deliveries for a period, each salesperson's scorecard, and
    year-end projections. A split deal splits its gross the same way it splits the unit. Losing money
@@ -1236,7 +1313,7 @@ function impDocDeals(result, opts){
   return out;
 }
 
-window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights, PAYOUT_SUBJECTS:PAYOUT_SUBJECTS, payoutSubjectKey:payoutSubjectKey, payoutSubject:payoutSubject, payoutTotals:payoutTotals, xlsxSerial:xlsxSerial, chequeSpec:chequeSpec, chequeXml:chequeXml,
+window.__DCC_CORE__ = { easterSunday:easterSunday, ontarioHolidays:ontarioHolidays, sellingDays:sellingDays, sellingDayOf:sellingDayOf, SALE_STATUSES:SALE_STATUSES, saleCounts:saleCounts, saleIsUsed:saleIsUsed, saleCountDate:saleCountDate, salePct:salePct, saleStatus:saleStatus, salesPerformance:salesPerformance, SALE_OPEN:SALE_OPEN, SALE_CLOSED:SALE_CLOSED, saleIsOpen:saleIsOpen, saleDelivered:saleDelivered, saleKey:saleKey, saleSetAliases:saleSetAliases, saleNameLike:saleNameLike, saleStoreOnly:saleStoreOnly, salesAgg:salesAgg, salesMonthAdd:salesMonthAdd, salesInsights:salesInsights, PAYOUT_SUBJECTS:PAYOUT_SUBJECTS, payoutSubjectKey:payoutSubjectKey, payoutSubject:payoutSubject, payoutTotals:payoutTotals, xlsxSerial:xlsxSerial, chequeSpec:chequeSpec, chequeXml:chequeXml, chequePdfPage:chequePdfPage, chequePhotoPage:chequePhotoPage, pdfSafe:pdfSafe,
   impText:impText, impHead:impHead, impMaskTab:impMaskTab, impDocDeals:impDocDeals, impMerge:impMerge, saleConflicts:saleConflicts, saleStockKey:saleStockKey, saleCustKey:saleCustKey, impMonthOf:impMonthOf, impDate:impDate, impMoney:impMoney, impFindHeader:impFindHeader, impGuessHeader:impGuessHeader, impTypeFromName:impTypeFromName, impLogSheet:impLogSheet, impPerfSheet:impPerfSheet, IMP_LOG_COLS:IMP_LOG_COLS, IMP_COL_LABEL:IMP_COL_LABEL, clone:clone, uid:uid, money:money, money0:money0, km:km, esc:esc, todayISO:todayISO, localISO:localISO,
   MARKETS:MARKETS, marketAverage:marketAverage, cashAdvantage:cashAdvantage, caConst:caConst, caBreakEven:caBreakEven, locCompare:locCompare, r2:r2, loanPayoff:loanPayoff, loanExtra:loanExtra, AMORT_PPY:AMORT_PPY, amortSchedule:amortSchedule, amortCompare:amortCompare, amortGoal:amortGoal, amortYears:amortYears, amortDate:amortDate,
   fmtDate:fmtDate, freqLabel:freqLabel, newTransaction:newTransaction, primaryTerm:primaryTerm, sortedTerms:sortedTerms,

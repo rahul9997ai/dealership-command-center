@@ -11,7 +11,7 @@ const cors = {
 const json = (b: unknown, status = 200) =>
   new Response(JSON.stringify(b), { status, headers: { ...cors, "Content-Type": "application/json" } });
 const FROM_ADDRESS = "no-reply@rahulchamp.ca";
-const MAX_HTML = 200_000, MAX_ATTACH = 3_000_000;
+const MAX_HTML = 200_000, MAX_ATTACH = 14_000_000;
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });

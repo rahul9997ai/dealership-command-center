@@ -29,7 +29,24 @@ var PO_BUYOUT = { label:"Trade Lien Payout", title:"Dealer lease buyout", hint:"
 var PO_TYPE_KEYS = ["eto", "lien", "used", "refund"];
 var PO_SUBJECT_LABEL = { eto_ach:"ETO payout, manufacturer (ACH)", eto_pad:"ETO payout, bank (PAD)", lien_ach:"Trade lien, manufacturer (ACH)", lien_pad:"Trade lien, bank (PAD)", lien_chq:"Trade lien, cheque", used:"Used vehicle purchase", refund:"Refund to customer" };
 var PO_STATUS = { draft:"Not sent", sent:"Sent", approved:"Approved", paid:"Paid", returned:"Returned" };
-var PO = { tab:"eto", s:{}, log:null, logLoading:false, logStore:null, logErr:null, busy:false, msg:null, look:{} };
+var PO = { tab:"eto", s:{}, log:null, logLoading:false, logStore:null, logErr:null, busy:false, msg:null, look:{}, photos:{} };
+/* Pulse hands a delivery over with a link like #/<store>/payout-request?stk=..&cust=..&veh=..&vin=..&pulse=<delivery id>.
+   The details are kept for this session (the address is tidied up on sign-in), then fill the Trade Lien Payout form once. */
+var PO_HAND = (function(){
+  try {
+    var q = /\?(.*)$/.exec(String(location.hash)), raw = q ? q[1] : "";
+    if (/(^|&)pulse=/.test(raw)){ var u = new URLSearchParams(raw), o = { pulse:u.get("pulse") || "", stk:u.get("stk") || "", cust:u.get("cust") || "", veh:u.get("veh") || "", vin:u.get("vin") || "" }; sessionStorage.setItem("dcc_po_hand", JSON.stringify(o)); return o; }
+    var kept = sessionStorage.getItem("dcc_po_hand"); return kept ? JSON.parse(kept) : null;
+  } catch (e) { return null; }
+})();
+function poApplyHand(){
+  if (!PO_HAND || PO_HAND.used) return;
+  PO_HAND.used = true; try { sessionStorage.removeItem("dcc_po_hand"); } catch (e) {}
+  PO.tab = "lien"; var s = poState("lien");
+  s.kind = "lien"; s.f.stk = PO_HAND.stk; s.padName = PO_HAND.cust; s.padVeh = PO_HAND.veh; s.padVin = PO_HAND.vin; s.pulseId = PO_HAND.pulse; s.fromPulse = { cust:PO_HAND.cust, stk:PO_HAND.stk };
+}
+function poPhotos(tab){ return PO.photos[tab] || (PO.photos[tab] = {}); }
+function poPhotoCount(tab){ var p = poPhotos(tab), n = 0; Object.keys(p).forEach(function(k){ n += p[k].length; }); return n; }
 
 function poT(tab){ var s = PO.s[tab]; return tab === "lien" && s && s.kind === "buyout" ? PO_BUYOUT : PO_TYPES[tab]; }
 function poCfg(){ var c = state.config || {}; return c.payout || {}; }
@@ -88,7 +105,7 @@ function poEmailHtml(tab){
     tr(td("padding:10px 22px;font-size:15px;font-weight:bold;border-top:2px solid #0b1b3a", s.pay === "Cheque" ? "Cheque amount" : "Total to pay") + td("padding:10px 22px;font-size:15px;font-weight:bold;border-top:2px solid #0b1b3a", poMoney(tt.total), 'align="right"')))));
   var docRow = function(color, weight, glyph, name, note){ return tr(td("padding:5px 22px;font-size:13px;color:" + color + ";font-weight:" + weight, glyph + " " + esc(name) + ' <span style="color:#64748b;font-weight:normal">' + note + '</span>')); };
   h += sec("Backup documents") + tr(td("padding:0", table(
-    docRow("#047857", "normal", "&#10003;", "Cheque requisition (Excel)", "attached") + (pad ? docRow("#047857", "normal", "&#10003;", "Pre-filled bank PAD form (PDF)", "attached") : "") +
+    docRow("#047857", "normal", "&#10003;", "Payout package (PDF)", "cheque requisition" + (poPhotoCount(tab) ? " + " + poPhotoCount(tab) + " document photo" + (poPhotoCount(tab) === 1 ? "" : "s") : "")) + docRow("#047857", "normal", "&#10003;", "Cheque requisition (Excel)", "attached") + (pad ? docRow("#047857", "normal", "&#10003;", "Pre-filled bank PAD form (PDF)", "attached") : "") +
     ds.on.map(function(d){ return docRow("#047857", "normal", "&#10003;", d[0], "attached"); }).join("") + ds.off.map(function(d){ return docRow("#b45309", "bold", "&#10007;", d[0], "not attached"); }).join(""))));
   if (String(s.notes || "").trim()) h += sec("Notes") + tr(td("padding:4px 22px 8px", table(tr(td("padding:10px 12px;font-size:13px;background:#f8fafc", esc(String(s.notes).trim()).replace(/\n/g, "<br>"), 'bgcolor="#f8fafc"')))));
   h += sec("Approval") + tr(td("padding:0", table(poApprovers().map(function(a, i){
@@ -106,7 +123,7 @@ function poEmailText(tab){
   if (f.gt) L.push("Payout good through: " + poFmtDate(f.gt) + (f.pd ? " · per diem " + f.pd + " after" : ""));
   if (T.carfax && cf) L.push("", "CARFAX REPORT: " + cf);
   L.push("", "Amount: " + poMoney(tt.amount) + (tt.hst ? "   HST: " + poMoney(tt.hst) : "") + "   TOTAL: " + poMoney(tt.total), "");
-  L.push("Attached: cheque requisition (Excel)"); if (poPadOn(tab)) L.push("Attached: pre-filled bank PAD form (PDF)");
+  L.push("Attached: payout package (PDF): cheque requisition" + (poPhotoCount(tab) ? " + " + poPhotoCount(tab) + " document photo(s)" : "")); L.push("Attached: cheque requisition (Excel)"); if (poPadOn(tab)) L.push("Attached: pre-filled bank PAD form (PDF)");
   L.push("Attached: " + (ds.on.map(function(d){ return d[0]; }).join(", ") || "none")); if (ds.off.length) L.push("NOT attached: " + ds.off.map(function(d){ return d[0]; }).join(", "));
   if (String(s.notes || "").trim()) L.push("", "Notes: " + String(s.notes).trim());
   L.push("", "Approval: " + poApprovers().join(" and ") + ' (reply "APPROVED")', "", "Requested by " + poMe().name + (poRoleLabel() ? " · " + poRoleLabel() : ""), "", "Mahan-EX Dealership Command");
@@ -216,6 +233,58 @@ function poXlsxDownload(){
 }
 function poPadName(tab){ var s = poState(tab); return "PAD-" + s.bank + "-" + String(s.padName || "customer").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".pdf"; }
 
+/* ---- document photos: taken with the camera, shrunk, and combined into one PDF with the cheque requisition as page 1 ---- */
+var PO_MAX_PHOTOS = 14, PO_MAX_BYTES = 9500000;
+function poShrink(file){
+  return new Promise(function(res, rej){
+    var url = URL.createObjectURL(file), img = new Image();
+    img.onload = function(){
+      var k = Math.min(1, 1700 / Math.max(img.naturalWidth, img.naturalHeight)), w = Math.max(1, Math.round(img.naturalWidth * k)), h = Math.max(1, Math.round(img.naturalHeight * k)), cv = document.createElement("canvas");
+      cv.width = w; cv.height = h; var cx = cv.getContext("2d"); cx.fillStyle = "#fff"; cx.fillRect(0, 0, w, h); cx.drawImage(img, 0, 0, w, h);
+      URL.revokeObjectURL(url); res({ url:cv.toDataURL("image/jpeg", 0.72), w:w, h:h });
+    };
+    img.onerror = function(){ URL.revokeObjectURL(url); rej(new Error("That photo couldn't be read. Try another.")); };
+    img.src = url;
+  });
+}
+function poPhotoBytes(){ var n = 0; Object.keys(PO.photos).forEach(function(t){ var p = PO.photos[t]; Object.keys(p).forEach(function(k){ p[k].forEach(function(x){ n += x.url.length; }); }); }); return n; }
+function poAddPhotos(tab, key, files){
+  var list = Array.prototype.slice.call(files || []).filter(function(f){ return /^image\//.test(f.type) || !f.type; });
+  if (!list.length) return;
+  if (poPhotoCount(tab) + list.length > PO_MAX_PHOTOS){ toast("That's more than " + PO_MAX_PHOTOS + " photos. Remove one first.", "err"); return; }
+  poSay("Adding " + list.length + " photo" + (list.length === 1 ? "" : "s") + "…");
+  var chain = Promise.resolve();
+  list.forEach(function(f){ chain = chain.then(function(){ return poShrink(f).then(function(p){
+    if (poPhotoBytes() + p.url.length > PO_MAX_BYTES) throw new Error("Those photos are too big to email together. Remove one or two first.");
+    var P = poPhotos(tab); (P[key] = P[key] || []).push(p); if (key !== "x") poState(tab).docs[key] = true; }); }); });
+  chain.then(function(){ PO.msg = null; render(); }, function(e){ PO.msg = null; toast(e.message || "Couldn't add the photo.", "err"); render(); });
+}
+function poDataBytes(url){ var b = atob(url.split(",")[1]), u = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) u[i] = b.charCodeAt(i); return u; }
+/* Page 1 is the cheque requisition (the same one as the Excel); then one labelled page per photo. */
+function poPackageBytes(tab){
+  var T = poT(tab), P = poPhotos(tab);
+  return poScript(PO_PDF_LIB, "lib", function(){ return !!window.PDFLib; }).then(function(){
+    var PL = window.PDFLib;
+    return PL.PDFDocument.create().then(function(doc){
+      return Promise.all([doc.embedFont(PL.StandardFonts.Helvetica), doc.embedFont(PL.StandardFonts.HelveticaBold)]).then(function(f){
+        var fonts = { reg:f[0], bold:f[1] }, items = [];
+        C.chequePdfPage(PL, doc, fonts, poChequeInput(tab), { dealer:(state.config || {}).name || "", approvers:poApprovers() });
+        T.docs.forEach(function(d, i){ (P[i] || []).forEach(function(x){ items.push({ label:d[0], img:x }); }); });
+        (P.x || []).forEach(function(x){ items.push({ label:"Other document", img:x }); });
+        var chain = Promise.resolve();
+        items.forEach(function(it, n){ chain = chain.then(function(){ return doc.embedJpg(poDataBytes(it.img.url)).then(function(img){ C.chequePhotoPage(PL, doc, fonts, it.label, n + 1, items.length, img); }); }); });
+        return chain.then(function(){ return doc.save(); });
+      });
+    });
+  });
+}
+function poPackageName(tab){ var s = poState(tab); return "Payout-Package-" + String(s.f.stk || s.payee || "request").replace(/[^A-Za-z0-9]+/g, "-").slice(0, 30) + ".pdf"; }
+function poPackageOpen(){
+  var tab = PO.tab; if (!poCheck(tab) || PO.busy) return;
+  PO.busy = true; render();
+  poPackageBytes(tab).then(function(b){ PO.busy = false; render(); poOpenBlob(b, poPackageName(tab)); }, function(e){ PO.busy = false; render(); toast(e.message || "Couldn't make the PDF.", "err"); });
+}
+
 /* ---- the page ---- */
 function poTabsHtml(){
   return '<div class="po-tabs">' + PO_TYPE_KEYS.map(function(k){ return '<button type="button" data-po="tab" data-v="' + k + '" class="' + (PO.tab === k ? "on" : "") + '">' + esc(PO_TYPES[k].label) + '</button>'; }).join("") +
@@ -234,7 +303,7 @@ function poFormHtml(){
     (s.pay === "Cheque" ? '<div class="po-w"><label class="po-l">Cheque release</label><div class="po-radios">' + PO_RELEASE.map(function(r){ return '<button type="button" data-po="rel" data-v="' + r[0] + '" class="' + (s.release === r[0] ? "on" : "") + '">' + r[1] + '</button>'; }).join("") + '</div></div>' : '') +
     '<div class="po-w"><label class="po-l" for="po-x-payee">' + esc(T.payeeLbl) + '</label><input id="po-x-payee" data-pox="payee" type="text" value="' + esc(s.payee) + '" autocomplete="off"' + (T.payeeFixed ? ' readonly' : '') + '></div>' +
     T.f.map(function(f){ return poField(f[0], f[1], s.f[f[0]], f[2]); }).join("");
-  var html = '<div class="po-card"><h3>' + esc(T.title) + '</h3><div class="po-hint">' + esc(T.hint) + '</div><div class="po-f">' + fields + '</div>' + poLookHtml(tab) + '</div>';
+  var html = (s.fromPulse ? '<div class="po-info"><b>From Pulse:</b> ' + esc(s.fromPulse.cust || "") + (s.fromPulse.stk ? ' · stock ' + esc(s.fromPulse.stk) : '') + '. The customer and vehicle are already filled in. Add the lienholder, amount and dates. When accounting marks this paid, Pulse marks the lien paid too.</div>' : '') + '<div class="po-card"><h3>' + esc(T.title) + '</h3><div class="po-hint">' + esc(T.hint) + '</div><div class="po-f">' + fields + '</div>' + poLookHtml(tab) + '</div>';
   if (T.carfax) html += '<div class="po-card"><h3>Carfax link</h3><div class="po-hint">Shown as a highlighted button in the email, so accounting opens the lien check in one click.</div><input id="po-x-carfax" data-pox="carfax" type="url" value="' + esc(s.carfax) + '" placeholder="Paste the Carfax report link"></div>';
   html += '<div class="po-card"><h3>Amount</h3><div class="po-f"><div><label class="po-l" for="po-x-amount">' + esc(T.amtLbl) + '</label><input id="po-x-amount" data-pox="amount" type="number" step="0.01" min="0" value="' + esc(s.amount) + '"></div>' +
     '<div><label class="po-l">HST</label><label class="po-chk"><input type="checkbox" data-pox="hst" ' + (s.hst ? "checked" : "") + '> Add 13% HST to this amount</label></div></div></div>';
@@ -251,8 +320,15 @@ function poFormHtml(){
       '</div><div class="po-info"><b>Filled in for you:</b> the details above, plus amount, date, and the dealership name, contact, phone and fax (set once in Dealership settings).<br><b>Left blank on purpose:</b> the dealer\'s transit, institution and account numbers (accounting adds those) and the signature.</div>' +
       '<div class="po-row"><button type="button" class="po-btn p" data-po="padopen"' + (PO.busy ? " disabled" : "") + '>Open pre-filled PAD form (PDF)</button></div></div>';
   }
-  html += '<div class="po-card"><h3>Documents you are attaching</h3><div class="po-hint">Tick what you\'ll attach to the email. The email lists what is attached and flags anything missing.</div>' +
-    T.docs.map(function(d, i){ return '<label class="po-doc"><input type="checkbox" data-pod="' + i + '" ' + (s.docs[i] ? "checked" : "") + '><span>' + esc(d[0]) + (d[1] ? '<small>' + esc(d[1]) + '</small>' : '') + '</span></label>'; }).join("") + '</div>';
+  var ph = poPhotos(tab), cam = function(key, label){
+    return '<span class="po-cams"><label class="po-cam">📷 ' + label + '<input type="file" accept="image/*" capture="environment" multiple data-pop="' + key + '" hidden></label>' +
+      '<label class="po-cam alt">From gallery<input type="file" accept="image/*" multiple data-pop="' + key + '" hidden></label></span>';
+  }, thumbs = function(key){
+    return (ph[key] || []).length ? '<div class="po-thumbs">' + ph[key].map(function(x, n){ return '<span class="po-th"><img src="' + x.url + '" alt="Photo ' + (n + 1) + '"><button type="button" data-po="rmphoto" data-k="' + key + '" data-v="' + n + '" aria-label="Remove this photo">×</button></span>'; }).join("") + '</div>' : "";
+  };
+  html += '<div class="po-card"><h3>Documents you are attaching</h3><div class="po-hint">Take a photo of each document with the camera, or tick it if you\'ll attach it yourself. The photos are combined into one PDF behind the cheque requisition, emailed, and then thrown away. They are never stored.</div>' +
+    T.docs.map(function(d, i){ return '<div class="po-docw"><label class="po-doc"><input type="checkbox" data-pod="' + i + '" ' + (s.docs[i] ? "checked" : "") + '><span>' + esc(d[0]) + (d[1] ? '<small>' + esc(d[1]) + '</small>' : '') + '</span></label>' + cam(i, (ph[i] || []).length ? "Add another" : "Take photo") + thumbs(i) + '</div>'; }).join("") +
+    '<div class="po-docw"><div class="po-doc"><span>Other document<small>Anything else accounting should see</small></span></div>' + cam("x", (ph.x || []).length ? "Add another" : "Take photo") + thumbs("x") + '</div></div>';
   html += '<div class="po-card"><h3>Forward to</h3><div class="po-f"><div class="po-w"><label class="po-l" for="po-x-to">Accounting</label><input id="po-x-to" data-pox="to" type="text" value="' + esc(s.to) + '" placeholder="accounting email (set a default in Dealership settings)"></div>' +
     '<div class="po-w"><label class="po-l" for="po-x-cc">Cc</label><input id="po-x-cc" data-pox="cc" type="text" value="' + esc(s.cc) + '" placeholder="GM, Regional Controller…"></div>' +
     '<div class="po-w"><label class="po-l" for="po-x-notes">Notes for accounting (optional)</label><textarea id="po-x-notes" data-pox="notes" rows="2" placeholder="Anything accounting should know">' + esc(s.notes) + '</textarea></div></div></div>';
@@ -262,8 +338,8 @@ function poMailHtml(){
   var tab = PO.tab, s = poState(tab), me = poMe();
   return '<div class="po-mail"><div class="po-mh"><div class="po-r"><span>Sent to</span><b>you' + (me.email ? ' · ' + esc(me.email) : '') + '</b></div><div class="po-r"><span>Then forward to</span><b id="po-m-to">' + esc(s.to) + '</b></div><div class="po-r"><span>Cc</span><b id="po-m-cc">' + esc(s.cc) + '</b></div><div class="po-r po-subj"><span>Subject</span><b id="po-m-subj">' + esc(poSubject(tab)) + '</b></div></div>' +
     '<div class="po-mb"><div id="po-em">' + poEmailHtml(tab) + '</div></div>' +
-    '<div class="po-mh po-ma"><div class="po-row"><button type="button" class="po-btn p" data-po="sendme"' + (PO.busy ? " disabled" : "") + '>' + (PO.busy ? "Sending…" : "✉ Email it to me") + '</button><button type="button" class="po-btn" data-po="xlsx">Download Excel</button><button type="button" class="po-btn" data-po="copy">Copy email</button><button type="button" class="po-btn" data-po="draft">Open email draft</button><button type="button" class="po-btn" data-po="copysubj">Copy subject</button><button type="button" class="po-btn" data-po="copyaddr">Copy forward addresses</button></div>' +
-    '<div class="po-msg" id="po-msg">' + (PO.msg || '"Email it to me" sends this to your own inbox with the subject already set, your cheque requisition Excel filled in and attached' + (poPadOn(tab) ? ", plus the pre-filled PAD form" : "") + '. Open it, press Forward, add accounting and your scans, and send.') + '</div></div></div>';
+    '<div class="po-mh po-ma"><div class="po-row"><button type="button" class="po-btn p" data-po="sendme"' + (PO.busy ? " disabled" : "") + '>' + (PO.busy ? "Sending…" : "✉ Email it to me") + '</button><button type="button" class="po-btn" data-po="pkg">Preview PDF package</button><button type="button" class="po-btn" data-po="xlsx">Download Excel</button><button type="button" class="po-btn" data-po="copy">Copy email</button><button type="button" class="po-btn" data-po="draft">Open email draft</button><button type="button" class="po-btn" data-po="copysubj">Copy subject</button><button type="button" class="po-btn" data-po="copyaddr">Copy forward addresses</button></div>' +
+    '<div class="po-msg" id="po-msg">' + (PO.msg || '"Email it to me" sends this to your own inbox with the subject already set, the cheque requisition as a PDF (with your document photos behind it) and as a filled-in Excel, attached' + (poPadOn(tab) ? ", plus the pre-filled PAD form" : "") + '. Open it, press Forward, add accounting and your scans, and send.') + '</div></div></div>';
 }
 function poLogHtml(){
   poLoadLog();
@@ -280,6 +356,7 @@ function poLogHtml(){
       (st === "returned" ? '<button type="button" class="po-btn sm" data-po="mark" data-id="' + esc(r.id) + '" data-v="sent">Sent again</button>' : '') + '</div></div>'; }).join("") + '</div>';
 }
 function viewPayout(){
+  if (poCan()) poApplyHand();
   if (!poCan()) return '<div class="card"><div class="card-b"><h2 style="margin:0 0 6px">Payout Request isn\'t switched on for you</h2><p class="muted" style="margin:0">Ask your General Manager to turn it on in Users &amp; access.</p></div></div>';
   var body = PO.tab === "log" ? poLogHtml() : '<div class="po-grid"><div>' + poFormHtml() + '</div>' + poMailHtml() + '</div>';
   return '<div class="po"><div class="po-top"><div class="po-eyebrow">Finance · Payout Request</div><h2>Payout Request</h2><div class="po-sub">Fill in the details and get a finished requisition email for accounting. Attach your scans in your own email, as you do today.</div></div>' + poTabsHtml() + body + '</div>';
@@ -301,7 +378,11 @@ function poMark(id, status){
   var row = (PO.log || []).filter(function(r){ return r.id === id; })[0]; if (!row) return;
   sb.from("payout_requests").update({ status:status, updated_at:new Date().toISOString() }).eq("id", id).then(function(r){
     if (r.error){ toast("Couldn't update it: " + r.error.message, "err"); return; }
-    row.status = status; toast("Marked " + (PO_STATUS[status] || status).toLowerCase() + ".", "ok"); render(); });
+    row.status = status; toast("Marked " + (PO_STATUS[status] || status).toLowerCase() + ".", "ok"); render();
+    /* A trade lien payout started from Pulse: tell Pulse the lien is paid, so its reminders stop. Best effort. */
+    var pid = row.data && row.data.pulseId;
+    if (status === "paid" && pid && row.kind === "lien") sb.from("deliveries").update({ lien_status:"paid", lien_paid_at:new Date().toISOString() }).eq("id", pid).eq("lien_status", "pending").then(function(){}, function(){});
+  });
 }
 
 /* ---- actions ---- */
@@ -335,9 +416,9 @@ function poSendMe(){
   if (!stOnline()){ toast("Sign in online to send email. You can still copy it.", "err"); return; }
   var id = "pr-" + C.uid(), tt = C.payoutTotals(s.amount, s.hst), subject = poSubject(tab), store = state.activeDealershipId, me = V.currentUser();
   PO.busy = true; PO.msg = null; render();
-  var snap = { type:tab, sub:tab === "lien" ? s.kind : "", pay:s.pay, payee:s.payee, stk:s.f.stk || "", dms:s.f.dms || "", name:s.f.name || "", total:tt.total, subject:subject, to:s.to, cc:s.cc, bank:poPadOn(tab) ? s.bank : "" };
-  var attach = poXlsxBytes(tab).then(function(x){
-    var list = [{ filename:poXlsxName(tab), content:poBase64(x) }];
+  var snap = { pulseId:s.pulseId || "", photos:poPhotoCount(tab), type:tab, sub:tab === "lien" ? s.kind : "", pay:s.pay, payee:s.payee, stk:s.f.stk || "", dms:s.f.dms || "", name:s.f.name || "", total:tt.total, subject:subject, to:s.to, cc:s.cc, bank:poPadOn(tab) ? s.bank : "" };
+  var attach = Promise.all([poPackageBytes(tab), poXlsxBytes(tab)]).then(function(r){
+    var list = [{ filename:poPackageName(tab), content:poBase64(r[0]) }, { filename:poXlsxName(tab), content:poBase64(r[1]) }];
     return poPadOn(tab) ? poPadPdf(tab).then(function(b){ list.push({ filename:poPadName(tab), content:poBase64(b) }); return list; }) : list;
   });
   attach.then(function(attachments){
@@ -351,7 +432,9 @@ function poSendMe(){
     }).then(function(res){ return res.json().then(function(j){ if (!res.ok || j.error) throw new Error(j.error || ("Error " + res.status)); return j; }); });
   }).then(function(j){
     return sb.from("payout_requests").update({ status:"sent", updated_at:new Date().toISOString() }).eq("id", id).then(function(){
-      PO.busy = false; PO.msg = "✓ Sent to " + (j.to || "your inbox") + ". Check your inbox, press Forward, add accounting and your scans, and send. It's saved in the Request log.";
+      /* the photos have done their job: dropped from memory the moment the email is out */
+      var had = poPhotoCount(tab); PO.photos[tab] = {}; if (s.pulseId) s.pulseSent = true;
+      PO.busy = false; PO.msg = "✓ Sent to " + (j.to || "your inbox") + ". Check your inbox, press Forward, add accounting" + (had ? "" : " and your scans") + ", and send. It's saved in the Request log." + (had ? " Your " + had + " photo" + (had === 1 ? " was" : "s were") + " cleared from this screen. Nothing was stored." : "");
       toast("Sent to your inbox.", "ok"); poLoadLog(true); render(); });
   }, function(e){ PO.busy = false; render(); toast(e.message || "Couldn't send it.", "err"); });
 }
@@ -385,6 +468,8 @@ document.addEventListener("click", function(ev){
     case "pay": s.pay = v; PO.msg = null; break;
     case "padopen": poPadOpen(); return;
     case "xlsx": poXlsxDownload(); return;
+    case "pkg": poPackageOpen(); return;
+    case "rmphoto": { var k = el.getAttribute("data-k"), P = poPhotos(PO.tab); if (P[k]){ P[k].splice(Number(v), 1); if (!P[k].length){ delete P[k]; } } break; }
     case "rel": s.release = v; break;
     case "sendme": poSendMe(); return;
     case "copy": poCopy(); return;
@@ -409,6 +494,10 @@ function poField2(ev){
   if (kx === "bank"){ if (ev.type !== "change") return; s.bank = el.value; render(); return; }
   s[kx] = el.value; poRefresh();
 }
+document.addEventListener("change", function(ev){
+  var el = ev.target; if (!el || !el.getAttribute || el.getAttribute("data-pop") === null || el.type !== "file") return;
+  var files = el.files; poAddPhotos(PO.tab, el.getAttribute("data-pop"), files); try { el.value = ""; } catch (e) {}
+});
 document.addEventListener("input", poField2);
 document.addEventListener("change", poField2);
 
