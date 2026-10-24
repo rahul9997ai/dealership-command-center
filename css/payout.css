@@ -50,3 +50,4 @@
 .po-th{position:relative;width:64px;height:84px;border-radius:7px;overflow:hidden;border:1px solid var(--border);background:#eef2f7}
 .po-th img{width:100%;height:100%;object-fit:cover;display:block}
 .po-th button{position:absolute;top:2px;right:2px;width:22px;height:22px;border-radius:11px;border:0;background:rgba(11,20,48,.82);color:#fff;font-size:15px;line-height:20px;cursor:pointer;padding:0}
+.po-note{color:var(--muted);font-size:11.5px;margin-top:4px}
